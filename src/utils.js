@@ -1,3 +1,5 @@
+import { jsonrepair } from "jsonrepair";
+
 export function getGrade(score) {
   if (score >= 90) return { grade: "S", color: "#FFD700", label: "프로 수준" };
   if (score >= 80) return { grade: "A", color: "#4ECCA3", label: "우수" };
@@ -131,10 +133,16 @@ export function parseClaudeJson(text) {
   try {
     return JSON.parse(fixed);
   } catch (e1) {
+    // 3.5단계: jsonrepair로 강력한 자동 복구 시도
+    try { return JSON.parse(jsonrepair(fixed)); } catch { /* fall through */ }
+    // 원본 cleaned에도 직접 시도
+    try { return JSON.parse(jsonrepair(cleaned)); } catch { /* fall through */ }
+
     // 4단계: 마지막 유효한 닫기 괄호까지만 잘라서 재시도
     const lastBrace = fixed.lastIndexOf("}");
     if (lastBrace > 0) {
       try { return JSON.parse(fixed.slice(0, lastBrace + 1)); } catch { /* fall through */ }
+      try { return JSON.parse(jsonrepair(fixed.slice(0, lastBrace + 1))); } catch { /* fall through */ }
     }
     // 5단계: 각 배열에서 잘린 마지막 요소 제거 후 재시도
     try {
