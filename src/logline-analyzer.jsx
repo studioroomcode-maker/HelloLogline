@@ -636,52 +636,123 @@ export default function LoglineAnalyzer() {
 <meta charset="UTF-8">
 <title>${docMeta.title} — ${logline.slice(0, 20) || "기획서"}</title>
 <style>
+  /* ── A4 페이지 기준 설정 ── */
+  @page {
+    size: A4 portrait;
+    margin: 20mm 25mm 20mm 25mm;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: "Malgun Gothic", "AppleGothic", "NanumGothic", sans-serif; font-size: 11pt; color: #1a1a2e; background: #fff; line-height: 1.75; }
-  .cover { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 80px 72px; border-bottom: 3px solid #1a1a2e; page-break-after: always; }
-  .cover-badge { font-size: 9pt; font-weight: 700; letter-spacing: 3px; color: #666; margin-bottom: 32px; }
-  .cover-title { font-size: 36pt; font-weight: 900; line-height: 1.15; margin-bottom: 12px; }
-  .cover-subtitle { font-size: 13pt; color: #555; margin-bottom: 48px; }
-  .cover-divider { width: 60px; height: 3px; background: #1a1a2e; margin-bottom: 36px; }
-  .cover-meta { font-size: 10pt; color: #444; line-height: 2; }
+
+  body {
+    font-family: "Malgun Gothic", "AppleGothic", "NanumGothic", sans-serif;
+    font-size: 10.5pt;
+    color: #1a1a2e;
+    background: #fff;
+    line-height: 1.8;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── 커버: A4 한 장 (297mm - 상하마진 40mm = 257mm) ── */
+  .cover {
+    height: 257mm;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    border-bottom: 3px solid #1a1a2e;
+    page-break-after: always;
+  }
+  .cover-badge { font-size: 8.5pt; font-weight: 700; letter-spacing: 3px; color: #666; margin-bottom: 28pt; }
+  .cover-title { font-size: 32pt; font-weight: 900; line-height: 1.15; margin-bottom: 10pt; }
+  .cover-subtitle { font-size: 12pt; color: #555; margin-bottom: 40pt; }
+  .cover-divider { width: 50pt; height: 3pt; background: #1a1a2e; margin-bottom: 28pt; }
+  .cover-meta { font-size: 10pt; color: #444; line-height: 2.2; }
   .cover-meta strong { color: #1a1a2e; }
-  .cover-date { margin-top: 48px; font-size: 9pt; color: #888; }
-  .content { padding: 56px 72px; }
-  section { margin-bottom: 40px; page-break-inside: avoid; }
-  h2 { font-size: 14pt; font-weight: 800; border-left: 4px solid #1a1a2e; padding-left: 12px; margin-bottom: 16px; letter-spacing: 0.5px; }
-  h3 { font-size: 11pt; font-weight: 700; color: #333; margin: 14px 0 6px; }
-  .section-body { padding-left: 16px; }
-  p { margin-bottom: 10px; }
-  .tag-row { display: flex; gap: 12px; margin-bottom: 8px; align-items: flex-start; }
-  .tag-label { font-size: 9pt; font-weight: 700; color: #666; min-width: 110px; padding-top: 2px; white-space: nowrap; }
-  .tag-value { font-size: 10.5pt; color: #1a1a2e; line-height: 1.6; }
-  .score-item { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-  .score-label { font-size: 9pt; min-width: 80px; color: #555; }
-  .score-track { flex: 1; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
-  .score-fill { height: 100%; background: #1a1a2e; border-radius: 4px; }
-  .score-num { font-size: 9pt; font-weight: 700; min-width: 40px; text-align: right; }
-  .feedback { font-style: italic; color: #444; background: #f8f8f8; padding: 12px 16px; border-left: 3px solid #ccc; border-radius: 0 4px 4px 0; }
-  .synopsis-direction { color: #666; font-size: 10pt; margin-bottom: 8px; }
+  .cover-date { margin-top: 40pt; font-size: 8.5pt; color: #888; }
+
+  /* ── 본문: @page 마진이 여백 처리 — 패딩 불필요 ── */
+  .content { padding: 0; }
+
+  /* ── 섹션: 기본적으로 페이지 내부에서 안 잘리게 ── */
+  section {
+    margin-bottom: 28pt;
+    page-break-inside: avoid;
+  }
+
+  /* 트리트먼트처럼 긴 섹션은 페이지 넘어가도 허용 */
+  section.allow-break {
+    page-break-inside: auto;
+  }
+
+  /* 제목 다음에 바로 페이지 끊기지 않게 */
+  h2 {
+    font-size: 13pt;
+    font-weight: 800;
+    border-left: 4pt solid #1a1a2e;
+    padding-left: 10pt;
+    margin-bottom: 12pt;
+    letter-spacing: 0.3pt;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 10.5pt;
+    font-weight: 700;
+    color: #333;
+    margin: 11pt 0 5pt;
+    page-break-after: avoid;
+  }
+
+  .section-body { padding-left: 14pt; }
+
+  p {
+    margin-bottom: 8pt;
+    orphans: 3;
+    widows: 3;
+  }
+
+  .tag-row { display: flex; gap: 10pt; margin-bottom: 7pt; align-items: flex-start; }
+  .tag-label { font-size: 8.5pt; font-weight: 700; color: #666; min-width: 90pt; padding-top: 1pt; white-space: nowrap; }
+  .tag-value { font-size: 10pt; color: #1a1a2e; line-height: 1.65; }
+
+  .score-item { display: flex; align-items: center; gap: 10pt; margin-bottom: 7pt; page-break-inside: avoid; }
+  .score-label { font-size: 8.5pt; min-width: 70pt; color: #555; }
+  .score-track { flex: 1; height: 6pt; background: #eee; border-radius: 3pt; overflow: hidden; }
+  .score-fill { height: 100%; background: #1a1a2e; border-radius: 3pt; }
+  .score-num { font-size: 8.5pt; font-weight: 700; min-width: 35pt; text-align: right; }
+
+  .feedback { font-style: italic; color: #444; background: #f8f8f8; padding: 10pt 14pt; border-left: 3pt solid #ccc; border-radius: 0 3pt 3pt 0; page-break-inside: avoid; }
+
+  .synopsis-direction { color: #666; font-size: 9.5pt; margin-bottom: 7pt; }
   .synopsis-text { line-height: 2; text-indent: 1em; }
-  .character-block { border: 1px solid #ddd; border-radius: 4px; padding: 14px 16px; margin-bottom: 12px; }
+
+  .character-block { border: 1pt solid #ddd; border-radius: 3pt; padding: 12pt 14pt; margin-bottom: 10pt; page-break-inside: avoid; }
   .character-block.secondary { background: #fafafa; }
-  .character-block h3 { margin-top: 0; font-size: 12pt; }
-  .role-badge { font-size: 8pt; font-weight: 600; color: #888; background: #eee; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
-  .treatment-text { font-size: 10pt; line-height: 1.9; color: #333; }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10pt; }
-  th { background: #1a1a2e; color: #fff; padding: 8px 12px; text-align: left; font-weight: 700; }
-  td { padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+  .character-block h3 { margin-top: 0; font-size: 11pt; }
+  .role-badge { font-size: 7.5pt; font-weight: 600; color: #888; background: #eee; padding: 1pt 6pt; border-radius: 8pt; margin-left: 5pt; }
+
+  .treatment-text { font-size: 9.5pt; line-height: 1.95; color: #333; }
+
+  /* 테이블: row 단위로는 안 잘리게 */
+  table { width: 100%; border-collapse: collapse; margin-top: 8pt; font-size: 9.5pt; page-break-inside: auto; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
+  th { background: #1a1a2e; color: #fff; padding: 7pt 10pt; text-align: left; font-weight: 700; }
+  td { padding: 7pt 10pt; border-bottom: 1pt solid #eee; vertical-align: top; }
   tr:nth-child(even) td { background: #f9f9f9; }
-  .verdict-box { border: 2px solid; border-radius: 6px; padding: 14px 18px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
-  .verdict-label { font-size: 16pt; font-weight: 900; }
-  .verdict-score { font-size: 12pt; font-weight: 700; }
-  ul { padding-left: 20px; }
-  li { margin-bottom: 5px; }
-  @media print {
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .cover { page-break-after: always; }
-    section { page-break-inside: avoid; }
-    @page { margin: 0; size: A4; }
+
+  .verdict-box { border: 2pt solid; border-radius: 5pt; padding: 12pt 16pt; margin-bottom: 12pt; display: flex; justify-content: space-between; align-items: center; page-break-inside: avoid; }
+  .verdict-label { font-size: 15pt; font-weight: 900; }
+  .verdict-score { font-size: 11pt; font-weight: 700; }
+
+  ul { padding-left: 16pt; }
+  li { margin-bottom: 4pt; orphans: 2; widows: 2; }
+
+  /* 화면 미리보기용 (인쇄 전) */
+  @media screen {
+    body { padding: 20mm 25mm; max-width: 210mm; margin: 0 auto; box-shadow: 0 0 20px rgba(0,0,0,0.15); }
+    .cover { height: auto; min-height: 180mm; padding: 40pt 0; }
   }
 </style>
 </head>
@@ -701,11 +772,11 @@ export default function LoglineAnalyzer() {
   <div class="content">
     ${body}
   </div>
-  <script>window.onload = () => window.print();</script>
+  <script>window.onload = () => { document.title = "${docMeta.title}"; window.print(); };</script>
 </body>
 </html>`;
 
-    const win = window.open("", "_blank", "width=900,height=1100");
+    const win = window.open("", "_blank", "width=794,height=1123");
     if (win) {
       win.document.write(html);
       win.document.close();
