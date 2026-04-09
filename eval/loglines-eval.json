@@ -1,0 +1,289 @@
+{
+  "_meta": {
+    "purpose": "Schema 검증 정확도 측정 + 패널별 유효성 검증용 평가셋",
+    "created": "2026-04-09",
+    "instructions": "각 로그라인을 HelloLogline에 넣고 결과를 human_scores에 직접 기입. program_scores는 앱 출력값 기록. 3명이 독립 채점 후 비교.",
+    "scorers": ["채점자1", "채점자2", "채점자3"],
+    "scale": {
+      "quality_score": "0-100 (structure+expression+technical 합산)",
+      "interest_score": "0-100 (별도 축)",
+      "grade": "S/A/B/C/D/F"
+    }
+  },
+
+  "categories": {
+
+    "strong": {
+      "description": "좋은 로그라인 — 구조/표현/흥미 모두 갖춤. 기대 점수: 품질 75+, 흥미 70+",
+      "loglines": [
+        {
+          "id": "S01",
+          "text": "알코올 중독 외과의사가 수술 중 손 떨림으로 환자를 죽인 뒤, 그 환자의 장기를 받은 수혜자들을 찾아 용서를 구하지만 마지막 수혜자가 자신의 전 아내임을 알게 된다.",
+          "genre": "드라마",
+          "notes": "명확한 주인공 결함, 목표, 반전 포함",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "S02",
+          "text": "치매에 걸린 전직 형사가 30년 전 미제 사건의 유일한 목격자인 자신의 기억이 사라지기 전에 범인을 잡으려 한다.",
+          "genre": "스릴러",
+          "notes": "이중 긴장 (치매 vs 수사), 시간제한 스테이크",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "S03",
+          "text": "탈북한 피아니스트가 서울에서 실력을 인정받던 날, 북한에 두고 온 쌍둥이 형이 자신인 척 무대에 올랐다는 영상을 보게 된다.",
+          "genre": "드라마/스릴러",
+          "notes": "정체성 충돌, 한국 특수 맥락, 강한 아이러니",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "S04",
+          "text": "죽은 딸의 SNS 계정을 운영하던 아버지가 팔로워들에게 딸이 살아있다고 믿게 만들다가, 팔로워 중 한 명이 실제로 딸을 만났다고 주장한다.",
+          "genre": "미스터리/드라마",
+          "notes": "디지털 시대 그리프, 정보격차 극대화",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "S05",
+          "text": "사형수의 마지막 식사를 준비하는 교도소 요리사가 죄수의 요청 음식을 만들면서 그가 무고임을 알게 되고, 집행 전 12시간 안에 진범을 찾아야 한다.",
+          "genre": "스릴러/드라마",
+          "notes": "음식이라는 특이한 진입점, 강한 시간 압박",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "S06",
+          "text": "전 남편의 기억을 지우는 수술을 받은 여자가 수술 후 다시 그를 사랑하게 되지만, 이번엔 그가 다른 사람의 기억을 지우고 있다는 사실을 알게 된다.",
+          "genre": "로맨스/SF",
+          "notes": "이중 아이러니, SF 설정 위 감정선",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "S07",
+          "text": "북한 핵 프로그램을 막기 위해 위장 취업한 CIA 요원이 공장 동료들과 친해지면서, 그들의 희생이 자신의 임무 성공에 달려있다는 사실을 숨겨야 한다.",
+          "genre": "첩보/드라마",
+          "notes": "도덕적 딜레마 명확, 관계와 임무의 충돌",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "S08",
+          "text": "청각장애 수영선수가 코치의 손짓 신호 없이는 출발할 수 없다는 걸 알면서도 올림픽 결승에 혼자 선다.",
+          "genre": "스포츠/드라마",
+          "notes": "장애를 내러티브 엔진으로 활용, 구체적 이미지",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "S09",
+          "text": "자살 방지 상담원이 매일 밤 같은 번호로 전화를 받으며 상대를 살려왔는데, 어느 날 그 번호가 이미 1년 전 사망한 사람의 것임을 알게 된다.",
+          "genre": "미스터리/드라마",
+          "notes": "강한 수수께끼, 직업적 아이러니",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "S10",
+          "text": "유서 대필 전문가가 자신의 고객 중 한 명의 유서가 타살을 암시한다는 것을 발견하고, 그 증거를 신고하면 직업의 비밀 유지 원칙을 어기게 된다.",
+          "genre": "범죄/드라마",
+          "notes": "직업 윤리 딜레마, 독특한 직업 설정",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        }
+      ]
+    },
+
+    "mediocre": {
+      "description": "애매한 로그라인 — 아이디어는 있지만 구조/표현이 불완전. 기대 점수: 품질 45-65, 흥미 40-65",
+      "loglines": [
+        {
+          "id": "M01",
+          "text": "평범한 회사원이 출근길에 우연히 가방을 잘못 들고 와서 그 안에 중요한 서류가 있었고 여러 사람들과 만나게 된다.",
+          "genre": "드라마",
+          "notes": "설정은 있으나 목표/갈등이 희박",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "M02",
+          "text": "어릴 때 헤어진 남매가 성인이 되어 경쟁사의 팀장으로 만나 서로를 알아보지 못하다가 점점 가까워진다.",
+          "genre": "로맨스/드라마",
+          "notes": "클리셰 설정, 연애 방향인지 재회 드라마인지 불명확",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "M03",
+          "text": "요리 경연대회에 나간 아마추어 요리사가 심사위원이 자신의 레시피를 훔친 사람임을 알게 되고 우승을 위해 싸운다.",
+          "genre": "드라마",
+          "notes": "갈등은 명확하나 스테이크가 약하고 결말이 예측됨",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "M04",
+          "text": "도시에서 실패한 작가가 시골로 내려가 마을 사람들과 어울리며 글쓰기의 영감을 얻고 새로운 삶을 시작한다.",
+          "genre": "드라마",
+          "notes": "아크는 있으나 갈등/촉발사건이 약함",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "M05",
+          "text": "냉동인간에서 깨어난 과학자가 100년 후의 세계에서 자신이 만든 기술이 독재의 도구가 되었음을 알고 이를 막으려 한다.",
+          "genre": "SF",
+          "notes": "아이디어는 좋지만 구체적 갈등/인물 결함이 없음",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "M06",
+          "text": "유명 래퍼의 고스트라이터가 자신이 쓴 가사로 상대방이 엄청난 성공을 거두는 것을 보며 정체를 밝힐지 말지 고민한다.",
+          "genre": "드라마",
+          "notes": "설정은 흥미롭지만 목표가 '고민'에서 멈춤",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "M07",
+          "text": "AI가 판결을 내리는 미래 법정에서 변호사가 AI의 판결이 틀렸음을 증명하려 하지만 AI는 항상 옳다고 여겨진다.",
+          "genre": "SF/법정",
+          "notes": "컨셉은 좋으나 주인공 결함과 개인 스테이크가 없음",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "M08",
+          "text": "수십 년간 복권을 사온 노인이 드디어 1등에 당첨되지만 가족들이 각자의 이유로 그 돈을 필요로 해서 갈등이 생긴다.",
+          "genre": "코미디/드라마",
+          "notes": "상황은 명확하나 주인공의 능동적 목표가 없음",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "M09",
+          "text": "전직 올림픽 선수 출신 체육교사가 낙후된 학교에서 아이들을 가르치며 그들이 전국대회에 나갈 수 있도록 훈련시킨다.",
+          "genre": "스포츠/드라마",
+          "notes": "공식적인 언더독 이야기, 개인적 갈등 없음",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "M10",
+          "text": "불치병 진단을 받은 여자가 버킷리스트를 만들어 하나씩 이루어가다 마지막 항목이 자신을 배신한 친구를 용서하는 것임을 깨닫는다.",
+          "genre": "드라마",
+          "notes": "감정선은 있으나 외적 갈등과 긴장이 약함",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        }
+      ]
+    },
+
+    "weak": {
+      "description": "약한 로그라인 — 구조 결함, 진부함, 또는 로그라인이라 볼 수 없는 수준. 기대 점수: 품질 45 미만",
+      "loglines": [
+        {
+          "id": "W01",
+          "text": "한 소년이 마법 학교에 입학해서 친구들과 함께 악당을 물리치는 이야기.",
+          "genre": "판타지",
+          "notes": "완전한 클리셰, 주인공 결함/스테이크/아이러니 전무",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "W02",
+          "text": "사랑은 무엇인가? 두 남녀가 만나고 헤어지고 다시 만나는 과정을 통해 진정한 사랑의 의미를 깨닫는다.",
+          "genre": "로맨스",
+          "notes": "질문형 시작, 주인공 불명확, 추상적",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "W03",
+          "text": "홍길동은 의적으로 활동하며 가난한 사람들을 돕고 탐관오리를 혼내준다. 나중에 그는 섬나라를 세운다.",
+          "genre": "사극/액션",
+          "notes": "고유명사 의존, 결말 노출, 로그라인이 아닌 줄거리 요약",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "W04",
+          "text": "회사에서 잘린 30대 남자가 새로운 일을 찾으면서 여러 가지 어려움을 겪다가 결국 좋은 회사에 취직하게 된다.",
+          "genre": "드라마",
+          "notes": "목표는 있으나 갈등 구체성 전무, 결말 노출",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "W05",
+          "text": "외계인이 지구를 침략하고 지구 군대가 맞서 싸워 결국 승리한다.",
+          "genre": "SF/액션",
+          "notes": "주인공 없음, 스테이크 없음, 완전 도식적",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "W06",
+          "text": "매우 착한 간호사가 병원에서 많은 환자들을 정성껏 돌보며 보람을 느끼고 동료들에게도 좋은 영향을 미친다.",
+          "genre": "드라마",
+          "notes": "갈등 없음, 결함 없음, 이야기가 아닌 캐릭터 묘사",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "W07",
+          "text": "전쟁이 끝난 뒤의 이야기로 사람들이 상처를 회복하며 살아간다.",
+          "genre": "드라마",
+          "notes": "극도로 모호, 주인공/목표/사건 모두 없음",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "W08",
+          "text": "아버지와 사이가 나빴던 딸이 아버지가 돌아가신 후 그분의 일기를 발견하고 오해를 풀게 된다.",
+          "genre": "드라마",
+          "notes": "갈등이 이미 해소된 상태에서 시작, 긴장감 없음",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "W09",
+          "text": "꿈을 포기했던 화가가 전시회에 초대받아 다시 붓을 들게 되고 사람들에게 감동을 준다.",
+          "genre": "드라마",
+          "notes": "갈등이 약하고 진부한 예술가 복귀 서사",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        },
+        {
+          "id": "W10",
+          "text": "어둠 속에 빛이 있다. 절망에서 희망을 찾는 한 인간의 이야기.",
+          "genre": "드라마",
+          "notes": "은유로만 구성, 구체적 인물/사건/목표 전무",
+          "human_scores": { "scorer1": null, "scorer2": null, "scorer3": null },
+          "program_scores": { "quality": null, "interest": null, "grade": null }
+        }
+      ]
+    }
+  },
+
+  "validation_guide": {
+    "step1": "각 로그라인을 HelloLogline에 입력, Stage 1 기본 분석만 실행",
+    "step2": "결과의 quality_score와 interest_score를 program_scores에 기록",
+    "step3": "채점자 2-3명이 독립적으로 human_scores 기입 (0-100, 직관적 판단)",
+    "step4": "프로그램 점수 vs 사람 점수 편차 계산 — 10점 이상 차이나는 항목 표시",
+    "step5": "편차가 큰 로그라인 패턴 분석 → 특정 패널(예: 학술 분석)이 계속 과대/과소 평가하는지 확인",
+    "analysis_questions": [
+      "어떤 카테고리(strong/mediocre/weak)에서 편차가 가장 큰가?",
+      "프로그램이 과대 평가하는 경향이 있는 로그라인 유형은?",
+      "프로그램이 과소 평가하는 경향이 있는 로그라인 유형은?",
+      "어떤 세부 항목(구조/표현/기술/흥미) 점수가 사람 직관과 가장 다른가?",
+      "25개 패널 중 가장 신뢰할 수 없는 결과를 내는 패널은?"
+    ]
+  }
+}

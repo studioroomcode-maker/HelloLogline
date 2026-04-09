@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import { CRITERIA_GUIDE, LABELS_KR, PANEL_EXPERTS, NARRATIVE_FRAMEWORKS, PIPELINE_ALL_QUESTIONS, PIPELINE_QUESTIONS_BY_DURATION, PIPELINE_SYNOPSIS_SYSTEM_PROMPT, PIPELINE_REFINE_SYSTEM_PROMPT, GENRES, DURATION_OPTIONS, EXAMPLE_LOGLINES, IMPROVEMENT_SYSTEM_PROMPT, WEAKNESS_FIX_SYSTEM_PROMPT, STORY_PIVOT_SYSTEM_PROMPT } from "./constants.js";
 import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude } from "./utils.js";
+import { ImprovementSchema, WeaknessFixSchema, StoryPivotSchema, SynopsisSchema } from "./schemas.js";
 
 export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
   const [key, setKey] = useState(initialKey);
@@ -661,6 +662,17 @@ export function ScoreHistoryChart({ history }) {
 // 분석 기록 패널
 // ─────────────────────────────────────────────
 export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) {
+  const handleExportJson = () => {
+    if (!history.length) return;
+    const blob = new Blob([JSON.stringify(history, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `logline-history-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div
       style={{
@@ -700,20 +712,38 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           {history.length > 0 && (
-            <button
-              onClick={onClear}
-              style={{
-                background: "none",
-                border: "none",
-                color: "rgba(232,93,117,0.65)",
-                cursor: "pointer",
-                fontSize: 11,
-                fontFamily: "'Noto Sans KR', sans-serif",
-                padding: 0,
-              }}
-            >
-              전체 삭제
-            </button>
+            <>
+              <button
+                onClick={handleExportJson}
+                title="JSON으로 내보내기"
+                style={{
+                  background: "none",
+                  border: "1px solid rgba(78,204,163,0.3)",
+                  color: "rgba(78,204,163,0.8)",
+                  cursor: "pointer",
+                  fontSize: 10,
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                  padding: "3px 8px",
+                  borderRadius: 5,
+                }}
+              >
+                JSON 내보내기
+              </button>
+              <button
+                onClick={onClear}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "rgba(232,93,117,0.65)",
+                  cursor: "pointer",
+                  fontSize: 11,
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                  padding: 0,
+                }}
+              >
+                전체 삭제
+              </button>
+            </>
           )}
           <button
             onClick={onClose}
@@ -896,7 +926,7 @@ export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze }
 
       const msg = `원본 로그라인:\n"${logline}"\n\n장르: ${genreLabel}\n\n종합 피드백:\n${result?.overall_feedback || "-"}\n\n취약 항목: ${weakPoints || "없음"}\n\n위 분석을 바탕으로 개선된 로그라인을 작성해주세요.`;
 
-      const data = await callClaude(apiKey, IMPROVEMENT_SYSTEM_PROMPT, msg);
+      const data = await callClaude(apiKey, IMPROVEMENT_SYSTEM_PROMPT, msg, 5000, "claude-haiku-4-5-20251001", null, ImprovementSchema);
       setImprovement(data);
     } catch (err) {
       setError(err.message || "개선안 생성 중 오류가 발생했습니다.");
@@ -1155,7 +1185,7 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
     setFixError("");
     try {
       const msg = `로그라인: "${logline}"\n장르: ${genreLabel}\n\n취약 항목 (점수 낮은 순): ${weakItems}\n\n종합 피드백: ${result?.overall_feedback || "-"}`;
-      const data = await callClaude(apiKey, WEAKNESS_FIX_SYSTEM_PROMPT, msg, 3000);
+      const data = await callClaude(apiKey, WEAKNESS_FIX_SYSTEM_PROMPT, msg, 3000, "claude-haiku-4-5-20251001", null, WeaknessFixSchema);
       setFixes(data.fixes || []);
       setFixState("done");
     } catch (e) {
@@ -1169,7 +1199,7 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
     setPivotError("");
     try {
       const msg = `로그라인: "${logline}"\n장르: ${genreLabel}\n\n현재 분석 요약:\n- 종합 피드백: ${result?.overall_feedback || "-"}\n- 주요 강점: ${result?.strengths?.join(", ") || "-"}\n- 주요 약점: ${result?.weaknesses?.join(", ") || "-"}`;
-      const data = await callClaude(apiKey, STORY_PIVOT_SYSTEM_PROMPT, msg, 3000);
+      const data = await callClaude(apiKey, STORY_PIVOT_SYSTEM_PROMPT, msg, 3000, "claude-haiku-4-5-20251001", null, StoryPivotSchema);
       setPivots(data.pivots || []);
       setPivotState("done");
     } catch (e) {

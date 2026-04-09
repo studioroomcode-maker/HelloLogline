@@ -13,6 +13,13 @@ import {
   CRITERIA_GUIDE, LABELS_KR, GENRES, DURATION_OPTIONS, EXAMPLE_LOGLINES,
 } from "./constants.js";
 import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText } from "./utils.js";
+import {
+  LoglineAnalysisSchema, SynopsisSchema, AcademicAnalysisSchema,
+  MythMapSchema, BarthesCodeSchema, KoreanMythSchema, ExpertPanelSchema,
+  ValueChargeSchema, ShadowAnalysisSchema, AuthenticitySchema, CharacterDevSchema,
+  StructureAnalysisSchema, ThemeAnalysisSchema, SubtextSchema,
+  BeatSheetSchema, DialogueDevSchema, ScriptCoverageSchema,
+} from "./schemas.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { saveProject, loadProjects, deleteProject } from "./db.js";
 import {
@@ -745,7 +752,7 @@ export default function LoglineAnalyzer() {
     setResult(null);
     setResult2(null);
     try {
-      const parsed = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(target, genre), 4000, "claude-sonnet-4-6", ctrl.signal);
+      const parsed = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(target, genre), 4000, "claude-sonnet-4-6", ctrl.signal, LoglineAnalysisSchema);
       const sT = calcSectionTotal(parsed, "structure");
       const eT = calcSectionTotal(parsed, "expression");
       const tT = calcSectionTotal(parsed, "technical");
@@ -756,7 +763,7 @@ export default function LoglineAnalyzer() {
       if (compareMode && logline2.trim()) {
         setLoading2(true);
         try {
-          const parsed2 = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(logline2, genre), 4000, "claude-sonnet-4-6", ctrl.signal);
+          const parsed2 = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(logline2, genre), 4000, "claude-sonnet-4-6", ctrl.signal, LoglineAnalysisSchema);
           const s2 = calcSectionTotal(parsed2, "structure");
           const e2 = calcSectionTotal(parsed2, "expression");
           const t2 = calcSectionTotal(parsed2, "technical");
@@ -870,7 +877,7 @@ export default function LoglineAnalyzer() {
 
     const ctrl = makeController("synopsis");
     try {
-      const data = await callClaude(apiKey, SYNOPSIS_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal);
+      const data = await callClaude(apiKey, SYNOPSIS_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal, SynopsisSchema);
       setSynopsisResults(data);
       await autoSave();
     } catch (err) {
@@ -885,7 +892,7 @@ export default function LoglineAnalyzer() {
     setValueChargeLoading(true); setValueChargeError(""); setValueChargeResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n\n위 로그라인의 가치 전하(Value Charge)를 McKee의 이론으로 분석하세요.`;
-    try { const data = await callClaude(apiKey, VALUE_CHARGE_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setValueChargeResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, VALUE_CHARGE_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal, ValueChargeSchema); setValueChargeResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setValueChargeError(err.message || "가치 전하 분석 중 오류가 발생했습니다."); }
     finally { setValueChargeLoading(false); clearController("valueCharge"); }
   };
@@ -897,7 +904,7 @@ export default function LoglineAnalyzer() {
     setShadowLoading(true); setShadowError(""); setShadowResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n\n위 로그라인의 캐릭터 원형을 Jung의 분석심리학으로 분석하세요.`;
-    try { const data = await callClaude(apiKey, SHADOW_ANALYSIS_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setShadowResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, SHADOW_ANALYSIS_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal, ShadowAnalysisSchema); setShadowResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setShadowError(err.message || "그림자 분석 중 오류가 발생했습니다."); }
     finally { setShadowLoading(false); clearController("shadow"); }
   };
@@ -909,7 +916,7 @@ export default function LoglineAnalyzer() {
     setAuthenticityLoading(true); setAuthenticityError(""); setAuthenticityResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n\n위 로그라인의 진정성 지수를 실존주의 철학으로 분석하세요.`;
-    try { const data = await callClaude(apiKey, AUTHENTICITY_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setAuthenticityResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, AUTHENTICITY_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal, AuthenticitySchema); setAuthenticityResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setAuthenticityError(err.message || "진정성 분석 중 오류가 발생했습니다."); }
     finally { setAuthenticityLoading(false); clearController("authenticity"); }
   };
@@ -921,7 +928,7 @@ export default function LoglineAnalyzer() {
     setAcademicLoading(true); setAcademicError(""); setAcademicResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `다음 로그라인을 제시된 학술 이론 체계 전체에 걸쳐 엄밀하게 분석하세요.\n\n로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n글자 수: ${logline.length}자\n\n아리스토텔레스 시학, 프롭 민담 형태론, 캠벨 영웅 여정, 토도로프 서사 이론, 바르트 서사 코드, 프라이탁 피라미드, 질만 흥분 전이 이론, 머레이 스미스 관객 참여 이론, 한국 서사 미학을 각각 적용하여 분석하세요.`;
-    try { const data = await callClaude(apiKey, ACADEMIC_ANALYSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal); setAcademicResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, ACADEMIC_ANALYSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, AcademicAnalysisSchema); setAcademicResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setAcademicError(err.message || "학술 분석 중 오류가 발생했습니다."); }
     finally { setAcademicLoading(false); clearController("academic"); }
   };
@@ -933,7 +940,7 @@ export default function LoglineAnalyzer() {
     setExpertPanelLoading(true); setExpertPanelError(""); setExpertPanelResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `분석할 로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n글자수: ${logline.trim().length}자\n\n위 로그라인을 7명의 전문가 패널이 학술 이론을 바탕으로 토론하세요.`;
-    try { const data = await callClaude(apiKey, EXPERT_PANEL_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal); setExpertPanelResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, EXPERT_PANEL_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, ExpertPanelSchema); setExpertPanelResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setExpertPanelError(err.message || "전문가 패널 분석 중 오류가 발생했습니다."); }
     finally { setExpertPanelLoading(false); clearController("expertPanel"); }
   };
@@ -945,7 +952,7 @@ export default function LoglineAnalyzer() {
     setSubtextLoading(true); setSubtextError(""); setSubtextResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인의 하위텍스트를 체호프-스타니슬랍스키-브레히트-핀터-마멧 이론으로 분석하세요.`;
-    try { const data = await callClaude(apiKey, SUBTEXT_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setSubtextResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, SUBTEXT_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal, SubtextSchema); setSubtextResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setSubtextError(err.message || "하위텍스트 분석 중 오류가 발생했습니다."); }
     finally { setSubtextLoading(false); clearController("subtext"); }
   };
@@ -957,7 +964,7 @@ export default function LoglineAnalyzer() {
     setMythMapLoading(true); setMythMapError(""); setMythMapResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인을 캠벨 영웅 여정-프롭 민담 형태론-프레이저 신화 이론으로 신화적 위치를 매핑하세요.`;
-    try { const data = await callClaude(apiKey, MYTH_MAP_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setMythMapResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, MYTH_MAP_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal, MythMapSchema); setMythMapResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setMythMapError(err.message || "신화 매핑 중 오류가 발생했습니다."); }
     finally { setMythMapLoading(false); clearController("mythMap"); }
   };
@@ -969,7 +976,7 @@ export default function LoglineAnalyzer() {
     setBarthesCodeLoading(true); setBarthesCodeError(""); setBarthesCodeResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인을 롤랑 바르트의 S/Z(1970) 5개 서사 코드로 분석하세요.`;
-    try { const data = await callClaude(apiKey, BARTHES_CODE_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setBarthesCodeResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, BARTHES_CODE_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal, BarthesCodeSchema); setBarthesCodeResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setBarthesCodeError(err.message || "바르트 코드 분석 중 오류가 발생했습니다."); }
     finally { setBarthesCodeLoading(false); clearController("barthesCode"); }
   };
@@ -981,7 +988,7 @@ export default function LoglineAnalyzer() {
     setKoreanMythLoading(true); setKoreanMythError(""); setKoreanMythResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인의 한국 신화-미학 공명을 한(恨)-정(情)-신명(神明)-무속-유교 미학으로 분석하세요.`;
-    try { const data = await callClaude(apiKey, KOREAN_MYTH_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setKoreanMythResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, KOREAN_MYTH_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal, KoreanMythSchema); setKoreanMythResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setKoreanMythError(err.message || "한국 신화 분석 중 오류가 발생했습니다."); }
     finally { setKoreanMythLoading(false); clearController("koreanMyth"); }
   };
@@ -993,7 +1000,7 @@ export default function LoglineAnalyzer() {
     setScriptCoverageLoading(true); setScriptCoverageError(""); setScriptCoverageResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인에 대한 할리우드 + 한국 방송사 스타일 Script Coverage를 작성하세요.`;
-    try { const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal); setScriptCoverageResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, ScriptCoverageSchema); setScriptCoverageResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setScriptCoverageError(err.message || "Script Coverage 생성 중 오류가 발생했습니다."); }
     finally { setScriptCoverageLoading(false); clearController("scriptCoverage"); }
   };
@@ -1006,7 +1013,7 @@ export default function LoglineAnalyzer() {
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const charContext = charDevResult ? `\n주인공: ${charDevResult.protagonist?.name || "미정"} — ${charDevResult.protagonist?.egri?.psychology || ""}` : "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${charContext}\n\n위 로그라인의 인물들을 위한 대사 고유 목소리와 하위텍스트 대사 기법을 설계하세요.`;
-    try { const data = await callClaude(apiKey, DIALOGUE_DEV_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setDialogueDevResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, DIALOGUE_DEV_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal, DialogueDevSchema); setDialogueDevResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setDialogueDevError(err.message || "대사 디벨롭 중 오류가 발생했습니다."); }
     finally { setDialogueDevLoading(false); clearController("dialogueDev"); }
   };
@@ -1019,7 +1026,7 @@ export default function LoglineAnalyzer() {
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || ""} — 결함: ${charDevResult.protagonist.flaw || ""} / 원하는 것: ${charDevResult.protagonist.want || ""}` : "";
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}\n\n위 로그라인의 3막 구조 핵심 플롯 포인트와 감정 아크를 설계하세요.`;
-    try { const data = await callClaude(apiKey, STRUCTURE_ANALYSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal); setStructureResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, STRUCTURE_ANALYSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, StructureAnalysisSchema); setStructureResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setStructureError(err.message || "구조 분석 중 오류가 발생했습니다."); }
     finally { setStructureLoading(false); clearController("structure"); }
   };
@@ -1032,7 +1039,7 @@ export default function LoglineAnalyzer() {
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const charBlock = charDevResult?.protagonist ? `주인공 Want: ${charDevResult.protagonist.want || ""} / Need: ${charDevResult.protagonist.need || ""} / Ghost: ${charDevResult.protagonist.ghost || ""}` : "";
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}\n\n위 로그라인의 핵심 테마, 도덕적 전제, 감정선을 분석하세요.`;
-    try { const data = await callClaude(apiKey, THEME_ANALYSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal); setThemeResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, THEME_ANALYSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, ThemeAnalysisSchema); setThemeResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setThemeError(err.message || "테마 분석 중 오류가 발생했습니다."); }
     finally { setThemeLoading(false); clearController("theme"); }
   };
@@ -1066,7 +1073,7 @@ export default function LoglineAnalyzer() {
     const contextBlock = treatmentResult ? `트리트먼트:\n${treatmentResult.slice(0, 3000)}` : pipelineResult ? `시놉시스:\n${pipelineResult.synopsis || ""}` : "";
     const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || ""} — Want: ${charDevResult.protagonist.want || ""} / Need: ${charDevResult.protagonist.need || ""} / Ghost: ${charDevResult.protagonist.ghost || ""}` : "";
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${contextBlock ? `\n\n${contextBlock}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요.`;
-    try { const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal); setBeatSheetResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal, BeatSheetSchema); setBeatSheetResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setBeatSheetError(err.message || "비트 시트 생성 중 오류가 발생했습니다."); }
     finally { setBeatSheetLoading(false); clearController("beatSheet"); }
   };
@@ -1096,7 +1103,7 @@ export default function LoglineAnalyzer() {
     setCharDevLoading(true); setCharDevError(""); setCharDevResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요.`;
-    try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setCharDevResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal, CharacterDevSchema); setCharDevResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setCharDevError(err.message || "캐릭터 분석 중 오류가 발생했습니다."); }
     finally { setCharDevLoading(false); clearController("charDev"); }
   };

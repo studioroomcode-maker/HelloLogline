@@ -30,52 +30,10 @@ export function calcSectionTotal(result, section) {
 }
 
 /**
- * Call Claude via the local proxy server.
- *
- * @param {string} apiKey        - User-entered Anthropic key (sent as header to proxy)
- * @param {string} systemPrompt
- * @param {string} userMessage
- * @param {number} maxTokens
- * @param {string} model
- * @param {AbortSignal|null} signal - Optional AbortController signal for cancellation
- * @returns {Promise<object>}    - Parsed JSON result from Claude
+ * Parse and repair raw text from Claude into a JSON object.
+ * Exported so it can be reused in the retry path.
  */
-export async function callClaude(
-  apiKey,
-  systemPrompt,
-  userMessage,
-  maxTokens = 5000,
-  model = "claude-haiku-4-5-20251001",
-  signal = null
-) {
-  const headers = { "Content-Type": "application/json" };
-  if (apiKey) headers["x-client-api-key"] = apiKey;
-
-  const response = await fetch("/api/claude", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userMessage }],
-    }),
-    signal,
-  });
-
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    const hint = response.status === 404
-      ? "API 오류 (404) — 프록시 서버가 실행 중이지 않습니다. 터미널에서 'npm run dev'로 실행하세요."
-      : response.status === 401
-      ? "API 키가 올바르지 않거나 설정되지 않았습니다."
-      : `API 오류 (${response.status})`;
-    throw new Error(errData?.error?.message || hint);
-  }
-
-  const data = await response.json();
-  const text = data.content?.map((b) => b.text || "").join("") || "";
-
+export function parseClaudeJson(text) {
   // 마크다운 코드블록 제거 후 JSON 시작/끝 추출
   let cleaned = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
   const start = cleaned.indexOf("{");
@@ -129,28 +87,109 @@ export async function callClaude(
   }
 
   // ── 2단계: 누락된 쉼표 보완 ──
-  // 배열/객체 요소 사이 쉼표가 빠진 패턴 처리
-  // "value"\n  "key" → "value",\n  "key"
-  // }  {  →  },{   /  }  "  →  },"
   fixed = fixed
-    .replace(/(")\s*\n(\s*")/g, '$1,\n$2')   // "..."\n  "..." → 누락 쉼표
-    .replace(/(")\s*\n(\s*\{)/g, '$1,\n$2')   // "..."\n  { → 누락 쉼표
-    .replace(/(\})\s*\n(\s*\{)/g, '$1,\n$2')  // }\n  { → 누락 쉼표
-    .replace(/(\})\s*\n(\s*")/g, '$1,\n$2')   // }\n  "key" → 누락 쉼표
-    .replace(/(\])\s*\n(\s*")/g, '$1,\n$2')   // ]\n  "key" → 누락 쉼표 (단, 마지막 ] 제외)
-    .replace(/,\s*([}\]])/g, '$1');            // trailing comma 정리
+    .replace(/(")\s*\n(\s*")/g, '$1,\n$2')
+    .replace(/(")\s*\n(\s*\{)/g, '$1,\n$2')
+    .replace(/(\})\s*\n(\s*\{)/g, '$1,\n$2')
+    .replace(/(\})\s*\n(\s*")/g, '$1,\n$2')
+    .replace(/(\])\s*\n(\s*")/g, '$1,\n$2')
+    .replace(/,\s*([}\]])/g, '$1');
 
   // ── 3단계: 파싱 시도 ──
   try {
     return JSON.parse(fixed);
   } catch {
-    // 4단계: 마지막 유효한 닫기 괄호까지만 잘라서 재시도
     const lastBrace = fixed.lastIndexOf("}");
     if (lastBrace > 0) {
       try { return JSON.parse(fixed.slice(0, lastBrace + 1)); } catch { /* fall through */ }
     }
     return JSON.parse(fixed); // 원본 오류 그대로 throw
   }
+}
+
+/**
+ * Fetch one Claude response (raw text returned from API).
+ */
+async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal) {
+  const headers = { "Content-Type": "application/json" };
+  if (apiKey) headers["x-client-api-key"] = apiKey;
+
+  const response = await fetch("/api/claude", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model,
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userMessage }],
+    }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    const hint = response.status === 404
+      ? "API 오류 (404) — 프록시 서버가 실행 중이지 않습니다. 터미널에서 'npm run dev'로 실행하세요."
+      : response.status === 401
+      ? "API 키가 올바르지 않거나 설정되지 않았습니다."
+      : `API 오류 (${response.status})`;
+    throw new Error(errData?.error?.message || hint);
+  }
+
+  const data = await response.json();
+  return data.content?.map((b) => b.text || "").join("") || "";
+}
+
+/**
+ * Call Claude via the local proxy server.
+ *
+ * @param {string} apiKey        - User-entered Anthropic key (sent as header to proxy)
+ * @param {string} systemPrompt
+ * @param {string} userMessage
+ * @param {number} maxTokens
+ * @param {string} model
+ * @param {AbortSignal|null} signal - Optional AbortController signal for cancellation
+ * @param {import("zod").ZodTypeAny|null} schema - Optional Zod schema to validate response.
+ *   On failure: retry once, then throw a descriptive SchemaError instead of silently
+ *   passing malformed data through.
+ * @returns {Promise<object>}    - Parsed (and optionally validated) JSON result from Claude
+ */
+export async function callClaude(
+  apiKey,
+  systemPrompt,
+  userMessage,
+  maxTokens = 5000,
+  model = "claude-haiku-4-5-20251001",
+  signal = null,
+  schema = null
+) {
+  const text = await fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal);
+  const parsed = parseClaudeJson(text);
+
+  if (!schema) return parsed;
+
+  // ── Schema validation with one retry ──────────────────────────────────────
+  const first = schema.safeParse(parsed);
+  if (first.success) return first.data;
+
+  console.warn("[schema] 1차 검증 실패, 재시도합니다.", first.error.issues.slice(0, 3));
+
+  // Retry (same prompt — Claude responses are non-deterministic, retry often fixes it)
+  const retryText = await fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal);
+  const retryParsed = parseClaudeJson(retryText);
+  const second = schema.safeParse(retryParsed);
+
+  if (second.success) return second.data;
+
+  // Both attempts failed — surface the error instead of passing garbage through
+  const issues = second.error.issues
+    .slice(0, 5)
+    .map((i) => `${i.path.join(".")}: ${i.message}`)
+    .join(", ");
+  const err = new Error(`응답 형식 검증 실패 (2회 시도): ${issues}`);
+  err.name = "SchemaValidationError";
+  err.issues = second.error.issues;
+  throw err;
 }
 
 /**
