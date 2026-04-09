@@ -715,22 +715,24 @@ export default function LoglineAnalyzer() {
   };
 
   // ── Analyze ──
-  const analyze = async () => {
-    if (!logline.trim() || !apiKey) return;
+  const analyze = async (overrideLogline) => {
+    const target = overrideLogline ?? logline;
+    if (!target.trim() || !apiKey) return;
+    if (overrideLogline) setLogline(overrideLogline);
     const ctrl = makeController("analyze");
     setLoading(true);
     setError("");
     setResult(null);
     setResult2(null);
     try {
-      const parsed = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(logline, genre), 4000, "claude-sonnet-4-6", ctrl.signal);
+      const parsed = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(target, genre), 4000, "claude-sonnet-4-6", ctrl.signal);
       const sT = calcSectionTotal(parsed, "structure");
       const eT = calcSectionTotal(parsed, "expression");
       const tT = calcSectionTotal(parsed, "technical");
       const iT = calcSectionTotal(parsed, "interest");
       const qScore = sT + eT + tT;
       setResult(parsed);
-      saveToHistory(logline, genre, parsed, qScore, iT);
+      saveToHistory(target, genre, parsed, qScore, iT);
       if (compareMode && logline2.trim()) {
         setLoading2(true);
         try {
@@ -1700,7 +1702,13 @@ export default function LoglineAnalyzer() {
                             ))}
                           </div>
                         )}
-                        <ImprovementPanel logline={logline} genre={genre} apiKey={apiKey} result={result} />
+                        <ImprovementPanel
+                          logline={logline}
+                          genre={genre}
+                          apiKey={apiKey}
+                          result={result}
+                          onReanalyze={(improved) => analyze(improved)}
+                        />
                       </div>
                     )}
                     {activeTab === "academic" && academicResult && <AcademicPanel academic={academicResult} />}

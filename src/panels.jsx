@@ -870,7 +870,7 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
 // ─────────────────────────────────────────────
 // AI 개선안 패널
 // ─────────────────────────────────────────────
-export function ImprovementPanel({ logline, genre, apiKey, result }) {
+export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze }) {
   const [loading, setLoading] = useState(false);
   const [improvement, setImprovement] = useState(null);
   const [error, setError] = useState("");
@@ -1011,22 +1011,43 @@ export function ImprovementPanel({ logline, genre, apiKey, result }) {
             >
               &ldquo;{improvement.improved}&rdquo;
             </div>
-            <button
-              onClick={handleCopy}
-              style={{
-                padding: "6px 14px",
-                borderRadius: 8,
-                border: "1px solid rgba(78,204,163,0.3)",
-                background: "rgba(78,204,163,0.07)",
-                color: copied ? "#4ECCA3" : "rgba(255,255,255,0.6)",
-                cursor: "pointer",
-                fontSize: 11,
-                fontFamily: "'Noto Sans KR', sans-serif",
-                transition: "all 0.2s",
-              }}
-            >
-              {copied ? "✓ 복사됨" : "복사하기"}
-            </button>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                onClick={handleCopy}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(78,204,163,0.3)",
+                  background: "rgba(78,204,163,0.07)",
+                  color: copied ? "#4ECCA3" : "rgba(255,255,255,0.6)",
+                  cursor: "pointer",
+                  fontSize: 11,
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                  transition: "all 0.2s",
+                }}
+              >
+                {copied ? "✓ 복사됨" : "복사하기"}
+              </button>
+              {onReanalyze && improvement?.improved && (
+                <button
+                  onClick={() => onReanalyze(improvement.improved)}
+                  style={{
+                    padding: "6px 16px",
+                    borderRadius: 8,
+                    border: "1px solid rgba(251,146,60,0.4)",
+                    background: "rgba(251,146,60,0.12)",
+                    color: "#FB923C",
+                    cursor: "pointer",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    fontFamily: "'Noto Sans KR', sans-serif",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  ↻ 개선안으로 다시 분석
+                </button>
+              )}
+            </div>
           </div>
 
           {/* 핵심 이유 */}
