@@ -9,6 +9,7 @@ import {
   CHARACTER_DEV_SYSTEM_PROMPT, TREATMENT_SYSTEM_PROMPT, SUBTEXT_SYSTEM_PROMPT,
   MYTH_MAP_SYSTEM_PROMPT, BARTHES_CODE_SYSTEM_PROMPT, KOREAN_MYTH_SYSTEM_PROMPT,
   SCRIPT_COVERAGE_SYSTEM_PROMPT, DIALOGUE_DEV_SYSTEM_PROMPT,
+  STRUCTURE_ANALYSIS_SYSTEM_PROMPT, THEME_ANALYSIS_SYSTEM_PROMPT, SCENE_LIST_SYSTEM_PROMPT,
   CRITERIA_GUIDE, LABELS_KR, GENRES, DURATION_OPTIONS, EXAMPLE_LOGLINES,
 } from "./constants.js";
 import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText } from "./utils.js";
@@ -21,6 +22,7 @@ import {
   BeatSheetPanel, TreatmentInputPanel, CharacterDevPanel,
   SubtextPanel, MythMapPanel, BarthesCodePanel, KoreanMythPanel,
   ScriptCoveragePanel, DialogueDevPanel,
+  StructureAnalysisPanel, ThemeAnalysisPanel, SceneListPanel,
   RadarChart, CircleGauge, ScoreBar, ScoreHistoryChart,
 } from "./panels.jsx";
 
@@ -57,13 +59,44 @@ function Spinner({ size = 14, color = "rgba(255,255,255,0.7)" }) {
   );
 }
 
+/* ─── DocButton ─── */
+function DocButton({ label, sub, onClick, disabled }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 8,
+        padding: "9px 16px", borderRadius: 9, cursor: disabled ? "not-allowed" : "pointer",
+        border: "1px solid rgba(96,165,250,0.35)",
+        background: hovered && !disabled ? "rgba(96,165,250,0.12)" : "rgba(96,165,250,0.06)",
+        color: disabled ? "rgba(96,165,250,0.35)" : "#60A5FA",
+        opacity: disabled ? 0.5 : 1, transition: "all 0.2s",
+        fontFamily: "'Noto Sans KR', sans-serif",
+      }}
+    >
+      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+      </svg>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, lineHeight: 1.2 }}>{label}</div>
+        {sub && <div style={{ fontSize: 9, opacity: 0.65, marginTop: 1 }}>{sub}</div>}
+      </div>
+    </button>
+  );
+}
+
 /* ─── Stage definitions ─── */
 const STAGES = [
   { id: "1", num: "01", name: "로그라인", sub: "입력 / 기본 분석 / 개선", icon: ICON.edit },
-  { id: "2", num: "02", name: "개념 분석", sub: "학술 / 신화 / 전문가 / 서사 코드", icon: ICON.chart },
+  { id: "2", num: "02", name: "개념 분석", sub: "학술 / 신화 / 전문가 / 서사 코드 / 테마", icon: ICON.chart },
   { id: "3", num: "03", name: "캐릭터", sub: "그림자 / 진정성 / 캐릭터 디벨롭", icon: ICON.users },
-  { id: "4", num: "04", name: "시놉시스", sub: "가치전하 / 하위텍스트 / 시놉시스", icon: ICON.doc },
-  { id: "5", num: "05", name: "트리트먼트 비트", sub: "트리트먼트 / 비트시트 / 대사", icon: ICON.film },
+  { id: "4", num: "04", name: "시놉시스", sub: "구조분석 / 가치전하 / 하위텍스트 / 시놉시스", icon: ICON.doc },
+  { id: "5", num: "05", name: "트리트먼트 비트", sub: "트리트먼트 / 씬 리스트 / 비트시트 / 대사", icon: ICON.film },
   { id: "6", num: "06", name: "Script Coverage", sub: "최종 커버리지 리포트", icon: ICON.clipboard },
 ];
 
@@ -267,6 +300,24 @@ export default function LoglineAnalyzer() {
   const [dialogueDevError, setDialogueDevError] = useState("");
   const dialogueDevRef = useRef(null);
 
+  // ── Structure Analysis ──
+  const [structureResult, setStructureResult] = useState(null);
+  const [structureLoading, setStructureLoading] = useState(false);
+  const [structureError, setStructureError] = useState("");
+  const structureRef = useRef(null);
+
+  // ── Theme Analysis ──
+  const [themeResult, setThemeResult] = useState(null);
+  const [themeLoading, setThemeLoading] = useState(false);
+  const [themeError, setThemeError] = useState("");
+  const themeRef = useRef(null);
+
+  // ── Scene List ──
+  const [sceneListResult, setSceneListResult] = useState("");
+  const [sceneListLoading, setSceneListLoading] = useState(false);
+  const [sceneListError, setSceneListError] = useState("");
+  const sceneListRef = useRef(null);
+
   // ── Project persistence ──
   const [showProjects, setShowProjects] = useState(false);
   const [savedProjects, setSavedProjects] = useState([]);
@@ -335,6 +386,7 @@ export default function LoglineAnalyzer() {
     synopsisResults, pipelineResult,
     treatmentResult, beatSheetResult, beatScenes,
     dialogueDevResult, scriptCoverageResult,
+    structureResult, themeResult, sceneListResult,
   });
 
   const autoSave = async () => {
@@ -384,6 +436,9 @@ export default function LoglineAnalyzer() {
     setBeatScenes(proj.beatScenes || {});
     setDialogueDevResult(proj.dialogueDevResult || null);
     setScriptCoverageResult(proj.scriptCoverageResult || null);
+    setStructureResult(proj.structureResult || null);
+    setThemeResult(proj.themeResult || null);
+    setSceneListResult(proj.sceneListResult || "");
     setCurrentProjectId(proj.id);
     setShowProjects(false);
     setCurrentStage("1");
@@ -392,6 +447,239 @@ export default function LoglineAnalyzer() {
   const deleteProjectById = async (id) => {
     await deleteProject(id);
     setSavedProjects((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // ── Application Document PDF Generator ──
+  const openApplicationDoc = (docType) => {
+    const genreLabel = genre === "auto"
+      ? (result?.detected_genre || "미정")
+      : GENRES.find(g => g.id === genre)?.label || "미정";
+    const durOpt = DURATION_OPTIONS.find(d => d.id === selectedDuration);
+    const durLabel = durOpt ? `${durOpt.label} (${durOpt.duration})` : "장편영화 (90~120분)";
+    const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+    const qualScore = result ? (calcSectionTotal(result, "structure") + calcSectionTotal(result, "expression") + calcSectionTotal(result, "technical")) : null;
+    const intScore = result ? calcSectionTotal(result, "interest") : null;
+
+    const synopsisText = pipelineResult?.synopsis || synopsisResults?.synopses?.[0]?.synopsis || "";
+    const synopsisTitle = pipelineResult?.direction_title || synopsisResults?.synopses?.[0]?.direction_title || "";
+    const keyScenes = pipelineResult?.key_scenes || synopsisResults?.synopses?.[0]?.key_scenes || [];
+    const synopsisTheme = pipelineResult?.theme || synopsisResults?.synopses?.[0]?.theme || "";
+
+    const protagonist = charDevResult?.protagonist;
+    const supporting = charDevResult?.supporting_characters || [];
+
+    const docMeta = {
+      logline:   { title: "기초 기획서",     subtitle: "로그라인 기반 초기 기획", badge: "STEP 1" },
+      synopsis:  { title: "기획서",           subtitle: "시놉시스 포함 기획 문서",  badge: "STEP 2" },
+      treatment: { title: "상세 기획서",      subtitle: "트리트먼트 포함 제작 기획", badge: "STEP 3" },
+      final:     { title: "투자·지원 제안서", subtitle: "스크립트 커버리지 포함 최종 제안", badge: "FINAL" },
+    }[docType] || { title: "기획서", subtitle: "", badge: "" };
+
+    const sec = (title, content) => content ? `
+      <section>
+        <h2>${title}</h2>
+        <div class="section-body">${content}</div>
+      </section>` : "";
+
+    const tag = (label, value) => value ? `<div class="tag-row"><span class="tag-label">${label}</span><span class="tag-value">${value}</span></div>` : "";
+
+    const scoreBar = (label, score, max) => `
+      <div class="score-item">
+        <span class="score-label">${label}</span>
+        <div class="score-track"><div class="score-fill" style="width:${Math.round(score/max*100)}%"></div></div>
+        <span class="score-num">${score}/${max}</span>
+      </div>`;
+
+    // ── Sections by docType ──
+    let body = "";
+
+    // 1. 프로젝트 개요 (all)
+    body += sec("프로젝트 개요", `
+      ${tag("장르", genreLabel)}
+      ${tag("포맷", durLabel)}
+      ${tag("로그라인", logline || "—")}
+      ${themeResult?.controlling_idea ? tag("컨트롤링 아이디어", themeResult.controlling_idea) : ""}
+      ${synopsisTheme ? tag("핵심 주제", synopsisTheme) : ""}
+    `);
+
+    // 2. 기획의도 (synopsis+)
+    if (docType !== "logline") {
+      const intent = themeResult ? `
+        <p><strong>핵심 메시지:</strong> ${themeResult.theme_statement || themeResult.controlling_idea || ""}</p>
+        ${themeResult.thematic_question ? `<p><strong>작품이 던지는 질문:</strong> "${themeResult.thematic_question}"</p>` : ""}
+        ${themeResult.moral_premise?.statement ? `<p><strong>도덕적 전제 (Egri):</strong> ${themeResult.moral_premise.statement}</p>` : ""}
+        ${themeResult.protagonist_inner_journey?.lesson ? `<p><strong>주인공이 배우는 것:</strong> ${themeResult.protagonist_inner_journey.lesson}</p>` : ""}
+        ${themeResult.thematic_layers ? themeResult.thematic_layers.map(l => `<p><strong>${l.layer}:</strong> ${l.description}</p>`).join("") : ""}
+      ` : synopsisTheme ? `<p>${synopsisTheme}</p>` : null;
+      if (intent) body += sec("기획의도", intent);
+    }
+
+    // 3. 로그라인 분석 (logline 단계)
+    if (docType === "logline" && result) {
+      body += sec("로그라인 분석 결과", `
+        ${qualScore !== null ? scoreBar("품질 점수", qualScore, 100) : ""}
+        ${intScore !== null ? scoreBar("흥미 유발 지수", intScore, 100) : ""}
+        ${result.overall_feedback ? `<p class="feedback">${result.overall_feedback}</p>` : ""}
+        ${themeResult?.controlling_idea ? `<p><strong>테마:</strong> ${themeResult.controlling_idea}</p>` : ""}
+      `);
+    }
+
+    // 4. 등장인물 소개 (treatment+)
+    if (docType === "treatment" || docType === "final") {
+      if (protagonist) {
+        const charContent = `
+          <div class="character-block">
+            <h3>${protagonist.name_suggestion || "주인공"}</h3>
+            ${protagonist.egri?.sociology ? `<p><strong>배경:</strong> ${protagonist.egri.sociology}</p>` : ""}
+            ${protagonist.want ? `<p><strong>외적 목표 (Want):</strong> ${protagonist.want}</p>` : ""}
+            ${protagonist.need ? `<p><strong>내적 욕구 (Need):</strong> ${protagonist.need}</p>` : ""}
+            ${protagonist.flaw ? `<p><strong>핵심 결함:</strong> ${protagonist.flaw}</p>` : ""}
+            ${protagonist.ghost ? `<p><strong>상처 (Ghost):</strong> ${protagonist.ghost}</p>` : ""}
+          </div>
+          ${supporting.slice(0, 3).map(c => `
+            <div class="character-block secondary">
+              <h3>${c.name || "조연"} <span class="role-badge">${c.role || ""}</span></h3>
+              ${c.function ? `<p>${c.function}</p>` : ""}
+            </div>
+          `).join("")}
+        `;
+        body += sec("등장인물 소개", charContent);
+      }
+    }
+
+    // 5. 시놉시스 (synopsis+)
+    if (docType !== "logline" && synopsisText) {
+      let synContent = `<p class="synopsis-text">${synopsisText.replace(/\n/g, "<br>")}</p>`;
+      if (keyScenes.length > 0) {
+        synContent += `<h3>주요 장면</h3><ul>${keyScenes.map(s => `<li>${s}</li>`).join("")}</ul>`;
+      }
+      if (synopsisTitle) synContent = `<p class="synopsis-direction"><strong>방향:</strong> ${synopsisTitle}</p>` + synContent;
+      body += sec("시놉시스", synContent);
+    }
+
+    // 6. 구조 개요 (synopsis+)
+    if (docType !== "logline" && structureResult) {
+      const structContent = `
+        ${structureResult.moral_argument ? `<p><strong>서사 논증:</strong> ${structureResult.moral_argument}</p>` : ""}
+        ${structureResult.plot_points ? `
+          <table>
+            <thead><tr><th>플롯 포인트</th><th>페이지</th><th>내용</th></tr></thead>
+            <tbody>
+              ${structureResult.plot_points.map(pp => `
+                <tr>
+                  <td><strong>${pp.name}</strong></td>
+                  <td>p.${pp.page}</td>
+                  <td>${pp.description}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>` : ""}
+        ${structureResult.structural_strengths?.length > 0 ? `<p><strong>구조적 강점:</strong> ${structureResult.structural_strengths.join(", ")}</p>` : ""}
+      `;
+      body += sec("3막 구조 개요", structContent);
+    }
+
+    // 7. 트리트먼트 (treatment+)
+    if ((docType === "treatment" || docType === "final") && treatmentResult) {
+      body += sec("트리트먼트", `<div class="treatment-text">${treatmentResult.replace(/\n/g, "<br>").replace(/#{1,3} (.+)/g, "<strong>$1</strong>")}</div>`);
+    }
+
+    // 8. Script Coverage 요약 (final)
+    if (docType === "final" && scriptCoverageResult) {
+      const cv = scriptCoverageResult;
+      const verdictColor = cv.verdict === "RECOMMEND" ? "#1a7a4a" : cv.verdict === "CONSIDER" ? "#7a5a1a" : "#7a1a1a";
+      const verdictKr = { RECOMMEND: "추천", CONSIDER: "검토", PASS: "보류" }[cv.verdict] || cv.verdict;
+      body += sec("Script Coverage", `
+        <div class="verdict-box" style="border-color:${verdictColor};background:${verdictColor}11">
+          <span class="verdict-label" style="color:${verdictColor}">${verdictKr} (${cv.verdict})</span>
+          ${cv.logline_score !== undefined ? `<span class="verdict-score">종합 ${cv.logline_score ?? "—"}/100</span>` : ""}
+        </div>
+        ${cv.summary ? `<p>${cv.summary}</p>` : ""}
+        ${cv.strengths?.length > 0 ? `<p><strong>강점:</strong> ${cv.strengths.join(" / ")}</p>` : ""}
+        ${cv.weaknesses?.length > 0 ? `<p><strong>보완점:</strong> ${cv.weaknesses.join(" / ")}</p>` : ""}
+        ${cv.recommendation ? `<p><strong>제언:</strong> ${cv.recommendation}</p>` : ""}
+      `);
+    }
+
+    const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>${docMeta.title} — ${logline.slice(0, 20) || "기획서"}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Malgun Gothic", "AppleGothic", "NanumGothic", sans-serif; font-size: 11pt; color: #1a1a2e; background: #fff; line-height: 1.75; }
+  .cover { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 80px 72px; border-bottom: 3px solid #1a1a2e; page-break-after: always; }
+  .cover-badge { font-size: 9pt; font-weight: 700; letter-spacing: 3px; color: #666; margin-bottom: 32px; }
+  .cover-title { font-size: 36pt; font-weight: 900; line-height: 1.15; margin-bottom: 12px; }
+  .cover-subtitle { font-size: 13pt; color: #555; margin-bottom: 48px; }
+  .cover-divider { width: 60px; height: 3px; background: #1a1a2e; margin-bottom: 36px; }
+  .cover-meta { font-size: 10pt; color: #444; line-height: 2; }
+  .cover-meta strong { color: #1a1a2e; }
+  .cover-date { margin-top: 48px; font-size: 9pt; color: #888; }
+  .content { padding: 56px 72px; }
+  section { margin-bottom: 40px; page-break-inside: avoid; }
+  h2 { font-size: 14pt; font-weight: 800; border-left: 4px solid #1a1a2e; padding-left: 12px; margin-bottom: 16px; letter-spacing: 0.5px; }
+  h3 { font-size: 11pt; font-weight: 700; color: #333; margin: 14px 0 6px; }
+  .section-body { padding-left: 16px; }
+  p { margin-bottom: 10px; }
+  .tag-row { display: flex; gap: 12px; margin-bottom: 8px; align-items: flex-start; }
+  .tag-label { font-size: 9pt; font-weight: 700; color: #666; min-width: 110px; padding-top: 2px; white-space: nowrap; }
+  .tag-value { font-size: 10.5pt; color: #1a1a2e; line-height: 1.6; }
+  .score-item { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .score-label { font-size: 9pt; min-width: 80px; color: #555; }
+  .score-track { flex: 1; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; }
+  .score-fill { height: 100%; background: #1a1a2e; border-radius: 4px; }
+  .score-num { font-size: 9pt; font-weight: 700; min-width: 40px; text-align: right; }
+  .feedback { font-style: italic; color: #444; background: #f8f8f8; padding: 12px 16px; border-left: 3px solid #ccc; border-radius: 0 4px 4px 0; }
+  .synopsis-direction { color: #666; font-size: 10pt; margin-bottom: 8px; }
+  .synopsis-text { line-height: 2; text-indent: 1em; }
+  .character-block { border: 1px solid #ddd; border-radius: 4px; padding: 14px 16px; margin-bottom: 12px; }
+  .character-block.secondary { background: #fafafa; }
+  .character-block h3 { margin-top: 0; font-size: 12pt; }
+  .role-badge { font-size: 8pt; font-weight: 600; color: #888; background: #eee; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+  .treatment-text { font-size: 10pt; line-height: 1.9; color: #333; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10pt; }
+  th { background: #1a1a2e; color: #fff; padding: 8px 12px; text-align: left; font-weight: 700; }
+  td { padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+  tr:nth-child(even) td { background: #f9f9f9; }
+  .verdict-box { border: 2px solid; border-radius: 6px; padding: 14px 18px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .verdict-label { font-size: 16pt; font-weight: 900; }
+  .verdict-score { font-size: 12pt; font-weight: 700; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 5px; }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .cover { page-break-after: always; }
+    section { page-break-inside: avoid; }
+    @page { margin: 0; size: A4; }
+  }
+</style>
+</head>
+<body>
+  <div class="cover">
+    <div class="cover-badge">${docMeta.badge} &nbsp;·&nbsp; HELLO LOGLINE</div>
+    <div class="cover-title">${docMeta.title}</div>
+    <div class="cover-subtitle">${docMeta.subtitle}</div>
+    <div class="cover-divider"></div>
+    <div class="cover-meta">
+      <div><strong>장르:</strong> ${genreLabel}</div>
+      <div><strong>포맷:</strong> ${durLabel}</div>
+      <div><strong>로그라인:</strong> ${logline || "—"}</div>
+    </div>
+    <div class="cover-date">작성일: ${today} &nbsp;·&nbsp; Powered by Hello Logline × Claude AI</div>
+  </div>
+  <div class="content">
+    ${body}
+  </div>
+  <script>window.onload = () => window.print();</script>
+</body>
+</html>`;
+
+    const win = window.open("", "_blank", "width=900,height=1100");
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    }
   };
 
   const saveApiKey = (key) => {
@@ -707,6 +995,54 @@ export default function LoglineAnalyzer() {
     finally { setDialogueDevLoading(false); clearController("dialogueDev"); }
   };
 
+  // ── Structure Analysis ──
+  const analyzeStructure = async () => {
+    if (!logline.trim() || !apiKey) return;
+    const ctrl = makeController("structure");
+    setStructureLoading(true); setStructureError(""); setStructureResult(null);
+    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
+    const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || ""} — 결함: ${charDevResult.protagonist.flaw || ""} / 원하는 것: ${charDevResult.protagonist.want || ""}` : "";
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화 (90~120분)"}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}\n\n위 로그라인의 3막 구조 핵심 플롯 포인트와 감정 아크를 설계하세요.`;
+    try { const data = await callClaude(apiKey, STRUCTURE_ANALYSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal); setStructureResult(data); await autoSave(); }
+    catch (err) { if (err.name !== "AbortError") setStructureError(err.message || "구조 분석 중 오류가 발생했습니다."); }
+    finally { setStructureLoading(false); clearController("structure"); }
+  };
+
+  // ── Theme Analysis ──
+  const analyzeTheme = async () => {
+    if (!logline.trim() || !apiKey) return;
+    const ctrl = makeController("theme");
+    setThemeLoading(true); setThemeError(""); setThemeResult(null);
+    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
+    const charBlock = charDevResult?.protagonist ? `주인공 Want: ${charDevResult.protagonist.want || ""} / Need: ${charDevResult.protagonist.need || ""} / Ghost: ${charDevResult.protagonist.ghost || ""}` : "";
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화"}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}\n\n위 로그라인의 핵심 테마, 도덕적 전제, 감정선을 분석하세요.`;
+    try { const data = await callClaude(apiKey, THEME_ANALYSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal); setThemeResult(data); await autoSave(); }
+    catch (err) { if (err.name !== "AbortError") setThemeError(err.message || "테마 분석 중 오류가 발생했습니다."); }
+    finally { setThemeLoading(false); clearController("theme"); }
+  };
+
+  // ── Scene List ──
+  const generateSceneList = async () => {
+    if (!logline.trim() || !apiKey) return;
+    const ctrl = makeController("sceneList");
+    setSceneListLoading(true); setSceneListError(""); setSceneListResult("");
+    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
+    const synopsisBlock = pipelineResult ? `시놉시스:\n${pipelineResult.synopsis || ""}` : "";
+    const treatmentBlock = treatmentResult ? `트리트먼트:\n${treatmentResult.slice(0, 3000)}` : "";
+    const structureBlock = structureResult ? `플롯 포인트:\n${(structureResult.plot_points || []).map(pp => `- ${pp.name} (p.${pp.page}): ${pp.description}`).join("\n")}` : "";
+    const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || "주인공"} — ${charDevResult.protagonist.want || ""}` : "";
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화 (90~120분)"}\n장르: ${genreLabel}${charBlock ? `\n${charBlock}` : ""}${structureBlock ? `\n\n${structureBlock}` : ""}${synopsisBlock ? `\n\n${synopsisBlock}` : ""}${treatmentBlock ? `\n\n${treatmentBlock}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 씬 리스트(스텝 아웃라인)를 작성하세요.`;
+    try {
+      const text = await callClaudeText(apiKey, SCENE_LIST_SYSTEM_PROMPT, msg, 12000, "claude-sonnet-4-6", ctrl.signal);
+      setSceneListResult(text); await autoSave();
+    }
+    catch (err) { if (err.name !== "AbortError") setSceneListError(err.message || "씬 리스트 생성 중 오류가 발생했습니다."); }
+    finally { setSceneListLoading(false); clearController("sceneList"); }
+  };
+
   // ── Beat Sheet ──
   const generateBeatSheet = async () => {
     if (!logline.trim() || !apiKey) return;
@@ -830,8 +1166,8 @@ export default function LoglineAnalyzer() {
       return "idle";
     }
     if (stageId === "2") {
-      if (academicResult || mythMapResult || koreanMythResult || expertPanelResult || barthesCodeResult) return "done";
-      if (academicLoading || mythMapLoading || koreanMythLoading || expertPanelLoading || barthesCodeLoading) return "active";
+      if (academicResult || mythMapResult || koreanMythResult || expertPanelResult || barthesCodeResult || themeResult) return "done";
+      if (academicLoading || mythMapLoading || koreanMythLoading || expertPanelLoading || barthesCodeLoading || themeLoading) return "active";
       return "idle";
     }
     if (stageId === "3") {
@@ -840,13 +1176,13 @@ export default function LoglineAnalyzer() {
       return "idle";
     }
     if (stageId === "4") {
-      if (valueChargeResult || subtextResult || synopsisResults || pipelineResult) return "done";
-      if (valueChargeLoading || subtextLoading || synopsisLoading) return "active";
+      if (valueChargeResult || subtextResult || synopsisResults || pipelineResult || structureResult) return "done";
+      if (valueChargeLoading || subtextLoading || synopsisLoading || structureLoading) return "active";
       return "idle";
     }
     if (stageId === "5") {
-      if (treatmentResult || beatSheetResult || dialogueDevResult) return "done";
-      if (treatmentLoading || beatSheetLoading || dialogueDevLoading) return "active";
+      if (treatmentResult || beatSheetResult || dialogueDevResult || sceneListResult) return "done";
+      if (treatmentLoading || beatSheetLoading || dialogueDevLoading || sceneListLoading) return "active";
       return "idle";
     }
     if (stageId === "6") {
@@ -876,7 +1212,8 @@ export default function LoglineAnalyzer() {
   const isAnyLoading = loading || synopsisLoading || academicLoading || expertPanelLoading ||
     valueChargeLoading || shadowLoading || authenticityLoading || subtextLoading ||
     mythMapLoading || barthesCodeLoading || koreanMythLoading || scriptCoverageLoading ||
-    dialogueDevLoading || beatSheetLoading || charDevLoading || treatmentLoading;
+    dialogueDevLoading || beatSheetLoading || charDevLoading || treatmentLoading ||
+    structureLoading || themeLoading || sceneListLoading;
 
   return (
     <div style={{ minHeight: "100vh", background: "#0c0c1a", color: "#e8e8f0", fontFamily: "'Noto Sans KR', sans-serif" }}>
@@ -1369,6 +1706,9 @@ export default function LoglineAnalyzer() {
                     {activeTab === "academic" && academicResult && <AcademicPanel academic={academicResult} />}
                     {activeTab === "trend" && <ScoreHistoryChart history={history} />}
                   </ResultCard>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+                    <DocButton label="기초 기획서 PDF" sub="로그라인 분석 기반 초기 기획서" onClick={() => openApplicationDoc("logline")} disabled={!logline.trim()} />
+                  </div>
                 </div>
               )}
             </div></ErrorBoundary>
@@ -1391,6 +1731,7 @@ export default function LoglineAnalyzer() {
                 <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="한국 신화" sub="한 · 정 · 신명 · 유교 미학" done={!!koreanMythResult} loading={koreanMythLoading} color="#E85D75" onClick={analyzeKoreanMyth} disabled={!logline.trim()} />
                 <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="전문가 패널" sub="10명 전문가 토론" done={!!expertPanelResult} loading={expertPanelLoading} color="#FFD166" onClick={runExpertPanel} disabled={!logline.trim()} />
                 <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="바르트 서사 코드" sub="S/Z 5 codes" done={!!barthesCodeResult} loading={barthesCodeLoading} color="#64DCC8" onClick={analyzeBarthesCode} disabled={!logline.trim()} />
+                <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="테마 & 감정선" sub="Egri · McKee · Truby" done={!!themeResult} loading={themeLoading} color="#F472B6" onClick={analyzeTheme} disabled={!logline.trim()} />
               </div>
 
               <ErrorMsg msg={academicError} />
@@ -1398,12 +1739,14 @@ export default function LoglineAnalyzer() {
               <ErrorMsg msg={koreanMythError} />
               <ErrorMsg msg={expertPanelError} />
               <ErrorMsg msg={barthesCodeError} />
+              <ErrorMsg msg={themeError} />
 
               {academicResult && <ResultCard title="학술 이론 분석 (12 theories)" onClose={() => setAcademicResult(null)} color="rgba(69,183,209,0.15)"><ErrorBoundary><AcademicPanel academic={academicResult} /></ErrorBoundary></ResultCard>}
               {mythMapResult && <ResultCard title="신화적 위치 매핑" onClose={() => setMythMapResult(null)} color="rgba(167,139,250,0.15)"><ErrorBoundary><MythMapPanel data={mythMapResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
               {koreanMythResult && <ResultCard title="한국 신화 공명" onClose={() => setKoreanMythResult(null)} color="rgba(232,93,117,0.15)"><ErrorBoundary><KoreanMythPanel data={koreanMythResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
               {expertPanelResult && <ResultCard title="전문가 패널 토론" onClose={() => setExpertPanelResult(null)} color="rgba(255,209,102,0.15)"><ErrorBoundary><ExpertPanelSection data={expertPanelResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
               {barthesCodeResult && <ResultCard title="바르트 서사 코드" onClose={() => setBarthesCodeResult(null)} color="rgba(100,220,200,0.15)"><ErrorBoundary><BarthesCodePanel data={barthesCodeResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
+              {themeResult && <ResultCard title="테마 & 감정선 분석" onClose={() => setThemeResult(null)} color="rgba(244,114,182,0.15)"><ErrorBoundary><ThemeAnalysisPanel data={themeResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
             </div></ErrorBoundary>
           )}
 
@@ -1442,7 +1785,19 @@ export default function LoglineAnalyzer() {
                   <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "rgba(200,168,75,0.5)" }}>04</span>
                   <span style={{ fontSize: 18, fontWeight: 700 }}>시놉시스</span>
                 </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>감정 아크와 하위텍스트를 설계한 뒤 시놉시스를 구축합니다</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>구조 설계 → 감정 아크 → 하위텍스트 → 시놉시스 순서로 진행</div>
+              </div>
+
+              {/* ── 구조 분석 (신규) ── */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>1순위 — 구조 설계</div>
+                <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="구조 분석" sub="Field · Snyder · McKee · Hauge · Truby" done={!!structureResult} loading={structureLoading} color="#4ECCA3" onClick={analyzeStructure} disabled={!logline.trim()} />
+                <ErrorMsg msg={structureError} />
+                {structureResult && (
+                  <ResultCard title="3막 구조 분석" onClose={() => setStructureResult(null)} color="rgba(78,204,163,0.15)">
+                    <ErrorBoundary><StructureAnalysisPanel data={structureResult} isMobile={isMobile} /></ErrorBoundary>
+                  </ResultCard>
+                )}
               </div>
 
               {/* ── 시놉시스 설계 분석 도구 ── */}
@@ -1471,6 +1826,8 @@ export default function LoglineAnalyzer() {
                   charDevResult && { label: "캐릭터", color: "#FB923C" },
                   valueChargeResult && { label: "가치전하", color: "#4ECCA3" },
                   subtextResult && { label: "하위텍스트", color: "#95E1D3" },
+                  structureResult && { label: "구조분석", color: "#4ECCA3" },
+                  themeResult && { label: "테마", color: "#F472B6" },
                 ].filter(Boolean);
                 if (badges.length === 0) return (
                   <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.05)", background: "rgba(255,255,255,0.02)", fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
@@ -1579,6 +1936,13 @@ export default function LoglineAnalyzer() {
                   )}
                 </div>
               )}
+
+              {/* ── 기획서 PDF ── */}
+              {(synopsisResults || pipelineResult) && (
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                  <DocButton label="기획서 PDF" sub="시놉시스 포함 지원·투자 기획서" onClick={() => openApplicationDoc("synopsis")} />
+                </div>
+              )}
             </div></ErrorBoundary>
           )}
 
@@ -1649,9 +2013,27 @@ export default function LoglineAnalyzer() {
                     </div>
                   </ResultCard>
                 )}
+                {treatmentResult && (
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
+                    <DocButton label="상세 기획서 PDF" sub="트리트먼트 포함 제작 기획서" onClick={() => openApplicationDoc("treatment")} />
+                  </div>
+                )}
+              </div>
+
+              {/* Scene List (Step Outline) */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>씬 리스트 — 트리트먼트 → 집필 브릿지</div>
+                <ToolButton icon={<SvgIcon d={ICON.clipboard} size={16} />} label="씬 리스트 (스텝 아웃라인)" sub="Field · Truby · McKee" done={!!sceneListResult} loading={sceneListLoading} color="#60A5FA" onClick={generateSceneList} disabled={!logline.trim()} />
+                <ErrorMsg msg={sceneListError} />
+                {sceneListResult && (
+                  <ResultCard title="씬 리스트 (스텝 아웃라인)" onClose={() => setSceneListResult("")} color="rgba(96,165,250,0.15)">
+                    <ErrorBoundary><SceneListPanel text={sceneListResult} isMobile={isMobile} /></ErrorBoundary>
+                  </ResultCard>
+                )}
               </div>
 
               {/* Beat Sheet + Dialogue */}
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>비트 & 대사</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
                 <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="비트 시트" sub="Snyder 15비트" done={!!beatSheetResult} loading={beatSheetLoading} color="#FFD166" onClick={generateBeatSheet} disabled={!logline.trim()} />
                 <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="대사 디벨롭" sub="Mamet/Pinter" done={!!dialogueDevResult} loading={dialogueDevLoading} color="#F472B6" onClick={analyzeDialogueDev} disabled={!logline.trim()} />
@@ -1698,9 +2080,14 @@ export default function LoglineAnalyzer() {
               <ErrorMsg msg={scriptCoverageError} />
 
               {scriptCoverageResult && (
-                <ResultCard title="Script Coverage" onClose={() => setScriptCoverageResult(null)} color="rgba(96,165,250,0.15)">
-                  <ErrorBoundary><ScriptCoveragePanel data={scriptCoverageResult} isMobile={isMobile} /></ErrorBoundary>
-                </ResultCard>
+                <>
+                  <ResultCard title="Script Coverage" onClose={() => setScriptCoverageResult(null)} color="rgba(96,165,250,0.15)">
+                    <ErrorBoundary><ScriptCoveragePanel data={scriptCoverageResult} isMobile={isMobile} /></ErrorBoundary>
+                  </ResultCard>
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+                    <DocButton label="투자·지원 제안서 PDF" sub="커버리지 포함 완성 제안서" onClick={() => openApplicationDoc("final")} />
+                  </div>
+                </>
               )}
             </div></ErrorBoundary>
           )}

@@ -3718,4 +3718,385 @@ export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructu
 }
 
 // ─────────────────────────────────────────────
+// 구조 분석 패널 (Structure Analysis)
+// ─────────────────────────────────────────────
+export function StructureAnalysisPanel({ data, isMobile }) {
+  const [activePoint, setActivePoint] = useState(null);
+
+  if (!data) return null;
+
+  const ACT_COLORS = ["#4ECCA3", "#C8A84B", "#E85D75"];
+  const PP_COLORS = ["#64DCC8", "#C8A84B", "#45B7D1", "#E85D75", "#a78bfa", "#FB923C"];
+
+  const maxIntensity = Math.max(...(data.emotional_arc || []).map(p => p.intensity || 0), 1);
+
+  return (
+    <div style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
+      {/* Controlling Idea */}
+      {data.moral_argument && (
+        <div style={{ padding: "12px 16px", borderRadius: 10, background: "rgba(200,168,75,0.06)", border: "1px solid rgba(200,168,75,0.2)", marginBottom: 16 }}>
+          <div style={{ fontSize: 10, color: "rgba(200,168,75,0.7)", fontWeight: 700, marginBottom: 5, letterSpacing: 0.5 }}>도덕적 논증 (Truby)</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>{data.moral_argument}</div>
+        </div>
+      )}
+
+      {/* Emotional Arc Visualization */}
+      {data.emotional_arc && data.emotional_arc.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>감정 아크</div>
+          <div style={{ position: "relative", height: 80, background: "rgba(255,255,255,0.02)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)", padding: "8px 12px", overflow: "hidden" }}>
+            <svg width="100%" height="100%" viewBox="0 0 100 64" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#4ECCA3" />
+                  <stop offset="50%" stopColor="#C8A84B" />
+                  <stop offset="100%" stopColor="#E85D75" />
+                </linearGradient>
+              </defs>
+              <polyline
+                points={data.emotional_arc.map(p => `${p.page_pct},${60 - (p.intensity / maxIntensity) * 52}`).join(" ")}
+                fill="none" stroke="url(#arcGrad)" strokeWidth="1.5" strokeLinejoin="round"
+              />
+              {data.emotional_arc.map((p, i) => (
+                <circle key={i} cx={p.page_pct} cy={60 - (p.intensity / maxIntensity) * 52} r="2" fill="#C8A84B" opacity="0.8" />
+              ))}
+            </svg>
+            <div style={{ position: "absolute", bottom: 4, left: 0, right: 0, display: "flex", justifyContent: "space-between", padding: "0 12px" }}>
+              {data.emotional_arc.map((p, i) => (
+                <div key={i} style={{ fontSize: 8, color: "rgba(255,255,255,0.3)", textAlign: "center" }}>{p.label}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Acts */}
+      {data.acts && data.acts.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>막 구조</div>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : `repeat(${data.acts.length}, 1fr)`, gap: 8 }}>
+            {data.acts.map((act, i) => (
+              <div key={i} style={{ padding: "12px 14px", borderRadius: 10, background: `${ACT_COLORS[i % ACT_COLORS.length]}08`, border: `1px solid ${ACT_COLORS[i % ACT_COLORS.length]}25` }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: ACT_COLORS[i % ACT_COLORS.length], marginBottom: 4 }}>{act.name}</div>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>{act.page_range}</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, marginBottom: 6 }}>{act.function}</div>
+                {act.protagonist_state && (
+                  <div style={{ fontSize: 10, color: "rgba(200,168,75,0.7)", fontStyle: "italic" }}>"{act.protagonist_state}"</div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Plot Points */}
+      {data.plot_points && data.plot_points.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>핵심 플롯 포인트</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {data.plot_points.map((pp, i) => {
+              const color = PP_COLORS[i % PP_COLORS.length];
+              const isActive = activePoint === i;
+              return (
+                <div key={i}>
+                  <button onClick={() => setActivePoint(isActive ? null : i)} style={{
+                    width: "100%", padding: "10px 14px", borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
+                    border: `1px solid ${color}${isActive ? "50" : "20"}`,
+                    background: isActive ? `${color}0c` : "rgba(255,255,255,0.02)",
+                    display: "flex", alignItems: "center", gap: 10, textAlign: "left",
+                  }}>
+                    <div style={{ width: 36, height: 20, borderRadius: 10, background: `${color}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <div style={{ fontSize: 9, color: color, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>p.{pp.page}</div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: color }}>{pp.name}</div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 1 }}>{pp.name_en}</div>
+                    </div>
+                    {pp.value_shift && (
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", flexShrink: 0 }}>{pp.value_shift}</div>
+                    )}
+                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>{isActive ? "▲" : "▼"}</div>
+                  </button>
+                  {isActive && (
+                    <div style={{ padding: "12px 14px", background: `${color}05`, border: `1px solid ${color}15`, borderTop: "none", borderRadius: "0 0 10px 10px", marginTop: -6 }}>
+                      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: 8 }}>{pp.description}</div>
+                      {pp.protagonist_emotion && (
+                        <div style={{ fontSize: 11, color: "rgba(200,168,75,0.8)", marginBottom: 4 }}>주인공 감정: <span style={{ color: "rgba(255,255,255,0.6)" }}>{pp.protagonist_emotion}</span></div>
+                      )}
+                      {pp.structural_function && (
+                        <div style={{ fontSize: 11, color: "rgba(78,204,163,0.8)" }}>기능: <span style={{ color: "rgba(255,255,255,0.5)" }}>{pp.structural_function}</span></div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Strengths & Gaps */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10, marginBottom: 14 }}>
+        {data.structural_strengths && data.structural_strengths.length > 0 && (
+          <div style={{ padding: "12px 14px", borderRadius: 10, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.12)" }}>
+            <div style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, marginBottom: 7, letterSpacing: 0.5 }}>구조적 강점</div>
+            {data.structural_strengths.map((s, i) => (
+              <div key={i} style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, marginBottom: 4, display: "flex", gap: 6 }}>
+                <span style={{ color: "#4ECCA3", flexShrink: 0 }}>+</span>{s}
+              </div>
+            ))}
+          </div>
+        )}
+        {data.structural_gaps && data.structural_gaps.length > 0 && (
+          <div style={{ padding: "12px 14px", borderRadius: 10, background: "rgba(232,93,117,0.04)", border: "1px solid rgba(232,93,117,0.12)" }}>
+            <div style={{ fontSize: 10, color: "#E85D75", fontWeight: 700, marginBottom: 7, letterSpacing: 0.5 }}>구조적 보완점</div>
+            {data.structural_gaps.map((g, i) => (
+              <div key={i} style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, marginBottom: 4, display: "flex", gap: 6 }}>
+                <span style={{ color: "#E85D75", flexShrink: 0 }}>!</span>{g}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {data.recommended_next && (
+        <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(200,168,75,0.04)", border: "1px solid rgba(200,168,75,0.15)", fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.7 }}>
+          <span style={{ color: "#C8A84B", fontWeight: 700 }}>다음 단계 권고: </span>{data.recommended_next}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 테마/감정선 패널 (Theme Analysis)
+// ─────────────────────────────────────────────
+export function ThemeAnalysisPanel({ data, isMobile }) {
+  const [openSection, setOpenSection] = useState("premise");
+
+  if (!data) return null;
+
+  const Section = ({ id, title, color, children }) => {
+    const isOpen = openSection === id;
+    return (
+      <div style={{ marginBottom: 8 }}>
+        <button onClick={() => setOpenSection(isOpen ? null : id)} style={{
+          width: "100%", padding: "10px 14px", borderRadius: isOpen ? "10px 10px 0 0" : 10, cursor: "pointer",
+          border: `1px solid ${color}${isOpen ? "40" : "20"}`,
+          background: isOpen ? `${color}0a` : "rgba(255,255,255,0.02)",
+          display: "flex", justifyContent: "space-between", alignItems: "center", transition: "all 0.15s",
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: isOpen ? color : "rgba(255,255,255,0.6)" }}>{title}</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>{isOpen ? "▲" : "▼"}</div>
+        </button>
+        {isOpen && (
+          <div style={{ padding: "14px 16px", background: `${color}05`, border: `1px solid ${color}15`, borderTop: "none", borderRadius: "0 0 10px 10px" }}>
+            {children}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
+      {/* Controlling Idea */}
+      {data.controlling_idea && (
+        <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(200,168,75,0.07)", border: "1px solid rgba(200,168,75,0.25)", marginBottom: 16 }}>
+          <div style={{ fontSize: 10, color: "rgba(200,168,75,0.7)", fontWeight: 700, marginBottom: 6, letterSpacing: 0.5 }}>컨트롤링 아이디어 (McKee)</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#e8e8f0", lineHeight: 1.7 }}>{data.controlling_idea}</div>
+        </div>
+      )}
+
+      <Section id="premise" title="도덕적 전제 (Egri)" color="#4ECCA3">
+        {data.moral_premise && (
+          <div>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, marginBottom: 12, fontStyle: "italic" }}>"{data.moral_premise.statement}"</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[
+                { label: "긍정하는 덕목", value: data.moral_premise.virtue, color: "#4ECCA3" },
+                { label: "경고하는 결함", value: data.moral_premise.vice, color: "#E85D75" },
+                { label: "덕목의 보상", value: data.moral_premise.consequence_positive, color: "#4ECCA3" },
+                { label: "결함의 대가", value: data.moral_premise.consequence_negative, color: "#E85D75" },
+              ].map((item) => (
+                <div key={item.label} style={{ padding: "8px 10px", borderRadius: 8, background: `${item.color}06`, border: `1px solid ${item.color}15` }}>
+                  <div style={{ fontSize: 9, color: `${item.color}90`, fontWeight: 700, marginBottom: 3, letterSpacing: 0.5 }}>{item.label}</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>{item.value || "—"}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Section>
+
+      <Section id="question" title="테마 질문 & 진술" color="#45B7D1">
+        {data.thematic_question && (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 10, color: "rgba(69,183,209,0.7)", fontWeight: 700, marginBottom: 4 }}>핵심 질문</div>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, fontStyle: "italic" }}>"{data.thematic_question}"</div>
+          </div>
+        )}
+        {data.theme_statement && (
+          <div>
+            <div style={{ fontSize: 10, color: "rgba(69,183,209,0.7)", fontWeight: 700, marginBottom: 4, marginTop: 10 }}>주제 진술</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>{data.theme_statement}</div>
+          </div>
+        )}
+      </Section>
+
+      <Section id="journey" title="주인공 내면 여정" color="#FB923C">
+        {data.protagonist_inner_journey && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[
+              { label: "핵심 결함", value: data.protagonist_inner_journey.starting_flaw, icon: "⚡" },
+              { label: "잘못된 믿음", value: data.protagonist_inner_journey.false_belief, icon: "✗" },
+              { label: "진짜 필요", value: data.protagonist_inner_journey.true_need, icon: "◎" },
+              { label: "과거의 상처 (Ghost)", value: data.protagonist_inner_journey.ghost, icon: "👻" },
+              { label: "변화", value: data.protagonist_inner_journey.transformation, icon: "→" },
+              { label: "배움", value: data.protagonist_inner_journey.lesson, icon: "💡" },
+            ].filter(item => item.value).map(item => (
+              <div key={item.label} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ fontSize: 13, flexShrink: 0, width: 18, textAlign: "center" }}>{item.icon}</div>
+                <div>
+                  <div style={{ fontSize: 9, color: "rgba(251,146,60,0.7)", fontWeight: 700, marginBottom: 2, letterSpacing: 0.5 }}>{item.label}</div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.6 }}>{item.value}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <Section id="arc" title="감정선 (Emotional Arc)" color="#C8A84B">
+        {data.emotional_arc && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[
+              { label: "1막 (시작)", value: data.emotional_arc.act1, color: "#4ECCA3" },
+              { label: "미드포인트 전환", value: data.emotional_arc.midpoint, color: "#C8A84B" },
+              { label: "어두운 밤 (최저점)", value: data.emotional_arc.dark_night, color: "#E85D75" },
+              { label: "결말 카타르시스", value: data.emotional_arc.resolution, color: "#45B7D1" },
+            ].filter(item => item.value).map((item, i) => (
+              <div key={i} style={{ padding: "8px 12px", borderRadius: 8, background: `${item.color}06`, border: `1px solid ${item.color}18`, display: "flex", gap: 10 }}>
+                <div style={{ width: 3, borderRadius: 2, background: item.color, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 9, color: `${item.color}90`, fontWeight: 700, marginBottom: 2 }}>{item.label}</div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.6 }}>{item.value}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <Section id="layers" title="이야기 레이어" color="#a78bfa">
+        {data.thematic_layers && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {data.thematic_layers.map((layer, i) => (
+              <div key={i} style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.12)" }}>
+                <div style={{ fontSize: 10, color: "rgba(167,139,250,0.8)", fontWeight: 700, marginBottom: 4 }}>{layer.layer}</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.6 }}>{layer.description}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      {/* Genre Conventions */}
+      {data.genre_theme_conventions && (
+        <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", fontWeight: 700, marginBottom: 8, letterSpacing: 0.5 }}>장르 테마 컨벤션</div>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 9, color: "rgba(78,204,163,0.7)", fontWeight: 700, marginBottom: 3 }}>관객 기대</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>{data.genre_theme_conventions.expected}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 9, color: "rgba(200,168,75,0.7)", fontWeight: 700, marginBottom: 3 }}>이 작품의 접근</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>{data.genre_theme_conventions.subversion}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Weakness & Recommendation */}
+      {(data.thematic_weakness || data.thematic_recommendation) && (
+        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
+          {data.thematic_weakness && (
+            <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(232,93,117,0.04)", border: "1px solid rgba(232,93,117,0.12)" }}>
+              <div style={{ fontSize: 9, color: "#E85D75", fontWeight: 700, marginBottom: 4 }}>테마 약점</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>{data.thematic_weakness}</div>
+            </div>
+          )}
+          {data.thematic_recommendation && (
+            <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.12)" }}>
+              <div style={{ fontSize: 9, color: "#4ECCA3", fontWeight: 700, marginBottom: 4 }}>강화 권고</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>{data.thematic_recommendation}</div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 씬 리스트 패널 (Scene List / Step Outline)
+// ─────────────────────────────────────────────
+export function SceneListPanel({ text, isMobile }) {
+  const [copied, setCopied] = useState(false);
+
+  if (!text) return null;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExport = () => {
+    const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `scene_list_${new Date().toISOString().slice(0, 10)}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div style={{ fontFamily: "'Noto Sans KR', sans-serif" }}>
+      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 12 }}>
+        <button onClick={handleCopy} style={{
+          padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(78,204,163,0.3)",
+          background: "rgba(78,204,163,0.06)", color: "#4ECCA3", cursor: "pointer", fontSize: 11,
+        }}>
+          {copied ? "복사됨!" : "클립보드 복사"}
+        </button>
+        <button onClick={handleExport} style={{
+          padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(200,168,75,0.3)",
+          background: "rgba(200,168,75,0.06)", color: "#C8A84B", cursor: "pointer", fontSize: 11,
+        }}>
+          MD 내보내기
+        </button>
+      </div>
+      <div style={{ fontSize: isMobile ? 12 : 13, lineHeight: 1.9, color: "rgba(255,255,255,0.78)" }}>
+        <ReactMarkdown
+          components={{
+            h1: ({ children }) => <h1 style={{ fontSize: isMobile ? 17 : 20, fontWeight: 800, color: "#C8A84B", marginBottom: 8, marginTop: 0, paddingBottom: 8, borderBottom: "1px solid rgba(200,168,75,0.2)" }}>{children}</h1>,
+            h2: ({ children }) => <h2 style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "#4ECCA3", marginTop: 24, marginBottom: 8, paddingBottom: 4, borderBottom: "1px solid rgba(78,204,163,0.15)" }}>{children}</h2>,
+            h3: ({ children }) => <h3 style={{ fontSize: isMobile ? 12 : 13, fontWeight: 700, color: "rgba(255,255,255,0.85)", marginTop: 16, marginBottom: 6 }}>{children}</h3>,
+            p: ({ children }) => <p style={{ marginBottom: 8, marginTop: 0 }}>{children}</p>,
+            strong: ({ children }) => <strong style={{ color: "rgba(255,255,255,0.92)", fontWeight: 700 }}>{children}</strong>,
+            em: ({ children }) => <em style={{ color: "rgba(200,168,75,0.75)", fontStyle: "italic" }}>{children}</em>,
+            ul: ({ children }) => <ul style={{ paddingLeft: 18, marginBottom: 10, marginTop: 4 }}>{children}</ul>,
+            li: ({ children }) => <li style={{ marginBottom: 4, color: "rgba(255,255,255,0.68)" }}>{children}</li>,
+            hr: () => <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.05)", margin: "16px 0" }} />,
+          }}
+        >{text}</ReactMarkdown>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // 메인 컴포넌트
