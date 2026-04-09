@@ -50,7 +50,7 @@ app.post("/api/claude", async (req, res) => {
   }
 
   const controller = new AbortController();
-  req.on("close", () => controller.abort());
+  req.socket.on("close", () => { if (!res.headersSent) controller.abort(); });
 
   try {
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {
