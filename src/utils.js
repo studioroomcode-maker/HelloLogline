@@ -89,18 +89,32 @@ export function parseClaudeJson(text) {
   // ── 2단계: 누락된 쉼표 보완 ──
   // 줄바꿈 사이 쉼표 누락
   fixed = fixed
-    .replace(/(")\s*\n(\s*")/g, '$1,\n$2')    // "..."\n  "..." → 누락 쉼표
-    .replace(/(")\s*\n(\s*\{)/g, '$1,\n$2')    // "..."\n  { → 누락 쉼표
-    .replace(/(\})\s*\n(\s*\{)/g, '$1,\n$2')   // }\n  { → 누락 쉼표
-    .replace(/(\})\s*\n(\s*")/g, '$1,\n$2')    // }\n  "key" → 누락 쉼표
-    .replace(/(\])\s*\n(\s*")/g, '$1,\n$2')    // ]\n  "key" → 누락 쉼표
-    .replace(/(\])\s*\n(\s*\{)/g, '$1,\n$2')   // ]\n  { → 누락 쉼표
-  // 같은 줄 공백만 있는 경우 (} {, } "key" 패턴 — 줄바꿈 없이 공백만 있을 때)
-    .replace(/(\})[ \t]+(\{)/g, '$1,$2')        // } { → },{
-    .replace(/(\})[ \t]+(")/g, '$1,$2')         // } "key" → },"key"
-    .replace(/(\])[ \t]+(\{)/g, '$1,$2')        // ] { → ],[
-    .replace(/(\])[ \t]+(")/g, '$1,$2')         // ] "key" → ],"key"
-    .replace(/,\s*([}\]])/g, '$1');             // trailing comma 정리
+    // 문자열 끝 → 다음 항목
+    .replace(/(")\s*\n(\s*")/g, '$1,\n$2')       // "..."\n  "..." → 누락 쉼표
+    .replace(/(")\s*\n(\s*\{)/g, '$1,\n$2')       // "..."\n  { → 누락 쉼표
+    .replace(/(")\s*\n(\s*\[)/g, '$1,\n$2')       // "..."\n  [ → 누락 쉼표
+    // 숫자/불리언/null 끝 → 다음 항목 (가장 많이 빠지는 패턴)
+    .replace(/(\d)\s*\n(\s*")/g, '$1,\n$2')       // 숫자\n "key" → 누락 쉼표
+    .replace(/(\d)\s*\n(\s*\{)/g, '$1,\n$2')      // 숫자\n { → 누락 쉼표
+    .replace(/(\d)\s*\n(\s*\[)/g, '$1,\n$2')      // 숫자\n [ → 누락 쉼표
+    .replace(/(true|false|null)\s*\n(\s*")/g, '$1,\n$2')   // bool/null\n "key"
+    .replace(/(true|false|null)\s*\n(\s*\{)/g, '$1,\n$2')  // bool/null\n {
+    .replace(/(true|false|null)\s*\n(\s*\[)/g, '$1,\n$2')  // bool/null\n [
+    // 닫는 괄호 → 다음 항목
+    .replace(/(\})\s*\n(\s*\{)/g, '$1,\n$2')      // }\n  { → 누락 쉼표
+    .replace(/(\})\s*\n(\s*")/g, '$1,\n$2')       // }\n  "key" → 누락 쉼표
+    .replace(/(\})\s*\n(\s*\[)/g, '$1,\n$2')      // }\n  [ → 누락 쉼표
+    .replace(/(\])\s*\n(\s*")/g, '$1,\n$2')       // ]\n  "key" → 누락 쉼표
+    .replace(/(\])\s*\n(\s*\{)/g, '$1,\n$2')      // ]\n  { → 누락 쉼표
+    .replace(/(\])\s*\n(\s*\[)/g, '$1,\n$2')      // ]\n  [ → 누락 쉼표
+  // 같은 줄 공백만 있는 경우
+    .replace(/(\})[ \t]+(\{)/g, '$1,$2')           // } { → },{
+    .replace(/(\})[ \t]+(")/g, '$1,$2')            // } "key" → },"key"
+    .replace(/(\])[ \t]+(\{)/g, '$1,$2')           // ] { → ],[
+    .replace(/(\])[ \t]+(")/g, '$1,$2')            // ] "key" → ],"key"
+    .replace(/(\d)[ \t]+(")/g, '$1,$2')            // 숫자 "key" (공백)
+    .replace(/(true|false|null)[ \t]+(")/g, '$1,$2') // bool/null "key" (공백)
+    .replace(/,\s*([}\]])/g, '$1');                // trailing comma 정리
 
   // ── 3단계: 파싱 시도 ──
   try {
