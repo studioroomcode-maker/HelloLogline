@@ -111,6 +111,71 @@ const STAGES = [
   { id: "7", num: "07", name: "Script Coverage", sub: "최종 커버리지 리포트", icon: ICON.clipboard },
 ];
 
+/* ─── Genre-specific beat structure hints ─── */
+const GENRE_BEAT_HINTS = {
+  thriller: `[스릴러/액션 구조 강조]
+- 오프닝: 즉각적 위기 또는 미스터리로 시작
+- 2막 전반: 위협 고조 + 주인공이 직접 나서는 계기
+- 미드포인트: 거짓 해결 또는 충격적 반전 (적이 더 가까이 있음을 발각)
+- 2막 후반: 추적/쫓김 교차, 동료 배신/탈락, 코너에 몰리는 주인공
+- 3막: 최후 대결 → 반전 결말. 비트마다 긴장-이완-긴장 사이클 명시`,
+
+  romance: `[로맨스/멜로 구조 강조]
+- 오프닝: 주인공의 결핍(사랑 없는 상태) 시각화
+- 첫 만남(Meet Cute) 비트 필수 포함
+- B스토리(로맨스 라인) 비트에서 두 인물 연결의 계기
+- 미드포인트: 설레는 '가장 가까운 순간'
+- 모든 것을 잃다: 오해·이별·포기 — 감정적 최저점
+- 3막: 깨달음 → 용기 → 재결합. 감정 곡선(설렘→갈등→상실→희망→결합) 명시`,
+
+  drama: `[드라마 구조 강조]
+- 각 비트마다 내면 변화(캐릭터 아크)와 외부 사건을 함께 서술
+- 촉발 사건: 주인공의 세계관이 무너지는 계기
+- 미드포인트: 외적 목표 달성 vs 내적 공허함의 충돌
+- 모든 것을 잃다: 도덕적·감정적 붕괴 → 자기 직면
+- 피날레: 외적 해결보다 내적 변화·수용이 중심`,
+
+  comedy: `[코미디 구조 강조]
+- 코미디 전제(premise) 비트: 주인공이 엉뚱한 상황에 빠지는 설정을 명확히
+- 재미와 게임 비트: 코미디 가장 재미있는 상황들 열거 (에스컬레이션 필수)
+- 각 비트 tone 필드에 '코믹 피크', '블랙코미디', '시추에이션 코미디' 등 명시
+- 미드포인트: 코미디가 반전되는 순간 (웃음이 갑자기 진지해지거나 역전)
+- 피날레: 설정된 모든 개그 페이오프 + 따뜻한 결말`,
+
+  horror: `[호러 구조 강조]
+- 오프닝: 일상 위협의 전조 + 불안감 씨앗 심기
+- 설정 비트: 규칙(호러 세계관 논리) 확립
+- 2막 비트: 공포 강도 점진적 에스컬레이션 (개별 공포 → 집단 위협 → 생존 불가능 상황)
+- 미드포인트: 첫 번째 '진짜' 공포 폭로 또는 희생자 발생
+- 모든 것을 잃다: 보호막 완전 붕괴
+- 3막: 최후 생존 시도. 각 비트 tone 필드에 긴장감/공포 강도 명시`,
+
+  sf: `[SF/판타지 구조 강조]
+- 설정 비트: SF/판타지 세계관 법칙 확립 (관객이 이해해야 3막이 작동함)
+- B스토리: 세계관의 인간적 의미 전달하는 감정선
+- 재미와 게임: SF/판타지 아이디어가 가장 흥미롭게 탐구되는 구간
+- 미드포인트: 세계관 법칙의 결정적 역설 또는 충격 폭로
+- 모든 것을 잃다: 주인공이 세계관의 희생자가 되는 순간
+- 피날레: SF/판타지 아이디어의 인간적 해답 제시`,
+
+  crime: `[범죄/느와르 구조 강조]
+- 오프닝: 범죄 현장 또는 부패한 세계 소개
+- 촉발 사건: 수사/복수/범행 시작 계기
+- 2막: 단서 배치 + 오해를 유도하는 허위 단서(red herring) 비트 포함
+- 미드포인트: 진실의 일부 폭로 + 더 큰 음모의 실마리
+- 모든 것을 잃다: 주인공이 도덕적 타협 또는 배신당함
+- 피날레: 진실 전체 폭로 + 도덕적 대가. 비트마다 도덕적 양면성 명시`,
+
+  animation: `[애니메이션 구조 강조]
+- 시각적 유머·상상력 비트를 별도로 명시
+- 오프닝: 색감·캐릭터 디자인·세계관이 단번에 전달되는 장면
+- 설정: 타겟 연령대에 맞는 세계관 소개 속도 조정
+- 재미와 게임: 애니메이션만의 시각적 과장·변형 활용 구간
+- 각 비트 key_elements에 '시각적 개그', '표정 연기', '색채 변화' 등 포함`,
+
+  auto: "",
+};
+
 /* ─── Tooltip component ─── */
 // align: "left" | "center" | "right" — controls which edge of the tooltip anchors to the trigger
 function Tooltip({ text, children, maxWidth = 300, align = "center" }) {
@@ -1645,7 +1710,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const structureBlock = structureResult?.plot_points?.length
       ? `\n\n플롯 포인트:\n${structureResult.plot_points.map((p) => `  ${p.name} (p.${p.page}): ${p.description}`).join("\n")}`
       : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}${structureBlock}${contextBlock}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요. 시놉시스·트리트먼트·플롯포인트가 있다면 반드시 그 방향의 이야기와 인물을 따르세요.`;
+    const genreHint = GENRE_BEAT_HINTS[genre] || "";
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}${structureBlock}${contextBlock}${genreHint ? `\n\n${genreHint}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요. 시놉시스·트리트먼트·플롯포인트가 있다면 반드시 그 방향의 이야기와 인물을 따르세요.`;
     try { const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, BeatSheetSchema); setBeatSheetResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setBeatSheetError(err.message || "비트 시트 생성 중 오류가 발생했습니다."); }
     finally { setBeatSheetLoading(false); clearController("beatSheet"); }
@@ -1763,7 +1829,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const structurePlotPoints = structureResult?.plot_points?.length
       ? `\n\n확정된 플롯 포인트 (이 구조를 따를 것):\n${structureResult.plot_points.map(p => `  ${p.name}: ${p.description || ""}`).join("\n")}`
       : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${genreContext}\n서사 구조: ${structureLabel}\n\n등장인물 정보:\n${charBlock}${storyBible}${structurePlotPoints}\n\n위 정보를 바탕으로 완성도 높은 트리트먼트를 한국어로 작성해주세요. 시놉시스와 플롯 포인트가 있다면 반드시 그 방향을 따르세요. 등장인물 이름·배경·핵심 장면을 시놉시스와 일치시키세요.`;
+    const genreHint = GENRE_BEAT_HINTS[genre] || "";
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${genreContext}\n서사 구조: ${structureLabel}\n\n등장인물 정보:\n${charBlock}${storyBible}${structurePlotPoints}${genreHint ? `\n\n${genreHint}` : ""}\n\n위 정보를 바탕으로 완성도 높은 트리트먼트를 한국어로 작성해주세요. 시놉시스와 플롯 포인트가 있다면 반드시 그 방향을 따르세요. 등장인물 이름·배경·핵심 장면을 시놉시스와 일치시키세요.`;
     try {
       const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal);
       setTreatmentResult(text);
@@ -3491,6 +3558,11 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                   <div style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: beatSheetResult ? "rgba(78,204,163,0.15)" : "rgba(255,209,102,0.12)", color: beatSheetResult ? "#4ECCA3" : "#FFD166", border: `1px solid ${beatSheetResult ? "rgba(78,204,163,0.25)" : "rgba(255,209,102,0.25)"}`, fontFamily: "'JetBrains Mono', monospace" }}>{beatSheetResult ? "✓ STEP 2" : "STEP 2"}</div>
                   <span style={{ fontSize: 12, color: "var(--c-tx-45)", fontWeight: 500 }}>비트 시트 — Snyder 15비트 구조 설계</span>
+                  {genre !== "auto" && GENRE_BEAT_HINTS[genre] && (
+                    <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: "rgba(255,209,102,0.1)", color: "#FFD166", border: "1px solid rgba(255,209,102,0.2)", fontWeight: 600 }}>
+                      {GENRES.find(g => g.id === genre)?.label} 맞춤 구조
+                    </span>
+                  )}
                   {!treatmentResult && <span style={{ marginLeft: "auto", fontSize: 10, color: "rgba(255,209,102,0.55)", fontStyle: "italic" }}>Step 1 완료 후 추천</span>}
                 </div>
                 <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="비트 시트" sub="Snyder 15비트" done={!!beatSheetResult} loading={beatSheetLoading} color="#FFD166" onClick={generateBeatSheet} disabled={!logline.trim()}
