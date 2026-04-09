@@ -111,8 +111,19 @@ const STAGES = [
 ];
 
 /* ─── Tooltip component ─── */
-function Tooltip({ text, children, maxWidth = 300 }) {
+// align: "left" | "center" | "right" — controls which edge of the tooltip anchors to the trigger
+function Tooltip({ text, children, maxWidth = 300, align = "center" }) {
   const [visible, setVisible] = useState(false);
+  const posStyle = align === "left"
+    ? { left: 0 }
+    : align === "right"
+    ? { right: 0 }
+    : { left: "50%", transform: "translateX(-50%)" };
+  const arrowStyle = align === "left"
+    ? { left: 20 }
+    : align === "right"
+    ? { right: 20 }
+    : { left: "50%", transform: "translateX(-50%)" };
   return (
     <div
       style={{ position: "relative", display: "block" }}
@@ -124,8 +135,7 @@ function Tooltip({ text, children, maxWidth = 300 }) {
         <div style={{
           position: "absolute",
           bottom: "calc(100% + 10px)",
-          left: "50%",
-          transform: "translateX(-50%)",
+          ...posStyle,
           background: "rgba(12, 12, 24, 0.98)",
           border: "1px solid rgba(255,255,255,0.12)",
           borderRadius: 12,
@@ -144,8 +154,8 @@ function Tooltip({ text, children, maxWidth = 300 }) {
           wordBreak: "keep-all",
         }}>
           <div style={{
-            position: "absolute", top: "100%", left: "50%",
-            transform: "translateX(-50%)",
+            position: "absolute", top: "100%",
+            ...arrowStyle,
             width: 0, height: 0,
             borderLeft: "7px solid transparent",
             borderRight: "7px solid transparent",
@@ -308,6 +318,7 @@ export default function LoglineAnalyzer() {
   const [customDurationText, setCustomDurationText] = useState("");
   const [customFormatLabel, setCustomFormatLabel] = useState("");
   const [selectedFramework, setSelectedFramework] = useState("three_act");
+  const [frameworkInfoId, setFrameworkInfoId] = useState(null);
   const [directionCount, setDirectionCount] = useState(3);
   const [synopsisLoading, setSynopsisLoading] = useState(false);
   const [synopsisResults, setSynopsisResults] = useState(null);
@@ -2562,10 +2573,10 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
               {/* Synopsis mode toggle */}
               <div style={{ display: "flex", gap: 6, marginBottom: 16, background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
                 {[
-                  { id: "auto", label: "자동 생성", tip: "로그라인과 이전 분석 결과를 바탕으로 원하는 서사 구조와 방향 수를 선택해 여러 시놉시스를 한 번에 생성합니다.\n\n생성된 시놉시스 중 마음에 드는 방향을 '확정'하면, 이후 트리트먼트·비트시트가 그 방향을 기반으로 작성됩니다." },
-                  { id: "pipeline", label: "파이프라인", tip: "AI가 일련의 질문(주제·갈등·해결 등)을 순서대로 던지며 이야기를 함께 구체화하는 인터뷰 방식입니다.\n\n아직 이야기 방향이 불확실하거나, 처음부터 AI와 함께 발전시키고 싶을 때 유용합니다." },
+                  { id: "auto", label: "자동 생성", align: "left", tip: "로그라인과 이전 분석 결과를 바탕으로 원하는 서사 구조와 방향 수를 선택해 여러 시놉시스를 한 번에 생성합니다.\n\n생성된 시놉시스 중 마음에 드는 방향을 '확정'하면, 이후 트리트먼트·비트시트가 그 방향을 기반으로 작성됩니다." },
+                  { id: "pipeline", label: "파이프라인", align: "right", tip: "AI가 일련의 질문(주제·갈등·해결 등)을 순서대로 던지며 이야기를 함께 구체화하는 인터뷰 방식입니다.\n\n아직 이야기 방향이 불확실하거나, 처음부터 AI와 함께 발전시키고 싶을 때 유용합니다." },
                 ].map((m) => (
-                  <Tooltip key={m.id} text={m.tip}>
+                  <Tooltip key={m.id} text={m.tip} align={m.align}>
                     <button onClick={() => setSynopsisMode(m.id)} style={{
                       padding: "8px 12px", borderRadius: 7, border: "none", cursor: "pointer",
                       fontSize: 12, fontWeight: synopsisMode === m.id ? 700 : 400,
@@ -2584,17 +2595,41 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                     <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>서사 구조</div>
                     <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 6 }}>
                       {NARRATIVE_FRAMEWORKS.map((f) => (
-                        <button key={f.id} onClick={() => setSelectedFramework(f.id)} style={{
-                          padding: "8px 10px", borderRadius: 9, textAlign: "left", cursor: "pointer", transition: "all 0.15s",
-                          border: selectedFramework === f.id ? "1px solid rgba(200,168,75,0.5)" : "1px solid rgba(255,255,255,0.06)",
-                          background: selectedFramework === f.id ? "rgba(200,168,75,0.08)" : "rgba(255,255,255,0.02)",
-                          color: selectedFramework === f.id ? "#C8A84B" : "rgba(255,255,255,0.45)",
-                        }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 2 }}>{f.label}</div>
-                          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.4 }}>{f.ref}</div>
-                        </button>
+                        <div key={f.id} style={{ position: "relative" }}>
+                          <button onClick={() => setSelectedFramework(f.id)} style={{
+                            width: "100%", padding: "8px 10px", borderRadius: 9, textAlign: "left", cursor: "pointer", transition: "all 0.15s",
+                            border: selectedFramework === f.id ? "1px solid rgba(200,168,75,0.5)" : "1px solid rgba(255,255,255,0.06)",
+                            background: selectedFramework === f.id ? "rgba(200,168,75,0.08)" : "rgba(255,255,255,0.02)",
+                            color: selectedFramework === f.id ? "#C8A84B" : "rgba(255,255,255,0.45)",
+                          }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
+                              <div style={{ fontSize: 12, fontWeight: 600 }}>{f.label}</div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setFrameworkInfoId(frameworkInfoId === f.id ? null : f.id); }}
+                                style={{ background: "none", border: "none", cursor: "pointer", padding: "0 0 0 4px", color: "rgba(255,255,255,0.25)", fontSize: 11, lineHeight: 1, flexShrink: 0 }}
+                                title="설명 보기"
+                              >ⓘ</button>
+                            </div>
+                            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.4 }}>{f.ref}</div>
+                          </button>
+                        </div>
                       ))}
                     </div>
+                    {/* 서사 구조 설명 팝업 */}
+                    {frameworkInfoId && (() => {
+                      const fi = NARRATIVE_FRAMEWORKS.find(f => f.id === frameworkInfoId);
+                      if (!fi) return null;
+                      return (
+                        <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 10, background: "rgba(200,168,75,0.06)", border: "1px solid rgba(200,168,75,0.2)" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: "#C8A84B" }}>{fi.icon} {fi.label}</span>
+                            <button onClick={() => setFrameworkInfoId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.3)", fontSize: 14, padding: 0 }}>✕</button>
+                          </div>
+                          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 6, fontWeight: 500 }}>{fi.desc}</div>
+                          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.38)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "keep-all" }}>{fi.instruction}</div>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
                     <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>방향 수:</span>
