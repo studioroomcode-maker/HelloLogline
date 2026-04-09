@@ -87,22 +87,41 @@ export function parseClaudeJson(text) {
   }
 
   // ── 2단계: 누락된 쉼표 보완 ──
+  // 줄바꿈 사이 쉼표 누락
   fixed = fixed
-    .replace(/(")\s*\n(\s*")/g, '$1,\n$2')
-    .replace(/(")\s*\n(\s*\{)/g, '$1,\n$2')
-    .replace(/(\})\s*\n(\s*\{)/g, '$1,\n$2')
-    .replace(/(\})\s*\n(\s*")/g, '$1,\n$2')
-    .replace(/(\])\s*\n(\s*")/g, '$1,\n$2')
-    .replace(/,\s*([}\]])/g, '$1');
+    .replace(/(")\s*\n(\s*")/g, '$1,\n$2')    // "..."\n  "..." → 누락 쉼표
+    .replace(/(")\s*\n(\s*\{)/g, '$1,\n$2')    // "..."\n  { → 누락 쉼표
+    .replace(/(\})\s*\n(\s*\{)/g, '$1,\n$2')   // }\n  { → 누락 쉼표
+    .replace(/(\})\s*\n(\s*")/g, '$1,\n$2')    // }\n  "key" → 누락 쉼표
+    .replace(/(\])\s*\n(\s*")/g, '$1,\n$2')    // ]\n  "key" → 누락 쉼표
+    .replace(/(\])\s*\n(\s*\{)/g, '$1,\n$2')   // ]\n  { → 누락 쉼표
+  // 같은 줄 공백만 있는 경우 (} {, } "key" 패턴 — 줄바꿈 없이 공백만 있을 때)
+    .replace(/(\})[ \t]+(\{)/g, '$1,$2')        // } { → },{
+    .replace(/(\})[ \t]+(")/g, '$1,$2')         // } "key" → },"key"
+    .replace(/(\])[ \t]+(\{)/g, '$1,$2')        // ] { → ],[
+    .replace(/(\])[ \t]+(")/g, '$1,$2')         // ] "key" → ],"key"
+    .replace(/,\s*([}\]])/g, '$1');             // trailing comma 정리
 
   // ── 3단계: 파싱 시도 ──
   try {
     return JSON.parse(fixed);
-  } catch {
+  } catch (e1) {
+    // 4단계: 마지막 유효한 닫기 괄호까지만 잘라서 재시도
     const lastBrace = fixed.lastIndexOf("}");
     if (lastBrace > 0) {
       try { return JSON.parse(fixed.slice(0, lastBrace + 1)); } catch { /* fall through */ }
     }
+    // 5단계: 각 배열에서 잘린 마지막 요소 제거 후 재시도
+    try {
+      // 불완전한 배열 요소 제거: ,{ ... (닫히지 않은 마지막 요소)
+      const trimmed = fixed
+        .replace(/,\s*\{[^{}]*$/s, "")   // 마지막 불완전 객체 제거
+        .replace(/,\s*"[^"]*$/s, "");    // 마지막 불완전 문자열 제거
+      const lastB2 = trimmed.lastIndexOf("}");
+      if (lastB2 > 0) {
+        return JSON.parse(trimmed.slice(0, lastB2 + 1));
+      }
+    } catch { /* fall through */ }
     return JSON.parse(fixed); // 원본 오류 그대로 throw
   }
 }
