@@ -63,7 +63,18 @@ export function parseClaudeJson(text) {
         let j = i + 1;
         while (j < cleaned.length && (cleaned[j] === " " || cleaned[j] === "\n" || cleaned[j] === "\r" || cleaned[j] === "\t")) j++;
         const nxt = cleaned[j];
-        const isClose = nxt === ":" || nxt === "," || nxt === "}" || nxt === "]" || j >= cleaned.length;
+        let isClose = nxt === ":" || nxt === "," || nxt === "}" || nxt === "]" || j >= cleaned.length;
+        // 쉼표 누락 케이스: 다음 비공백 문자가 "인 경우 → "key": 패턴인지 확인
+        // ("value"\n  "next_key": ... 형태에서 닫힘 따옴표가 오인식되는 버그 수정)
+        if (!isClose && nxt === '"') {
+          let k = j + 1;
+          while (k < cleaned.length && cleaned[k] !== '"' && cleaned[k] !== '\n' && cleaned[k] !== '\r') k++;
+          if (k < cleaned.length && cleaned[k] === '"') {
+            let l = k + 1;
+            while (l < cleaned.length && (cleaned[l] === ' ' || cleaned[l] === '\t')) l++;
+            if (l < cleaned.length && cleaned[l] === ':') isClose = true;
+          }
+        }
         if (isClose) { inString = false; fixed += ch; }
         else          { fixed += '\\"'; }
       } else {
