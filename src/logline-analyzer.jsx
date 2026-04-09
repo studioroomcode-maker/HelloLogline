@@ -1718,7 +1718,6 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
     { id: "interest", label: isMobile ? "흥미도" : "흥미도 (100)" },
     { id: "feedback", label: "개선·방향" },
     ...(academicResult ? [{ id: "academic", label: "학술" }] : []),
-    ...(history.length >= 1 ? [{ id: "trend", label: "추이" }] : []),
   ];
 
   const charCount = logline.length;
@@ -1771,13 +1770,13 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
       return [result, /* improvement done = result exists */].filter(Boolean).length;
     }
     if (stageId === "2") {
-      return [academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult, expertPanelResult, valueChargeResult, pipelineResult].filter(Boolean).length;
+      return [expertPanelResult].filter(Boolean).length;
     }
     if (stageId === "3") {
-      return [shadowResult, authenticityResult, charDevResult].filter(Boolean).length;
+      return [shadowResult || authenticityResult || charDevResult].filter(Boolean).length;
     }
     if (stageId === "4") {
-      return [structureResult, subtextResult, synopsisResults].filter(Boolean).length;
+      return [structureResult, synopsisResults].filter(Boolean).length;
     }
     if (stageId === "5") {
       return [treatmentResult, beatSheetResult, dialogueDevResult].filter(Boolean).length;
@@ -1786,11 +1785,11 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
       return [scenarioDraftResult].filter(Boolean).length;
     }
     if (stageId === "7") {
-      return [scriptCoverageResult, valuationResult].filter(Boolean).length;
+      return [scriptCoverageResult || valuationResult].filter(Boolean).length;
     }
     return 0;
   }
-  const STAGE_TOTALS = { "1": 1, "2": 8, "3": 3, "4": 3, "5": 3, "6": 1, "7": 2 };
+  const STAGE_TOTALS = { "1": 1, "2": 1, "3": 1, "4": 2, "5": 3, "6": 1, "7": 1 };
 
   // ── Error display helper ──
   function ErrorMsg({ msg }) {
@@ -2655,7 +2654,6 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                       </div>
                     )}
                     {activeTab === "academic" && academicResult && <AcademicPanel academic={academicResult} />}
-                    {activeTab === "trend" && <ScoreHistoryChart history={history} />}
                   </ResultCard>
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
                     <DocButton label="기초 기획서 PDF" sub="로그라인 분석 기반 초기 기획서" onClick={() => openApplicationDoc("logline")} disabled={!logline.trim()} />
@@ -2693,7 +2691,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
               <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
               <ErrorBoundary><div>
 
-              <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="캐릭터 심층 분석" sub="Jung 원형 · Sartre 실존 · Egri · Truby · Maslow · Vogler" done={charAllDone} loading={charAllLoading} color="#FB923C" onClick={analyzeCharacterAll} disabled={!logline.trim()}
+              <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="캐릭터 종합 분석" sub="Jung 그림자 · 진정성 · Want/Need/Ghost/Arc" done={!!(shadowResult || authenticityResult || charDevResult)} loading={shadowLoading || authenticityLoading || charDevLoading} color="#FB923C" onClick={async () => { await analyzeShadow(); await analyzeAuthenticity(); await analyzeCharacterDev(); }} disabled={!logline.trim()}
                 tooltip={"이 로그라인의 주인공이 얼마나 입체적인 캐릭터인지 다각도로 분석합니다.\n\n• Jung — 영웅·그림자·아니마·페르소나 원형과 개성화 여정\n• Sartre — 실존적 진정성과 자기기만 구조\n• Egri·Truby — 생리·사회·심리 3차원 인물 설계\n• Maslow — 욕구 위계(생존→안전→소속→존중→자아실현)\n• Vogler — 영웅의 여정 속 캐릭터 기능 역할"} />
               <ErrorMsg msg={shadowError || authenticityError || charDevError} />
 
@@ -2774,15 +2772,6 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                     )}
                   </ResultCard>
                 )}
-              </div>
-
-              {/* ── 하위텍스트 ── */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>표면 아래 이야기</div>
-                <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="하위텍스트" sub="Chekhov · Mamet · Pinter" done={!!subtextResult} loading={subtextLoading} color="#95E1D3" onClick={analyzeSubtext} disabled={!logline.trim()}
-                  tooltip={"표면 이야기 아래 숨겨진 진짜 의미를 탐지합니다.\n\n'말하지 않고 느끼게 하라' — 위대한 이야기는 항상 두 겹의 층위를 가집니다.\n\n• 표면 이야기 — 실제로 일어나는 사건\n• 하위텍스트 — 그 사건이 진짜로 말하는 것\n\n• Chekhov — 모든 장치는 발화해야 한다\n• Mamet — 캐릭터는 자신이 원하는 것을 말하지 않는다\n• Pinter — 침묵과 공백이 대사보다 강하다"} />
-                <ErrorMsg msg={subtextError} />
-                {subtextResult && <ResultCard title="하위텍스트 탐지" onClose={() => setSubtextResult(null)} color="rgba(149,225,211,0.15)"><SubtextPanel data={subtextResult} isMobile={isMobile} /></ResultCard>}
               </div>
 
               {/* ── 유사 작품 비교 ── */}
@@ -3060,36 +3049,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 </div>
               </div>
 
-              {/* ── 서사 이론 종합 (통합 버튼) ── */}
-              <div style={{ marginBottom: 12 }}>
-                <ToolButton icon={<SvgIcon d={ICON.chart} size={16} />} label="서사 이론 종합" sub="Aristotle · Campbell · Propp · Barthes · 한국 미학 · 테마" done={narrativeTheoryDone} loading={narrativeTheoryLoading} color="#45B7D1" onClick={analyzeNarrativeTheory} disabled={!logline.trim()}
-                  tooltip={"여러 서사 이론을 동시에 적용해 이 이야기의 학술적 위치를 분석합니다.\n\n• Aristotle 시학 — 구성·성격·사상의 완성도\n• Campbell 영웅의 여정 — 신화적 여정 단계 매핑\n• Propp 민담 형태론 — 31가지 서사 기능 분류\n• Barthes S/Z 5코드 — 서스펜스·행동·의미 코드\n• 한국 미학 — 한·정·신명 공명도\n• 테마 & 감정선 — 지배 아이디어와 도덕 전제"} />
-                <ErrorMsg msg={academicError || mythMapError || barthesCodeError || koreanMythError || themeError} />
-              </div>
-
-              {narrativeTheoryDone && (
-                <ResultCard
-                  title="서사 이론 종합 분석"
-                  onClose={() => { setAcademicResult(null); setMythMapResult(null); setBarthesCodeResult(null); setKoreanMythResult(null); setThemeResult(null); }}
-                  color="rgba(69,183,209,0.15)"
-                >
-                  {[
-                    academicResult && { label: "학술 이론 (Aristotle · Campbell · Propp · Todorov · Freytag)", node: <ErrorBoundary><AcademicPanel academic={academicResult} /></ErrorBoundary> },
-                    mythMapResult && { label: "신화적 위치 매핑 (Campbell · Propp · Frazer)", node: <ErrorBoundary><MythMapPanel data={mythMapResult} isMobile={isMobile} /></ErrorBoundary> },
-                    barthesCodeResult && { label: "바르트 서사 코드 (S/Z 5 codes)", node: <ErrorBoundary><BarthesCodePanel data={barthesCodeResult} isMobile={isMobile} /></ErrorBoundary> },
-                    koreanMythResult && { label: "한국 미학 공명 (한 · 정 · 신명)", node: <ErrorBoundary><KoreanMythPanel data={koreanMythResult} isMobile={isMobile} /></ErrorBoundary> },
-                    themeResult && { label: "테마 & 감정선 (Egri · McKee · Truby)", node: <ErrorBoundary><ThemeAnalysisPanel data={themeResult} isMobile={isMobile} /></ErrorBoundary> },
-                  ].filter(Boolean).map((item, i, arr) => (
-                    <div key={i}>
-                      {i > 0 && <div style={{ margin: "20px 0", height: 1, background: "var(--c-bd-1)" }} />}
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(69,183,209,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>{item.label}</div>
-                      {item.node}
-                    </div>
-                  ))}
-                </ResultCard>
-              )}
-
-              {/* ── 전문가 패널 (고유 포맷 — 유지) ── */}
+              {/* ── 전문가 패널 ── */}
               <div style={{ marginTop: 8 }}>
                 <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="전문가 패널" sub="현업 전문가 10인의 독립 시각" done={!!expertPanelResult} loading={expertPanelLoading} color="#FFD166" onClick={runExpertPanel} disabled={!logline.trim()}
                   tooltip={"시나리오 작가, 제작사 PD, 문학평론가, 마케터 등 현업 전문가 10인이 이 로그라인을 독립적으로 평가합니다.\n\n라운드 1 — 각자 개별 의견 제시\n라운드 2 — 의견 교환 후 토론\n종합 — 합의점·핵심 강점 도출\n\n실제 방송사·제작사 심사 환경과 유사한 피드백을 얻을 수 있습니다."} />
@@ -3206,61 +3166,11 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 <ErrorMsg msg={beatSheetError} />
                 {beatSheetResult && (
                   <ResultCard title="비트 시트" onClose={() => setBeatSheetResult(null)} color="rgba(255,209,102,0.15)">
-                    {/* ── 전체 씬 일괄 집필 버튼 ── */}
-                    <div style={{ marginBottom: 16, padding: "14px 16px", borderRadius: 12, background: "rgba(255,209,102,0.05)", border: "1px solid rgba(255,209,102,0.15)" }}>
-                      {allScenesLoading ? (
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 12, color: "#FFD166", fontWeight: 700, marginBottom: 8 }}>
-                              씬 집필 중... {allScenesProgress.current}/{allScenesProgress.total}
-                            </div>
-                            <div style={{ height: 4, background: "var(--c-bd-1)", borderRadius: 4, overflow: "hidden" }}>
-                              <div style={{ height: "100%", background: "linear-gradient(90deg, #FFD166, #F7A072)", borderRadius: 4, width: `${allScenesProgress.total ? (allScenesProgress.current / allScenesProgress.total) * 100 : 0}%`, transition: "width 0.4s ease" }} />
-                            </div>
-                            <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginTop: 6, fontFamily: "'JetBrains Mono', monospace" }}>
-                              {beatSheetResult.beats?.[allScenesProgress.current - 1]?.name_kr || ""} 작성 중
-                            </div>
-                          </div>
-                          <button onClick={() => { abortControllersRef.current["allScenes"]?.abort(); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.4)", background: "rgba(232,93,117,0.08)", color: "#E85D75", fontSize: 11, cursor: "pointer", flexShrink: 0 }}>중단</button>
-                        </div>
-                      ) : (
-                        <div>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                            <div>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: "#FFD166", marginBottom: 2 }}>전체 씬 일괄 집필</div>
-                              <div style={{ fontSize: 11, color: "var(--c-tx-35)" }}>
-                                {Object.keys(beatScenes).length > 0
-                                  ? `${Object.keys(beatScenes).length}/${beatSheetResult.beats?.length || 0}개 완료 · 나머지 이어서 생성`
-                                  : `${beatSheetResult.beats?.length || 0}개 비트를 순서대로 자동 집필합니다`}
-                              </div>
-                            </div>
-                            <button onClick={generateAllScenes} disabled={allScenesLoading} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid rgba(255,209,102,0.4)", background: "rgba(255,209,102,0.12)", color: "#FFD166", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
-                              <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                              {Object.keys(beatScenes).length > 0 ? "이어서 집필" : "전체 집필 시작"}
-                            </button>
-                          </div>
-                          {allScenesProgress.failed?.length > 0 && (
-                            <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(232,93,117,0.08)", border: "1px solid rgba(232,93,117,0.2)", fontSize: 11, color: "#E85D75" }}>
-                              생성 실패한 씬: {allScenesProgress.failed.map((f) => `#${f.id} ${f.name}`).join(", ")} — 개별 버튼으로 재시도하세요.
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
                     <BeatSheetPanel
                       data={beatSheetResult}
                       beatScenes={beatScenes}
-                      generatingBeat={generatingBeat}
                       expandedBeats={expandedBeats}
                       onToggle={(id) => setExpandedBeats((prev) => ({ ...prev, [id]: !prev[id] }))}
-                      onGenerateScene={generateScene}
-                      onExportAll={() => {
-                        const allText = (beatSheetResult.beats || []).map((b) => {
-                          const scene = beatScenes[b.id];
-                          return `[비트 ${b.id}] ${b.name_kr} (${b.name_en})\n${b.summary}\n${scene ? `\n--- 씬 ---\n${scene}` : ""}`;
-                        }).join("\n\n===\n\n");
-                        navigator.clipboard.writeText(allText);
-                      }}
                       isMobile={isMobile}
                     />
                   </ResultCard>
@@ -3379,9 +3289,9 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
               <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
               <ErrorBoundary><div>
 
-              <ToolButton icon={<SvgIcon d={ICON.clipboard} size={16} />} label="Script Coverage 생성" sub="RECOMMEND / CONSIDER / PASS" done={!!scriptCoverageResult} loading={scriptCoverageLoading} color="#60A5FA" onClick={analyzeScriptCoverage} disabled={!logline.trim()}
-                tooltip={"할리우드 스튜디오와 한국 방송사 스타일의 공식 심사 보고서를 생성합니다.\n\n3단계 판정:\n• RECOMMEND — 즉시 개발 추천\n• CONSIDER — 조건부 개발 고려\n• PASS — 현재 단계에서 보류\n\n평가 항목: 전제·구성·캐릭터·대사·장르·상업성·독창성\n\n방송사·제작사·투자자 미팅 전 객관적인 자기 점검 도구로 활용하세요."} />
-              <ErrorMsg msg={scriptCoverageError} />
+              <ToolButton icon={<SvgIcon d={ICON.clipboard} size={16} />} label="최종 평가" sub="Script Coverage · 시장 가치" done={!!(scriptCoverageResult || valuationResult)} loading={scriptCoverageLoading || valuationLoading} color="#60A5FA" onClick={async () => { await analyzeScriptCoverage(); await analyzeValuation(); }} disabled={!logline.trim()}
+                tooltip={"할리우드 스튜디오와 한국 방송사 스타일의 공식 심사 보고서를 생성하고 시장 가치를 추정합니다.\n\n• Script Coverage — RECOMMEND / CONSIDER / PASS 3단계 판정\n• 시장 가치 — 한국·미국 시장 추정 판매가 · 신인/경력 기준"} />
+              <ErrorMsg msg={scriptCoverageError || valuationError} />
 
               {scriptCoverageResult && (
                 <>
@@ -3394,27 +3304,11 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 </>
               )}
 
-              {/* ── 시장 가치 평가 ── */}
-              <div style={{ marginTop: 20 }}>
-                <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>시장 가치 평가</div>
-                <ToolButton
-                  icon={<SvgIcon d={ICON.chart} size={16} />}
-                  label="완성도 점수 + 판매가 예측"
-                  sub="한국·미국 시장 추정 판매가 · 신인/경력 기준"
-                  done={!!valuationResult}
-                  loading={valuationLoading}
-                  color="#FFD166"
-                  onClick={analyzeValuation}
-                  disabled={!logline.trim()}
-                  tooltip={"지금까지 완성된 개발 단계를 기준으로 이 프로젝트의 시장 가치를 추정합니다.\n\n• 완성도 점수 — 현재 개발 진행률 (0~100)\n• 한국 시장 — 방송사·OTT·영화 판매 예상 가격대\n• 미국 시장 — WGA 기준 신인/경력 작가 스케일\n\n실제 계약 가격이 아닌 참고용 추정치입니다.\n투자 제안서의 밸류에이션 섹션에 활용할 수 있습니다."}
-                />
-                <ErrorMsg msg={valuationError} />
-                {valuationResult && (
-                  <ResultCard title="시장 가치 평가" onClose={() => setValuationResult(null)} color="rgba(255,209,102,0.15)">
-                    <ErrorBoundary><ValuationPanel data={valuationResult} isMobile={isMobile} /></ErrorBoundary>
-                  </ResultCard>
-                )}
-              </div>
+              {valuationResult && (
+                <ResultCard title="시장 가치 평가" onClose={() => setValuationResult(null)} color="rgba(255,209,102,0.15)">
+                  <ErrorBoundary><ValuationPanel data={valuationResult} isMobile={isMobile} /></ErrorBoundary>
+                </ResultCard>
+              )}
             </div></ErrorBoundary>
               </div>
             )}
