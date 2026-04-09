@@ -139,7 +139,8 @@ async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, 
     body: JSON.stringify({
       model,
       max_tokens: maxTokens,
-      system: systemPrompt,
+      // system as array enables prompt caching (90% discount on repeated system prompts)
+      system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: userMessage }],
     }),
     signal,
@@ -236,7 +237,7 @@ export async function callClaudeText(
     body: JSON.stringify({
       model,
       max_tokens: maxTokens,
-      system: systemPrompt,
+      system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: userMessage }],
     }),
     signal,
