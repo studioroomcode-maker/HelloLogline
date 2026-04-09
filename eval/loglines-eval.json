@@ -2,7 +2,7 @@
   "_meta": {
     "purpose": "Schema 검증 정확도 측정 + 패널별 유효성 검증용 평가셋",
     "created": "2026-04-09",
-    "instructions": "각 로그라인을 HelloLogline에 넣고 결과를 human_scores에 직접 기입. program_scores는 앱 출력값 기록. 3명이 독립 채점 후 비교.",
+    "instructions": "각 로그라인을 HelloLoglines에 넣고 결과를 human_scores에 직접 기입. program_scores는 앱 출력값 기록. 3명이 독립 채점 후 비교.",
     "scorers": ["채점자1", "채점자2", "채점자3"],
     "scale": {
       "quality_score": "0-100 (structure+expression+technical 합산)",
@@ -273,7 +273,7 @@
   },
 
   "validation_guide": {
-    "step1": "각 로그라인을 HelloLogline에 입력, Stage 1 기본 분석만 실행",
+    "step1": "각 로그라인을 HelloLoglines에 입력, Stage 1 기본 분석만 실행",
     "step2": "결과의 quality_score와 interest_score를 program_scores에 기록",
     "step3": "채점자 2-3명이 독립적으로 human_scores 기입 (0-100, 직관적 판단)",
     "step4": "프로그램 점수 vs 사람 점수 편차 계산 — 10점 이상 차이나는 항목 표시",

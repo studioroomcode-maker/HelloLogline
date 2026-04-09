@@ -110,41 +110,127 @@ const STAGES = [
   { id: "6", num: "06", name: "Script Coverage", sub: "최종 커버리지 리포트", icon: ICON.clipboard },
 ];
 
-/* ─── ToolButton component ─── */
-function ToolButton({ icon, label, sub, done, loading, color, onClick, disabled }) {
-  const [hovered, setHovered] = useState(false);
+/* ─── Tooltip component ─── */
+function Tooltip({ text, children, maxWidth = 300 }) {
+  const [visible, setVisible] = useState(false);
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled || loading}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        width: "100%", padding: "12px 14px", borderRadius: 10,
-        border: done ? `1px solid ${color}40` : "1px solid rgba(255,255,255,0.07)",
-        background: done ? `${color}08` : hovered ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.02)",
-        cursor: disabled || loading ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.45 : 1,
-        display: "flex", alignItems: "center", gap: 10,
-        textAlign: "left", transition: "all 0.2s",
-        fontFamily: "'Noto Sans KR', sans-serif",
-      }}
+    <div
+      style={{ position: "relative", display: "block" }}
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
     >
-      <div style={{ color: done ? color : "rgba(255,255,255,0.4)", flexShrink: 0 }}>
-        {icon}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: done ? color : "#e0e0ee", lineHeight: 1.3 }}>{label}</div>
-        {sub && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 1 }}>{sub}</div>}
-      </div>
-      <div style={{ flexShrink: 0 }}>
-        {loading ? <Spinner size={12} color={color} /> : done ? (
-          <SvgIcon d={ICON.check} size={14} color={color} />
-        ) : (
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(255,255,255,0.12)" }} />
-        )}
-      </div>
-    </button>
+      {children}
+      {visible && text && (
+        <div style={{
+          position: "absolute",
+          bottom: "calc(100% + 10px)",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "rgba(12, 12, 24, 0.98)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 12,
+          padding: "12px 16px",
+          fontSize: 12,
+          color: "rgba(255,255,255,0.82)",
+          lineHeight: 1.75,
+          maxWidth,
+          width: "max-content",
+          zIndex: 400,
+          pointerEvents: "none",
+          boxShadow: "0 10px 32px rgba(0,0,0,0.6)",
+          fontFamily: "'Noto Sans KR', sans-serif",
+          fontWeight: 400,
+          whiteSpace: "pre-wrap",
+          wordBreak: "keep-all",
+        }}>
+          <div style={{
+            position: "absolute", top: "100%", left: "50%",
+            transform: "translateX(-50%)",
+            width: 0, height: 0,
+            borderLeft: "7px solid transparent",
+            borderRight: "7px solid transparent",
+            borderTop: "7px solid rgba(12, 12, 24, 0.98)",
+          }} />
+          {text}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── ToolButton component ─── */
+function ToolButton({ icon, label, sub, done, loading, color, onClick, disabled, tooltip }) {
+  const [hovered, setHovered] = useState(false);
+  const [tipVisible, setTipVisible] = useState(false);
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={onClick}
+        disabled={disabled || loading}
+        onMouseEnter={() => { setHovered(true); setTipVisible(true); }}
+        onMouseLeave={() => { setHovered(false); setTipVisible(false); }}
+        style={{
+          width: "100%", padding: "12px 14px", borderRadius: 10,
+          border: done ? `1px solid ${color}40` : "1px solid rgba(255,255,255,0.07)",
+          background: done ? `${color}08` : hovered ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.02)",
+          cursor: disabled || loading ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.45 : 1,
+          display: "flex", alignItems: "center", gap: 10,
+          textAlign: "left", transition: "all 0.2s",
+          fontFamily: "'Noto Sans KR', sans-serif",
+        }}
+      >
+        <div style={{ color: done ? color : "rgba(255,255,255,0.4)", flexShrink: 0 }}>
+          {icon}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: done ? color : "#e0e0ee", lineHeight: 1.3 }}>{label}</div>
+          {sub && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 1 }}>{sub}</div>}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          {tooltip && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.18)", lineHeight: 1, userSelect: "none" }}>ⓘ</span>}
+          {loading ? <Spinner size={12} color={color} /> : done ? (
+            <SvgIcon d={ICON.check} size={14} color={color} />
+          ) : (
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(255,255,255,0.12)" }} />
+          )}
+        </div>
+      </button>
+      {tipVisible && tooltip && (
+        <div style={{
+          position: "absolute",
+          bottom: "calc(100% + 10px)",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "rgba(12, 12, 24, 0.98)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 12,
+          padding: "12px 16px",
+          fontSize: 12,
+          color: "rgba(255,255,255,0.82)",
+          lineHeight: 1.75,
+          maxWidth: 320,
+          width: "max-content",
+          zIndex: 400,
+          pointerEvents: "none",
+          boxShadow: "0 10px 32px rgba(0,0,0,0.6)",
+          fontFamily: "'Noto Sans KR', sans-serif",
+          fontWeight: 400,
+          whiteSpace: "pre-wrap",
+          wordBreak: "keep-all",
+        }}>
+          <div style={{
+            position: "absolute", top: "100%", left: "50%",
+            transform: "translateX(-50%)",
+            width: 0, height: 0,
+            borderLeft: "7px solid transparent",
+            borderRight: "7px solid transparent",
+            borderTop: "7px solid rgba(12, 12, 24, 0.98)",
+          }} />
+          {tooltip}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -186,6 +272,7 @@ export default function LoglineAnalyzer() {
     () => localStorage.getItem("logline_api_key") || ""
   );
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [serverHasKey, setServerHasKey] = useState(false);
 
   // ── Input ──
   const [logline, setLogline] = useState("");
@@ -388,6 +475,14 @@ export default function LoglineAnalyzer() {
   const synopsisRef = useRef(null);
   const academicRef = useRef(null);
   const mainContentRef = useRef(null);
+  const stageRefs = useRef({});
+
+  function advanceToStage(nextId) {
+    setCurrentStage(nextId);
+    setTimeout(() => {
+      stageRefs.current[nextId]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 80);
+  }
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
@@ -396,7 +491,23 @@ export default function LoglineAnalyzer() {
   }, []);
 
   useEffect(() => {
-    if (!apiKey) setShowApiKeyModal(true);
+    // 서버가 API 키를 갖고 있으면 클라이언트 키 불필요
+    fetch("/health")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.hasKey) {
+          setServerHasKey(true);
+          // 서버 키가 있으면 모달 안 띄우고 sentinel 값 설정
+          if (!localStorage.getItem("logline_api_key")) {
+            setApiKey("__server__");
+          }
+        } else if (!apiKey) {
+          setShowApiKeyModal(true);
+        }
+      })
+      .catch(() => {
+        if (!apiKey) setShowApiKeyModal(true);
+      });
   }, []);
 
   // ── Auto-save helper ──
@@ -769,7 +880,7 @@ export default function LoglineAnalyzer() {
       <div><strong>포맷:</strong> ${durLabel}</div>
       <div><strong>로그라인:</strong> ${logline || "—"}</div>
     </div>
-    <div class="cover-date">작성일: ${today} &nbsp;·&nbsp; Powered by Hello Logline × Claude AI</div>
+    <div class="cover-date">작성일: ${today} &nbsp;·&nbsp; Powered by Hello Loglines × Claude AI</div>
   </div>
   <div class="content">
     ${body}
@@ -1503,7 +1614,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
         padding: isMobile ? "0 12px" : "0 24px",
       }}>
         <div>
-          <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "#e8e8f0", letterSpacing: -0.3 }}>Hello Logline</div>
+          <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "#e8e8f0", letterSpacing: -0.3 }}>Hello Loglines</div>
           {!isMobile && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: -1 }}>시나리오 개발 워크스테이션</div>}
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -1561,100 +1672,74 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
         </div>
       </div>
 
-      {/* ─── Layout: Sidebar + Main ─── */}
-      <div style={{ display: "flex", minHeight: "calc(100vh - 56px)" }}>
-
-        {/* ─── Sidebar (desktop) / Tab strip (mobile) ─── */}
-        {!isMobile ? (
-          <div style={{
-            width: 220, flexShrink: 0, background: "#10101e",
-            borderRight: "1px solid rgba(255,255,255,0.04)",
-            padding: "20px 16px", display: "flex", flexDirection: "column", gap: 4,
-            position: "sticky", top: 56, height: "calc(100vh - 56px)", overflowY: "auto",
-          }}>
-            {STAGES.map((s) => {
-              const status = getStageStatus(s.id);
-              const isActive = currentStage === s.id;
-              return (
-                <div
-                  key={s.id}
-                  onClick={() => setCurrentStage(s.id)}
-                  style={{
-                    padding: "10px 12px", borderRadius: 8, cursor: "pointer",
-                    transition: "all 0.2s",
-                    borderLeft: isActive ? "2px solid #C8A84B" : "2px solid transparent",
-                    background: isActive ? "rgba(200,168,75,0.06)" : "transparent",
-                    paddingLeft: isActive ? 10 : 12,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
-                    <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: "rgba(255,255,255,0.25)" }}>
-                      {s.num}
-                    </span>
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: statusDotColor[status], transition: "background 0.3s" }} />
+      {/* ─── Progress bar ─── */}
+      <div style={{
+        display: "flex", justifyContent: "center", alignItems: "center",
+        padding: "14px 24px 20px",
+        background: "rgba(12,12,26,0.9)", backdropFilter: "blur(8px)",
+        borderBottom: "1px solid rgba(255,255,255,0.04)",
+        position: "sticky", top: 56, zIndex: 20,
+      }}>
+        {STAGES.map((s, idx) => {
+          const st = getStageStatus(s.id);
+          const isActive = currentStage === s.id;
+          return (
+            <div key={s.id} style={{ display: "flex", alignItems: "center" }}>
+              {idx > 0 && (
+                <div style={{
+                  width: isMobile ? 20 : 36, height: 2, flexShrink: 0,
+                  background: st === "done" ? "#4ECCA3" : "rgba(255,255,255,0.08)",
+                  transition: "background 0.4s",
+                }} />
+              )}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+                <button onClick={() => setCurrentStage(s.id)} title={s.name} style={{
+                  width: isMobile ? 28 : 34, height: isMobile ? 28 : 34, borderRadius: "50%", flexShrink: 0,
+                  border: `2px solid ${isActive ? "#C8A84B" : st === "done" ? "#4ECCA3" : "rgba(255,255,255,0.12)"}`,
+                  background: isActive ? "rgba(200,168,75,0.18)" : st === "done" ? "rgba(78,204,163,0.12)" : "transparent",
+                  color: isActive ? "#C8A84B" : st === "done" ? "#4ECCA3" : "rgba(255,255,255,0.28)",
+                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
+                  transition: "all 0.25s",
+                }}>
+                  {st === "done" ? (
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg>
+                  ) : s.num}
+                </button>
+                {!isMobile && (
+                  <div style={{ fontSize: 9, color: isActive ? "#C8A84B" : "rgba(255,255,255,0.25)", fontWeight: isActive ? 700 : 400, whiteSpace: "nowrap", transition: "color 0.2s" }}>
+                    {s.name}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: isActive ? "#e8e8f0" : "rgba(255,255,255,0.55)", lineHeight: 1.3 }}>{s.name}</div>
-                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 2 }}>{s.sub}</div>
-                </div>
-              );
-            })}
-
-            {/* ─── Sidebar footer: logo + copyright ─── */}
-            <div style={{ marginTop: "auto", paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-              <img
-                src="/company-logo.png"
-                alt="Company Logo"
-                style={{ width: "100%", maxWidth: 140, height: "auto", objectFit: "contain", display: "block", marginBottom: 10, opacity: 0.85 }}
-              />
-              <div style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.6 }}>
-                &copy; {new Date().getFullYear()} All rights reserved.<br />
-                Powered by Claude AI
+                )}
               </div>
             </div>
-          </div>
-        ) : (
-          <div style={{
-            position: "fixed", top: 56, left: 0, right: 0, zIndex: 30,
-            background: "rgba(12,12,26,0.95)", backdropFilter: "blur(6px)",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
-            display: "flex", overflowX: "auto", padding: "6px 8px", gap: 4,
-          }}>
-            {STAGES.map((s) => {
-              const status = getStageStatus(s.id);
-              const isActive = currentStage === s.id;
-              return (
-                <button key={s.id} onClick={() => setCurrentStage(s.id)} style={{
-                  flex: "0 0 auto", padding: "6px 12px", borderRadius: 8, border: "none",
-                  background: isActive ? "rgba(200,168,75,0.1)" : "transparent",
-                  color: isActive ? "#C8A84B" : "rgba(255,255,255,0.4)",
-                  fontSize: 11, fontWeight: isActive ? 700 : 400, cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap",
-                }}>
-                  <div style={{ width: 5, height: 5, borderRadius: "50%", background: statusDotColor[status] }} />
-                  {s.name}
-                </button>
-              );
-            })}
-          </div>
-        )}
+          );
+        })}
+      </div>
 
-        {/* ─── Main content area ─── */}
-        <div ref={mainContentRef} style={{
-          flex: 1, padding: isMobile ? "56px 12px 80px" : "28px 32px 80px",
-          maxWidth: 800, margin: "0 auto",
-          overflowY: "auto",
-        }}>
+      {/* ─── Accordion stages ─── */}
+      <div ref={mainContentRef} style={{
+        maxWidth: 860, margin: "0 auto",
+        padding: isMobile ? "16px 12px 80px" : "24px 28px 80px",
+      }}>
 
           {/* ═══ STAGE 1: Logline ═══ */}
-          {currentStage === "1" && (
-            <ErrorBoundary><div>
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "rgba(200,168,75,0.5)" }}>01</span>
-                  <span style={{ fontSize: 18, fontWeight: 700 }}>로그라인</span>
-                </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>로그라인 입력, 기본 분석, AI 개선안</div>
+          <div ref={(el) => { stageRefs.current["1"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden", border: `1px solid ${currentStage === "1" ? "rgba(200,168,75,0.25)" : "rgba(255,255,255,0.06)"}`, transition: "border-color 0.25s" }}>
+            <div onClick={() => setCurrentStage("1")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "1" ? "rgba(200,168,75,0.05)" : "rgba(255,255,255,0.01)", transition: "background 0.2s" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("1")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("1") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
+                {getStageStatus("1") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("1")] }}>01</span>}
               </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "1" ? "#e8e8f0" : getStageStatus("1") === "done" ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.45)" }}>로그라인</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>입력 / 기본 분석 / AI 개선안</div>
+              </div>
+              {getStageStatus("1") === "done" && currentStage !== "1" && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)" }}>완료</span>}
+              {getStageStatus("1") === "active" && <Spinner size={12} color="#C8A84B" />}
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "1" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+            </div>
+            {currentStage === "1" && (
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
+              <ErrorBoundary><div>
 
               {/* Duration selector */}
               <div style={{ marginBottom: 18 }}>
@@ -1814,6 +1899,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
               </div>
 
               {/* Main analyze button */}
+              <Tooltip text={"로그라인을 입력하면 AI가 시나리오 전문가 관점에서 종합 분석을 시작합니다.\n\n분석 항목:\n• 구조적 완성도 — 이야기의 뼈대가 탄탄한지\n• 표현적 매력도 — 읽는 사람을 끌어당기는 힘\n• 기술적 완성도 — 장르·캐릭터·갈등의 명확성\n• 흥미 유발 지수 — 제작사가 관심을 가질 가능성\n\n분석 결과를 바탕으로 아래 심화 도구들이 활성화됩니다."} maxWidth={340}>
               <button onClick={analyze} disabled={loading || !logline.trim() || !apiKey} style={{
                 width: "100%", height: 48, borderRadius: 12, border: "1px solid rgba(200,168,75,0.4)",
                 cursor: loading || !logline.trim() || !apiKey ? "not-allowed" : "pointer",
@@ -1826,8 +1912,10 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   <>{compareMode && logline2.trim() ? "두 로그라인 비교 분석" : "로그라인 분석하기"}</>
                 )}
               </button>
+              </Tooltip>
 
-              {!apiKey && <div style={{ marginTop: 8, fontSize: 11, textAlign: "center", color: "rgba(232,93,117,0.7)" }}>API 키를 먼저 설정해주세요</div>}
+              {!apiKey && !serverHasKey && <div style={{ marginTop: 8, fontSize: 11, textAlign: "center", color: "rgba(232,93,117,0.7)" }}>API 키를 먼저 설정해주세요</div>}
+              {serverHasKey && apiKey === "__server__" && <div style={{ marginTop: 8, fontSize: 11, textAlign: "center", color: "rgba(78,204,163,0.7)" }}>서버 API 키 사용 중</div>}
               <ErrorMsg msg={error} />
 
               {/* ── Result display ── */}
@@ -1993,23 +2081,41 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   </div>
                 </div>
               )}
+              {getStageStatus("1") === "done" && (
+                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "flex-end" }}>
+                  <button onClick={() => advanceToStage("2")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
+                    다음 단계: 개념 분석
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+              )}
             </div></ErrorBoundary>
-          )}
+              </div>
+            )}
+          </div>
 
           {/* ═══ STAGE 2: 개념 분석 ═══ */}
-          {currentStage === "2" && (
-            <ErrorBoundary><div>
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "rgba(200,168,75,0.5)" }}>02</span>
-                  <span style={{ fontSize: 18, fontWeight: 700 }}>개념 분석</span>
-                </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>이야기의 서사 이론적 위치와 전문가 시각 — 시놉시스 설계의 기반</div>
+          <div ref={(el) => { stageRefs.current["2"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden", border: `1px solid ${currentStage === "2" ? "rgba(69,183,209,0.25)" : "rgba(255,255,255,0.06)"}`, transition: "border-color 0.25s" }}>
+            <div onClick={() => setCurrentStage("2")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "2" ? "rgba(69,183,209,0.05)" : "rgba(255,255,255,0.01)", transition: "background 0.2s" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("2")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("2") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
+                {getStageStatus("2") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("2")] }}>02</span>}
               </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "2" ? "#e8e8f0" : getStageStatus("2") === "done" ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.45)" }}>개념 분석</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>학술 이론 · 신화 매핑 · 전문가 패널</div>
+              </div>
+              {getStageStatus("2") === "done" && currentStage !== "2" && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)" }}>완료</span>}
+              {getStageStatus("2") === "active" && <Spinner size={12} color="#C8A84B" />}
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "2" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+            </div>
+            {currentStage === "2" && (
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
+              <ErrorBoundary><div>
 
               {/* ── 서사 이론 종합 (통합 버튼) ── */}
               <div style={{ marginBottom: 12 }}>
-                <ToolButton icon={<SvgIcon d={ICON.chart} size={16} />} label="서사 이론 종합" sub="Aristotle · Campbell · Propp · Barthes · 한국 미학 · 테마" done={narrativeTheoryDone} loading={narrativeTheoryLoading} color="#45B7D1" onClick={analyzeNarrativeTheory} disabled={!logline.trim()} />
+                <ToolButton icon={<SvgIcon d={ICON.chart} size={16} />} label="서사 이론 종합" sub="Aristotle · Campbell · Propp · Barthes · 한국 미학 · 테마" done={narrativeTheoryDone} loading={narrativeTheoryLoading} color="#45B7D1" onClick={analyzeNarrativeTheory} disabled={!logline.trim()}
+                  tooltip={"여러 서사 이론을 동시에 적용해 이 이야기의 학술적 위치를 분석합니다.\n\n• Aristotle 시학 — 구성·성격·사상의 완성도\n• Campbell 영웅의 여정 — 신화적 여정 단계 매핑\n• Propp 민담 형태론 — 31가지 서사 기능 분류\n• Barthes S/Z 5코드 — 서스펜스·행동·의미 코드\n• 한국 미학 — 한·정·신명 공명도\n• 테마 & 감정선 — 지배 아이디어와 도덕 전제"} />
                 <ErrorMsg msg={academicError || mythMapError || barthesCodeError || koreanMythError || themeError} />
               </div>
 
@@ -2037,25 +2143,44 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
               {/* ── 전문가 패널 (고유 포맷 — 유지) ── */}
               <div style={{ marginTop: 8 }}>
-                <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="전문가 패널" sub="현업 전문가 10인의 독립 시각" done={!!expertPanelResult} loading={expertPanelLoading} color="#FFD166" onClick={runExpertPanel} disabled={!logline.trim()} />
+                <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="전문가 패널" sub="현업 전문가 10인의 독립 시각" done={!!expertPanelResult} loading={expertPanelLoading} color="#FFD166" onClick={runExpertPanel} disabled={!logline.trim()}
+                  tooltip={"시나리오 작가, 제작사 PD, 문학평론가, 마케터 등 현업 전문가 10인이 이 로그라인을 독립적으로 평가합니다.\n\n라운드 1 — 각자 개별 의견 제시\n라운드 2 — 의견 교환 후 토론\n종합 — 합의점·핵심 강점 도출\n\n실제 방송사·제작사 심사 환경과 유사한 피드백을 얻을 수 있습니다."} />
                 <ErrorMsg msg={expertPanelError} />
                 {expertPanelResult && <ResultCard title="전문가 패널 토론" onClose={() => setExpertPanelResult(null)} color="rgba(255,209,102,0.15)"><ErrorBoundary><ExpertPanelSection data={expertPanelResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
               </div>
+              {getStageStatus("2") === "done" && (
+                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "flex-end" }}>
+                  <button onClick={() => advanceToStage("3")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
+                    다음 단계: 캐릭터
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+              )}
             </div></ErrorBoundary>
-          )}
+              </div>
+            )}
+          </div>
 
           {/* ═══ STAGE 3: 캐릭터 ═══ */}
-          {currentStage === "3" && (
-            <ErrorBoundary><div>
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "rgba(200,168,75,0.5)" }}>03</span>
-                  <span style={{ fontSize: 18, fontWeight: 700 }}>캐릭터</span>
-                </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>심리 원형 · 실존적 동기 · 3차원 인물 설계 — 이 인물이 이야기를 만든다</div>
+          <div ref={(el) => { stageRefs.current["3"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden", border: `1px solid ${currentStage === "3" ? "rgba(251,146,60,0.25)" : "rgba(255,255,255,0.06)"}`, transition: "border-color 0.25s" }}>
+            <div onClick={() => setCurrentStage("3")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "3" ? "rgba(251,146,60,0.05)" : "rgba(255,255,255,0.01)", transition: "background 0.2s" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("3")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("3") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
+                {getStageStatus("3") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("3")] }}>03</span>}
               </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "3" ? "#e8e8f0" : getStageStatus("3") === "done" ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.45)" }}>캐릭터</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>심리 원형 · 실존적 동기 · 3차원 인물 설계</div>
+              </div>
+              {getStageStatus("3") === "done" && currentStage !== "3" && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)" }}>완료</span>}
+              {getStageStatus("3") === "active" && <Spinner size={12} color="#C8A84B" />}
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "3" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+            </div>
+            {currentStage === "3" && (
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
+              <ErrorBoundary><div>
 
-              <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="캐릭터 심층 분석" sub="Jung 원형 · Sartre 실존 · Egri · Truby · Maslow · Vogler" done={charAllDone} loading={charAllLoading} color="#FB923C" onClick={analyzeCharacterAll} disabled={!logline.trim()} />
+              <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="캐릭터 심층 분석" sub="Jung 원형 · Sartre 실존 · Egri · Truby · Maslow · Vogler" done={charAllDone} loading={charAllLoading} color="#FB923C" onClick={analyzeCharacterAll} disabled={!logline.trim()}
+                tooltip={"이 로그라인의 주인공이 얼마나 입체적인 캐릭터인지 다각도로 분석합니다.\n\n• Jung — 영웅·그림자·아니마·페르소나 원형과 개성화 여정\n• Sartre — 실존적 진정성과 자기기만 구조\n• Egri·Truby — 생리·사회·심리 3차원 인물 설계\n• Maslow — 욕구 위계(생존→안전→소속→존중→자아실현)\n• Vogler — 영웅의 여정 속 캐릭터 기능 역할"} />
               <ErrorMsg msg={shadowError || authenticityError || charDevError} />
 
               {charAllDone && (
@@ -2077,24 +2202,42 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   ))}
                 </ResultCard>
               )}
+              {getStageStatus("3") === "done" && (
+                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "flex-end" }}>
+                  <button onClick={() => advanceToStage("4")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
+                    다음 단계: 시놉시스
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+              )}
             </div></ErrorBoundary>
-          )}
+              </div>
+            )}
+          </div>
 
           {/* ═══ STAGE 4: 시놉시스 ═══ */}
-          {currentStage === "4" && (
-            <ErrorBoundary><div>
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "rgba(200,168,75,0.5)" }}>04</span>
-                  <span style={{ fontSize: 18, fontWeight: 700 }}>시놉시스</span>
-                </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>구조 설계 → 감정 아크 → 하위텍스트 → 시놉시스 순서로 진행</div>
+          <div ref={(el) => { stageRefs.current["4"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden", border: `1px solid ${currentStage === "4" ? "rgba(78,204,163,0.25)" : "rgba(255,255,255,0.06)"}`, transition: "border-color 0.25s" }}>
+            <div onClick={() => setCurrentStage("4")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "4" ? "rgba(78,204,163,0.04)" : "rgba(255,255,255,0.01)", transition: "background 0.2s" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("4")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("4") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
+                {getStageStatus("4") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("4")] }}>04</span>}
               </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "4" ? "#e8e8f0" : getStageStatus("4") === "done" ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.45)" }}>시놉시스</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>구조 설계 · 감정 아크 · 하위텍스트 · 시놉시스</div>
+              </div>
+              {getStageStatus("4") === "done" && currentStage !== "4" && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)" }}>완료</span>}
+              {getStageStatus("4") === "active" && <Spinner size={12} color="#C8A84B" />}
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "4" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+            </div>
+            {currentStage === "4" && (
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
+              <ErrorBoundary><div>
 
               {/* ── 구조 & 감정 아크 (통합 버튼) ── */}
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>1순위 — 구조 & 감정 아크</div>
-                <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="구조 & 감정 아크" sub="Field · Snyder · McKee 3막 구조 + 가치 전하" done={structureAllDone} loading={structureAllLoading} color="#4ECCA3" onClick={analyzeStructureAll} disabled={!logline.trim()} />
+                <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="구조 & 감정 아크" sub="Field · Snyder · McKee 3막 구조 + 가치 전하" done={structureAllDone} loading={structureAllLoading} color="#4ECCA3" onClick={analyzeStructureAll} disabled={!logline.trim()}
+                  tooltip={"이야기의 뼈대와 감정 흐름을 설계합니다.\n\n• 3막 구조 — Field·Snyder·McKee·Hauge·Truby의 핵심 플롯 포인트 배치\n  (1막 설정 → 촉발 사건 → 2막 대립 → 절정 → 3막 해소)\n\n• 가치 전하 (McKee) — 장면마다 긍정↔부정으로 뒤바뀌는 감정 가치를 추적합니다.\n  감정 기복이 없는 이야기는 관객을 잃습니다."} />
                 <ErrorMsg msg={structureError || valueChargeError} />
                 {structureAllDone && (
                   <ResultCard
@@ -2122,7 +2265,8 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
               {/* ── 하위텍스트 ── */}
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>표면 아래 이야기</div>
-                <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="하위텍스트" sub="Chekhov · Mamet · Pinter" done={!!subtextResult} loading={subtextLoading} color="#95E1D3" onClick={analyzeSubtext} disabled={!logline.trim()} />
+                <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="하위텍스트" sub="Chekhov · Mamet · Pinter" done={!!subtextResult} loading={subtextLoading} color="#95E1D3" onClick={analyzeSubtext} disabled={!logline.trim()}
+                  tooltip={"표면 이야기 아래 숨겨진 진짜 의미를 탐지합니다.\n\n'말하지 않고 느끼게 하라' — 위대한 이야기는 항상 두 겹의 층위를 가집니다.\n\n• 표면 이야기 — 실제로 일어나는 사건\n• 하위텍스트 — 그 사건이 진짜로 말하는 것\n\n• Chekhov — 모든 장치는 발화해야 한다\n• Mamet — 캐릭터는 자신이 원하는 것을 말하지 않는다\n• Pinter — 침묵과 공백이 대사보다 강하다"} />
                 <ErrorMsg msg={subtextError} />
                 {subtextResult && <ResultCard title="하위텍스트 탐지" onClose={() => setSubtextResult(null)} color="rgba(149,225,211,0.15)"><SubtextPanel data={subtextResult} isMobile={isMobile} /></ResultCard>}
               </div>
@@ -2139,6 +2283,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   color="#F472B6"
                   onClick={analyzeComparableWorks}
                   disabled={!logline.trim()}
+                  tooltip={"이 이야기와 유사한 국내외 레퍼런스 작품을 찾아 시장 맥락을 파악합니다.\n\n• 유사 작품 — 장르·톤·주제 기준 비교 분석\n• 배울 점 — 각 레퍼런스에서 참고할 전략\n• 시장 포지셔닝 — OTT·극장·방송 채널 적합성\n• 타깃 관객 — 연령·성별·취향 프로파일\n\n투자 제안서와 방송사 기획안에 필수로 포함되는 섹션입니다."}
                 />
                 <ErrorMsg msg={comparableError} />
                 {comparableResult && (
@@ -2185,14 +2330,19 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
               {/* Synopsis mode toggle */}
               <div style={{ display: "flex", gap: 6, marginBottom: 16, background: "rgba(255,255,255,0.03)", padding: 4, borderRadius: 10, border: "1px solid rgba(255,255,255,0.06)" }}>
-                {[{ id: "auto", label: "자동 생성" }, { id: "pipeline", label: "파이프라인" }].map((m) => (
-                  <button key={m.id} onClick={() => setSynopsisMode(m.id)} style={{
-                    flex: 1, padding: "8px 12px", borderRadius: 7, border: "none", cursor: "pointer",
-                    fontSize: 12, fontWeight: synopsisMode === m.id ? 700 : 400,
-                    background: synopsisMode === m.id ? "rgba(200,168,75,0.15)" : "transparent",
-                    color: synopsisMode === m.id ? "#C8A84B" : "rgba(255,255,255,0.35)",
-                    transition: "all 0.15s",
-                  }}>{m.label}</button>
+                {[
+                  { id: "auto", label: "자동 생성", tip: "로그라인과 이전 분석 결과를 바탕으로 원하는 서사 구조와 방향 수를 선택해 여러 시놉시스를 한 번에 생성합니다.\n\n생성된 시놉시스 중 마음에 드는 방향을 '확정'하면, 이후 트리트먼트·비트시트가 그 방향을 기반으로 작성됩니다." },
+                  { id: "pipeline", label: "파이프라인", tip: "AI가 일련의 질문(주제·갈등·해결 등)을 순서대로 던지며 이야기를 함께 구체화하는 인터뷰 방식입니다.\n\n아직 이야기 방향이 불확실하거나, 처음부터 AI와 함께 발전시키고 싶을 때 유용합니다." },
+                ].map((m) => (
+                  <Tooltip key={m.id} text={m.tip}>
+                    <button onClick={() => setSynopsisMode(m.id)} style={{
+                      padding: "8px 12px", borderRadius: 7, border: "none", cursor: "pointer",
+                      fontSize: 12, fontWeight: synopsisMode === m.id ? 700 : 400,
+                      background: synopsisMode === m.id ? "rgba(200,168,75,0.15)" : "transparent",
+                      color: synopsisMode === m.id ? "#C8A84B" : "rgba(255,255,255,0.35)",
+                      transition: "all 0.15s", width: "100%",
+                    }}>{m.label}</button>
+                  </Tooltip>
                 ))}
               </div>
 
@@ -2291,19 +2441,36 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   <DocButton label="기획서 PDF" sub="시놉시스 포함 지원·투자 기획서" onClick={() => openApplicationDoc("synopsis")} />
                 </div>
               )}
+              {getStageStatus("4") === "done" && (
+                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "flex-end" }}>
+                  <button onClick={() => advanceToStage("5")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
+                    다음 단계: 트리트먼트 & 비트
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+              )}
             </div></ErrorBoundary>
-          )}
+              </div>
+            )}
+          </div>
 
           {/* ═══ STAGE 5: Treatment / Beat Sheet ═══ */}
-          {currentStage === "5" && (
-            <ErrorBoundary><div>
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "rgba(200,168,75,0.5)" }}>05</span>
-                  <span style={{ fontSize: 18, fontWeight: 700 }}>트리트먼트 비트</span>
-                </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>트리트먼트, 비트시트, 대사 디벨롭</div>
+          <div ref={(el) => { stageRefs.current["5"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden", border: `1px solid ${currentStage === "5" ? "rgba(255,209,102,0.25)" : "rgba(255,255,255,0.06)"}`, transition: "border-color 0.25s" }}>
+            <div onClick={() => setCurrentStage("5")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "5" ? "rgba(255,209,102,0.04)" : "rgba(255,255,255,0.01)", transition: "background 0.2s" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("5")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("5") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
+                {getStageStatus("5") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("5")] }}>05</span>}
               </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "5" ? "#e8e8f0" : getStageStatus("5") === "done" ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.45)" }}>트리트먼트 & 비트</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>트리트먼트 · 씬 리스트 · 비트시트 · 대사</div>
+              </div>
+              {getStageStatus("5") === "done" && currentStage !== "5" && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)" }}>완료</span>}
+              {getStageStatus("5") === "active" && <Spinner size={12} color="#C8A84B" />}
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "5" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+            </div>
+            {currentStage === "5" && (
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
+              <ErrorBoundary><div>
 
               {/* Treatment */}
               <div style={{ marginBottom: 16 }}>
@@ -2371,7 +2538,8 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
               {/* Scene List (Step Outline) */}
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>씬 리스트 — 트리트먼트 → 집필 브릿지</div>
-                <ToolButton icon={<SvgIcon d={ICON.clipboard} size={16} />} label="씬 리스트 (스텝 아웃라인)" sub="Field · Truby · McKee" done={!!sceneListResult} loading={sceneListLoading} color="#60A5FA" onClick={generateSceneList} disabled={!logline.trim()} />
+                <ToolButton icon={<SvgIcon d={ICON.clipboard} size={16} />} label="씬 리스트 (스텝 아웃라인)" sub="Field · Truby · McKee" done={!!sceneListResult} loading={sceneListLoading} color="#60A5FA" onClick={generateSceneList} disabled={!logline.trim()}
+                  tooltip={"트리트먼트에서 실제 대본 집필로 넘어가는 중간 다리 역할을 합니다.\n\n각 씬마다 다음을 정리합니다:\n• 목적 — 이 씬이 이야기에서 하는 기능\n• 내용 — 누가 무엇을 하는지\n• 전환 — 다음 씬으로 어떻게 연결되는지\n\n집필 전 전체 흐름을 한눈에 파악하고 빈 장면을 미리 발견할 수 있습니다."} />
                 <ErrorMsg msg={sceneListError} />
                 {sceneListResult && (
                   <ResultCard title="씬 리스트 (스텝 아웃라인)" onClose={() => setSceneListResult("")} color="rgba(96,165,250,0.15)">
@@ -2383,8 +2551,10 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
               {/* Beat Sheet + Dialogue */}
               <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>비트 & 대사</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-                <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="비트 시트" sub="Snyder 15비트" done={!!beatSheetResult} loading={beatSheetLoading} color="#FFD166" onClick={generateBeatSheet} disabled={!logline.trim()} />
-                <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="대사 디벨롭" sub="Mamet/Pinter" done={!!dialogueDevResult} loading={dialogueDevLoading} color="#F472B6" onClick={analyzeDialogueDev} disabled={!logline.trim()} />
+                <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="비트 시트" sub="Snyder 15비트" done={!!beatSheetResult} loading={beatSheetLoading} color="#FFD166" onClick={generateBeatSheet} disabled={!logline.trim()}
+                  tooltip={"Blake Snyder의 'Save the Cat' 15비트 구조를 적용합니다.\n\n할리우드 표준 이정표 15개를 정확한 페이지 위치에 배치합니다:\n오프닝 이미지 → 테마 제시 → 설정 → 촉발사건 → 고민 → 2막 진입 → B스토리 → 재미와 게임 → 중간점 → 적의 위협 → 전부 잃다 → 영혼의 밤 → 3막 진입 → 피날레 → 클로징 이미지\n\n각 비트마다 AI가 직접 씬을 집필할 수 있습니다."} />
+                <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="대사 디벨롭" sub="Mamet/Pinter" done={!!dialogueDevResult} loading={dialogueDevLoading} color="#F472B6" onClick={analyzeDialogueDev} disabled={!logline.trim()}
+                  tooltip={"캐릭터마다 고유한 목소리와 말하는 방식을 설계합니다.\n\n• Mamet — 캐릭터는 원하는 것을 직접 말하지 않는다. 행동이 대사를 대신한다.\n• Pinter — 침묵, 공백, 반복이 대사보다 강한 의미를 만든다.\n\n결과물:\n• 주인공·조력자·대립자의 개별 말투 프로필\n• 핵심 장면의 하위텍스트 대사 예시\n• 대화 속 권력 역학과 감정 변화 지도"} />
               </div>
               <ErrorMsg msg={beatSheetError} />
               <ErrorMsg msg={dialogueDevError} />
@@ -2410,21 +2580,39 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 </ResultCard>
               )}
               {dialogueDevResult && <ResultCard title="대사 디벨롭" onClose={() => setDialogueDevResult(null)} color="rgba(244,114,182,0.15)"><ErrorBoundary><DialogueDevPanel data={dialogueDevResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
+              {getStageStatus("5") === "done" && (
+                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "flex-end" }}>
+                  <button onClick={() => advanceToStage("6")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
+                    다음 단계: Script Coverage
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+              )}
             </div></ErrorBoundary>
-          )}
+              </div>
+            )}
+          </div>
 
           {/* ═══ STAGE 6: Script Coverage ═══ */}
-          {currentStage === "6" && (
-            <ErrorBoundary><div>
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                  <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "rgba(200,168,75,0.5)" }}>06</span>
-                  <span style={{ fontSize: 18, fontWeight: 700 }}>Script Coverage</span>
-                </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>할리우드 + 한국 방송사 스타일 최종 커버리지 리포트</div>
+          <div ref={(el) => { stageRefs.current["6"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden", border: `1px solid ${currentStage === "6" ? "rgba(96,165,250,0.25)" : "rgba(255,255,255,0.06)"}`, transition: "border-color 0.25s" }}>
+            <div onClick={() => setCurrentStage("6")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "6" ? "rgba(96,165,250,0.05)" : "rgba(255,255,255,0.01)", transition: "background 0.2s" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("6")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("6") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
+                {getStageStatus("6") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("6")] }}>06</span>}
               </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "6" ? "#e8e8f0" : getStageStatus("6") === "done" ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.45)" }}>Script Coverage</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>최종 커버리지 · 시장 가치 평가</div>
+              </div>
+              {getStageStatus("6") === "done" && currentStage !== "6" && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)" }}>완료</span>}
+              {getStageStatus("6") === "active" && <Spinner size={12} color="#C8A84B" />}
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "6" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+            </div>
+            {currentStage === "6" && (
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
+              <ErrorBoundary><div>
 
-              <ToolButton icon={<SvgIcon d={ICON.clipboard} size={16} />} label="Script Coverage 생성" sub="RECOMMEND / CONSIDER / PASS" done={!!scriptCoverageResult} loading={scriptCoverageLoading} color="#60A5FA" onClick={analyzeScriptCoverage} disabled={!logline.trim()} />
+              <ToolButton icon={<SvgIcon d={ICON.clipboard} size={16} />} label="Script Coverage 생성" sub="RECOMMEND / CONSIDER / PASS" done={!!scriptCoverageResult} loading={scriptCoverageLoading} color="#60A5FA" onClick={analyzeScriptCoverage} disabled={!logline.trim()}
+                tooltip={"할리우드 스튜디오와 한국 방송사 스타일의 공식 심사 보고서를 생성합니다.\n\n3단계 판정:\n• RECOMMEND — 즉시 개발 추천\n• CONSIDER — 조건부 개발 고려\n• PASS — 현재 단계에서 보류\n\n평가 항목: 전제·구성·캐릭터·대사·장르·상업성·독창성\n\n방송사·제작사·투자자 미팅 전 객관적인 자기 점검 도구로 활용하세요."} />
               <ErrorMsg msg={scriptCoverageError} />
 
               {scriptCoverageResult && (
@@ -2450,6 +2638,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   color="#FFD166"
                   onClick={analyzeValuation}
                   disabled={!logline.trim()}
+                  tooltip={"지금까지 완성된 개발 단계를 기준으로 이 프로젝트의 시장 가치를 추정합니다.\n\n• 완성도 점수 — 현재 개발 진행률 (0~100)\n• 한국 시장 — 방송사·OTT·영화 판매 예상 가격대\n• 미국 시장 — WGA 기준 신인/경력 작가 스케일\n\n실제 계약 가격이 아닌 참고용 추정치입니다.\n투자 제안서의 밸류에이션 섹션에 활용할 수 있습니다."}
                 />
                 <ErrorMsg msg={valuationError} />
                 {valuationResult && (
@@ -2459,10 +2648,11 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 )}
               </div>
             </div></ErrorBoundary>
-          )}
+              </div>
+            )}
+          </div>
 
         </div>
-      </div>
 
       {/* ─── Footer ─── */}
       <div style={{
@@ -2472,7 +2662,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
         background: "#0a0a18",
       }}>
         <div style={{ fontSize: 10, color: "rgba(255,255,255,0.18)", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.7 }}>
-          &copy; {new Date().getFullYear()} All rights reserved. &nbsp;|&nbsp; Hello Logline &nbsp;|&nbsp; Powered by Claude AI (Anthropic)
+          &copy; {new Date().getFullYear()} All rights reserved. &nbsp;|&nbsp; Hello Loglines &nbsp;|&nbsp; Powered by Claude AI (Anthropic)
         </div>
       </div>
     </div>

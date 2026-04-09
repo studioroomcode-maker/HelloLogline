@@ -36,7 +36,7 @@ app.use(
 );
 app.use(express.json({ limit: "4mb" }));
 
-app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/health", (_req, res) => res.json({ status: "ok", hasKey: !!process.env.ANTHROPIC_API_KEY }));
 
 app.post("/api/claude", async (req, res) => {
   // Server-side key takes priority; fallback to client-provided key

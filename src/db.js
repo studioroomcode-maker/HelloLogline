@@ -1,9 +1,9 @@
 /**
- * IndexedDB wrapper for HelloLogline project persistence.
+ * IndexedDB wrapper for HelloLoglines project persistence.
  * Projects are stored with all analysis state so work survives browser refreshes.
  */
 
-const DB_NAME = "hellologline_v1";
+const DB_NAME = "hellologlines_v1";
 const DB_VERSION = 1;
 const STORE = "projects";
 
