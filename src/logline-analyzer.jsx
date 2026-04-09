@@ -103,10 +103,10 @@ function DocButton({ label, sub, onClick, disabled }) {
 /* ─── Stage definitions ─── */
 const STAGES = [
   { id: "1", num: "01", name: "로그라인", sub: "입력 / 기본 분석 / 개선", icon: ICON.edit },
-  { id: "2", num: "02", name: "개념 분석", sub: "학술 / 신화 / 전문가 / 서사 코드 / 테마", icon: ICON.chart },
-  { id: "3", num: "03", name: "캐릭터", sub: "그림자 / 진정성 / 캐릭터 디벨롭", icon: ICON.users },
-  { id: "4", num: "04", name: "시놉시스", sub: "구조분석 / 가치전하 / 하위텍스트 / 시놉시스", icon: ICON.doc },
-  { id: "5", num: "05", name: "트리트먼트 비트", sub: "트리트먼트 / 씬 리스트 / 비트시트 / 대사", icon: ICON.film },
+  { id: "3", num: "02", name: "캐릭터", sub: "그림자 / 진정성 / 캐릭터 디벨롭", icon: ICON.users },
+  { id: "4", num: "03", name: "시놉시스", sub: "구조분석 / 가치전하 / 하위텍스트 / 시놉시스", icon: ICON.doc },
+  { id: "2", num: "04", name: "개념 분석", sub: "학술 / 신화 / 전문가 / 서사 코드 / 테마 (선택)", icon: ICON.chart },
+  { id: "5", num: "05", name: "트리트먼트 비트", sub: "트리트먼트 / 비트시트 / 대사", icon: ICON.film },
   { id: "6", num: "06", name: "시나리오 초고", sub: "시나리오 생성 / Field · McKee · Snyder", icon: ICON.film },
   { id: "7", num: "07", name: "Script Coverage", sub: "최종 커버리지 리포트", icon: ICON.clipboard },
 ];
@@ -2663,86 +2663,6 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 </div>
               )}
               {getStageStatus("1") === "done" && (
-                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                  <button onClick={() => setCurrentStage("2")} style={{ padding: "8px 16px", borderRadius: 9, border: "1px solid rgba(69,183,209,0.25)", background: "rgba(69,183,209,0.05)", color: "rgba(69,183,209,0.7)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s" }}>
-                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
-                    이론 심화 분석 (선택)
-                  </button>
-                  <button onClick={() => advanceToStage("3")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
-                    다음 단계: 캐릭터
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                  </button>
-                </div>
-              )}
-            </div></ErrorBoundary>
-              </div>
-            )}
-          </div>
-
-          {/* ═══ STAGE 2: 개념 분석 ═══ */}
-          <div ref={(el) => { stageRefs.current["2"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "2" ? "rgba(69,183,209,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => setCurrentStage("2")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "2" ? "rgba(69,183,209,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("2")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("2") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
-                {getStageStatus("2") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("2")] }}>02</span>}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "2" ? "var(--text-main)" : getStageStatus("2") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)", display: "flex", alignItems: "center", gap: 8 }}>개념 분석 <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 6px", borderRadius: 8, background: "rgba(69,183,209,0.1)", color: "rgba(69,183,209,0.65)", border: "1px solid rgba(69,183,209,0.2)", letterSpacing: 0.5 }}>선택</span></div>
-                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>학술 이론 · 신화 매핑 · 전문가 패널 — 시놉시스 후 심화 분석</div>
-              </div>
-              {currentStage !== "2" && getStageDoneCount("2") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("2")}/{STAGE_TOTALS["2"]}</span>}
-              {getStageStatus("2") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "2" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
-            </div>
-            {currentStage === "2" && (
-              <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
-              <ErrorBoundary><div>
-
-              {/* ── 선택 단계 안내 ── */}
-              <div style={{ marginBottom: 18, padding: "12px 16px", borderRadius: 10, background: "rgba(69,183,209,0.05)", border: "1px solid rgba(69,183,209,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>💡</span>
-                <div style={{ fontSize: 12, color: "var(--c-tx-50)", lineHeight: 1.65 }}>
-                  <strong style={{ color: "rgba(69,183,209,0.85)" }}>이 단계는 선택 사항입니다.</strong> 학술 이론 분석은 창작 흐름을 늦출 수 있습니다.<br />
-                  시놉시스(Stage 4)를 먼저 확정하고 돌아와도 됩니다 — 분석 결과는 언제든 생성할 수 있습니다.
-                </div>
-              </div>
-
-              {/* ── 서사 이론 종합 (통합 버튼) ── */}
-              <div style={{ marginBottom: 12 }}>
-                <ToolButton icon={<SvgIcon d={ICON.chart} size={16} />} label="서사 이론 종합" sub="Aristotle · Campbell · Propp · Barthes · 한국 미학 · 테마" done={narrativeTheoryDone} loading={narrativeTheoryLoading} color="#45B7D1" onClick={analyzeNarrativeTheory} disabled={!logline.trim()}
-                  tooltip={"여러 서사 이론을 동시에 적용해 이 이야기의 학술적 위치를 분석합니다.\n\n• Aristotle 시학 — 구성·성격·사상의 완성도\n• Campbell 영웅의 여정 — 신화적 여정 단계 매핑\n• Propp 민담 형태론 — 31가지 서사 기능 분류\n• Barthes S/Z 5코드 — 서스펜스·행동·의미 코드\n• 한국 미학 — 한·정·신명 공명도\n• 테마 & 감정선 — 지배 아이디어와 도덕 전제"} />
-                <ErrorMsg msg={academicError || mythMapError || barthesCodeError || koreanMythError || themeError} />
-              </div>
-
-              {narrativeTheoryDone && (
-                <ResultCard
-                  title="서사 이론 종합 분석"
-                  onClose={() => { setAcademicResult(null); setMythMapResult(null); setBarthesCodeResult(null); setKoreanMythResult(null); setThemeResult(null); }}
-                  color="rgba(69,183,209,0.15)"
-                >
-                  {[
-                    academicResult && { label: "학술 이론 (Aristotle · Campbell · Propp · Todorov · Freytag)", node: <ErrorBoundary><AcademicPanel academic={academicResult} /></ErrorBoundary> },
-                    mythMapResult && { label: "신화적 위치 매핑 (Campbell · Propp · Frazer)", node: <ErrorBoundary><MythMapPanel data={mythMapResult} isMobile={isMobile} /></ErrorBoundary> },
-                    barthesCodeResult && { label: "바르트 서사 코드 (S/Z 5 codes)", node: <ErrorBoundary><BarthesCodePanel data={barthesCodeResult} isMobile={isMobile} /></ErrorBoundary> },
-                    koreanMythResult && { label: "한국 미학 공명 (한 · 정 · 신명)", node: <ErrorBoundary><KoreanMythPanel data={koreanMythResult} isMobile={isMobile} /></ErrorBoundary> },
-                    themeResult && { label: "테마 & 감정선 (Egri · McKee · Truby)", node: <ErrorBoundary><ThemeAnalysisPanel data={themeResult} isMobile={isMobile} /></ErrorBoundary> },
-                  ].filter(Boolean).map((item, i, arr) => (
-                    <div key={i}>
-                      {i > 0 && <div style={{ margin: "20px 0", height: 1, background: "var(--c-bd-1)" }} />}
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(69,183,209,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>{item.label}</div>
-                      {item.node}
-                    </div>
-                  ))}
-                </ResultCard>
-              )}
-
-              {/* ── 전문가 패널 (고유 포맷 — 유지) ── */}
-              <div style={{ marginTop: 8 }}>
-                <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="전문가 패널" sub="현업 전문가 10인의 독립 시각" done={!!expertPanelResult} loading={expertPanelLoading} color="#FFD166" onClick={runExpertPanel} disabled={!logline.trim()}
-                  tooltip={"시나리오 작가, 제작사 PD, 문학평론가, 마케터 등 현업 전문가 10인이 이 로그라인을 독립적으로 평가합니다.\n\n라운드 1 — 각자 개별 의견 제시\n라운드 2 — 의견 교환 후 토론\n종합 — 합의점·핵심 강점 도출\n\n실제 방송사·제작사 심사 환경과 유사한 피드백을 얻을 수 있습니다."} />
-                <ErrorMsg msg={expertPanelError} />
-                {expertPanelResult && <ResultCard title="전문가 패널 토론" onClose={() => setExpertPanelResult(null)} color="rgba(255,209,102,0.15)"><ErrorBoundary><ExpertPanelSection data={expertPanelResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
-              </div>
-              {getStageStatus("2") === "done" && (
                 <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
                   <button onClick={() => advanceToStage("3")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
                     다음 단계: 캐릭터
@@ -3086,7 +3006,11 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                         </div>
                       </div>
                     )}
-                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                      <button onClick={() => advanceToStage("2")} style={{ padding: "8px 16px", borderRadius: 9, border: "1px solid rgba(69,183,209,0.25)", background: "rgba(69,183,209,0.05)", color: "rgba(69,183,209,0.7)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s" }}>
+                        <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
+                        이론 심화 분석 (선택)
+                      </button>
                       <button
                         onClick={() => advanceToStage("5")}
                         style={{
@@ -3104,6 +3028,82 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   </div>
                 );
               })()}
+            </div></ErrorBoundary>
+              </div>
+            )}
+          </div>
+
+          {/* ═══ STAGE 2: 개념 분석 (선택) ═══ */}
+          <div ref={(el) => { stageRefs.current["2"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "2" ? "rgba(69,183,209,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
+            <div onClick={() => setCurrentStage("2")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "2" ? "rgba(69,183,209,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("2")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("2") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
+                {getStageStatus("2") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("2")] }}>04</span>}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "2" ? "var(--text-main)" : getStageStatus("2") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)", display: "flex", alignItems: "center", gap: 8 }}>개념 분석 <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 6px", borderRadius: 8, background: "rgba(69,183,209,0.1)", color: "rgba(69,183,209,0.65)", border: "1px solid rgba(69,183,209,0.2)", letterSpacing: 0.5 }}>선택</span></div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>학술 이론 · 신화 매핑 · 전문가 패널 — 시놉시스 후 심화 분석</div>
+              </div>
+              {currentStage !== "2" && getStageDoneCount("2") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("2")}/{STAGE_TOTALS["2"]}</span>}
+              {getStageStatus("2") === "active" && <Spinner size={12} color="#C8A84B" />}
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "2" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+            </div>
+            {currentStage === "2" && (
+              <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
+              <ErrorBoundary><div>
+
+              {/* ── 선택 단계 안내 ── */}
+              <div style={{ marginBottom: 18, padding: "12px 16px", borderRadius: 10, background: "rgba(69,183,209,0.05)", border: "1px solid rgba(69,183,209,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>💡</span>
+                <div style={{ fontSize: 12, color: "var(--c-tx-50)", lineHeight: 1.65 }}>
+                  <strong style={{ color: "rgba(69,183,209,0.85)" }}>선택 심화 분석 단계입니다.</strong> 시놉시스가 확정된 지금, 학술 이론으로 이야기의 구조적 깊이를 강화할 수 있습니다.<br />
+                  건너뛰어도 되고, 트리트먼트 작업 전·후 언제든 돌아올 수 있습니다.
+                </div>
+              </div>
+
+              {/* ── 서사 이론 종합 (통합 버튼) ── */}
+              <div style={{ marginBottom: 12 }}>
+                <ToolButton icon={<SvgIcon d={ICON.chart} size={16} />} label="서사 이론 종합" sub="Aristotle · Campbell · Propp · Barthes · 한국 미학 · 테마" done={narrativeTheoryDone} loading={narrativeTheoryLoading} color="#45B7D1" onClick={analyzeNarrativeTheory} disabled={!logline.trim()}
+                  tooltip={"여러 서사 이론을 동시에 적용해 이 이야기의 학술적 위치를 분석합니다.\n\n• Aristotle 시학 — 구성·성격·사상의 완성도\n• Campbell 영웅의 여정 — 신화적 여정 단계 매핑\n• Propp 민담 형태론 — 31가지 서사 기능 분류\n• Barthes S/Z 5코드 — 서스펜스·행동·의미 코드\n• 한국 미학 — 한·정·신명 공명도\n• 테마 & 감정선 — 지배 아이디어와 도덕 전제"} />
+                <ErrorMsg msg={academicError || mythMapError || barthesCodeError || koreanMythError || themeError} />
+              </div>
+
+              {narrativeTheoryDone && (
+                <ResultCard
+                  title="서사 이론 종합 분석"
+                  onClose={() => { setAcademicResult(null); setMythMapResult(null); setBarthesCodeResult(null); setKoreanMythResult(null); setThemeResult(null); }}
+                  color="rgba(69,183,209,0.15)"
+                >
+                  {[
+                    academicResult && { label: "학술 이론 (Aristotle · Campbell · Propp · Todorov · Freytag)", node: <ErrorBoundary><AcademicPanel academic={academicResult} /></ErrorBoundary> },
+                    mythMapResult && { label: "신화적 위치 매핑 (Campbell · Propp · Frazer)", node: <ErrorBoundary><MythMapPanel data={mythMapResult} isMobile={isMobile} /></ErrorBoundary> },
+                    barthesCodeResult && { label: "바르트 서사 코드 (S/Z 5 codes)", node: <ErrorBoundary><BarthesCodePanel data={barthesCodeResult} isMobile={isMobile} /></ErrorBoundary> },
+                    koreanMythResult && { label: "한국 미학 공명 (한 · 정 · 신명)", node: <ErrorBoundary><KoreanMythPanel data={koreanMythResult} isMobile={isMobile} /></ErrorBoundary> },
+                    themeResult && { label: "테마 & 감정선 (Egri · McKee · Truby)", node: <ErrorBoundary><ThemeAnalysisPanel data={themeResult} isMobile={isMobile} /></ErrorBoundary> },
+                  ].filter(Boolean).map((item, i, arr) => (
+                    <div key={i}>
+                      {i > 0 && <div style={{ margin: "20px 0", height: 1, background: "var(--c-bd-1)" }} />}
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(69,183,209,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>{item.label}</div>
+                      {item.node}
+                    </div>
+                  ))}
+                </ResultCard>
+              )}
+
+              {/* ── 전문가 패널 (고유 포맷 — 유지) ── */}
+              <div style={{ marginTop: 8 }}>
+                <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="전문가 패널" sub="현업 전문가 10인의 독립 시각" done={!!expertPanelResult} loading={expertPanelLoading} color="#FFD166" onClick={runExpertPanel} disabled={!logline.trim()}
+                  tooltip={"시나리오 작가, 제작사 PD, 문학평론가, 마케터 등 현업 전문가 10인이 이 로그라인을 독립적으로 평가합니다.\n\n라운드 1 — 각자 개별 의견 제시\n라운드 2 — 의견 교환 후 토론\n종합 — 합의점·핵심 강점 도출\n\n실제 방송사·제작사 심사 환경과 유사한 피드백을 얻을 수 있습니다."} />
+                <ErrorMsg msg={expertPanelError} />
+                {expertPanelResult && <ResultCard title="전문가 패널 토론" onClose={() => setExpertPanelResult(null)} color="rgba(255,209,102,0.15)"><ErrorBoundary><ExpertPanelSection data={expertPanelResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
+              </div>
+              {getStageStatus("2") === "done" && (
+                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
+                  <button onClick={() => advanceToStage("5")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
+                    다음 단계: 트리트먼트 & 비트
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+              )}
             </div></ErrorBoundary>
               </div>
             )}
