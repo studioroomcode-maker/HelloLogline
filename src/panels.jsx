@@ -4340,4 +4340,468 @@ export function SceneListPanel({ text, isMobile }) {
 }
 
 // ─────────────────────────────────────────────
+// COMPARABLE WORKS PANEL
+// ─────────────────────────────────────────────
+export function ComparableWorksPanel({ data, isMobile }) {
+  const [expanded, setExpanded] = useState(null);
+  if (!data) return null;
+
+  const works = data.comparable_works || [];
+
+  const simColor = (score) => {
+    if (score >= 80) return "#E85D75";
+    if (score >= 65) return "#FFD166";
+    if (score >= 50) return "#4ECCA3";
+    return "#60A5FA";
+  };
+
+  const simLabel = (score) => {
+    if (score >= 80) return "매우 유사";
+    if (score >= 65) return "상당히 유사";
+    if (score >= 50) return "부분 유사";
+    return "참고 수준";
+  };
+
+  return (
+    <div>
+      {/* 톤 레퍼런스 */}
+      {data.tone_reference && (
+        <div style={{
+          marginBottom: 16, padding: "10px 14px", borderRadius: 8,
+          background: "rgba(96,165,250,0.06)", border: "1px solid rgba(96,165,250,0.2)",
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#60A5FA", marginBottom: 4, letterSpacing: 0.5 }}>톤 레퍼런스</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
+            {data.tone_reference}
+          </div>
+        </div>
+      )}
+
+      {/* 유사 작품 리스트 */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+        {works.map((w, i) => {
+          const isOpen = expanded === i;
+          const sc = simColor(w.similarity_score);
+          return (
+            <div key={i} style={{
+              borderRadius: 10, border: `1px solid ${isOpen ? sc + "40" : "rgba(255,255,255,0.07)"}`,
+              background: isOpen ? `${sc}06` : "rgba(255,255,255,0.02)",
+              transition: "all 0.2s", overflow: "hidden",
+            }}>
+              {/* 헤더 클릭으로 펼치기 */}
+              <button onClick={() => setExpanded(isOpen ? null : i)} style={{
+                width: "100%", padding: "12px 14px", background: "none", border: "none",
+                cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textAlign: "left",
+              }}>
+                {/* 유사도 게이지 */}
+                <div style={{
+                  width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
+                  background: `conic-gradient(${sc} ${w.similarity_score * 3.6}deg, rgba(255,255,255,0.07) 0deg)`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <div style={{
+                    width: 30, height: 30, borderRadius: "50%", background: "#0a0a18",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 9, fontWeight: 700, color: sc, fontFamily: "'JetBrains Mono', monospace",
+                  }}>
+                    {w.similarity_score}
+                  </div>
+                </div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+                      {w.title}
+                    </span>
+                    {w.year && (
+                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>
+                        {w.year}
+                      </span>
+                    )}
+                    {w.country && (
+                      <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.4)" }}>
+                        {w.country}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 3, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 20, background: `${sc}18`, color: sc, fontWeight: 600 }}>
+                      {simLabel(w.similarity_score)}
+                    </span>
+                    {(w.similarity_types || []).map((t, ti) => (
+                      <span key={ti} style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>{t}</span>
+                    ))}
+                    {w.platform && (
+                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>
+                        {w.platform}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ color: isOpen ? sc : "rgba(255,255,255,0.2)", flexShrink: 0, fontSize: 12 }}>
+                  {isOpen ? "▲" : "▼"}
+                </div>
+              </button>
+
+              {/* 상세 내용 */}
+              {isOpen && (
+                <div style={{ padding: "0 14px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+                  {w.director_writer && (
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
+                      감독/작가: {w.director_writer}
+                    </div>
+                  )}
+                  <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: sc, marginBottom: 5, letterSpacing: 0.5 }}>유사한 이유</div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                      {w.why_comparable}
+                    </div>
+                  </div>
+                  {w.key_difference && (
+                    <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "10px 12px" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", marginBottom: 5, letterSpacing: 0.5 }}>차별점</div>
+                      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                        {w.key_difference}
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ background: `${sc}08`, borderRadius: 8, padding: "10px 12px", border: `1px solid ${sc}20` }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: sc, marginBottom: 5, letterSpacing: 0.5 }}>참고할 점</div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                      {w.what_to_learn}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 시장 포지셔닝 */}
+      {data.market_positioning && (
+        <div style={{ marginBottom: 12, padding: "12px 14px", borderRadius: 9, background: "rgba(78,204,163,0.05)", border: "1px solid rgba(78,204,163,0.15)" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", marginBottom: 6, letterSpacing: 0.5 }}>시장 포지셔닝</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.72)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
+            {data.market_positioning}
+          </div>
+        </div>
+      )}
+
+      {/* 강점/리스크 */}
+      {(data.positioning_strength || data.positioning_risk) && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {data.positioning_strength && (
+            <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.12)" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", marginBottom: 5 }}>포지셔닝 강점</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{data.positioning_strength}</div>
+            </div>
+          )}
+          {data.positioning_risk && (
+            <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(232,93,117,0.04)", border: "1px solid rgba(232,93,117,0.12)" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#E85D75", marginBottom: 5 }}>시장 리스크</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{data.positioning_risk}</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 타겟 */}
+      {data.target_audience && (
+        <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 8, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", marginBottom: 6, letterSpacing: 0.5 }}>타겟 시청자</div>
+          {data.target_audience.primary && (
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", marginBottom: 3, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              <span style={{ color: "rgba(255,255,255,0.35)" }}>주: </span>{data.target_audience.primary}
+            </div>
+          )}
+          {data.target_audience.secondary && (
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 3, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              <span style={{ color: "rgba(255,255,255,0.25)" }}>보조: </span>{data.target_audience.secondary}
+            </div>
+          )}
+          {(data.target_audience.platform_fit || []).length > 0 && (
+            <div style={{ display: "flex", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
+              {(data.target_audience.platform_fit || []).map((p, i) => (
+                <span key={i} style={{ padding: "2px 8px", borderRadius: 5, background: "rgba(96,165,250,0.1)", color: "#60A5FA", fontSize: 10, fontWeight: 600 }}>
+                  {p}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// VALUATION PANEL
+// ─────────────────────────────────────────────
+export function ValuationPanel({ data, isMobile }) {
+  if (!data) return null;
+
+  const scoreColor = (score) => {
+    if (score >= 80) return "#4ECCA3";
+    if (score >= 65) return "#60A5FA";
+    if (score >= 50) return "#FFD166";
+    if (score >= 35) return "#F7A072";
+    return "#E85D75";
+  };
+
+  const fmt = (n) => {
+    if (!n && n !== 0) return "미정";
+    if (n >= 100000000) return `${(n / 100000000).toFixed(1)}억원`;
+    if (n >= 10000000) return `${(n / 10000000).toFixed(0)}천만원`;
+    if (n >= 1000000) return `${(n / 1000000).toFixed(0)}백만원`;
+    return `${n.toLocaleString()}원`;
+  };
+
+  const fmtUsd = (n) => {
+    if (!n && n !== 0) return "미정";
+    if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
+    if (n >= 1000) return `$${(n / 1000).toFixed(0)}K`;
+    return `$${n.toLocaleString()}`;
+  };
+
+  const sc = scoreColor(data.completion_score);
+  const bd = data.completion_breakdown || {};
+  const breakdownKeys = [
+    { key: "premise_originality", label: "전제 독창성", max: 30 },
+    { key: "structural_potential", label: "구조 완성 가능성", max: 25 },
+    { key: "character_depth_potential", label: "캐릭터 심리 깊이", max: 25 },
+    { key: "market_potential", label: "시장성 잠재력", max: 20 },
+  ];
+
+  const km = data.korean_market || {};
+  const um = data.us_market || {};
+
+  return (
+    <div>
+      {/* 완성도 점수 헤더 */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 20, marginBottom: 20,
+        padding: "16px 18px", borderRadius: 12,
+        background: `${sc}08`, border: `1px solid ${sc}30`,
+      }}>
+        {/* 원형 점수 */}
+        <div style={{ position: "relative", width: 72, height: 72, flexShrink: 0 }}>
+          <svg width={72} height={72} style={{ transform: "rotate(-90deg)" }}>
+            <circle cx={36} cy={36} r={30} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={6} />
+            <circle cx={36} cy={36} r={30} fill="none" stroke={sc} strokeWidth={6}
+              strokeDasharray={`${2 * Math.PI * 30 * data.completion_score / 100} ${2 * Math.PI * 30}`}
+              strokeLinecap="round" />
+          </svg>
+          <div style={{
+            position: "absolute", inset: 0, display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+          }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: sc, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+              {data.completion_score}
+            </div>
+            <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)", marginTop: 1 }}>/ 100</div>
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: sc, fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 4 }}>
+            {data.completion_label}
+          </div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+            {data.market_tier}
+          </div>
+        </div>
+      </div>
+
+      {/* 세부 점수 */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: 1, marginBottom: 10, textTransform: "uppercase" }}>완성도 세부 평가</div>
+        {breakdownKeys.map(({ key, label, max }) => {
+          const item = bd[key] || {};
+          const score = item.score ?? 0;
+          const pct = Math.round(score / max * 100);
+          const c = scoreColor(pct);
+          return (
+            <div key={key} style={{ marginBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: c, fontFamily: "'JetBrains Mono', monospace" }}>{score}/{max}</span>
+              </div>
+              <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden", marginBottom: 4 }}>
+                <div style={{ height: "100%", width: `${pct}%`, background: c, borderRadius: 2, transition: "width 0.6s ease" }} />
+              </div>
+              {item.comment && (
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{item.comment}</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 한국 시장 가격 */}
+      <div style={{ marginBottom: 16, padding: "14px 16px", borderRadius: 10, background: "rgba(255,209,102,0.05)", border: "1px solid rgba(255,209,102,0.2)" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#FFD166", letterSpacing: 0.5, marginBottom: 10 }}>한국 시장 예상 가격</div>
+        {km.format_assumed && (
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif" }}>
+            기준 포맷: {km.format_assumed}
+          </div>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {km.option_price && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", fontFamily: "'Noto Sans KR', sans-serif" }}>옵션 계약 (개발 단계)</div>
+                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginTop: 1, fontFamily: "'Noto Sans KR', sans-serif" }}>{km.option_price.basis}</div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#FFD166", fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>
+                {fmt(km.option_price.min_krw)} ~ {fmt(km.option_price.max_krw)}
+              </div>
+            </div>
+          )}
+          {km.full_price_rookie && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingTop: 6, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+              <div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", fontFamily: "'Noto Sans KR', sans-serif" }}>신인 작가 기준</div>
+                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginTop: 1, fontFamily: "'Noto Sans KR', sans-serif" }}>{km.full_price_rookie.basis}</div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,209,102,0.7)", fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>
+                {fmt(km.full_price_rookie.min_krw)} ~ {fmt(km.full_price_rookie.max_krw)}
+              </div>
+            </div>
+          )}
+          {km.full_price_experienced && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingTop: 6, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+              <div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", fontFamily: "'Noto Sans KR', sans-serif" }}>경력 작가 기준</div>
+                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginTop: 1, fontFamily: "'Noto Sans KR', sans-serif" }}>{km.full_price_experienced.basis}</div>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#FFD166", fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>
+                {fmt(km.full_price_experienced.min_krw)} ~ {fmt(km.full_price_experienced.max_krw)}
+              </div>
+            </div>
+          )}
+        </div>
+        {km.recommended_buyers && km.recommended_buyers.length > 0 && (
+          <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 5 }}>추천 바이어</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+              {km.recommended_buyers.map((b, i) => (
+                <span key={i} style={{ padding: "2px 8px", borderRadius: 5, background: "rgba(255,209,102,0.1)", color: "#FFD166", fontSize: 10, fontWeight: 600 }}>
+                  {b}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        {km.price_rationale && (
+          <div style={{ marginTop: 10, fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+            {km.price_rationale}
+          </div>
+        )}
+      </div>
+
+      {/* 미국 시장 */}
+      {(um.wga_minimum || um.spec_market_estimate) && (
+        <div style={{ marginBottom: 16, padding: "14px 16px", borderRadius: 10, background: "rgba(96,165,250,0.04)", border: "1px solid rgba(96,165,250,0.15)" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#60A5FA", letterSpacing: 0.5, marginBottom: 10 }}>미국 시장 참고 (USD)</div>
+          {um.format_assumed && (
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 8, fontFamily: "'Noto Sans KR', sans-serif" }}>기준: {um.format_assumed}</div>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {um.wga_minimum && (
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>WGA 최저 기준</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#60A5FA", fontFamily: "'JetBrains Mono', monospace" }}>
+                  {fmtUsd(um.wga_minimum.min_usd)} ~ {fmtUsd(um.wga_minimum.max_usd)}
+                </div>
+              </div>
+            )}
+            {um.spec_market_estimate && (
+              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 6, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>스펙 시장 추정가</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#60A5FA", fontFamily: "'JetBrains Mono', monospace" }}>
+                  {fmtUsd(um.spec_market_estimate.min_usd)} ~ {fmtUsd(um.spec_market_estimate.max_usd)}
+                </div>
+              </div>
+            )}
+          </div>
+          {um.us_market_feasibility && (
+            <div style={{ marginTop: 10, fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              {um.us_market_feasibility}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 가치 요인 */}
+      {(data.factors_boosting_value?.length > 0 || data.factors_reducing_value?.length > 0) && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+          {data.factors_boosting_value?.length > 0 && (
+            <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.12)" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", marginBottom: 7 }}>가치 상승 요인</div>
+              {data.factors_boosting_value.map((f, i) => (
+                <div key={i} style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 4, lineHeight: 1.4, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                  + {f}
+                </div>
+              ))}
+            </div>
+          )}
+          {data.factors_reducing_value?.length > 0 && (
+            <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(232,93,117,0.04)", border: "1px solid rgba(232,93,117,0.12)" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#E85D75", marginBottom: 7 }}>가치 하락 요인</div>
+              {data.factors_reducing_value.map((f, i) => (
+                <div key={i} style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 4, lineHeight: 1.4, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                  - {f}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 개발 권고 */}
+      {data.development_recommendation && (
+        <div style={{ marginBottom: 12, padding: "12px 14px", borderRadius: 9, background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.15)" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", marginBottom: 6, letterSpacing: 0.5 }}>가치를 높이려면</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
+            {data.development_recommendation}
+          </div>
+        </div>
+      )}
+
+      {/* 비교 거래 사례 */}
+      {data.comparable_deals?.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: 0.5, marginBottom: 8, textTransform: "uppercase" }}>비교 거래 사례</div>
+          {data.comparable_deals.map((deal, i) => (
+            <div key={i} style={{ marginBottom: 6, padding: "9px 12px", borderRadius: 7, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 3 }}>
+                {deal.title}
+              </div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>
+                {deal.deal_info}
+              </div>
+              {deal.relevance && (
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+                  {deal.relevance}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 면책 */}
+      {data.disclaimer && (
+        <div style={{ padding: "8px 12px", borderRadius: 7, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>
+            ⚠ {data.disclaimer}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // 메인 컴포넌트

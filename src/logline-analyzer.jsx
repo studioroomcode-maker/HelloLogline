@@ -10,6 +10,7 @@ import {
   MYTH_MAP_SYSTEM_PROMPT, BARTHES_CODE_SYSTEM_PROMPT, KOREAN_MYTH_SYSTEM_PROMPT,
   SCRIPT_COVERAGE_SYSTEM_PROMPT, DIALOGUE_DEV_SYSTEM_PROMPT,
   STRUCTURE_ANALYSIS_SYSTEM_PROMPT, THEME_ANALYSIS_SYSTEM_PROMPT, SCENE_LIST_SYSTEM_PROMPT,
+  COMPARABLE_WORKS_SYSTEM_PROMPT, VALUATION_SYSTEM_PROMPT,
   CRITERIA_GUIDE, LABELS_KR, GENRES, DURATION_OPTIONS, EXAMPLE_LOGLINES,
 } from "./constants.js";
 import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText } from "./utils.js";
@@ -19,6 +20,7 @@ import {
   ValueChargeSchema, ShadowAnalysisSchema, AuthenticitySchema, CharacterDevSchema,
   StructureAnalysisSchema, ThemeAnalysisSchema, SubtextSchema,
   BeatSheetSchema, DialogueDevSchema, ScriptCoverageSchema,
+  ComparableWorksSchema, ValuationSchema,
 } from "./schemas.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { saveProject, loadProjects, deleteProject } from "./db.js";
@@ -30,6 +32,7 @@ import {
   SubtextPanel, MythMapPanel, BarthesCodePanel, KoreanMythPanel,
   ScriptCoveragePanel, DialogueDevPanel,
   StructureAnalysisPanel, ThemeAnalysisPanel, SceneListPanel,
+  ComparableWorksPanel, ValuationPanel,
   RadarChart, CircleGauge, ScoreBar, ScoreHistoryChart,
 } from "./panels.jsx";
 
@@ -304,6 +307,18 @@ export default function LoglineAnalyzer() {
   const [scriptCoverageError, setScriptCoverageError] = useState("");
   const scriptCoverageRef = useRef(null);
 
+  // ── Comparable Works ──
+  const [comparableResult, setComparableResult] = useState(null);
+  const [comparableLoading, setComparableLoading] = useState(false);
+  const [comparableError, setComparableError] = useState("");
+  const comparableRef = useRef(null);
+
+  // ── Valuation ──
+  const [valuationResult, setValuationResult] = useState(null);
+  const [valuationLoading, setValuationLoading] = useState(false);
+  const [valuationError, setValuationError] = useState("");
+  const valuationRef = useRef(null);
+
   // ── Dialogue Dev ──
   const [dialogueDevResult, setDialogueDevResult] = useState(null);
   const [dialogueDevLoading, setDialogueDevLoading] = useState(false);
@@ -397,6 +412,7 @@ export default function LoglineAnalyzer() {
     treatmentResult, beatSheetResult, beatScenes,
     dialogueDevResult, scriptCoverageResult,
     structureResult, themeResult, sceneListResult,
+    comparableResult, valuationResult,
   });
 
   const autoSave = async () => {
@@ -452,6 +468,8 @@ export default function LoglineAnalyzer() {
     setStructureResult(proj.structureResult || null);
     setThemeResult(proj.themeResult || null);
     setSceneListResult(proj.sceneListResult || "");
+    setComparableResult(proj.comparableResult || null);
+    setValuationResult(proj.valuationResult || null);
     setCurrentProjectId(proj.id);
     setShowProjects(false);
     setCurrentStage("1");
@@ -1003,6 +1021,54 @@ export default function LoglineAnalyzer() {
     try { const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, ScriptCoverageSchema); setScriptCoverageResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setScriptCoverageError(err.message || "Script Coverage 생성 중 오류가 발생했습니다."); }
     finally { setScriptCoverageLoading(false); clearController("scriptCoverage"); }
+  };
+
+  // ── Comparable Works ──
+  const analyzeComparableWorks = async () => {
+    if (!logline.trim() || !apiKey) return;
+    const ctrl = makeController("comparable");
+    setComparableLoading(true); setComparableError(""); setComparableResult(null);
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
+    const synopsisContext = pipelineResult?.synopsis
+      ? `\n\n시놉시스:\n${pipelineResult.synopsis.slice(0, 2000)}`
+      : synopsisResults?.synopses?.[0]?.synopsis
+      ? `\n\n시놉시스 (첫 번째 방향):\n${synopsisResults.synopses[0].synopsis.slice(0, 2000)}`
+      : "";
+    const treatmentContext = treatmentResult
+      ? `\n\n트리트먼트 (앞부분):\n${treatmentResult.slice(0, 1500)}`
+      : "";
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${synopsisContext}${treatmentContext}\n\n위 이야기와 유사한 기존 영화·드라마 작품을 분석하고 시장 포지셔닝을 평가하세요.`;
+    try { const data = await callClaude(apiKey, COMPARABLE_WORKS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, ComparableWorksSchema); setComparableResult(data); await autoSave(); }
+    catch (err) { if (err.name !== "AbortError") setComparableError(err.message || "유사 작품 분석 중 오류가 발생했습니다."); }
+    finally { setComparableLoading(false); clearController("comparable"); }
+  };
+
+  // ── Valuation ──
+  const analyzeValuation = async () => {
+    if (!logline.trim() || !apiKey) return;
+    const ctrl = makeController("valuation");
+    setValuationLoading(true); setValuationError(""); setValuationResult(null);
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
+    const structureTotal = calcSectionTotal(result, "structure");
+    const expressionTotal = calcSectionTotal(result, "expression");
+    const technicalTotal = calcSectionTotal(result, "technical");
+    const interestTotal = calcSectionTotal(result, "interest");
+    const scoreContext = result
+      ? `\n\n로그라인 분석 점수:\n- 구조적 완성도: ${structureTotal}/50\n- 표현적 매력도: ${expressionTotal}/30\n- 기술적 완성도: ${technicalTotal}/20\n- 흥미 유발 지수: ${interestTotal}/100\n- 감지 장르: ${result.detected_genre || genreLabel}`
+      : "";
+    const coverageContext = scriptCoverageResult
+      ? `\n\nScript Coverage 결과:\n- 전체 점수: ${scriptCoverageResult.overall_score}/10\n- 추천 등급: ${scriptCoverageResult.recommendation}\n- 강점: ${(scriptCoverageResult.strengths || []).join(", ")}\n- 약점: ${(scriptCoverageResult.weaknesses || []).join(", ")}`
+      : "";
+    const synopsisContext = pipelineResult?.synopsis
+      ? `\n\n시놉시스 (요약):\n${pipelineResult.synopsis.slice(0, 1500)}`
+      : "";
+    const comparableContext = comparableResult
+      ? `\n\n유사 작품: ${(comparableResult.comparable_works || []).slice(0, 3).map((w) => `${w.title}(${w.year || ""})`).join(", ")}\n시장 포지셔닝: ${comparableResult.market_positioning?.slice(0, 200) || ""}`
+      : "";
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${scoreContext}${coverageContext}${synopsisContext}${comparableContext}\n\n위 정보를 바탕으로 이 이야기의 완성도와 시장 판매 가격을 평가하세요.`;
+    try { const data = await callClaude(apiKey, VALUATION_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, ValuationSchema); setValuationResult(data); await autoSave(); }
+    catch (err) { if (err.name !== "AbortError") setValuationError(err.message || "시장 가치 평가 중 오류가 발생했습니다."); }
+    finally { setValuationLoading(false); clearController("valuation"); }
   };
 
   // ── Dialogue Dev ──
@@ -1894,6 +1960,27 @@ export default function LoglineAnalyzer() {
                 {subtextResult && <ResultCard title="하위텍스트 탐지" onClose={() => setSubtextResult(null)} color="rgba(149,225,211,0.15)"><SubtextPanel data={subtextResult} isMobile={isMobile} /></ResultCard>}
               </div>
 
+              {/* ── 유사 작품 비교 ── */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>시장 포지셔닝</div>
+                <ToolButton
+                  icon={<SvgIcon d={ICON.film} size={16} />}
+                  label="유사 작품 비교 분석"
+                  sub="한국·해외 참고 작품 + 시장 포지셔닝"
+                  done={!!comparableResult}
+                  loading={comparableLoading}
+                  color="#F472B6"
+                  onClick={analyzeComparableWorks}
+                  disabled={!logline.trim()}
+                />
+                <ErrorMsg msg={comparableError} />
+                {comparableResult && (
+                  <ResultCard title="유사 작품 비교" onClose={() => setComparableResult(null)} color="rgba(244,114,182,0.15)">
+                    <ErrorBoundary><ComparableWorksPanel data={comparableResult} isMobile={isMobile} /></ErrorBoundary>
+                  </ResultCard>
+                )}
+              </div>
+
               {/* ── 이전 분석 반영 표시 ── */}
               {(() => {
                 const badges = [
@@ -2170,6 +2257,27 @@ export default function LoglineAnalyzer() {
                   </div>
                 </>
               )}
+
+              {/* ── 시장 가치 평가 ── */}
+              <div style={{ marginTop: 20 }}>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>시장 가치 평가</div>
+                <ToolButton
+                  icon={<SvgIcon d={ICON.chart} size={16} />}
+                  label="완성도 점수 + 판매가 예측"
+                  sub="한국·미국 시장 추정 판매가 · 신인/경력 기준"
+                  done={!!valuationResult}
+                  loading={valuationLoading}
+                  color="#FFD166"
+                  onClick={analyzeValuation}
+                  disabled={!logline.trim()}
+                />
+                <ErrorMsg msg={valuationError} />
+                {valuationResult && (
+                  <ResultCard title="시장 가치 평가" onClose={() => setValuationResult(null)} color="rgba(255,209,102,0.15)">
+                    <ErrorBoundary><ValuationPanel data={valuationResult} isMobile={isMobile} /></ErrorBoundary>
+                  </ResultCard>
+                )}
+              </div>
             </div></ErrorBoundary>
           )}
 

@@ -263,6 +263,27 @@ export const DialogueDevSchema = z
   })
   .passthrough();
 
+// ─── Stage 4: 유사 작품 비교 ──────────────────────────────────────────────────
+
+export const ComparableWorksSchema = z
+  .object({
+    comparable_works: z.array(
+      z
+        .object({
+          title: z.string(),
+          year: z.number().optional(),
+          similarity_score: z.number(),
+          why_comparable: z.string(),
+          what_to_learn: z.string(),
+        })
+        .passthrough()
+    ),
+    market_positioning: z.string(),
+    tone_reference: z.string(),
+    target_audience: z.object({}).passthrough(),
+  })
+  .passthrough();
+
 // ─── Stage 6: Script Coverage ─────────────────────────────────────────────────
 
 export const ScriptCoverageSchema = z
@@ -272,5 +293,26 @@ export const ScriptCoverageSchema = z
     scores: z.object({}).passthrough(),
     strengths: z.array(z.string()),
     weaknesses: z.array(z.string()),
+  })
+  .passthrough();
+
+// ─── Stage 6: 시장 가치 평가 ──────────────────────────────────────────────────
+
+export const ValuationSchema = z
+  .object({
+    completion_score: z.number(),
+    completion_label: z.string(),
+    completion_breakdown: z.object({}).passthrough(),
+    market_tier: z.string(),
+    korean_market: z
+      .object({
+        format_assumed: z.string().optional(),
+        price_rationale: z.string(),
+      })
+      .passthrough(),
+    factors_boosting_value: z.array(z.string()),
+    factors_reducing_value: z.array(z.string()),
+    development_recommendation: z.string(),
+    disclaimer: z.string(),
   })
   .passthrough();
