@@ -1610,9 +1610,9 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
         position: "sticky", top: 0, zIndex: 40,
         background: "rgba(12,12,26,0.9)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
         borderBottom: "1px solid rgba(255,255,255,0.05)",
-        height: 56, display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: isMobile ? "0 12px" : "0 24px",
+        height: 56,
       }}>
+        <div style={{ maxWidth: 860, margin: "0 auto", height: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "0 12px" : "0 28px" }}>
         <div>
           <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "#e8e8f0", letterSpacing: -0.3 }}>Hello Loglines</div>
           {!isMobile && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: -1 }}>시나리오 개발 워크스테이션</div>}
@@ -1669,6 +1669,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
             <SvgIcon d={ICON.key} size={13} />
             API
           </button>
+        </div>
         </div>
       </div>
 
@@ -2657,12 +2658,12 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
       {/* ─── Footer ─── */}
       <div style={{
         borderTop: "1px solid rgba(255,255,255,0.04)",
-        padding: isMobile ? "16px" : "18px 32px",
-        display: "flex", alignItems: "center", justifyContent: "flex-end",
         background: "#0a0a18",
       }}>
-        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.18)", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.7 }}>
-          &copy; {new Date().getFullYear()} All rights reserved. &nbsp;|&nbsp; Hello Loglines &nbsp;|&nbsp; Powered by Claude AI (Anthropic)
+        <div style={{ maxWidth: 860, margin: "0 auto", padding: isMobile ? "16px 12px" : "18px 28px", display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.18)", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.7 }}>
+            &copy; {new Date().getFullYear()} All rights reserved. &nbsp;|&nbsp; Hello Loglines &nbsp;|&nbsp; Powered by Claude AI (Anthropic)
+          </div>
         </div>
       </div>
     </div>
