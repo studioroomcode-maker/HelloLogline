@@ -2660,9 +2660,17 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
         borderTop: "1px solid rgba(255,255,255,0.04)",
         background: "#0a0a18",
       }}>
-        <div style={{ maxWidth: 860, margin: "0 auto", padding: isMobile ? "16px 12px" : "18px 28px", display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.18)", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.7 }}>
-            &copy; {new Date().getFullYear()} All rights reserved. &nbsp;|&nbsp; Hello Loglines &nbsp;|&nbsp; Powered by Claude AI (Anthropic)
+        <div style={{ maxWidth: 860, margin: "0 auto", padding: isMobile ? "14px 12px" : "16px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>
+            &copy; {new Date().getFullYear()} Hello Loglines &nbsp;·&nbsp; Powered by Claude AI
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.18)", fontFamily: "'JetBrains Mono', monospace" }}>made by</span>
+            <img
+              src="/studioroom-logo-light.png"
+              alt="STUDIO ROOM"
+              style={{ height: 16, opacity: 0.55, filter: "brightness(1)" }}
+            />
           </div>
         </div>
       </div>
