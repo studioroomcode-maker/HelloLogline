@@ -1044,8 +1044,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
   // ── Analyze ──
   const analyze = async (overrideLogline) => {
     const target = overrideLogline ?? logline;
-    console.log("[analyze] called", { target: typeof target, len: target?.length, apiKey: !!apiKey, loading });
-    if (!target.trim() || !apiKey) { console.log("[analyze] early return"); return; }
+    if (!target.trim() || !apiKey) return;
     if (overrideLogline) setLogline(overrideLogline);
     const ctrl = makeController("analyze");
     setLoading(true);
@@ -1360,8 +1359,21 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
     const ctrl = makeController("dialogueDev");
     setDialogueDevLoading(true); setDialogueDevError(""); setDialogueDevResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const charContext = charDevResult ? `\n주인공: ${charDevResult.protagonist?.name || "미정"} — ${charDevResult.protagonist?.egri?.psychology || ""}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${charContext}\n\n위 로그라인의 인물들을 위한 대사 고유 목소리와 하위텍스트 대사 기법을 설계하세요.`;
+    let charContext = "";
+    if (charDevResult?.protagonist) {
+      const p = charDevResult.protagonist;
+      const lines = [
+        `주인공: ${p.name_suggestion || "주인공"}`,
+        p.want  ? `  - 목표: ${p.want}` : "",
+        p.ghost ? `  - 상처: ${p.ghost}` : "",
+        p.flaw  ? `  - 결함: ${p.flaw}` : "",
+        ...(charDevResult.supporting_characters || [])
+          .filter((s) => s.suggested_name || s.role_name)
+          .map((s) => `인물: ${s.suggested_name || ""} (${s.role_name || ""})`)
+      ];
+      charContext = `\n\n등장인물:\n${lines.filter(Boolean).join("\n")}`;
+    }
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${charContext}${getStoryBible()}\n\n위 인물들의 대사 고유 목소리와 하위텍스트 기법을 설계하세요. 등장인물 정보가 있다면 그 이름과 성격을 그대로 사용하세요.`;
     try { const data = await callClaude(apiKey, DIALOGUE_DEV_SYSTEM_PROMPT, msg, 3000, "claude-haiku-4-5-20251001", ctrl.signal, DialogueDevSchema); setDialogueDevResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setDialogueDevError(err.message || "대사 디벨롭 중 오류가 발생했습니다."); }
     finally { setDialogueDevLoading(false); clearController("dialogueDev"); }
@@ -1417,10 +1429,57 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
     const ctrl = makeController("scenarioDraft");
     setScenarioDraftLoading(true); setScenarioDraftError(""); setScenarioDraftResult("");
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || "주인공"} — Want: ${charDevResult.protagonist.want || ""} / Need: ${charDevResult.protagonist.need || ""}` : "";
-    const treatmentBlock = treatmentResult ? `\n\n트리트먼트:\n${treatmentResult.slice(0, 2000)}` : "";
-    const beatBlock = beatSheetResult ? `\n\n비트 시트 (${beatSheetResult.beats?.length || 0}비트):\n${(beatSheetResult.beats || []).map((b) => `#${b.id} ${b.name_kr}: ${b.summary}`).join("\n")}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n${charBlock}` : ""}${getStoryBible()}${treatmentBlock}${beatBlock}\n\n위 정보를 바탕으로 시나리오 초고를 작성하세요. 트리트먼트·비트 시트가 있다면 그 방향의 이야기와 인물을 반드시 따르세요.`;
+
+    // ── 1. 전체 캐릭터 프로필 ──
+    let charBlock = "";
+    if (charDevResult?.protagonist) {
+      const p = charDevResult.protagonist;
+      const lines = [
+        `주인공: ${p.name_suggestion || "주인공"}`,
+        p.want        ? `  - 외적 목표(Want): ${p.want}` : "",
+        p.need        ? `  - 내적 욕구(Need): ${p.need}` : "",
+        p.ghost       ? `  - 심리적 상처(Ghost): ${p.ghost}` : "",
+        p.lie_they_believe ? `  - 믿는 거짓: ${p.lie_they_believe}` : "",
+        p.flaw        ? `  - 핵심 결함: ${p.flaw}` : "",
+        p.arc_type    ? `  - 변화 호(Arc): ${p.arc_type}` : "",
+        ...(charDevResult.supporting_characters || [])
+          .filter((s) => s.suggested_name || s.role_name)
+          .map((s) => `인물: ${s.suggested_name || ""} (${s.role_name || ""}) — ${s.relationship_dynamic || s.protagonist_mirror || ""}`)
+      ];
+      charBlock = `\n\n등장인물:\n${lines.filter(Boolean).join("\n")}`;
+    }
+
+    // ── 2. 대사 목소리 프로필 ──
+    let dialogueBlock = "";
+    if (dialogueDevResult?.character_voices?.length) {
+      const voices = dialogueDevResult.character_voices
+        .map((v) => `  ${v.character}: ${v.speech_pattern} / 절대 말하지 않는 것: ${v.what_they_never_say} / 말버릇: ${v.verbal_tic || "-"}`)
+        .join("\n");
+      dialogueBlock = `\n\n인물별 대사 목소리 (반드시 준수):\n${voices}`;
+      if (dialogueDevResult.subtext_techniques?.length) {
+        dialogueBlock += `\n하위텍스트 기법: ${dialogueDevResult.subtext_techniques.slice(0, 2).map((t) => t.technique).join(", ")}`;
+      }
+    }
+
+    // ── 3. 구조 플롯 포인트 ──
+    const structureBlock = structureResult?.plot_points?.length
+      ? `\n\n핵심 플롯 포인트:\n${structureResult.plot_points.map((p) => `  ${p.name} (p.${p.page}): ${p.description}`).join("\n")}`
+      : "";
+
+    // ── 4. 트리트먼트 ──
+    const treatmentBlock = treatmentResult ? `\n\n트리트먼트:\n${treatmentResult.slice(0, 2500)}` : "";
+
+    // ── 5. 비트 시트 (풍부한 정보 + 집필된 씬 참고) ──
+    let beatBlock = "";
+    if (beatSheetResult?.beats?.length) {
+      const beatLines = beatSheetResult.beats.map((b) => {
+        const written = beatScenes[b.id] ? `\n     [집필 참고: ${beatScenes[b.id].slice(0, 150)}...]` : "";
+        return `  #${b.id} ${b.name_kr} (p.${b.page_start}~${b.page_end}) | ${b.summary} | 가치: ${b.value_start}→${b.value_end} | 장소: ${b.location_hint || "미정"} | 톤: ${b.tone || ""}${written}`;
+      });
+      beatBlock = `\n\n비트 시트 (${beatSheetResult.beats.length}비트 — 이 순서와 구조를 따를 것):\n${beatLines.join("\n")}`;
+    }
+
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock}${getStoryBible()}${structureBlock}${dialogueBlock}${treatmentBlock}${beatBlock}\n\n위 모든 정보를 반드시 반영해서 시나리오 초고를 작성하세요.\n- 등장인물 이름·성격·관계를 그대로 유지하세요\n- 비트 시트가 있다면 그 순서와 구조를 따르세요\n- 대사 목소리 프로필이 있다면 각 인물의 말투를 그에 맞게 쓰세요\n- 트리트먼트가 있다면 그 방향의 이야기를 따르세요`;
     try {
       const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal);
       setScenarioDraftResult(text); await autoSave();
@@ -1436,9 +1495,23 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
     setBeatSheetLoading(true); setBeatSheetError(""); setBeatSheetResult(null);
     setBeatScenes({}); setExpandedBeats({});
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const contextBlock = treatmentResult ? `트리트먼트:\n${treatmentResult.slice(0, 3000)}` : "";
-    const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || ""} — Want: ${charDevResult.protagonist.want || ""} / Need: ${charDevResult.protagonist.need || ""} / Ghost: ${charDevResult.protagonist.ghost || ""}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}${contextBlock ? `\n\n${contextBlock}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요. 시놉시스·트리트먼트가 있다면 반드시 그 방향의 이야기와 인물을 따르세요.`;
+    const contextBlock = treatmentResult ? `\n\n트리트먼트:\n${treatmentResult.slice(0, 3000)}` : "";
+    let charBlock = "";
+    if (charDevResult?.protagonist) {
+      const p = charDevResult.protagonist;
+      const lines = [
+        `주인공: ${p.name_suggestion || ""} — Want: ${p.want || ""} / Need: ${p.need || ""} / Ghost: ${p.ghost || ""}`,
+        p.flaw ? `  - 핵심 결함: ${p.flaw}` : "",
+        ...(charDevResult.supporting_characters || [])
+          .filter((s) => s.suggested_name || s.role_name)
+          .map((s) => `인물: ${s.suggested_name || ""} (${s.role_name || ""}) — ${s.relationship_dynamic || ""}`)
+      ];
+      charBlock = lines.filter(Boolean).join("\n");
+    }
+    const structureBlock = structureResult?.plot_points?.length
+      ? `\n\n플롯 포인트:\n${structureResult.plot_points.map((p) => `  ${p.name} (p.${p.page}): ${p.description}`).join("\n")}`
+      : "";
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}${structureBlock}${contextBlock}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요. 시놉시스·트리트먼트·플롯포인트가 있다면 반드시 그 방향의 이야기와 인물을 따르세요.`;
     try { const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, BeatSheetSchema); setBeatSheetResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setBeatSheetError(err.message || "비트 시트 생성 중 오류가 발생했습니다."); }
     finally { setBeatSheetLoading(false); clearController("beatSheet"); }
