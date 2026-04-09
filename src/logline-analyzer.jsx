@@ -1287,7 +1287,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setResult(null);
     setResult2(null);
     try {
-      const parsed = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(target, genre), 3000, "claude-sonnet-4-6", ctrl.signal, LoglineAnalysisSchema);
+      const parsed = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(target, genre), 4500, "claude-sonnet-4-6", ctrl.signal, LoglineAnalysisSchema);
       const sT = calcSectionTotal(parsed, "structure");
       const eT = calcSectionTotal(parsed, "expression");
       const tT = calcSectionTotal(parsed, "technical");
@@ -1298,7 +1298,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       if (compareMode && logline2.trim()) {
         setLoading2(true);
         try {
-          const parsed2 = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(logline2, genre), 3000, "claude-sonnet-4-6", ctrl.signal, LoglineAnalysisSchema);
+          const parsed2 = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(logline2, genre), 4500, "claude-sonnet-4-6", ctrl.signal, LoglineAnalysisSchema);
           const s2 = calcSectionTotal(parsed2, "structure");
           const e2 = calcSectionTotal(parsed2, "expression");
           const t2 = calcSectionTotal(parsed2, "technical");

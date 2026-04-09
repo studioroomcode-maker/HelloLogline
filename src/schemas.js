@@ -55,9 +55,9 @@ export const LoglineAnalysisSchema = z
         unpredictability: ScoreField,
       })
       .passthrough(),
-    overall_feedback: z.string(),
-    improvement_questions: z.array(z.string()),
-    detected_genre: z.string().optional(),
+    overall_feedback: z.string().catch(""),
+    improvement_questions: z.array(z.string()).catch([]),
+    detected_genre: z.string().optional().catch(undefined),
   })
   .passthrough();
 
