@@ -316,3 +316,18 @@ export const ValuationSchema = z
     disclaimer: z.string(),
   })
   .passthrough();
+
+// ─── Early Coverage (Stage 1 빠른 상업성 체크) ────────────────────────────────
+
+export const EarlyCoverageSchema = z
+  .object({
+    marketability_score: z.number(),     // 1~10
+    one_line_verdict: z.string(),         // 한 줄 판정
+    best_platform: z.string(),            // OTT/극장/방송/유튜브 등
+    target_audience: z.string(),          // 핵심 타겟 설명
+    comparable_hit: z.string(),           // 가장 유사한 최근 히트작
+    key_strengths: z.array(z.string()),   // 강점 2~3개
+    key_risks: z.array(z.string()),       // 위험 2~3개
+    development_priority: z.string(),     // 지금 당장 보완해야 할 것 1가지
+  })
+  .passthrough();

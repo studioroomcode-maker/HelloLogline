@@ -3163,6 +3163,33 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
   // 진행률 계산
   const completedCount = Object.keys(beatScenes).length;
 
+  const BEAT_WRITER_ACTIONS = {
+    "Opening Image":    "첫 이미지는 마지막 이미지와 정확히 대비되어야 합니다. 주인공의 변화 전 세계를 한 컷으로 보여주세요. 대사 없이 톤이 전달되어야 합니다.",
+    "Theme Stated":     "아직 이해하지 못할 조언이 여기서 나옵니다. 주인공이 결말에서 깨달을 진실을 지금은 흘려듣게 하세요.",
+    "Set-Up":           "이후 페이아웃될 모든 캐릭터·소품·관계를 소개하세요. 3막에서 쓸 '체호프의 총'을 여기서 걸어두세요.",
+    "Catalyst":         "주인공의 삶을 영원히 바꾸는 사건. '만약 이것이 없었더라면'이 되는 순간. 능동적이고 구체적으로 쓰세요.",
+    "Debate":           "주인공이 망설이는 내면의 소리가 드러나는 구간. 결핍(Ghost)이 자연스럽게 보여야 합니다.",
+    "Break Into Two":   "주인공이 능동적으로 새 세계에 발을 내딛는 순간. 밀려가는 것이 아니라 스스로 선택해야 합니다.",
+    "B Story":          "메인 플롯의 감정적 반대편. 이 인물을 통해 테마가 처음 제대로 탐구됩니다. 보통 로맨스·멘토 관계.",
+    "Fun and Games":    "관객이 이 이야기를 선택한 이유가 여기 있습니다. 장르의 약속을 최대한 이행하세요. 가장 재미있는 구간.",
+    "Midpoint":         "거짓 승리 또는 거짓 패배. 스테이크를 높이고 B스토리와 A스토리가 처음 교차하게 만드세요.",
+    "Bad Guys Close In":"내외부 압박이 동시에 최고조. 팀이 있다면 여기서 균열이 시작됩니다. 주인공을 코너로 몰아세요.",
+    "All Is Lost":      "주인공의 가장 낮은 순간. '죽음의 냄새'가 있어야 합니다 — 반드시 물리적 죽음일 필요는 없어요.",
+    "Dark Night of the Soul": "주인공이 홀로 남아 진짜 자신과 마주하는 순간. 여기서 내면의 변화(Need 발견)가 일어납니다.",
+    "Break Into Three": "해결책이 떠오르는 순간. A스토리와 B스토리가 하나로 통합됩니다.",
+    "Finale":           "주인공이 변화된 모습으로 세상을 바꿉니다. 1막의 결핍이 여기서 해결됩니다. 변화를 행동으로 보여주세요.",
+    "Final Image":      "오프닝 이미지와 정확히 대비되어야 합니다. 변화를 말하지 말고 보여주세요.",
+  };
+
+  // Generic hints by act_phase if name_en not found
+  const ACT_PHASE_HINTS = {
+    "설정":       "캐릭터의 결핍과 일상 세계를 시각적으로 보여주세요. 대사보다 행동과 환경으로 말하세요.",
+    "전환":       "주인공이 한 세계에서 다른 세계로 넘어가는 순간. 선택의 무게를 느끼게 하세요.",
+    "갈등 고조":  "압박을 점진적으로 높이세요. 각 씬은 이전 씬보다 더 위험해야 합니다.",
+    "위기":       "최악의 순간. 여기서 주인공의 진짜 선택이 드러납니다.",
+    "해결":       "변화를 말하지 말고 행동으로 보여주세요. 관객이 예측하지 못한 방식으로 마무리하세요.",
+  };
+
   return (
     <div>
       {/* 상단 통계 */}
@@ -3291,6 +3318,22 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
                       ))}</div>
                     </div>
                   )}
+
+                  {/* 작가 액션 힌트 */}
+                  {(() => {
+                    const hint = BEAT_WRITER_ACTIONS[beat.name_en] || ACT_PHASE_HINTS[beat.act_phase] || null;
+                    if (!hint) return null;
+                    return (
+                      <div style={{
+                        marginBottom: 10, padding: "9px 12px", borderRadius: 8,
+                        background: `${act.color}06`,
+                        border: `1px dashed ${act.color}30`,
+                      }}>
+                        <div style={{ fontSize: 9, color: `${act.color}70`, fontFamily: "'JetBrains Mono', monospace", marginBottom: 4, letterSpacing: 0.5, textTransform: "uppercase" }}>✍ 작가 할 일</div>
+                        <div style={{ fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{hint}</div>
+                      </div>
+                    );
+                  })()}
 
                   {/* 씬 생성 버튼 */}
                   <button
@@ -3941,6 +3984,8 @@ export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructu
     { id: "hero", label: "영웅의 여정", sub: "Campbell (1949)" },
     { id: "4act", label: "4막 구조", sub: "Parker (2005)" },
     { id: "miniseries", label: "화별 구조", sub: "미니시리즈" },
+    { id: "tvdrama", label: "TV 드라마 감정곡선", sub: "한국식 감정 아크" },
+    { id: "webdrama", label: "웹드라마 훅 구조", sub: "화별 훅 + 클리프행어" },
   ];
 
   const inputStyle = {

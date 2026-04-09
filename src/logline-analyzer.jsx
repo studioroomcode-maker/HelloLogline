@@ -20,7 +20,7 @@ import {
   ValueChargeSchema, ShadowAnalysisSchema, AuthenticitySchema, CharacterDevSchema,
   StructureAnalysisSchema, ThemeAnalysisSchema, SubtextSchema,
   BeatSheetSchema, DialogueDevSchema, ScriptCoverageSchema,
-  ComparableWorksSchema, ValuationSchema,
+  ComparableWorksSchema, ValuationSchema, EarlyCoverageSchema,
 } from "./schemas.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { saveProject, loadProjects, deleteProject } from "./db.js";
@@ -309,7 +309,7 @@ function ToolButton({ icon, label, sub, done, loading, color, onClick, disabled,
 }
 
 /* ─── FeedbackBox — 결과물 하단 피드백 입력 UI ─── */
-function FeedbackBox({ value, onChange, onSubmit, loading, placeholder = "이 결과물에 대한 피드백을 입력하세요..." }) {
+function FeedbackBox({ value, onChange, onSubmit, loading, placeholder = "수정 요청을 입력하세요" }) {
   return (
     <div style={{
       marginTop: 16, paddingTop: 14,
@@ -599,6 +599,10 @@ export default function LoglineAnalyzer() {
   const [treatmentRefineLoading, setTreatmentRefineLoading] = useState(false);
   const [scenarioDraftFeedback, setScenarioDraftFeedback] = useState("");
   const [scenarioDraftRefineLoading, setScenarioDraftRefineLoading] = useState(false);
+  const [treatmentBefore, setTreatmentBefore] = useState(null);
+  const [showTreatmentBefore, setShowTreatmentBefore] = useState(false);
+  const [scenarioDraftBefore, setScenarioDraftBefore] = useState(null);
+  const [showScenarioDraftBefore, setShowScenarioDraftBefore] = useState(false);
   const [charDevFeedback, setCharDevFeedback] = useState("");
   const [charDevRefineLoading, setCharDevRefineLoading] = useState(false);
 
@@ -608,6 +612,21 @@ export default function LoglineAnalyzer() {
   const [scenarioDraftHistory, setScenarioDraftHistory] = useState([]);
   const [charDevHistory, setCharDevHistory] = useState([]);
   const [pipelineHistory, setPipelineHistory] = useState([]);
+
+  // ── Staleness Flags ──
+  const [treatmentStale, setTreatmentStale] = useState(false);
+  const [beatSheetStale, setBeatSheetStale] = useState(false);
+  const [scenarioDraftStale, setScenarioDraftStale] = useState(false);
+
+  // ── Early Coverage (Stage 1 빠른 상업성 체크) ──
+  const [earlyCoverageResult, setEarlyCoverageResult] = useState(null);
+  const [earlyCoverageLoading, setEarlyCoverageLoading] = useState(false);
+  const [earlyCoverageError, setEarlyCoverageError] = useState("");
+
+  // ── Structure Twist (구조 비틀기 제안) ──
+  const [structureTwistResult, setStructureTwistResult] = useState(null);
+  const [structureTwistLoading, setStructureTwistLoading] = useState(false);
+  const [structureTwistError, setStructureTwistError] = useState("");
 
   const [editingTreatment, setEditingTreatment] = useState(false);
   const [treatmentEditDraft, setTreatmentEditDraft] = useState("");
@@ -1685,6 +1704,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal);
       setScenarioDraftResult(text);
+      setScenarioDraftStale(false);
       setScenarioDraftCtx({
         char: !!(charDevResult?.protagonist || writerEdits.character),
         treatment: !!effectiveTreatment,
@@ -1729,6 +1749,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, BeatSheetSchema);
       setBeatSheetResult(data);
+      setBeatSheetStale(false);
+      if (scenarioDraftResult) setScenarioDraftStale(true);
       setBeatSheetCtx({
         char: !!charDevResult?.protagonist,
         treatment: !!treatmentResult,
@@ -1807,6 +1829,70 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     }
   };
 
+  // ── Early Coverage ──
+  const analyzeEarlyCoverage = async () => {
+    if (!logline.trim() || !apiKey) return;
+    const ctrl = makeController("earlyCoverage");
+    setEarlyCoverageLoading(true); setEarlyCoverageError("");
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n이 로그라인의 상업적 잠재력을 간략히 평가하세요. 현재 한국 OTT·극장·방송 시장 기준으로 솔직하게 평가하고, 가장 시급한 개발 과제 1가지를 명확히 짚어주세요.`;
+    const EARLY_COVERAGE_PROMPT = `당신은 드라마·영화 개발 전문가입니다. 주어진 로그라인의 상업적 잠재력을 빠르고 솔직하게 평가합니다. 희망적인 말보다 실질적인 진단을 제공하세요.
+
+반드시 아래 JSON 형식으로만 응답하세요:
+{
+  "marketability_score": 1~10 정수,
+  "one_line_verdict": "한 줄 판정 (예: 넷플릭스 오리지널 가능성 있음 — 단, 주인공 설득력 보완 필요)",
+  "best_platform": "가장 적합한 플랫폼 (예: 넷플릭스/티빙/극장/유튜브 숏폼 등)",
+  "target_audience": "핵심 타겟 설명 (예: 20~35세 직장인, 특히 번아웃 경험자)",
+  "comparable_hit": "최근 3년 내 유사 히트작 1편 (제목 + 한 줄 이유)",
+  "key_strengths": ["강점 1", "강점 2"],
+  "key_risks": ["위험 1", "위험 2"],
+  "development_priority": "지금 당장 가장 먼저 보완해야 할 것 — 구체적으로"
+}`;
+    try {
+      const data = await callClaude(apiKey, EARLY_COVERAGE_PROMPT, msg, 2000, "claude-haiku-4-5-20251001", ctrl.signal, EarlyCoverageSchema);
+      setEarlyCoverageResult(data);
+    }
+    catch (err) { if (err.name !== "AbortError") setEarlyCoverageError(err.message || "상업성 분석 중 오류가 발생했습니다."); }
+    finally { setEarlyCoverageLoading(false); clearController("earlyCoverage"); }
+  };
+
+  // ── Structure Twist ──
+  const analyzeStructureTwist = async () => {
+    if (!beatSheetResult?.beats?.length || !apiKey) return;
+    const ctrl = makeController("structureTwist");
+    setStructureTwistLoading(true); setStructureTwistError(""); setStructureTwistResult(null);
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find(g => g.id === genre)?.label || "";
+    const beatList = beatSheetResult.beats
+      .map(b => `비트 ${b.id}. ${b.name_kr}${b.name_en ? ` (${b.name_en})` : ""} — ${b.summary || ""}`)
+      .join("\n");
+    const TWIST_PROMPT = `당신은 실험적 서사 구조 전문가입니다. 주어진 비트 시트를 분석하고, 장르 관습을 의도적으로 '비틀어' 더 강렬하고 기억에 남는 효과를 낼 수 있는 지점 2~3곳을 찾아냅니다.
+
+단순한 전형성 탈피가 아닌, 이 이야기의 고유한 긴장 구조를 오히려 강화하는 구체적 비틀기를 제안하세요. 비틀기는 관객의 기대를 역이용하거나, 감정 타이밍을 어긋나게 하거나, 캐릭터 행동이 장르 관습과 반대로 가게 하는 방식입니다.
+
+반드시 아래 JSON 형식으로만 응답하세요:
+{
+  "twists": [
+    {
+      "beat_id": 비트 번호 (숫자),
+      "beat_name": "비트 이름",
+      "convention": "현재 관습적으로 하는 것 — 한 문장",
+      "twist": "비틀기 제안 — 구체적으로 어떻게 바꾸는가",
+      "effect": "이 비틀기가 관객에게 만들어낼 효과",
+      "risk": "이 비틀기의 위험 또는 작가가 주의해야 할 것"
+    }
+  ],
+  "overall_note": "전체 비틀기 방향성 한 줄 요약"
+}`;
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n\n비트 시트:\n${beatList}\n\n이 비트 시트에서 관습을 비틀어 더 강렬한 효과를 낼 수 있는 지점 2~3곳을 제안하세요.`;
+    try {
+      const data = await callClaude(apiKey, TWIST_PROMPT, msg, 2500, "claude-haiku-4-5-20251001", ctrl.signal);
+      setStructureTwistResult(data);
+    }
+    catch (err) { if (err.name !== "AbortError") setStructureTwistError(err.message || "구조 비틀기 분석 중 오류가 발생했습니다."); }
+    finally { setStructureTwistLoading(false); clearController("structureTwist"); }
+  };
+
   // ── Character Dev ──
   const analyzeCharacterDev = async () => {
     if (!logline.trim() || !apiKey) return;
@@ -1816,7 +1902,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setCharDevResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요. 시놉시스가 있다면 그 방향의 인물 이름·설정을 따르세요.`;
-    try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema); setCharDevResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema); setCharDevResult(data); if (treatmentResult) setTreatmentStale(true); if (beatSheetResult) setBeatSheetStale(true); if (scenarioDraftResult) setScenarioDraftStale(true); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setCharDevError(err.message || "캐릭터 분석 중 오류가 발생했습니다."); }
     finally { setCharDevLoading(false); clearController("charDev"); }
   };
@@ -1829,7 +1915,14 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     pushHistory(setTreatmentHistory, treatmentResult, "treatment");
     setTreatmentResult("");
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const structureLabel = { "3act": "3막 구조 (Field)", hero: "영웅의 여정 12단계 (Campbell)", "4act": "4막 구조", miniseries: "미니시리즈 화별 구조" }[treatmentStructure] || "3막 구조";
+    const structureLabel = {
+      "3act": "3막 구조 (Field)",
+      hero: "영웅의 여정 12단계 (Campbell)",
+      "4act": "4막 구조",
+      miniseries: "미니시리즈 화별 구조",
+      tvdrama: "TV 드라마 감정곡선 구조 — 한국식. 각 화마다 도입부 감정 훅 → 갈등 고조 → 감정 절정 → 클리프행어. 인물 관계와 감정선이 사건보다 우선. 대사에서 감정을 직접 드러내는 한국 드라마 관습을 따를 것.",
+      webdrama: "웹드라마 훅 구조 — 화별 15초 내 훅 → 단일 사건 압축 → 다음 화 클리프행어. 스크롤 중단을 유도하는 오프닝 충격 필수.",
+    }[treatmentStructure] || "3막 구조 (Field)";
     // Stage 3 캐릭터 분석 결과가 있으면 그것을 우선 사용, 없으면 treatmentChars 폼 값 사용
     let charBlock;
     if (charDevResult?.protagonist) {
@@ -1859,6 +1952,9 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal);
       setTreatmentResult(text);
+      setTreatmentStale(false);
+      if (beatSheetResult) setBeatSheetStale(true);
+      if (scenarioDraftResult) setScenarioDraftStale(true);
       setTreatmentCtx({
         char: !!charDevResult?.protagonist,
         synopsis: !!(pipelineResult || synopsisResults),
@@ -1878,7 +1974,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const ctrl = makeController("pipelineRefine");
     setPipelineRefineLoading(true);
     const msg = `원본 로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n\n── 현재 시놉시스 ──\n제목: ${pipelineResult.direction_title}\n장르/톤: ${pipelineResult.genre_tone}\n훅: ${pipelineResult.hook}\n시놉시스:\n${pipelineResult.synopsis}\n핵심 장면: ${(pipelineResult.key_scenes || []).join(" / ")}\n주제: ${pipelineResult.theme}\n결말: ${pipelineResult.ending_type}\n\n── 사용자 피드백 ──\n${pipelineFeedback.trim()}\n\n위 피드백을 반영하여 시놉시스를 수정하세요.`;
-    try { const data = await callClaude(apiKey, PIPELINE_REFINE_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal); pushHistory(setPipelineHistory, pipelineResult, "synopsis"); setPipelineResult(data); setPipelineFeedback(""); await autoSave(); }
+    try { const data = await callClaude(apiKey, PIPELINE_REFINE_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal); pushHistory(setPipelineHistory, pipelineResult, "synopsis"); setPipelineResult(data); if (treatmentResult) setTreatmentStale(true); if (beatSheetResult) setBeatSheetStale(true); if (scenarioDraftResult) setScenarioDraftStale(true); setPipelineFeedback(""); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") alert("다듬기 중 오류: " + (err.message || "다시 시도해주세요.")); }
     finally { setPipelineRefineLoading(false); clearController("pipelineRefine"); }
   };
@@ -1888,12 +1984,18 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     if (!treatmentResult || !treatmentFeedback.trim() || !apiKey) return;
     const ctrl = makeController("treatmentRefine");
     setTreatmentRefineLoading(true);
+    const beforeText = getEffective("treatment", treatmentResult);
+    setTreatmentBefore(beforeText);
+    setShowTreatmentBefore(false);
     const effective = getEffective("treatment", treatmentResult);
     const msg = `원본 로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n── 현재 트리트먼트 ──\n${effective.slice(0, 4000)}\n\n── 작가 피드백 ──\n${treatmentFeedback.trim()}\n\n위 피드백을 반영하여 트리트먼트를 수정하세요. 피드백이 언급하지 않은 부분은 그대로 유지하세요.`;
     try {
       const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal);
       pushHistory(setTreatmentHistory, treatmentResult, "treatment");
       setTreatmentResult(text);
+      setTreatmentStale(false);
+      if (beatSheetResult) setBeatSheetStale(true);
+      if (scenarioDraftResult) setScenarioDraftStale(true);
       setTreatmentFeedback("");
       await autoSave();
     } catch (err) {
@@ -1906,6 +2008,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     if (!scenarioDraftResult || !scenarioDraftFeedback.trim() || !apiKey) return;
     const ctrl = makeController("scenarioRefine");
     setScenarioDraftRefineLoading(true);
+    setScenarioDraftBefore(scenarioDraftResult);
+    setShowScenarioDraftBefore(false);
     const msg = `원본 로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n\n── 현재 시나리오 초고 (일부) ──\n${scenarioDraftResult.slice(0, 5000)}\n\n── 작가 피드백 ──\n${scenarioDraftFeedback.trim()}\n\n위 피드백을 반영하여 시나리오를 수정하세요. 표준 시나리오 포맷(씬 헤더·액션라인·대사)을 유지하고, 피드백이 언급하지 않은 부분은 최대한 그대로 유지하세요.`;
     try {
       const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal);
@@ -1931,6 +2035,9 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema);
       pushHistory(setCharDevHistory, charDevResult, "character");
       setCharDevResult(data);
+      if (treatmentResult) setTreatmentStale(true);
+      if (beatSheetResult) setBeatSheetStale(true);
+      if (scenarioDraftResult) setScenarioDraftStale(true);
       setCharDevFeedback("");
       await autoSave();
     } catch (err) {
@@ -2951,6 +3058,63 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   </div>
                 </div>
               )}
+              {/* ── 얼리 커버리지 ── */}
+              {result && (
+                <div style={{ marginTop: 16 }}>
+                  <ToolButton
+                    icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
+                    label="빠른 상업성 체크"
+                    sub="시장 잠재력 · 플랫폼 적합성 · 개발 우선순위"
+                    done={!!earlyCoverageResult}
+                    loading={earlyCoverageLoading}
+                    color="#45B7D1"
+                    onClick={analyzeEarlyCoverage}
+                    disabled={!logline.trim()}
+                    tooltip={"로그라인 단계에서 이 이야기의 상업적 가능성을 빠르게 진단합니다.\n\n• 시장성 점수 (1~10)\n• 최적 플랫폼 (OTT/극장/방송 등)\n• 유사 히트작 레퍼런스\n• 핵심 강점 및 리스크\n• 지금 당장 보완해야 할 것 1가지\n\n방향을 잡기 전에 먼저 시장의 냉정한 시각으로 체크해보세요."}
+                  />
+                  <ErrorMsg msg={earlyCoverageError} />
+                  {earlyCoverageResult && (
+                    <ResultCard title="빠른 상업성 체크" onClose={() => setEarlyCoverageResult(null)} color="rgba(69,183,209,0.15)">
+                      <div style={{ display: "flex", gap: 12, marginBottom: 14, alignItems: "center", flexWrap: "wrap" }}>
+                        {/* 점수 */}
+                        <div style={{ padding: "10px 16px", borderRadius: 10, background: "rgba(69,183,209,0.1)", border: "1px solid rgba(69,183,209,0.25)", textAlign: "center", flexShrink: 0 }}>
+                          <div style={{ fontSize: 28, fontWeight: 800, color: "#45B7D1", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{earlyCoverageResult.marketability_score}<span style={{ fontSize: 14, opacity: 0.6 }}>/10</span></div>
+                          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginTop: 3 }}>시장성</div>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)", marginBottom: 4, lineHeight: 1.5 }}>{earlyCoverageResult.one_line_verdict}</div>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 7, background: "rgba(69,183,209,0.1)", color: "#45B7D1", border: "1px solid rgba(69,183,209,0.2)" }}>{earlyCoverageResult.best_platform}</span>
+                            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 7, background: "rgba(var(--tw),0.05)", color: "var(--c-tx-50)", border: "1px solid var(--c-bd-2)" }}>{earlyCoverageResult.target_audience}</span>
+                          </div>
+                        </div>
+                      </div>
+                      {earlyCoverageResult.comparable_hit && (
+                        <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: 8, background: "rgba(var(--tw),0.03)", border: "1px solid var(--c-bd-1)" }}>
+                          <span style={{ fontSize: 10, color: "var(--c-tx-30)", fontFamily: "'JetBrains Mono', monospace", marginRight: 6 }}>유사 히트작</span>
+                          <span style={{ fontSize: 12, color: "var(--c-tx-65)" }}>{earlyCoverageResult.comparable_hit}</span>
+                        </div>
+                      )}
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                        <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(78,204,163,0.06)", border: "1px solid rgba(78,204,163,0.15)" }}>
+                          <div style={{ fontSize: 10, color: "rgba(78,204,163,0.7)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>강점</div>
+                          {(earlyCoverageResult.key_strengths || []).map((s, i) => <div key={i} style={{ fontSize: 12, color: "var(--c-tx-60)", marginBottom: 3, paddingLeft: 8, borderLeft: "2px solid rgba(78,204,163,0.3)" }}>· {s}</div>)}
+                        </div>
+                        <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(232,93,117,0.06)", border: "1px solid rgba(232,93,117,0.15)" }}>
+                          <div style={{ fontSize: 10, color: "rgba(232,93,117,0.7)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>리스크</div>
+                          {(earlyCoverageResult.key_risks || []).map((r, i) => <div key={i} style={{ fontSize: 12, color: "var(--c-tx-60)", marginBottom: 3, paddingLeft: 8, borderLeft: "2px solid rgba(232,93,117,0.3)" }}>· {r}</div>)}
+                        </div>
+                      </div>
+                      {earlyCoverageResult.development_priority && (
+                        <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(247,160,114,0.07)", border: "1px solid rgba(247,160,114,0.25)" }}>
+                          <div style={{ fontSize: 10, color: "rgba(247,160,114,0.8)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>지금 당장 보완할 것</div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#F7A072", lineHeight: 1.5 }}>{earlyCoverageResult.development_priority}</div>
+                        </div>
+                      )}
+                    </ResultCard>
+                  )}
+                </div>
+              )}
               {getStageStatus("1") === "done" && (
                 <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
                   <button onClick={() => advanceToStage("3")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
@@ -3089,7 +3253,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                     onChange={setCharDevFeedback}
                     onSubmit={refineCharDev}
                     loading={charDevRefineLoading}
-                    placeholder="예: 주인공의 내면 상처를 더 구체적으로 / 빌런을 좀 더 공감 가능하게 바꿔줘"
+                    placeholder="수정 요청을 입력하세요"
                   />
                 </ResultCard>
               )}
@@ -3321,6 +3485,44 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   {pipelineResult && (
                     <ResultCard title={pipelineResult.direction_title} onClose={() => { setPipelineResult(null); setPipelineHistory([]); }} onUndo={() => undoHistory(setPipelineHistory, setPipelineResult, pipelineHistory)} historyCount={pipelineHistory.length} color="rgba(78,204,163,0.15)">
                       <SynopsisCard synopsis={pipelineResult} index={0} />
+                      {/* 시놉시스 직접 편집 */}
+                      {editingSynopsis ? (
+                        <div style={{ marginTop: 12 }}>
+                          <textarea
+                            value={synopsisEditDraft}
+                            onChange={e => setSynopsisEditDraft(e.target.value)}
+                            rows={6}
+                            style={{
+                              width: "100%", padding: "12px 14px", borderRadius: 10,
+                              border: "1px solid rgba(78,204,163,0.3)",
+                              background: "rgba(var(--tw),0.03)",
+                              color: "var(--text-main)", fontSize: 13, lineHeight: 1.8,
+                              fontFamily: "'Noto Sans KR', sans-serif", resize: "vertical",
+                              boxSizing: "border-box",
+                            }}
+                          />
+                          <div style={{ display: "flex", gap: 8, marginTop: 8, justifyContent: "flex-end" }}>
+                            <button onClick={() => setEditingSynopsis(false)}
+                              style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-45)", fontSize: 11, cursor: "pointer" }}>취소</button>
+                            <button onClick={() => {
+                              setPipelineResult(prev => ({ ...prev, synopsis: synopsisEditDraft }));
+                              setWriterEdit("synopsis", synopsisEditDraft);
+                              setEditingSynopsis(false);
+                              if (treatmentResult) setTreatmentStale(true);
+                              if (beatSheetResult) setBeatSheetStale(true);
+                              if (scenarioDraftResult) setScenarioDraftStale(true);
+                            }}
+                              style={{ padding: "6px 16px", borderRadius: 7, border: "1px solid rgba(78,204,163,0.4)", background: "rgba(78,204,163,0.1)", color: "#4ECCA3", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>저장</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                          <button
+                            onClick={() => { setSynopsisEditDraft(pipelineResult.synopsis || ""); setEditingSynopsis(true); }}
+                            style={{ padding: "4px 10px", borderRadius: 7, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.05)", color: "#4ECCA3", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                          >✏ 시놉시스 직접 편집</button>
+                        </div>
+                      )}
                       <div style={{ marginTop: 14 }}>
                         <textarea value={pipelineFeedback} onChange={(e) => setPipelineFeedback(e.target.value)} placeholder="피드백을 입력하여 시놉시스를 다듬으세요..." rows={3} style={{
                           width: "100%", padding: 12, borderRadius: 10,
@@ -3472,7 +3674,14 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   <div style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: treatmentResult ? "rgba(78,204,163,0.15)" : "rgba(200,168,75,0.12)", color: treatmentResult ? "#4ECCA3" : "#C8A84B", border: `1px solid ${treatmentResult ? "rgba(78,204,163,0.25)" : "rgba(200,168,75,0.25)"}`, fontFamily: "'JetBrains Mono', monospace" }}>{treatmentResult ? "✓ STEP 1" : "STEP 1"}</div>
                   <span style={{ fontSize: 12, color: "var(--c-tx-45)", fontWeight: 500 }}>트리트먼트 — 스토리 전체 흐름 서술</span>
                 </div>
-                <button onClick={() => setShowTreatmentPanel(!showTreatmentPanel)} style={{
+                <button onClick={() => {
+                  if (!showTreatmentPanel) {
+                    // 포맷에 따라 서사 구조 기본값 자동 설정
+                    const autoStructure = { tvdrama: "tvdrama", webdrama: "webdrama", shortformseries: "webdrama", miniseries: "miniseries", ultrashort: "3act", shortform: "3act", shortfilm: "3act", feature: "3act" }[selectedDuration] || "3act";
+                    if (!treatmentResult) setTreatmentStructure(autoStructure);
+                  }
+                  setShowTreatmentPanel(!showTreatmentPanel);
+                }} style={{
                   width: "100%", padding: "12px 16px", borderRadius: 12,
                   border: showTreatmentPanel ? "1px solid rgba(200,168,75,0.4)" : "1px solid var(--c-bd-3)",
                   background: showTreatmentPanel ? "rgba(200,168,75,0.07)" : "rgba(var(--tw),0.02)",
@@ -3490,13 +3699,32 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                     <ErrorMsg msg={treatmentError} />
                   </div>
                 )}
+                {treatmentStale && treatmentResult && (
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 14px", borderRadius: 10, marginTop: 8,
+                    background: "rgba(247,160,114,0.07)",
+                    border: "1px solid rgba(247,160,114,0.25)",
+                  }}>
+                    <span style={{ fontSize: 14, flexShrink: 0 }}>⚠</span>
+                    <div style={{ flex: 1, fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.5 }}>
+                      캐릭터 또는 시놉시스가 변경됐습니다. 트리트먼트를 재생성하면 최신 내용이 반영됩니다.
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => setTreatmentStale(false)}
+                        style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-35)", fontSize: 10, cursor: "pointer" }}>무시</button>
+                      <button onClick={generateTreatment}
+                        style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(247,160,114,0.4)", background: "rgba(247,160,114,0.1)", color: "#F7A072", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>재생성</button>
+                    </div>
+                  </div>
+                )}
                 {treatmentResult && (
                   <ResultCard
                     title={<span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       트리트먼트
                       {writerEdits.treatment && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, background: "rgba(78,204,163,0.15)", color: "#4ECCA3", fontWeight: 600, border: "1px solid rgba(78,204,163,0.25)" }}>✏ 수정됨</span>}
                     </span>}
-                    onClose={() => { setTreatmentResult(""); clearWriterEdit("treatment"); setEditingTreatment(false); setTreatmentHistory([]); }}
+                    onClose={() => { setTreatmentResult(""); clearWriterEdit("treatment"); setEditingTreatment(false); setTreatmentHistory([]); setTreatmentStale(false); }}
                     onUndo={() => undoHistory(setTreatmentHistory, setTreatmentResult, treatmentHistory)}
                     historyCount={treatmentHistory.length}
                     color="rgba(200,168,75,0.15)"
@@ -3581,8 +3809,26 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                           onChange={setTreatmentFeedback}
                           onSubmit={refineTreatment}
                           loading={treatmentRefineLoading}
-                          placeholder="예: 2막에서 주인공의 내면 갈등을 더 강조해줘 / 결말을 열린 결말로 바꿔줘"
+                          placeholder="수정 요청을 입력하세요"
                         />
+                        {treatmentBefore && !editingTreatment && (
+                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed var(--c-bd-2)" }}>
+                            <button
+                              onClick={() => setShowTreatmentBefore(!showTreatmentBefore)}
+                              style={{ fontSize: 10, padding: "3px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-35)", cursor: "pointer" }}
+                            >
+                              {showTreatmentBefore ? "▲ 이전 버전 숨기기" : "▼ 이전 버전 보기"}
+                            </button>
+                            {showTreatmentBefore && (
+                              <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 9, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)", opacity: 0.65 }}>
+                                <div style={{ fontSize: 10, color: "var(--c-tx-30)", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>BEFORE — 피드백 반영 전</div>
+                                <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 200, overflowY: "auto" }}>
+                                  {treatmentBefore.slice(0, 800)}{treatmentBefore.length > 800 ? "..." : ""}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </>
                     )}
                   </ResultCard>
@@ -3609,8 +3855,27 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="비트 시트" sub="Snyder 15비트" done={!!beatSheetResult} loading={beatSheetLoading} color="#FFD166" onClick={generateBeatSheet} disabled={!logline.trim()}
                   tooltip={"Blake Snyder의 'Save the Cat' 15비트 구조를 적용합니다.\n\n할리우드 표준 이정표 15개를 정확한 페이지 위치에 배치합니다:\n오프닝 이미지 → 테마 제시 → 설정 → 촉발사건 → 고민 → 2막 진입 → B스토리 → 재미와 게임 → 중간점 → 적의 위협 → 전부 잃다 → 영혼의 밤 → 3막 진입 → 피날레 → 클로징 이미지\n\n각 비트마다 AI가 직접 씬을 집필할 수 있습니다."} />
                 <ErrorMsg msg={beatSheetError} />
+                {beatSheetStale && beatSheetResult && (
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 14px", borderRadius: 10, marginTop: 8,
+                    background: "rgba(247,160,114,0.07)",
+                    border: "1px solid rgba(247,160,114,0.25)",
+                  }}>
+                    <span style={{ fontSize: 14, flexShrink: 0 }}>⚠</span>
+                    <div style={{ flex: 1, fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.5 }}>
+                      트리트먼트 또는 캐릭터가 변경됐습니다. 비트 시트를 재생성하면 최신 내용이 반영됩니다.
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => setBeatSheetStale(false)}
+                        style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-35)", fontSize: 10, cursor: "pointer" }}>무시</button>
+                      <button onClick={generateBeatSheet}
+                        style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(247,160,114,0.4)", background: "rgba(247,160,114,0.1)", color: "#F7A072", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>재생성</button>
+                    </div>
+                  </div>
+                )}
                 {beatSheetResult && (
-                  <ResultCard title="비트 시트" onClose={() => { setBeatSheetResult(null); setBeatSheetHistory([]); }} onUndo={() => undoHistory(setBeatSheetHistory, setBeatSheetResult, beatSheetHistory)} historyCount={beatSheetHistory.length} color="rgba(255,209,102,0.15)">
+                  <ResultCard title="비트 시트" onClose={() => { setBeatSheetResult(null); setBeatSheetHistory([]); setBeatSheetStale(false); }} onUndo={() => undoHistory(setBeatSheetHistory, setBeatSheetResult, beatSheetHistory)} historyCount={beatSheetHistory.length} color="rgba(255,209,102,0.15)">
                     {beatSheetCtx && (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
                         {beatSheetCtx.genre && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(255,209,102,0.1)", color: "#FFD166", border: "1px solid rgba(255,209,102,0.2)" }}>{beatSheetCtx.genre} 맞춤</span>}
@@ -3645,6 +3910,57 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                         setEditingBeats(prev => ({ ...prev, [id]: false }));
                       }}
                     />
+
+                    {/* ── 구조 비틀기 제안 ── */}
+                    <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(255,209,102,0.12)" }}>
+                      <button
+                        onClick={analyzeStructureTwist}
+                        disabled={structureTwistLoading}
+                        style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px", borderRadius: 8, border: "1px dashed rgba(255,209,102,0.35)", background: structureTwistLoading ? "rgba(255,209,102,0.04)" : "rgba(255,209,102,0.06)", color: "#FFD166", fontSize: 11, fontWeight: 600, cursor: structureTwistLoading ? "not-allowed" : "pointer", transition: "all 0.18s", opacity: structureTwistLoading ? 0.7 : 1 }}
+                      >
+                        {structureTwistLoading ? <Spinner size={11} color="#FFD166" /> : <span style={{ fontSize: 13 }}>↩</span>}
+                        구조 비틀기 제안
+                        <span style={{ fontSize: 10, color: "rgba(255,209,102,0.5)", fontWeight: 400 }}>관습 역이용 포인트 찾기</span>
+                      </button>
+                      <ErrorMsg msg={structureTwistError} />
+                      {structureTwistResult?.twists?.length > 0 && (
+                        <div style={{ marginTop: 12 }}>
+                          {structureTwistResult.overall_note && (
+                            <div style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(255,209,102,0.06)", border: "1px solid rgba(255,209,102,0.15)", fontSize: 11, color: "var(--c-tx-65)", lineHeight: 1.6, fontStyle: "italic" }}>
+                              {structureTwistResult.overall_note}
+                            </div>
+                          )}
+                          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {structureTwistResult.twists.map((tw, i) => (
+                              <div key={i} style={{ borderRadius: 10, border: "1px solid rgba(255,209,102,0.18)", overflow: "hidden" }}>
+                                <div style={{ padding: "8px 12px", background: "rgba(255,209,102,0.07)", display: "flex", alignItems: "center", gap: 8 }}>
+                                  <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: "#FFD166", background: "rgba(255,209,102,0.12)", padding: "1px 6px", borderRadius: 4 }}>비트 {tw.beat_id}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--c-tx-75)" }}>{tw.beat_name}</span>
+                                </div>
+                                <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+                                  <div style={{ display: "flex", gap: 8 }}>
+                                    <span style={{ fontSize: 10, color: "rgba(160,160,160,0.6)", fontWeight: 600, flexShrink: 0, marginTop: 1 }}>관습</span>
+                                    <span style={{ fontSize: 11, color: "var(--c-tx-45)", lineHeight: 1.6, textDecoration: "line-through", textDecorationColor: "rgba(160,160,160,0.3)" }}>{tw.convention}</span>
+                                  </div>
+                                  <div style={{ display: "flex", gap: 8 }}>
+                                    <span style={{ fontSize: 10, color: "#FFD166", fontWeight: 700, flexShrink: 0, marginTop: 1 }}>비틀기</span>
+                                    <span style={{ fontSize: 12, color: "var(--c-tx-80)", lineHeight: 1.65, fontWeight: 500 }}>{tw.twist}</span>
+                                  </div>
+                                  <div style={{ display: "flex", gap: 8 }}>
+                                    <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, flexShrink: 0, marginTop: 1 }}>효과</span>
+                                    <span style={{ fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.6 }}>{tw.effect}</span>
+                                  </div>
+                                  <div style={{ display: "flex", gap: 8 }}>
+                                    <span style={{ fontSize: 10, color: "#F7A072", fontWeight: 600, flexShrink: 0, marginTop: 1 }}>위험</span>
+                                    <span style={{ fontSize: 11, color: "var(--c-tx-45)", lineHeight: 1.6 }}>{tw.risk}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </ResultCard>
                 )}
               </div>
@@ -3714,8 +4030,27 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 tooltip={"로그라인·캐릭터·트리트먼트·비트 시트를 바탕으로 시나리오 초고를 작성합니다.\n\n표준 시나리오 포맷 (씬 헤더 · 액션 라인 · 대사)으로 출력되며, 3막 구조 전체를 커버합니다.\n\n트리트먼트와 비트 시트를 먼저 생성하면 더 완성도 높은 초고가 나옵니다."}
               />
               <ErrorMsg msg={scenarioDraftError} />
+              {scenarioDraftStale && scenarioDraftResult && (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "10px 14px", borderRadius: 10, marginTop: 8,
+                  background: "rgba(247,160,114,0.07)",
+                  border: "1px solid rgba(247,160,114,0.25)",
+                }}>
+                  <span style={{ fontSize: 14, flexShrink: 0 }}>⚠</span>
+                  <div style={{ flex: 1, fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.5 }}>
+                    트리트먼트 또는 비트 시트가 변경됐습니다. 시나리오 초고를 재생성하면 최신 내용이 반영됩니다.
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                    <button onClick={() => setScenarioDraftStale(false)}
+                      style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-35)", fontSize: 10, cursor: "pointer" }}>무시</button>
+                    <button onClick={generateScenarioDraft}
+                      style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(247,160,114,0.4)", background: "rgba(247,160,114,0.1)", color: "#F7A072", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>재생성</button>
+                  </div>
+                </div>
+              )}
               {scenarioDraftResult && (
-                <ResultCard title="시나리오 초고" onClose={() => { setScenarioDraftResult(""); setScenarioDraftHistory([]); }} onUndo={() => undoHistory(setScenarioDraftHistory, setScenarioDraftResult, scenarioDraftHistory)} historyCount={scenarioDraftHistory.length} color="rgba(167,139,250,0.15)">
+                <ResultCard title="시나리오 초고" onClose={() => { setScenarioDraftResult(""); setScenarioDraftHistory([]); setScenarioDraftStale(false); }} onUndo={() => undoHistory(setScenarioDraftHistory, setScenarioDraftResult, scenarioDraftHistory)} historyCount={scenarioDraftHistory.length} color="rgba(167,139,250,0.15)">
                   {scenarioDraftCtx && (
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
                       {scenarioDraftCtx.genre && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(167,139,250,0.1)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}>{scenarioDraftCtx.genre}</span>}
@@ -3742,8 +4077,26 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                     onChange={setScenarioDraftFeedback}
                     onSubmit={refineScenarioDraft}
                     loading={scenarioDraftRefineLoading}
-                    placeholder="예: 1막 도입부를 더 긴장감 있게 / 3막에서 주인공이 더 적극적으로 행동하게 바꿔줘"
+                    placeholder="수정 요청을 입력하세요"
                   />
+                  {scenarioDraftBefore && (
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed var(--c-bd-2)" }}>
+                      <button
+                        onClick={() => setShowScenarioDraftBefore(!showScenarioDraftBefore)}
+                        style={{ fontSize: 10, padding: "3px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-35)", cursor: "pointer" }}
+                      >
+                        {showScenarioDraftBefore ? "▲ 이전 버전 숨기기" : "▼ 이전 버전 보기"}
+                      </button>
+                      {showScenarioDraftBefore && (
+                        <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 9, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)", opacity: 0.65 }}>
+                          <div style={{ fontSize: 10, color: "var(--c-tx-30)", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>BEFORE — 피드백 반영 전</div>
+                          <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 200, overflowY: "auto" }}>
+                            {scenarioDraftBefore.slice(0, 800)}{scenarioDraftBefore.length > 800 ? "..." : ""}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </ResultCard>
               )}
 
