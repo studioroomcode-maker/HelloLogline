@@ -2850,14 +2850,51 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   <DocButton label="기획서 PDF" sub="시놉시스 포함 지원·투자 기획서" onClick={() => openApplicationDoc("synopsis")} />
                 </div>
               )}
-              {getStageStatus("4") === "done" && (
-                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={() => advanceToStage("5")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
-                    다음 단계: 트리트먼트 & 비트
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                  </button>
-                </div>
-              )}
+              {getStageStatus("4") === "done" && (() => {
+                const hasSynopsis = !!(synopsisResults?.synopses?.length || pipelineResult);
+                const isConfirmed = !!(pipelineResult || selectedSynopsisIndex !== null);
+                const confirmedTitle = pipelineResult?.direction_title
+                  || (selectedSynopsisIndex !== null ? synopsisResults?.synopses?.[selectedSynopsisIndex]?.direction_title : null);
+                return (
+                  <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)" }}>
+                    {hasSynopsis && !isConfirmed && (
+                      <div style={{ marginBottom: 14, padding: "12px 16px", borderRadius: 10, background: "rgba(247,160,114,0.08)", border: "1px solid rgba(247,160,114,0.3)", display: "flex", alignItems: "flex-start", gap: 10 }}>
+                        <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>⚠️</span>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "#F7A072", marginBottom: 3 }}>시놉시스 방향이 확정되지 않았습니다</div>
+                          <div style={{ fontSize: 11, color: "var(--c-tx-45)", lineHeight: 1.6 }}>
+                            위 시놉시스 중 하나를 선택해야 트리트먼트·비트 시트·시나리오가 그 방향으로 생성됩니다.<br />
+                            선택하지 않고 넘어가면 이후 단계가 시놉시스 없이 로그라인만 참고해서 진행됩니다.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {isConfirmed && confirmedTitle && (
+                      <div style={{ marginBottom: 14, padding: "10px 16px", borderRadius: 10, background: "rgba(78,204,163,0.07)", border: "1px solid rgba(78,204,163,0.25)", display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 13 }}>✅</span>
+                        <div style={{ fontSize: 12, color: "#4ECCA3" }}>
+                          <span style={{ fontWeight: 700 }}>확정:</span> {confirmedTitle} — 이후 모든 단계가 이 시놉시스를 기반으로 생성됩니다
+                        </div>
+                      </div>
+                    )}
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <button
+                        onClick={() => advanceToStage("5")}
+                        style={{
+                          padding: "11px 24px", borderRadius: 10, cursor: "pointer",
+                          border: isConfirmed ? "1px solid rgba(78,204,163,0.4)" : "1px solid rgba(200,168,75,0.4)",
+                          background: isConfirmed ? "rgba(78,204,163,0.1)" : "rgba(200,168,75,0.1)",
+                          color: isConfirmed ? "#4ECCA3" : "#C8A84B",
+                          fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s",
+                        }}
+                      >
+                        {isConfirmed ? "✓ 시놉시스 확정 — 다음 단계: 트리트먼트 & 비트" : "다음 단계: 트리트먼트 & 비트 (시놉시스 미확정)"}
+                        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
             </div></ErrorBoundary>
               </div>
             )}
