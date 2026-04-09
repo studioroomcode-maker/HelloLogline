@@ -225,6 +225,7 @@ export default function LoglineAnalyzer() {
   const [synopsisLoading, setSynopsisLoading] = useState(false);
   const [synopsisResults, setSynopsisResults] = useState(null);
   const [synopsisError, setSynopsisError] = useState("");
+  const [selectedSynopsisIndex, setSelectedSynopsisIndex] = useState(null);
 
   // ── Pipeline ──
   const [pipelineResult, setPipelineResult] = useState(null);
@@ -408,7 +409,7 @@ export default function LoglineAnalyzer() {
     expertPanelResult, barthesCodeResult,
     shadowResult, authenticityResult, charDevResult,
     valueChargeResult, subtextResult,
-    synopsisResults, pipelineResult,
+    synopsisResults, pipelineResult, selectedSynopsisIndex,
     treatmentResult, beatSheetResult, beatScenes,
     dialogueDevResult, scriptCoverageResult,
     structureResult, themeResult, sceneListResult,
@@ -459,6 +460,7 @@ export default function LoglineAnalyzer() {
     setValueChargeResult(proj.valueChargeResult || null);
     setSubtextResult(proj.subtextResult || null);
     setSynopsisResults(proj.synopsisResults || null);
+    setSelectedSynopsisIndex(proj.selectedSynopsisIndex ?? null);
     setPipelineResult(proj.pipelineResult || null);
     setTreatmentResult(proj.treatmentResult || "");
     setBeatSheetResult(proj.beatSheetResult || null);
@@ -823,6 +825,24 @@ export default function LoglineAnalyzer() {
     return `\n주제/컨셉: ${customTheme.trim()}`;
   };
 
+  // ── Story Bible: 확정된 시놉시스를 다음 단계 프롬프트에 전달하는 컨텍스트 블록 ──
+  // 파이프라인 결과 > 사용자가 선택한 시놉시스 방향 > 빈 문자열 순으로 우선순위 결정
+  const getStoryBible = () => {
+    const s = pipelineResult
+      || (selectedSynopsisIndex !== null ? synopsisResults?.synopses?.[selectedSynopsisIndex] : null);
+    if (!s) return "";
+    const scenes = (s.key_scenes || []).map((sc, i) => `  ${i + 1}. ${sc}`).join("\n");
+    return `\n\n━━━ 확정된 시놉시스 — 반드시 이 방향으로 이야기를 발전시킬 것 ━━━
+제목/방향: ${s.direction_title || ""}
+장르/톤: ${s.genre_tone || ""}
+훅: ${s.hook || ""}
+
+${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주제: ${s.theme}` : ""}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+※ 위 시놉시스의 등장인물 이름·설정·배경·핵심 장면을 그대로 유지하세요. 새로운 이야기를 창작하지 말고, 위 시놉시스를 발전시키세요.`;
+  };
+
   const buildUserMsg = (text, genreId) => {
     const genreText = genreId === "auto"
       ? "장르를 자동으로 감지해주세요."
@@ -1162,7 +1182,7 @@ export default function LoglineAnalyzer() {
     setStructureLoading(true); setStructureError(""); setStructureResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || ""} — 결함: ${charDevResult.protagonist.flaw || ""} / 원하는 것: ${charDevResult.protagonist.want || ""}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}\n\n위 로그라인의 3막 구조 핵심 플롯 포인트와 감정 아크를 설계하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}\n\n위 로그라인의 3막 구조 핵심 플롯 포인트와 감정 아크를 설계하세요. 시놉시스가 있다면 반드시 그 방향의 등장인물과 이야기를 따르세요.`;
     try { const data = await callClaude(apiKey, STRUCTURE_ANALYSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, StructureAnalysisSchema); setStructureResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setStructureError(err.message || "구조 분석 중 오류가 발생했습니다."); }
     finally { setStructureLoading(false); clearController("structure"); }
@@ -1175,7 +1195,7 @@ export default function LoglineAnalyzer() {
     setThemeLoading(true); setThemeError(""); setThemeResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const charBlock = charDevResult?.protagonist ? `주인공 Want: ${charDevResult.protagonist.want || ""} / Need: ${charDevResult.protagonist.need || ""} / Ghost: ${charDevResult.protagonist.ghost || ""}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}\n\n위 로그라인의 핵심 테마, 도덕적 전제, 감정선을 분석하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}\n\n위 로그라인의 핵심 테마, 도덕적 전제, 감정선을 분석하세요. 시놉시스가 있다면 그 방향의 이야기를 기반으로 분석하세요.`;
     try { const data = await callClaude(apiKey, THEME_ANALYSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, ThemeAnalysisSchema); setThemeResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setThemeError(err.message || "테마 분석 중 오류가 발생했습니다."); }
     finally { setThemeLoading(false); clearController("theme"); }
@@ -1187,11 +1207,10 @@ export default function LoglineAnalyzer() {
     const ctrl = makeController("sceneList");
     setSceneListLoading(true); setSceneListError(""); setSceneListResult("");
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const synopsisBlock = pipelineResult ? `시놉시스:\n${pipelineResult.synopsis || ""}` : "";
     const treatmentBlock = treatmentResult ? `트리트먼트:\n${treatmentResult.slice(0, 3000)}` : "";
     const structureBlock = structureResult ? `플롯 포인트:\n${(structureResult.plot_points || []).map(pp => `- ${pp.name} (p.${pp.page}): ${pp.description}`).join("\n")}` : "";
     const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || "주인공"} — ${charDevResult.protagonist.want || ""}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n${charBlock}` : ""}${structureBlock ? `\n\n${structureBlock}` : ""}${synopsisBlock ? `\n\n${synopsisBlock}` : ""}${treatmentBlock ? `\n\n${treatmentBlock}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 씬 리스트(스텝 아웃라인)를 작성하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n${charBlock}` : ""}${getStoryBible()}${structureBlock ? `\n\n${structureBlock}` : ""}${treatmentBlock ? `\n\n${treatmentBlock}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 씬 리스트(스텝 아웃라인)를 작성하세요. 시놉시스·트리트먼트가 있다면 반드시 그 방향의 이야기와 인물을 따르세요.`;
     try {
       const text = await callClaudeText(apiKey, SCENE_LIST_SYSTEM_PROMPT, msg, 12000, "claude-sonnet-4-6", ctrl.signal);
       setSceneListResult(text); await autoSave();
@@ -1207,9 +1226,9 @@ export default function LoglineAnalyzer() {
     setBeatSheetLoading(true); setBeatSheetError(""); setBeatSheetResult(null);
     setBeatScenes({}); setExpandedBeats({});
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const contextBlock = treatmentResult ? `트리트먼트:\n${treatmentResult.slice(0, 3000)}` : pipelineResult ? `시놉시스:\n${pipelineResult.synopsis || ""}` : "";
+    const contextBlock = treatmentResult ? `트리트먼트:\n${treatmentResult.slice(0, 3000)}` : "";
     const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || ""} — Want: ${charDevResult.protagonist.want || ""} / Need: ${charDevResult.protagonist.need || ""} / Ghost: ${charDevResult.protagonist.ghost || ""}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${contextBlock ? `\n\n${contextBlock}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}${contextBlock ? `\n\n${contextBlock}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요. 시놉시스·트리트먼트가 있다면 반드시 그 방향의 이야기와 인물을 따르세요.`;
     try { const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal, BeatSheetSchema); setBeatSheetResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setBeatSheetError(err.message || "비트 시트 생성 중 오류가 발생했습니다."); }
     finally { setBeatSheetLoading(false); clearController("beatSheet"); }
@@ -1239,7 +1258,7 @@ export default function LoglineAnalyzer() {
     const ctrl = makeController("charDev");
     setCharDevLoading(true); setCharDevError(""); setCharDevResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요. 시놉시스가 있다면 그 방향의 인물 이름·설정을 따르세요.`;
     try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal, CharacterDevSchema); setCharDevResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setCharDevError(err.message || "캐릭터 분석 중 오류가 발생했습니다."); }
     finally { setCharDevLoading(false); clearController("charDev"); }
@@ -1254,8 +1273,12 @@ export default function LoglineAnalyzer() {
     const structureLabel = { "3act": "3막 구조 (Field)", hero: "영웅의 여정 12단계 (Campbell)", "4act": "4막 구조", miniseries: "미니시리즈 화별 구조" }[treatmentStructure] || "3막 구조";
     const proto = treatmentChars.protagonist;
     const charBlock = [`주인공: ${proto.name || "미정"} (${proto.role || "역할 미정"})`, proto.want ? `  - 외적 목표(Want): ${proto.want}` : "", proto.need ? `  - 내적 욕구(Need): ${proto.need}` : "", proto.flaw ? `  - 핵심 결함: ${proto.flaw}` : "", ...treatmentChars.supporting.filter((s) => s.name.trim()).map((s) => `조력/적대 인물: ${s.name} (${s.role}) — ${s.relation}`)].filter(Boolean).join("\n");
-    const synopsisBlock = pipelineResult ? `시놉시스 (파이프라인 생성):\n${pipelineResult.synopsis || ""}` : result ? `로그라인 분석 결과 감지 장르: ${result.detected_genre || ""}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}\n서사 구조: ${structureLabel}\n\n등장인물 정보:\n${charBlock}\n\n${synopsisBlock}\n\n위 정보를 바탕으로 완성도 높은 트리트먼트를 한국어로 작성해주세요.`;
+    const storyBible = getStoryBible();
+    const genreContext = result?.detected_genre ? `\n로그라인 분석 감지 장르: ${result.detected_genre}` : "";
+    const structurePlotPoints = structureResult?.plot_points?.length
+      ? `\n\n확정된 플롯 포인트 (이 구조를 따를 것):\n${structureResult.plot_points.map(p => `  ${p.name}: ${p.description || ""}`).join("\n")}`
+      : "";
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${genreContext}\n서사 구조: ${structureLabel}\n\n등장인물 정보:\n${charBlock}${storyBible}${structurePlotPoints}\n\n위 정보를 바탕으로 완성도 높은 트리트먼트를 한국어로 작성해주세요. 시놉시스와 플롯 포인트가 있다면 반드시 그 방향을 따르세요. 등장인물 이름·배경·핵심 장면을 시놉시스와 일치시키세요.`;
     try {
       const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 32000, "claude-sonnet-4-6", ctrl.signal);
       setTreatmentResult(text);
@@ -2143,7 +2166,20 @@ export default function LoglineAnalyzer() {
                   <ErrorMsg msg={synopsisError} />
                   {synopsisResults?.synopses && (
                     <div style={{ marginTop: 16 }}>
-                      {synopsisResults.synopses.map((s, i) => <SynopsisCard key={i} synopsis={s} index={i} />)}
+                      {selectedSynopsisIndex !== null && (
+                        <div style={{ marginBottom: 12, padding: "8px 14px", borderRadius: 8, background: "rgba(78,204,163,0.08)", border: "1px solid rgba(78,204,163,0.25)", fontSize: 12, color: "#4ECCA3", fontFamily: "'Noto Sans KR', sans-serif" }}>
+                          ✓ 방향 {selectedSynopsisIndex + 1} 확정 — 이후 모든 단계가 이 시놉시스를 기반으로 생성됩니다
+                        </div>
+                      )}
+                      {synopsisResults.synopses.map((s, i) => (
+                        <SynopsisCard
+                          key={i}
+                          synopsis={s}
+                          index={i}
+                          isSelected={selectedSynopsisIndex === i}
+                          onSelect={() => setSelectedSynopsisIndex(i === selectedSynopsisIndex ? null : i)}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>

@@ -2715,7 +2715,7 @@ ${choicesSummary}
 // ─────────────────────────────────────────────
 // 시놉시스 카드
 // ─────────────────────────────────────────────
-export function SynopsisCard({ synopsis, index }) {
+export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) {
   const [expanded, setExpanded] = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -2746,9 +2746,10 @@ export function SynopsisCard({ synopsis, index }) {
       style={{
         marginBottom: 16,
         borderRadius: 14,
-        border: `1px solid ${color}25`,
-        background: "rgba(255,255,255,0.02)",
+        border: isSelected ? `1px solid ${color}70` : `1px solid ${color}25`,
+        background: isSelected ? `${color}06` : "rgba(255,255,255,0.02)",
         overflow: "hidden",
+        transition: "border-color 0.2s, background 0.2s",
       }}
     >
       {/* 헤더 */}
@@ -2789,6 +2790,21 @@ export function SynopsisCard({ synopsis, index }) {
             >
               {synopsis.direction_title}
             </span>
+            {isSelected && (
+              <span
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: color,
+                  background: `${color}20`,
+                  padding: "2px 8px",
+                  borderRadius: 8,
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                }}
+              >
+                ✓ 확정됨
+              </span>
+            )}
             {synopsis.ending_type && (
               <span
                 style={{
@@ -2925,23 +2941,43 @@ export function SynopsisCard({ synopsis, index }) {
                 주제: {synopsis.theme}
               </div>
             )}
-            <button
-              onClick={handleCopy}
-              style={{
-                padding: "5px 13px",
-                borderRadius: 7,
-                border: `1px solid ${color}30`,
-                background: `${color}08`,
-                color: copied ? color : "rgba(255,255,255,0.4)",
-                cursor: "pointer",
-                fontSize: 11,
-                fontFamily: "'Noto Sans KR', sans-serif",
-                transition: "all 0.2s",
-                marginLeft: "auto",
-              }}
-            >
-              {copied ? "✓ 복사됨" : "복사"}
-            </button>
+            <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+              {onSelect && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onSelect(); }}
+                  style={{
+                    padding: "5px 13px",
+                    borderRadius: 7,
+                    border: `1px solid ${isSelected ? color + "60" : color + "30"}`,
+                    background: isSelected ? `${color}20` : `${color}08`,
+                    color: isSelected ? color : "rgba(255,255,255,0.5)",
+                    cursor: "pointer",
+                    fontSize: 11,
+                    fontWeight: isSelected ? 700 : 400,
+                    fontFamily: "'Noto Sans KR', sans-serif",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {isSelected ? "✓ 이 방향 확정됨" : "이 방향으로 결정"}
+                </button>
+              )}
+              <button
+                onClick={handleCopy}
+                style={{
+                  padding: "5px 13px",
+                  borderRadius: 7,
+                  border: `1px solid ${color}30`,
+                  background: `${color}08`,
+                  color: copied ? color : "rgba(255,255,255,0.4)",
+                  cursor: "pointer",
+                  fontSize: 11,
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                  transition: "all 0.2s",
+                }}
+              >
+                {copied ? "✓ 복사됨" : "복사"}
+              </button>
+            </div>
           </div>
         </div>
       )}
