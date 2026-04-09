@@ -82,7 +82,7 @@ export async function callClaude(
   const end = cleaned.lastIndexOf("}");
   if (start !== -1 && end !== -1) cleaned = cleaned.slice(start, end + 1);
 
-  // ── JSON 강화 수정 ──
+  // ── 1단계: 스트링 내부 제어문자 이스케이프 + 잘못된 따옴표 처리 ──
   let fixed = "";
   let inString = false;
   let escaped = false;
@@ -128,7 +128,29 @@ export async function callClaude(
     fixed += ch;
   }
 
-  return JSON.parse(fixed);
+  // ── 2단계: 누락된 쉼표 보완 ──
+  // 배열/객체 요소 사이 쉼표가 빠진 패턴 처리
+  // "value"\n  "key" → "value",\n  "key"
+  // }  {  →  },{   /  }  "  →  },"
+  fixed = fixed
+    .replace(/(")\s*\n(\s*")/g, '$1,\n$2')   // "..."\n  "..." → 누락 쉼표
+    .replace(/(")\s*\n(\s*\{)/g, '$1,\n$2')   // "..."\n  { → 누락 쉼표
+    .replace(/(\})\s*\n(\s*\{)/g, '$1,\n$2')  // }\n  { → 누락 쉼표
+    .replace(/(\})\s*\n(\s*")/g, '$1,\n$2')   // }\n  "key" → 누락 쉼표
+    .replace(/(\])\s*\n(\s*")/g, '$1,\n$2')   // ]\n  "key" → 누락 쉼표 (단, 마지막 ] 제외)
+    .replace(/,\s*([}\]])/g, '$1');            // trailing comma 정리
+
+  // ── 3단계: 파싱 시도 ──
+  try {
+    return JSON.parse(fixed);
+  } catch {
+    // 4단계: 마지막 유효한 닫기 괄호까지만 잘라서 재시도
+    const lastBrace = fixed.lastIndexOf("}");
+    if (lastBrace > 0) {
+      try { return JSON.parse(fixed.slice(0, lastBrace + 1)); } catch { /* fall through */ }
+    }
+    return JSON.parse(fixed); // 원본 오류 그대로 throw
+  }
 }
 
 /**
