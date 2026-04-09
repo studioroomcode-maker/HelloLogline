@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import { CRITERIA_GUIDE, LABELS_KR, PANEL_EXPERTS, NARRATIVE_FRAMEWORKS, PIPELINE_ALL_QUESTIONS, PIPELINE_QUESTIONS_BY_DURATION, PIPELINE_SYNOPSIS_SYSTEM_PROMPT, PIPELINE_REFINE_SYSTEM_PROMPT, GENRES, DURATION_OPTIONS, EXAMPLE_LOGLINES, IMPROVEMENT_SYSTEM_PROMPT } from "./constants.js";
+import { CRITERIA_GUIDE, LABELS_KR, PANEL_EXPERTS, NARRATIVE_FRAMEWORKS, PIPELINE_ALL_QUESTIONS, PIPELINE_QUESTIONS_BY_DURATION, PIPELINE_SYNOPSIS_SYSTEM_PROMPT, PIPELINE_REFINE_SYSTEM_PROMPT, GENRES, DURATION_OPTIONS, EXAMPLE_LOGLINES, IMPROVEMENT_SYSTEM_PROMPT, WEAKNESS_FIX_SYSTEM_PROMPT, STORY_PIVOT_SYSTEM_PROMPT } from "./constants.js";
 import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude } from "./utils.js";
 
 export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
@@ -1120,6 +1120,196 @@ export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze }
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// 이야기 발전 패널 (약점 수정 + 방향 전환)
+// ─────────────────────────────────────────────
+export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
+  const [fixState, setFixState] = useState("idle"); // idle|loading|done|error
+  const [fixes, setFixes] = useState([]);
+  const [fixError, setFixError] = useState("");
+  const [pivotState, setPivotState] = useState("idle");
+  const [pivots, setPivots] = useState([]);
+  const [pivotError, setPivotError] = useState("");
+
+  const genreLabel = GENRES.find((g) => g.id === genre)?.label || "자동 감지";
+
+  // 약점 항목 추출 (점수 낮은 순 상위 3개)
+  const weakItems = Object.entries({
+    ...(result?.structure || {}),
+    ...(result?.expression || {}),
+    ...(result?.technical || {}),
+  })
+    .filter(([, v]) => v?.max > 0)
+    .map(([k, v]) => ({ key: k, label: LABELS_KR[k] || k, ratio: v.score / v.max }))
+    .sort((a, b) => a.ratio - b.ratio)
+    .slice(0, 3)
+    .map((i) => `${i.label} (${Math.round(i.ratio * 100)}%)`)
+    .join(", ");
+
+  const handleFix = async () => {
+    setFixState("loading");
+    setFixError("");
+    try {
+      const msg = `로그라인: "${logline}"\n장르: ${genreLabel}\n\n취약 항목 (점수 낮은 순): ${weakItems}\n\n종합 피드백: ${result?.overall_feedback || "-"}`;
+      const data = await callClaude(apiKey, WEAKNESS_FIX_SYSTEM_PROMPT, msg, 3000);
+      setFixes(data.fixes || []);
+      setFixState("done");
+    } catch (e) {
+      setFixError(e.message);
+      setFixState("error");
+    }
+  };
+
+  const handlePivot = async () => {
+    setPivotState("loading");
+    setPivotError("");
+    try {
+      const msg = `로그라인: "${logline}"\n장르: ${genreLabel}\n\n현재 분석 요약:\n- 종합 피드백: ${result?.overall_feedback || "-"}\n- 주요 강점: ${result?.strengths?.join(", ") || "-"}\n- 주요 약점: ${result?.weaknesses?.join(", ") || "-"}`;
+      const data = await callClaude(apiKey, STORY_PIVOT_SYSTEM_PROMPT, msg, 3000);
+      setPivots(data.pivots || []);
+      setPivotState("done");
+    } catch (e) {
+      setPivotError(e.message);
+      setPivotState("error");
+    }
+  };
+
+  const cardStyle = {
+    padding: "14px 16px",
+    background: "rgba(255,255,255,0.03)",
+    borderRadius: 10,
+    marginBottom: 10,
+    border: "1px solid rgba(255,255,255,0.07)",
+  };
+
+  const applyBtnStyle = (color) => ({
+    padding: "5px 13px",
+    borderRadius: 7,
+    border: `1px solid ${color}55`,
+    background: `${color}18`,
+    color: color,
+    cursor: "pointer",
+    fontSize: 11,
+    fontWeight: 700,
+    fontFamily: "'Noto Sans KR', sans-serif",
+  });
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      {/* 헤더 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: "#e8e8f0", letterSpacing: -0.3 }}>
+          이야기 발전시키기
+        </div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+          분석 결과를 바탕으로 개발 방향을 선택하세요
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+
+        {/* ── 약점 집중 수정 ── */}
+        <div style={{ padding: 18, background: "rgba(248,113,113,0.05)", borderRadius: 12, border: "1px solid rgba(248,113,113,0.15)" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#F87171", marginBottom: 6 }}>🔧 약점 집중 수정</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 14, lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+            점수 낮은 항목만 골라 그 문제를 직접 고친 버전 제안
+          </div>
+
+          {fixState === "idle" && (
+            <button
+              onClick={handleFix}
+              disabled={!apiKey || !result}
+              style={{ width: "100%", padding: "9px 0", borderRadius: 8, border: "1px solid rgba(248,113,113,0.35)", background: "rgba(248,113,113,0.1)", color: "#F87171", cursor: apiKey && result ? "pointer" : "not-allowed", fontSize: 12, fontWeight: 700, fontFamily: "'Noto Sans KR', sans-serif", opacity: apiKey && result ? 1 : 0.4 }}
+            >
+              약점 수정안 생성
+            </button>
+          )}
+          {fixState === "loading" && (
+            <div style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: 12, padding: "12px 0", fontFamily: "'Noto Sans KR', sans-serif" }}>분석 중…</div>
+          )}
+          {fixState === "error" && (
+            <div style={{ fontSize: 11, color: "#F87171", fontFamily: "'Noto Sans KR', sans-serif" }}>{fixError}</div>
+          )}
+          {fixState === "done" && fixes.map((fix, i) => (
+            <div key={i} style={cardStyle}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#F87171", marginBottom: 4 }}>
+                {fix.weakness}
+              </div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 8, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
+                {fix.score_issue}
+              </div>
+              <div style={{ fontSize: 13, color: "#e8e8f0", marginBottom: 10, lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                "{fix.fixed_logline}"
+              </div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                → {fix.key_change}
+              </div>
+              {onApply && (
+                <button onClick={() => onApply(fix.fixed_logline)} style={applyBtnStyle("#F87171")}>
+                  ↻ 이걸로 분석
+                </button>
+              )}
+            </div>
+          ))}
+          {fixState === "done" && (
+            <button onClick={() => setFixState("idle")} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.25)", cursor: "pointer", fontSize: 11, marginTop: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              다시 생성
+            </button>
+          )}
+        </div>
+
+        {/* ── 방향 전환 ── */}
+        <div style={{ padding: 18, background: "rgba(139,92,246,0.05)", borderRadius: 12, border: "1px solid rgba(139,92,246,0.15)" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#A78BFA", marginBottom: 6 }}>🔀 방향 전환</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 14, lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+            같은 전제로 완전히 다른 각도 3가지 탐색
+          </div>
+
+          {pivotState === "idle" && (
+            <button
+              onClick={handlePivot}
+              disabled={!apiKey || !result}
+              style={{ width: "100%", padding: "9px 0", borderRadius: 8, border: "1px solid rgba(139,92,246,0.35)", background: "rgba(139,92,246,0.1)", color: "#A78BFA", cursor: apiKey && result ? "pointer" : "not-allowed", fontSize: 12, fontWeight: 700, fontFamily: "'Noto Sans KR', sans-serif", opacity: apiKey && result ? 1 : 0.4 }}
+            >
+              방향 전환안 생성
+            </button>
+          )}
+          {pivotState === "loading" && (
+            <div style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: 12, padding: "12px 0", fontFamily: "'Noto Sans KR', sans-serif" }}>탐색 중…</div>
+          )}
+          {pivotState === "error" && (
+            <div style={{ fontSize: 11, color: "#A78BFA", fontFamily: "'Noto Sans KR', sans-serif" }}>{pivotError}</div>
+          )}
+          {pivotState === "done" && pivots.map((pivot, i) => (
+            <div key={i} style={cardStyle}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#A78BFA", marginBottom: 6 }}>
+                {pivot.label}
+              </div>
+              <div style={{ fontSize: 13, color: "#e8e8f0", marginBottom: 8, lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                "{pivot.pivot_logline}"
+              </div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
+                {pivot.why_interesting}
+              </div>
+              {onApply && (
+                <button onClick={() => onApply(pivot.pivot_logline)} style={applyBtnStyle("#A78BFA")}>
+                  ↻ 이걸로 분석
+                </button>
+              )}
+            </div>
+          ))}
+          {pivotState === "done" && (
+            <button onClick={() => setPivotState("idle")} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.25)", cursor: "pointer", fontSize: 11, marginTop: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              다시 생성
+            </button>
+          )}
+        </div>
+
+      </div>
     </div>
   );
 }

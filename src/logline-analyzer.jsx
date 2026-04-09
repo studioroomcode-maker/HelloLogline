@@ -16,7 +16,7 @@ import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, c
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import { saveProject, loadProjects, deleteProject } from "./db.js";
 import {
-  ApiKeyModal, HistoryPanel, ImprovementPanel, ExportButton,
+  ApiKeyModal, HistoryPanel, ImprovementPanel, ExportButton, StoryDevPanel,
   AcademicPanel, AuthenticityPanel, ValueChargePanel, ShadowAnalysisPanel,
   ExpertPanelSection, PipelinePanel, SynopsisCard, CompareSection,
   BeatSheetPanel, TreatmentInputPanel, CharacterDevPanel,
@@ -1702,6 +1702,13 @@ export default function LoglineAnalyzer() {
                             ))}
                           </div>
                         )}
+                        <StoryDevPanel
+                          logline={logline}
+                          genre={genre}
+                          result={result}
+                          apiKey={apiKey}
+                          onApply={(improved) => analyze(improved)}
+                        />
                         <ImprovementPanel
                           logline={logline}
                           genre={genre}
