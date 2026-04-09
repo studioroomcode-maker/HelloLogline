@@ -3267,9 +3267,9 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
                       : hasScene ? "🔄 씬 재생성" : "🎬 이 씬 시나리오 생성"}
                   </button>
 
-                  {/* 생성된 씬 텍스트 */}
+                  {/* 생성된 씬 텍스트 — 파이널 드래프트 스타일 */}
                   {hasScene && (
-                    <div style={{ borderRadius: 10, border: `1px solid ${act.color}22`, background: "rgba(0,0,0,0.25)", overflow: "hidden" }}>
+                    <div style={{ borderRadius: 10, border: `1px solid ${act.color}22`, background: "rgba(0,0,0,0.3)", overflow: "hidden" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: `1px solid ${act.color}15` }}>
                         <span style={{ fontSize: 11, color: act.color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>SCENE {beat.id}</span>
                         <button
@@ -3277,9 +3277,32 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
                           style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", background: "none", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}
                         >복사</button>
                       </div>
-                      <pre style={{ margin: 0, padding: "14px 16px", fontSize: isMobile ? 11 : 12, color: "rgba(255,255,255,0.72)", fontFamily: "'Noto Sans KR', monospace", lineHeight: 1.85, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-                        {beatScenes[beat.id]}
-                      </pre>
+                      {/* 스크립트 포맷 렌더러 */}
+                      <div style={{ padding: "16px 20px", fontFamily: "'Courier New', 'Courier', monospace", fontSize: isMobile ? 11 : 12, lineHeight: 2, color: "rgba(255,255,255,0.82)" }}>
+                        {beatScenes[beat.id].split("\n").map((line, idx) => {
+                          const trimmed = line.trim();
+                          // 씬 헤더: INT. / EXT. / INT./EXT.
+                          if (/^(INT\.|EXT\.|INT\.\/EXT\.)/.test(trimmed)) {
+                            return <div key={idx} style={{ fontWeight: 800, color: "#ffffff", letterSpacing: 0.5, marginTop: idx > 0 ? 10 : 0, textTransform: "uppercase" }}>{line}</div>;
+                          }
+                          // 캐릭터 큐: 짧고 대문자인 줄 (대사 앞)
+                          if (trimmed.length > 0 && trimmed.length <= 30 && trimmed === trimmed.toUpperCase() && !/[.!?]$/.test(trimmed) && !/^[(\[]/.test(trimmed)) {
+                            return <div key={idx} style={{ textAlign: "center", fontWeight: 700, color: "#FFD166", marginTop: 8 }}>{line}</div>;
+                          }
+                          // 지문: (괄호)로 시작
+                          if (/^\s*\(/.test(line)) {
+                            return <div key={idx} style={{ textAlign: "center", color: "rgba(255,255,255,0.5)", fontStyle: "italic", fontSize: (isMobile ? 11 : 12) - 1 }}>{line}</div>;
+                          }
+                          // 전환: CUT TO / FADE / SMASH CUT
+                          if (/^(CUT TO:|FADE|SMASH CUT|DISSOLVE)/.test(trimmed)) {
+                            return <div key={idx} style={{ textAlign: "right", color: "rgba(255,255,255,0.4)", fontStyle: "italic", marginTop: 6 }}>{line}</div>;
+                          }
+                          // 빈 줄
+                          if (trimmed === "") return <div key={idx} style={{ height: "0.5em" }} />;
+                          // 일반 액션 라인
+                          return <div key={idx} style={{ color: "rgba(255,255,255,0.75)" }}>{line}</div>;
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>

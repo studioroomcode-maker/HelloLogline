@@ -126,6 +126,29 @@ export function parseClaudeJson(text) {
   }
 }
 
+/** Anthropic API 오류 코드 → 한국어 메시지 매핑 */
+function koreanizeError(errData, httpStatus) {
+  const type = errData?.error?.type || "";
+  const msg  = errData?.error?.message || "";
+  if (type === "overloaded_error" || msg.includes("overloaded"))
+    return "Claude 서버가 일시적으로 과부하 상태입니다. 잠시 후 다시 시도해주세요.";
+  if (type === "rate_limit_error" || msg.includes("rate_limit"))
+    return "API 요청 한도(Rate Limit)에 도달했습니다. 잠시 기다린 후 다시 시도해주세요.";
+  if (type === "authentication_error" || httpStatus === 401)
+    return "API 키가 올바르지 않습니다. 설정에서 키를 다시 확인해주세요.";
+  if (type === "invalid_request_error")
+    return "요청 형식 오류가 발생했습니다. 입력 내용을 줄이거나 다시 시도해주세요.";
+  if (type === "permission_error" || msg.includes("permission"))
+    return "이 API 키에 해당 기능 사용 권한이 없습니다.";
+  if (msg.includes("credit") || msg.includes("billing") || msg.includes("balance"))
+    return "Anthropic 계정 크레딧이 부족합니다. anthropic.com에서 크레딧을 충전해주세요.";
+  if (httpStatus === 529)
+    return "Claude API가 현재 혼잡합니다. 잠시 후 재시도해주세요.";
+  if (httpStatus === 500)
+    return "Anthropic 서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+  return null; // 매핑 실패 시 원본 메시지 사용
+}
+
 /**
  * Fetch one Claude response (raw text returned from API).
  */
@@ -148,18 +171,20 @@ async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, 
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
-    const hint = response.status === 404
+    const fallback = response.status === 404
       ? "API 오류 (404) — 프록시 서버가 실행 중이지 않습니다. 터미널에서 'npm run dev'로 실행하세요."
       : response.status === 401
       ? "API 키가 올바르지 않거나 설정되지 않았습니다."
       : `API 오류 (${response.status})`;
-    throw new Error(errData?.error?.message || hint);
+    const korean = koreanizeError(errData, response.status);
+    throw new Error(korean || errData?.error?.message || fallback);
   }
 
   const data = await response.json();
   // Anthropic may return 200 with type:"error" (e.g., credit exhaustion edge cases)
   if (data.type === "error" || (!data.content && data.error)) {
-    throw new Error(data.error?.message || "Anthropic API 오류가 발생했습니다.");
+    const korean = koreanizeError(data, 200);
+    throw new Error(korean || data.error?.message || "Anthropic API 오류가 발생했습니다.");
   }
   return data.content?.map((b) => b.text || "").join("") || "";
 }
@@ -245,12 +270,13 @@ export async function callClaudeText(
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
-    const hint = response.status === 404
+    const fallback = response.status === 404
       ? "API 오류 (404) — 프록시 서버가 실행 중이지 않습니다. 터미널에서 'npm run dev'로 실행하세요."
       : response.status === 401
       ? "API 키가 올바르지 않거나 설정되지 않았습니다."
       : `API 오류 (${response.status})`;
-    throw new Error(errData?.error?.message || hint);
+    const korean = koreanizeError(errData, response.status);
+    throw new Error(korean || errData?.error?.message || fallback);
   }
 
   const data = await response.json();

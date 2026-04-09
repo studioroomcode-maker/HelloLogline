@@ -359,7 +359,7 @@ export default function LoglineAnalyzer() {
   const [generatingBeat, setGeneratingBeat] = useState(null);
   const [expandedBeats, setExpandedBeats] = useState({});
   const [allScenesLoading, setAllScenesLoading] = useState(false);
-  const [allScenesProgress, setAllScenesProgress] = useState({ current: 0, total: 0 });
+  const [allScenesProgress, setAllScenesProgress] = useState({ current: 0, total: 0, failed: [] });
 
   // ── Character Development ──
   const [charDevResult, setCharDevResult] = useState(null);
@@ -438,6 +438,10 @@ export default function LoglineAnalyzer() {
   const [savedProjects, setSavedProjects] = useState([]);
   const [currentProjectId, setCurrentProjectId] = useState(null);
   const [saveStatus, setSaveStatus] = useState(""); // "saving" | "saved" | ""
+  const importFileRef = useRef(null);
+
+  // ── First visit onboarding ──
+  const [isFirstVisit] = useState(() => !localStorage.getItem("logline_visited"));
 
   // ── Abort controllers (per operation key) ──
   const abortControllersRef = useRef({});
@@ -595,6 +599,51 @@ export default function LoglineAnalyzer() {
   const deleteProjectById = async (id) => {
     await deleteProject(id);
     setSavedProjects((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // ── JSON 내보내기 ──
+  const exportProjectJson = () => {
+    const snapshot = collectProjectSnapshot();
+    const json = JSON.stringify(snapshot, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `logline_${snapshot.title.slice(0, 20).replace(/\s+/g, "_") || "project"}_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // ── JSON 가져오기 ──
+  const importProjectJson = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const proj = JSON.parse(ev.target.result);
+        if (!proj.logline) throw new Error("유효하지 않은 프로젝트 파일입니다.");
+        proj.id = Date.now();
+        loadProjectState(proj);
+        alert(`"${proj.title || proj.logline.slice(0, 30)}" 프로젝트를 불러왔습니다.`);
+      } catch (err) {
+        alert("파일을 읽는 중 오류가 발생했습니다: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  // ── 첫 방문 예시 자동 입력 ──
+  const applyExampleLogline = () => {
+    const example = EXAMPLE_LOGLINES[0];
+    setLogline(example);
+    setGenre("comedy");
+    localStorage.setItem("logline_visited", "1");
+  };
+
+  const dismissFirstVisit = () => {
+    localStorage.setItem("logline_visited", "1");
   };
 
   // ── Application Document PDF Generator ──
@@ -1372,18 +1421,18 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
     if (!apiKey || !beatSheetResult?.beats?.length) return;
     const beats = beatSheetResult.beats;
     setAllScenesLoading(true);
-    setAllScenesProgress({ current: 0, total: beats.length });
+    setAllScenesProgress({ current: 0, total: beats.length, failed: [] });
     setBeatSheetError("");
     const ctrl = makeController("allScenes");
-    // local accumulator — state updates are async so we track locally too
     const localScenes = { ...beatScenes };
+    const failedBeats = [];
 
     try {
       for (let i = 0; i < beats.length; i++) {
         if (ctrl.signal.aborted) break;
         const beat = beats[i];
         setGeneratingBeat(beat.id);
-        setAllScenesProgress({ current: i + 1, total: beats.length });
+        setAllScenesProgress((prev) => ({ ...prev, current: i + 1, failed: [...failedBeats] }));
 
         const charSummary = charDevResult?.protagonist
           ? `주인공: ${charDevResult.protagonist.name_suggestion || "주인공"} (Want: ${charDevResult.protagonist.want || ""}, 말투: ${charDevResult.protagonist.voice_hint || ""})`
@@ -1401,7 +1450,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
           setExpandedBeats((prev) => ({ ...prev, [beat.id]: true }));
         } catch (err) {
           if (err.name === "AbortError") break;
-          // 개별 씬 실패해도 다음으로 진행
+          failedBeats.push({ id: beat.id, name: beat.name_kr });
           console.warn(`씬 ${beat.id} 생성 실패:`, err.message);
         }
       }
@@ -1409,7 +1458,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
     } finally {
       setAllScenesLoading(false);
       setGeneratingBeat(null);
-      setAllScenesProgress({ current: 0, total: 0 });
+      setAllScenesProgress({ current: 0, total: 0, failed: failedBeats });
       clearController("allScenes");
     }
   };
@@ -1574,6 +1623,30 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
   const statusDotColor = { idle: "rgba(255,255,255,0.15)", active: "#C8A84B", done: "#4ECCA3" };
 
+  // ── Stage별 완료 기능 카운트 ──
+  function getStageDoneCount(stageId) {
+    if (stageId === "1") {
+      return [result, /* improvement done = result exists */].filter(Boolean).length;
+    }
+    if (stageId === "2") {
+      return [academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult, expertPanelResult, valueChargeResult, pipelineResult].filter(Boolean).length;
+    }
+    if (stageId === "3") {
+      return [shadowResult, authenticityResult, charDevResult].filter(Boolean).length;
+    }
+    if (stageId === "4") {
+      return [structureResult, subtextResult, synopsisResults].filter(Boolean).length;
+    }
+    if (stageId === "5") {
+      return [treatmentResult, sceneListResult, beatSheetResult, dialogueDevResult].filter(Boolean).length;
+    }
+    if (stageId === "6") {
+      return [scriptCoverageResult, valuationResult].filter(Boolean).length;
+    }
+    return 0;
+  }
+  const STAGE_TOTALS = { "1": 1, "2": 8, "3": 3, "4": 3, "5": 4, "6": 2 };
+
   // ── Error display helper ──
   function ErrorMsg({ msg }) {
     if (!msg) return null;
@@ -1619,7 +1692,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
               </div>
               <button onClick={() => setShowProjects(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer", fontSize: 18, lineHeight: 1 }}>×</button>
             </div>
-            <div style={{ overflowY: "auto", flex: 1, padding: "8px 16px 16px" }}>
+            <div style={{ overflowY: "auto", flex: 1, padding: "8px 16px 8px" }}>
               {savedProjects.length === 0 ? (
                 <div style={{ textAlign: "center", color: "rgba(255,255,255,0.3)", fontSize: 13, padding: "40px 0" }}>저장된 프로젝트가 없습니다</div>
               ) : savedProjects.map((proj) => (
@@ -1634,10 +1707,27 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                       {new Date(proj.updatedAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </div>
                   </div>
+                  <button onClick={() => { exportProjectJson(); }} title="현재 작업 내보내기" style={{ padding: "6px 10px", borderRadius: 7, border: "1px solid rgba(200,168,75,0.3)", background: "rgba(200,168,75,0.07)", color: "#C8A84B", cursor: "pointer", fontSize: 11 }}>↓ JSON</button>
                   <button onClick={() => loadProjectState(proj)} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid rgba(78,204,163,0.3)", background: "rgba(78,204,163,0.07)", color: "#4ECCA3", cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>불러오기</button>
                   <button onClick={() => deleteProjectById(proj.id)} style={{ padding: "6px 10px", borderRadius: 7, border: "1px solid rgba(232,93,117,0.2)", background: "rgba(232,93,117,0.05)", color: "#E85D75", cursor: "pointer", fontSize: 11 }}>삭제</button>
                 </div>
               ))}
+            </div>
+            {/* ── 내보내기/가져오기 하단 영역 ── */}
+            <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", gap: 8 }}>
+              <button
+                onClick={exportProjectJson}
+                style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: "1px solid rgba(200,168,75,0.3)", background: "rgba(200,168,75,0.07)", color: "#C8A84B", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+              >
+                ↓ 현재 작업 내보내기 (JSON)
+              </button>
+              <button
+                onClick={() => importFileRef.current?.click()}
+                style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: "1px solid rgba(96,165,250,0.3)", background: "rgba(96,165,250,0.07)", color: "#60A5FA", cursor: "pointer", fontSize: 12, fontWeight: 600 }}
+              >
+                ↑ JSON 파일 불러오기
+              </button>
+              <input ref={importFileRef} type="file" accept=".json" style={{ display: "none" }} onChange={importProjectJson} />
             </div>
           </div>
         </>
@@ -1769,9 +1859,37 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
         })}
       </div>
 
+      {/* ─── 첫 방문 온보딩 배너 ─── */}
+      {isFirstVisit && !result && (
+        <div style={{ background: "rgba(200,168,75,0.07)", borderBottom: "1px solid rgba(200,168,75,0.15)" }}>
+          <div style={{ maxWidth: 860, margin: "0 auto", padding: isMobile ? "14px 16px" : "14px 28px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#C8A84B", marginBottom: 3 }}>처음 오셨나요?</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>
+                로그라인을 입력하면 18개 기준으로 분석 → 시놉시스 → 트리트먼트 → 씬 대본까지 자동 생성됩니다.
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+              <button
+                onClick={() => { applyExampleLogline(); }}
+                style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.12)", color: "#C8A84B", cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}
+              >
+                예시 로그라인 입력
+              </button>
+              <button
+                onClick={dismissFirstVisit}
+                style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "none", color: "rgba(255,255,255,0.3)", cursor: "pointer", fontSize: 11 }}
+              >
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ─── Accordion stages ─── */}
       <div ref={mainContentRef} style={{
-        maxWidth: 860, margin: "0 auto",
+        maxWidth: 860, width: "100%", margin: "0 auto", boxSizing: "border-box",
         padding: isMobile ? "16px 12px 80px" : "24px 28px 80px",
       }}>
 
@@ -1785,7 +1903,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "1" ? "#e8e8f0" : getStageStatus("1") === "done" ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.45)" }}>로그라인</div>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>입력 / 기본 분석 / AI 개선안</div>
               </div>
-              {getStageStatus("1") === "done" && currentStage !== "1" && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)" }}>완료</span>}
+              {currentStage !== "1" && getStageDoneCount("1") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("1")}/{STAGE_TOTALS["1"]}</span>}
               {getStageStatus("1") === "active" && <Spinner size={12} color="#C8A84B" />}
               <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "1" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
             </div>
@@ -2160,7 +2278,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "2" ? "#e8e8f0" : getStageStatus("2") === "done" ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.45)" }}>개념 분석</div>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>학술 이론 · 신화 매핑 · 전문가 패널</div>
               </div>
-              {getStageStatus("2") === "done" && currentStage !== "2" && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)" }}>완료</span>}
+              {currentStage !== "2" && getStageDoneCount("2") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("2")}/{STAGE_TOTALS["2"]}</span>}
               {getStageStatus("2") === "active" && <Spinner size={12} color="#C8A84B" />}
               <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "2" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
             </div>
@@ -2227,7 +2345,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "3" ? "#e8e8f0" : getStageStatus("3") === "done" ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.45)" }}>캐릭터</div>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>심리 원형 · 실존적 동기 · 3차원 인물 설계</div>
               </div>
-              {getStageStatus("3") === "done" && currentStage !== "3" && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)" }}>완료</span>}
+              {currentStage !== "3" && getStageDoneCount("3") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("3")}/{STAGE_TOTALS["3"]}</span>}
               {getStageStatus("3") === "active" && <Spinner size={12} color="#C8A84B" />}
               <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "3" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
             </div>
@@ -2281,7 +2399,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "4" ? "#e8e8f0" : getStageStatus("4") === "done" ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.45)" }}>시놉시스</div>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>구조 설계 · 감정 아크 · 하위텍스트 · 시놉시스</div>
               </div>
-              {getStageStatus("4") === "done" && currentStage !== "4" && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)" }}>완료</span>}
+              {currentStage !== "4" && getStageDoneCount("4") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("4")}/{STAGE_TOTALS["4"]}</span>}
               {getStageStatus("4") === "active" && <Spinner size={12} color="#C8A84B" />}
               <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "4" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
             </div>
@@ -2520,7 +2638,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "5" ? "#e8e8f0" : getStageStatus("5") === "done" ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.45)" }}>트리트먼트 & 비트</div>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>트리트먼트 · 씬 리스트 · 비트시트 · 대사</div>
               </div>
-              {getStageStatus("5") === "done" && currentStage !== "5" && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)" }}>완료</span>}
+              {currentStage !== "5" && getStageDoneCount("5") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("5")}/{STAGE_TOTALS["5"]}</span>}
               {getStageStatus("5") === "active" && <Spinner size={12} color="#C8A84B" />}
               <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "5" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
             </div>
@@ -2635,19 +2753,26 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                         <button onClick={() => { abortControllersRef.current["allScenes"]?.abort(); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.4)", background: "rgba(232,93,117,0.08)", color: "#E85D75", fontSize: 11, cursor: "pointer", flexShrink: 0 }}>중단</button>
                       </div>
                     ) : (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                        <div>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: "#FFD166", marginBottom: 2 }}>전체 씬 일괄 집필</div>
-                          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
-                            {Object.keys(beatScenes).length > 0
-                              ? `${Object.keys(beatScenes).length}/${beatSheetResult.beats?.length || 0}개 완료 · 나머지 이어서 생성`
-                              : `15개 비트를 순서대로 자동 집필합니다`}
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#FFD166", marginBottom: 2 }}>전체 씬 일괄 집필</div>
+                            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+                              {Object.keys(beatScenes).length > 0
+                                ? `${Object.keys(beatScenes).length}/${beatSheetResult.beats?.length || 0}개 완료 · 나머지 이어서 생성`
+                                : `${beatSheetResult.beats?.length || 0}개 비트를 순서대로 자동 집필합니다`}
+                            </div>
                           </div>
+                          <button onClick={generateAllScenes} disabled={allScenesLoading} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid rgba(255,209,102,0.4)", background: "rgba(255,209,102,0.12)", color: "#FFD166", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                            <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                            {Object.keys(beatScenes).length > 0 ? "이어서 집필" : "전체 집필 시작"}
+                          </button>
                         </div>
-                        <button onClick={generateAllScenes} disabled={allScenesLoading} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid rgba(255,209,102,0.4)", background: "rgba(255,209,102,0.12)", color: "#FFD166", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
-                          <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                          {Object.keys(beatScenes).length > 0 ? "이어서 집필" : "전체 집필 시작"}
-                        </button>
+                        {allScenesProgress.failed?.length > 0 && (
+                          <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(232,93,117,0.08)", border: "1px solid rgba(232,93,117,0.2)", fontSize: 11, color: "#E85D75" }}>
+                            생성 실패한 씬: {allScenesProgress.failed.map((f) => `#${f.id} ${f.name}`).join(", ")} — 개별 버튼으로 재시도하세요.
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2693,7 +2818,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "6" ? "#e8e8f0" : getStageStatus("6") === "done" ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.45)" }}>Script Coverage</div>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>최종 커버리지 · 시장 가치 평가</div>
               </div>
-              {getStageStatus("6") === "done" && currentStage !== "6" && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)" }}>완료</span>}
+              {currentStage !== "6" && getStageDoneCount("6") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("6")}/{STAGE_TOTALS["6"]}</span>}
               {getStageStatus("6") === "active" && <Spinner size={12} color="#C8A84B" />}
               <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "6" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
             </div>

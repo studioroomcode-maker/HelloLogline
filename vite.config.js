@@ -11,4 +11,15 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'markdown': ['react-markdown'],
+          'zod': ['zod'],
+        },
+      },
+    },
+  },
 })
