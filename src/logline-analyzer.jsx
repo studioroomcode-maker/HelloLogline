@@ -2467,9 +2467,13 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 </div>
               )}
               {getStageStatus("1") === "done" && (
-                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={() => advanceToStage("2")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
-                    다음 단계: 개념 분석
+                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                  <button onClick={() => setCurrentStage("2")} style={{ padding: "8px 16px", borderRadius: 9, border: "1px solid rgba(69,183,209,0.25)", background: "rgba(69,183,209,0.05)", color: "rgba(69,183,209,0.7)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s" }}>
+                    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
+                    이론 심화 분석 (선택)
+                  </button>
+                  <button onClick={() => advanceToStage("3")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
+                    다음 단계: 캐릭터
                     <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                   </button>
                 </div>
@@ -2486,8 +2490,8 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 {getStageStatus("2") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("2")] }}>02</span>}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "2" ? "var(--text-main)" : getStageStatus("2") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>개념 분석</div>
-                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>학술 이론 · 신화 매핑 · 전문가 패널</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "2" ? "var(--text-main)" : getStageStatus("2") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)", display: "flex", alignItems: "center", gap: 8 }}>개념 분석 <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 6px", borderRadius: 8, background: "rgba(69,183,209,0.1)", color: "rgba(69,183,209,0.65)", border: "1px solid rgba(69,183,209,0.2)", letterSpacing: 0.5 }}>선택</span></div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>학술 이론 · 신화 매핑 · 전문가 패널 — 시놉시스 후 심화 분석</div>
               </div>
               {currentStage !== "2" && getStageDoneCount("2") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("2")}/{STAGE_TOTALS["2"]}</span>}
               {getStageStatus("2") === "active" && <Spinner size={12} color="#C8A84B" />}
@@ -2496,6 +2500,15 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
             {currentStage === "2" && (
               <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
               <ErrorBoundary><div>
+
+              {/* ── 선택 단계 안내 ── */}
+              <div style={{ marginBottom: 18, padding: "12px 16px", borderRadius: 10, background: "rgba(69,183,209,0.05)", border: "1px solid rgba(69,183,209,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>💡</span>
+                <div style={{ fontSize: 12, color: "var(--c-tx-50)", lineHeight: 1.65 }}>
+                  <strong style={{ color: "rgba(69,183,209,0.85)" }}>이 단계는 선택 사항입니다.</strong> 학술 이론 분석은 창작 흐름을 늦출 수 있습니다.<br />
+                  시놉시스(Stage 4)를 먼저 확정하고 돌아와도 됩니다 — 분석 결과는 언제든 생성할 수 있습니다.
+                </div>
+              </div>
 
               {/* ── 서사 이론 종합 (통합 버튼) ── */}
               <div style={{ marginBottom: 12 }}>
