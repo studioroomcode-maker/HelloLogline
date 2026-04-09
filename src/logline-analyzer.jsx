@@ -244,7 +244,7 @@ function ToolButton({ icon, label, sub, done, loading, color, onClick, disabled,
 }
 
 /* ─── ResultCard wrapper ─── */
-function ResultCard({ children, onClose, title, color = "var(--c-bd-1)" }) {
+function ResultCard({ children, onClose, title, color = "var(--c-bd-1)", onUndo, historyCount = 0 }) {
   return (
     <div style={{
       marginTop: 12, borderRadius: 14,
@@ -253,20 +253,38 @@ function ResultCard({ children, onClose, title, color = "var(--c-bd-1)" }) {
       boxShadow: "inset 0 1px 0 var(--c-card-2)",
       position: "relative",
     }}>
-      {(title || onClose) && (
+      {(title || onClose || (onUndo && historyCount > 0)) && (
         <div style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
           padding: "12px 16px", borderBottom: "1px solid var(--c-card-2)",
         }}>
           {title && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)" }}>{title}</div>}
-          {onClose && (
-            <button onClick={onClose} style={{
-              background: "none", border: "none", cursor: "pointer", padding: 4,
-              color: "var(--c-tx-30)", lineHeight: 1,
-            }}>
-              <SvgIcon d={ICON.close} size={14} />
-            </button>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {onUndo && historyCount > 0 && (
+              <button
+                onClick={onUndo}
+                title={`이전 버전으로 되돌리기 (${historyCount}개 저장됨)`}
+                style={{
+                  display: "flex", alignItems: "center", gap: 4,
+                  padding: "3px 10px", borderRadius: 7,
+                  border: "1px solid rgba(167,139,250,0.3)",
+                  background: "rgba(167,139,250,0.07)",
+                  color: "#A78BFA", fontSize: 11, cursor: "pointer",
+                  fontWeight: 600, lineHeight: 1.4,
+                }}
+              >
+                ↩ 되돌리기 <span style={{ opacity: 0.6, fontWeight: 400 }}>({historyCount})</span>
+              </button>
+            )}
+            {onClose && (
+              <button onClick={onClose} style={{
+                background: "none", border: "none", cursor: "pointer", padding: 4,
+                color: "var(--c-tx-30)", lineHeight: 1,
+              }}>
+                <SvgIcon d={ICON.close} size={14} />
+              </button>
+            )}
+          </div>
         </div>
       )}
       <div style={{ padding: "16px" }}>{children}</div>
@@ -463,6 +481,13 @@ export default function LoglineAnalyzer() {
   const [writerEdits, setWriterEdits] = useState({});
   // 구조: { treatment: string|null, synopsis: string|null, character: {...}|null, beats: {[id]: string} }
 
+  // ── Version History (최대 5개) ──
+  const [treatmentHistory, setTreatmentHistory] = useState([]);
+  const [beatSheetHistory, setBeatSheetHistory] = useState([]);
+  const [scenarioDraftHistory, setScenarioDraftHistory] = useState([]);
+  const [charDevHistory, setCharDevHistory] = useState([]);
+  const [pipelineHistory, setPipelineHistory] = useState([]);
+
   const [editingTreatment, setEditingTreatment] = useState(false);
   const [treatmentEditDraft, setTreatmentEditDraft] = useState("");
   const [editingCharacter, setEditingCharacter] = useState(false);
@@ -574,6 +599,7 @@ export default function LoglineAnalyzer() {
     structureResult, themeResult, sceneListResult, scenarioDraftResult,
     comparableResult, valuationResult,
     writerEdits,
+    treatmentHistory, beatSheetHistory, scenarioDraftHistory, charDevHistory, pipelineHistory,
   });
 
   const autoSave = async () => {
@@ -634,6 +660,11 @@ export default function LoglineAnalyzer() {
     setComparableResult(proj.comparableResult || null);
     setValuationResult(proj.valuationResult || null);
     setWriterEdits(proj.writerEdits || {});
+    setTreatmentHistory(proj.treatmentHistory || []);
+    setBeatSheetHistory(proj.beatSheetHistory || []);
+    setScenarioDraftHistory(proj.scenarioDraftHistory || []);
+    setCharDevHistory(proj.charDevHistory || []);
+    setPipelineHistory(proj.pipelineHistory || []);
     setCurrentProjectId(proj.id);
     setShowProjects(false);
     setCurrentStage("1");
@@ -1043,6 +1074,21 @@ export default function LoglineAnalyzer() {
   }
   function clearWriterEdit(key) {
     setWriterEdits(prev => { const n = { ...prev }; delete n[key]; return n; });
+  }
+
+  // ── Version History 헬퍼 ──
+  // 현재 값을 히스토리에 쌓고 (최대 5), writerEdit도 함께 클리어
+  function pushHistory(setHistoryFn, currentValue, editKey) {
+    if (currentValue === null || currentValue === "" || currentValue === undefined) return;
+    setHistoryFn(prev => [...prev.slice(-4), currentValue]);
+    if (editKey) clearWriterEdit(editKey);
+  }
+  // 히스토리에서 마지막 항목을 꺼내 복원
+  function undoHistory(setHistoryFn, setResultFn, historyArr) {
+    if (!historyArr.length) return;
+    const last = historyArr[historyArr.length - 1];
+    setResultFn(last);
+    setHistoryFn(prev => prev.slice(0, -1));
   }
 
   // ── Story Bible: 확정된 시놉시스를 다음 단계 프롬프트에 전달하는 컨텍스트 블록 ──
@@ -1457,7 +1503,9 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   const generateScenarioDraft = async () => {
     if (!logline.trim() || !apiKey) return;
     const ctrl = makeController("scenarioDraft");
-    setScenarioDraftLoading(true); setScenarioDraftError(""); setScenarioDraftResult("");
+    setScenarioDraftLoading(true); setScenarioDraftError("");
+    pushHistory(setScenarioDraftHistory, scenarioDraftResult, null);
+    setScenarioDraftResult("");
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
 
     // ── 1. 전체 캐릭터 프로필 ──
@@ -1525,7 +1573,9 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   const generateBeatSheet = async () => {
     if (!logline.trim() || !apiKey) return;
     const ctrl = makeController("beatSheet");
-    setBeatSheetLoading(true); setBeatSheetError(""); setBeatSheetResult(null);
+    setBeatSheetLoading(true); setBeatSheetError("");
+    pushHistory(setBeatSheetHistory, beatSheetResult, "beats");
+    setBeatSheetResult(null);
     setBeatScenes({}); setExpandedBeats({});
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const contextBlock = treatmentResult ? `\n\n트리트먼트:\n${treatmentResult.slice(0, 3000)}` : "";
@@ -1619,7 +1669,9 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   const analyzeCharacterDev = async () => {
     if (!logline.trim() || !apiKey) return;
     const ctrl = makeController("charDev");
-    setCharDevLoading(true); setCharDevError(""); setCharDevResult(null);
+    setCharDevLoading(true); setCharDevError("");
+    pushHistory(setCharDevHistory, charDevResult, "character");
+    setCharDevResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요. 시놉시스가 있다면 그 방향의 인물 이름·설정을 따르세요.`;
     try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema); setCharDevResult(data); await autoSave(); }
@@ -1631,7 +1683,9 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   const generateTreatment = async () => {
     if (!logline.trim() || !apiKey) return;
     const ctrl = makeController("treatment");
-    setTreatmentLoading(true); setTreatmentError(""); setTreatmentResult("");
+    setTreatmentLoading(true); setTreatmentError("");
+    pushHistory(setTreatmentHistory, treatmentResult, "treatment");
+    setTreatmentResult("");
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const structureLabel = { "3act": "3막 구조 (Field)", hero: "영웅의 여정 12단계 (Campbell)", "4act": "4막 구조", miniseries: "미니시리즈 화별 구조" }[treatmentStructure] || "3막 구조";
     // Stage 3 캐릭터 분석 결과가 있으면 그것을 우선 사용, 없으면 treatmentChars 폼 값 사용
@@ -1674,7 +1728,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const ctrl = makeController("pipelineRefine");
     setPipelineRefineLoading(true);
     const msg = `원본 로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n\n── 현재 시놉시스 ──\n제목: ${pipelineResult.direction_title}\n장르/톤: ${pipelineResult.genre_tone}\n훅: ${pipelineResult.hook}\n시놉시스:\n${pipelineResult.synopsis}\n핵심 장면: ${(pipelineResult.key_scenes || []).join(" / ")}\n주제: ${pipelineResult.theme}\n결말: ${pipelineResult.ending_type}\n\n── 사용자 피드백 ──\n${pipelineFeedback.trim()}\n\n위 피드백을 반영하여 시놉시스를 수정하세요.`;
-    try { const data = await callClaude(apiKey, PIPELINE_REFINE_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal); setPipelineResult(data); setPipelineFeedback(""); await autoSave(); }
+    try { const data = await callClaude(apiKey, PIPELINE_REFINE_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal); pushHistory(setPipelineHistory, pipelineResult, "synopsis"); setPipelineResult(data); setPipelineFeedback(""); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") alert("다듬기 중 오류: " + (err.message || "다시 시도해주세요.")); }
     finally { setPipelineRefineLoading(false); clearController("pipelineRefine"); }
   };
@@ -2730,7 +2784,9 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               {charAllDone && (
                 <ResultCard
                   title="캐릭터 심층 분석"
-                  onClose={() => { setShadowResult(null); setAuthenticityResult(null); setCharDevResult(null); }}
+                  onClose={() => { setShadowResult(null); setAuthenticityResult(null); setCharDevResult(null); setCharDevHistory([]); }}
+                  onUndo={() => undoHistory(setCharDevHistory, setCharDevResult, charDevHistory)}
+                  historyCount={charDevHistory.length}
                   color="rgba(251,146,60,0.15)"
                 >
                   {[
@@ -3051,7 +3107,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 <div style={{ marginBottom: 20 }}>
                   <PipelinePanel selectedDuration={selectedDuration} logline={logline} apiKey={apiKey} isMobile={isMobile} onResult={(data) => setPipelineResult(data)} />
                   {pipelineResult && (
-                    <ResultCard title={pipelineResult.direction_title} onClose={() => setPipelineResult(null)} color="rgba(78,204,163,0.15)">
+                    <ResultCard title={pipelineResult.direction_title} onClose={() => { setPipelineResult(null); setPipelineHistory([]); }} onUndo={() => undoHistory(setPipelineHistory, setPipelineResult, pipelineHistory)} historyCount={pipelineHistory.length} color="rgba(78,204,163,0.15)">
                       <SynopsisCard synopsis={pipelineResult} index={0} />
                       <div style={{ marginTop: 14 }}>
                         <textarea value={pipelineFeedback} onChange={(e) => setPipelineFeedback(e.target.value)} placeholder="피드백을 입력하여 시놉시스를 다듬으세요..." rows={3} style={{
@@ -3228,7 +3284,9 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                       트리트먼트
                       {writerEdits.treatment && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, background: "rgba(78,204,163,0.15)", color: "#4ECCA3", fontWeight: 600, border: "1px solid rgba(78,204,163,0.25)" }}>✏ 수정됨</span>}
                     </span>}
-                    onClose={() => { setTreatmentResult(""); clearWriterEdit("treatment"); setEditingTreatment(false); }}
+                    onClose={() => { setTreatmentResult(""); clearWriterEdit("treatment"); setEditingTreatment(false); setTreatmentHistory([]); }}
+                    onUndo={() => undoHistory(setTreatmentHistory, setTreatmentResult, treatmentHistory)}
+                    historyCount={treatmentHistory.length}
                     color="rgba(200,168,75,0.15)"
                   >
                     {editingTreatment ? (
@@ -3319,7 +3377,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   tooltip={"Blake Snyder의 'Save the Cat' 15비트 구조를 적용합니다.\n\n할리우드 표준 이정표 15개를 정확한 페이지 위치에 배치합니다:\n오프닝 이미지 → 테마 제시 → 설정 → 촉발사건 → 고민 → 2막 진입 → B스토리 → 재미와 게임 → 중간점 → 적의 위협 → 전부 잃다 → 영혼의 밤 → 3막 진입 → 피날레 → 클로징 이미지\n\n각 비트마다 AI가 직접 씬을 집필할 수 있습니다."} />
                 <ErrorMsg msg={beatSheetError} />
                 {beatSheetResult && (
-                  <ResultCard title="비트 시트" onClose={() => setBeatSheetResult(null)} color="rgba(255,209,102,0.15)">
+                  <ResultCard title="비트 시트" onClose={() => { setBeatSheetResult(null); setBeatSheetHistory([]); }} onUndo={() => undoHistory(setBeatSheetHistory, setBeatSheetResult, beatSheetHistory)} historyCount={beatSheetHistory.length} color="rgba(255,209,102,0.15)">
                     <BeatSheetPanel
                       data={beatSheetResult}
                       beatScenes={beatScenes}
@@ -3415,7 +3473,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               />
               <ErrorMsg msg={scenarioDraftError} />
               {scenarioDraftResult && (
-                <ResultCard title="시나리오 초고" onClose={() => setScenarioDraftResult("")} color="rgba(167,139,250,0.15)">
+                <ResultCard title="시나리오 초고" onClose={() => { setScenarioDraftResult(""); setScenarioDraftHistory([]); }} onUndo={() => undoHistory(setScenarioDraftHistory, setScenarioDraftResult, scenarioDraftHistory)} historyCount={scenarioDraftHistory.length} color="rgba(167,139,250,0.15)">
                   <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
                     <button
                       onClick={() => navigator.clipboard.writeText(scenarioDraftResult)}
