@@ -243,6 +243,49 @@ function ToolButton({ icon, label, sub, done, loading, color, onClick, disabled,
   );
 }
 
+/* ─── FeedbackBox — 결과물 하단 피드백 입력 UI ─── */
+function FeedbackBox({ value, onChange, onSubmit, loading, placeholder = "이 결과물에 대한 피드백을 입력하세요..." }) {
+  return (
+    <div style={{
+      marginTop: 16, paddingTop: 14,
+      borderTop: "1px dashed var(--c-bd-2)",
+    }}>
+      <div style={{ fontSize: 11, color: "var(--c-tx-35)", marginBottom: 7, fontWeight: 600, letterSpacing: "0.02em" }}>
+        AI에게 수정 요청
+      </div>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={2}
+        style={{
+          width: "100%", padding: "10px 12px", borderRadius: 9,
+          border: "1px solid var(--c-bd-3)", background: "rgba(var(--tw),0.025)",
+          color: "var(--text-main)", fontSize: 12, resize: "vertical",
+          fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6,
+          boxSizing: "border-box",
+        }}
+      />
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 7 }}>
+        <button
+          onClick={onSubmit}
+          disabled={loading || !value.trim()}
+          style={{
+            padding: "8px 18px", borderRadius: 8,
+            border: "1px solid rgba(167,139,250,0.35)",
+            background: loading || !value.trim() ? "rgba(167,139,250,0.04)" : "rgba(167,139,250,0.1)",
+            color: loading || !value.trim() ? "var(--c-tx-30)" : "#A78BFA",
+            fontSize: 12, fontWeight: 600, cursor: loading || !value.trim() ? "not-allowed" : "pointer",
+            transition: "all 0.15s",
+          }}
+        >
+          {loading ? "수정 중..." : "피드백 반영"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── ResultCard wrapper ─── */
 function ResultCard({ children, onClose, title, color = "var(--c-bd-1)", onUndo, historyCount = 0 }) {
   return (
@@ -480,6 +523,14 @@ export default function LoglineAnalyzer() {
   // ── Writer Edits ──
   const [writerEdits, setWriterEdits] = useState({});
   // 구조: { treatment: string|null, synopsis: string|null, character: {...}|null, beats: {[id]: string} }
+
+  // ── Feedback Refine (각 결과물 대화형 수정) ──
+  const [treatmentFeedback, setTreatmentFeedback] = useState("");
+  const [treatmentRefineLoading, setTreatmentRefineLoading] = useState(false);
+  const [scenarioDraftFeedback, setScenarioDraftFeedback] = useState("");
+  const [scenarioDraftRefineLoading, setScenarioDraftRefineLoading] = useState(false);
+  const [charDevFeedback, setCharDevFeedback] = useState("");
+  const [charDevRefineLoading, setCharDevRefineLoading] = useState(false);
 
   // ── Version History (최대 5개) ──
   const [treatmentHistory, setTreatmentHistory] = useState([]);
@@ -1733,6 +1784,61 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     finally { setPipelineRefineLoading(false); clearController("pipelineRefine"); }
   };
 
+  // ── Treatment 피드백 다듬기 ──
+  const refineTreatment = async () => {
+    if (!treatmentResult || !treatmentFeedback.trim() || !apiKey) return;
+    const ctrl = makeController("treatmentRefine");
+    setTreatmentRefineLoading(true);
+    const effective = getEffective("treatment", treatmentResult);
+    const msg = `원본 로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n── 현재 트리트먼트 ──\n${effective.slice(0, 4000)}\n\n── 작가 피드백 ──\n${treatmentFeedback.trim()}\n\n위 피드백을 반영하여 트리트먼트를 수정하세요. 피드백이 언급하지 않은 부분은 그대로 유지하세요.`;
+    try {
+      const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal);
+      pushHistory(setTreatmentHistory, treatmentResult, "treatment");
+      setTreatmentResult(text);
+      setTreatmentFeedback("");
+      await autoSave();
+    } catch (err) {
+      if (err.name !== "AbortError") alert("다듬기 중 오류: " + (err.message || "다시 시도해주세요."));
+    } finally { setTreatmentRefineLoading(false); clearController("treatmentRefine"); }
+  };
+
+  // ── 시나리오 초고 피드백 다듬기 ──
+  const refineScenarioDraft = async () => {
+    if (!scenarioDraftResult || !scenarioDraftFeedback.trim() || !apiKey) return;
+    const ctrl = makeController("scenarioRefine");
+    setScenarioDraftRefineLoading(true);
+    const msg = `원본 로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n\n── 현재 시나리오 초고 (일부) ──\n${scenarioDraftResult.slice(0, 5000)}\n\n── 작가 피드백 ──\n${scenarioDraftFeedback.trim()}\n\n위 피드백을 반영하여 시나리오를 수정하세요. 표준 시나리오 포맷(씬 헤더·액션라인·대사)을 유지하고, 피드백이 언급하지 않은 부분은 최대한 그대로 유지하세요.`;
+    try {
+      const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal);
+      pushHistory(setScenarioDraftHistory, scenarioDraftResult, null);
+      setScenarioDraftResult(text);
+      setScenarioDraftFeedback("");
+      await autoSave();
+    } catch (err) {
+      if (err.name !== "AbortError") alert("다듬기 중 오류: " + (err.message || "다시 시도해주세요."));
+    } finally { setScenarioDraftRefineLoading(false); clearController("scenarioRefine"); }
+  };
+
+  // ── 캐릭터 피드백 다듬기 ──
+  const refineCharDev = async () => {
+    if (!charDevResult || !charDevFeedback.trim() || !apiKey) return;
+    const ctrl = makeController("charDevRefine");
+    setCharDevRefineLoading(true);
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
+    const p = charDevResult.protagonist || {};
+    const currentProfile = `주인공: ${p.name_suggestion || ""}, Want: ${p.want || ""}, Need: ${p.need || ""}, Ghost: ${p.ghost || ""}, Lie: ${p.lie_they_believe || ""}, Flaw: ${p.flaw || ""}, Arc: ${p.arc_type || ""}`;
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n── 현재 캐릭터 프로필 ──\n${currentProfile}\n\n── 작가 피드백 ──\n${charDevFeedback.trim()}\n\n위 피드백을 반영하여 캐릭터 분석을 수정하세요. 피드백이 언급하지 않은 부분은 그대로 유지하세요.`;
+    try {
+      const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema);
+      pushHistory(setCharDevHistory, charDevResult, "character");
+      setCharDevResult(data);
+      setCharDevFeedback("");
+      await autoSave();
+    } catch (err) {
+      if (err.name !== "AbortError") alert("다듬기 중 오류: " + (err.message || "다시 시도해주세요."));
+    } finally { setCharDevRefineLoading(false); clearController("charDevRefine"); }
+  };
+
   // ── 복합 분석 함수 (여러 개별 분석을 병렬로 실행) ──
 
   // Stage 2: 서사 이론 종합 (학술+신화+바르트+한국미학+테마 → 1버튼)
@@ -2879,6 +2985,13 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                       </div>
                     )}
                   </div>
+                  <FeedbackBox
+                    value={charDevFeedback}
+                    onChange={setCharDevFeedback}
+                    onSubmit={refineCharDev}
+                    loading={charDevRefineLoading}
+                    placeholder="예: 주인공의 내면 상처를 더 구체적으로 / 빌런을 좀 더 공감 가능하게 바꿔줘"
+                  />
                 </ResultCard>
               )}
               {getStageStatus("3") === "done" && (
@@ -3355,6 +3468,13 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                             }}
                           >{writerEdits.treatment || treatmentResult}</ReactMarkdown>
                         </div>
+                        <FeedbackBox
+                          value={treatmentFeedback}
+                          onChange={setTreatmentFeedback}
+                          onSubmit={refineTreatment}
+                          loading={treatmentRefineLoading}
+                          placeholder="예: 2막에서 주인공의 내면 갈등을 더 강조해줘 / 결말을 열린 결말로 바꿔줘"
+                        />
                       </>
                     )}
                   </ResultCard>
@@ -3485,6 +3605,13 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 12 : 13, lineHeight: 1.8, color: "var(--c-tx-75)", margin: 0 }}>
                     {scenarioDraftResult}
                   </pre>
+                  <FeedbackBox
+                    value={scenarioDraftFeedback}
+                    onChange={setScenarioDraftFeedback}
+                    onSubmit={refineScenarioDraft}
+                    loading={scenarioDraftRefineLoading}
+                    placeholder="예: 1막 도입부를 더 긴장감 있게 / 3막에서 주인공이 더 적극적으로 행동하게 바꿔줘"
+                  />
                 </ResultCard>
               )}
 
