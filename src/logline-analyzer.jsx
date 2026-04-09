@@ -207,6 +207,9 @@ export default function LoglineAnalyzer() {
   const [showSynopsisPanel, setShowSynopsisPanel] = useState(false);
   const [synopsisMode, setSynopsisMode] = useState("auto");
   const [selectedDuration, setSelectedDuration] = useState("feature");
+  const [customTheme, setCustomTheme] = useState("");
+  const [customDurationText, setCustomDurationText] = useState("");
+  const [customFormatLabel, setCustomFormatLabel] = useState("");
   const [selectedFramework, setSelectedFramework] = useState("three_act");
   const [directionCount, setDirectionCount] = useState(3);
   const [synopsisLoading, setSynopsisLoading] = useState(false);
@@ -377,7 +380,7 @@ export default function LoglineAnalyzer() {
   const collectProjectSnapshot = () => ({
     id: currentProjectId || Date.now(),
     title: logline.slice(0, 60) || "제목 없음",
-    logline, genre, selectedDuration,
+    logline, genre, selectedDuration, customTheme, customDurationText, customFormatLabel,
     result, result2,
     academicResult, mythMapResult, koreanMythResult,
     expertPanelResult, barthesCodeResult,
@@ -417,6 +420,9 @@ export default function LoglineAnalyzer() {
     setLogline(proj.logline || "");
     setGenre(proj.genre || "auto");
     setSelectedDuration(proj.selectedDuration || "feature");
+    setCustomTheme(proj.customTheme || "");
+    setCustomDurationText(proj.customDurationText || "");
+    setCustomFormatLabel(proj.customFormatLabel || "");
     setResult(proj.result || null);
     setResult2(proj.result2 || null);
     setAcademicResult(proj.academicResult || null);
@@ -454,8 +460,7 @@ export default function LoglineAnalyzer() {
     const genreLabel = genre === "auto"
       ? (result?.detected_genre || "미정")
       : GENRES.find(g => g.id === genre)?.label || "미정";
-    const durOpt = DURATION_OPTIONS.find(d => d.id === selectedDuration);
-    const durLabel = durOpt ? `${durOpt.label} (${durOpt.duration})` : "장편영화 (90~120분)";
+    const durLabel = getDurText();
     const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
     const qualScore = result ? (calcSectionTotal(result, "structure") + calcSectionTotal(result, "expression") + calcSectionTotal(result, "technical")) : null;
     const intScore = result ? calcSectionTotal(result, "interest") : null;
@@ -705,13 +710,28 @@ export default function LoglineAnalyzer() {
     setHistory(updated);
   };
 
+  // 현재 선택된 포맷 텍스트 반환 (커스텀 / 프리셋 통합)
+  const getDurText = () => {
+    if (selectedDuration === "custom") {
+      const label = customFormatLabel || "커스텀 포맷";
+      const dur = customDurationText || "길이 미지정";
+      return `${label} (${dur})`;
+    }
+    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
+    return dur ? `${dur.label} (${dur.duration})` : "장편영화 (90~120분)";
+  };
+
+  // 커스텀 모드일 때 주제/컨셉 컨텍스트 블록 반환
+  const getCustomContext = () => {
+    if (selectedDuration !== "custom" || !customTheme.trim()) return "";
+    return `\n주제/컨셉: ${customTheme.trim()}`;
+  };
+
   const buildUserMsg = (text, genreId) => {
     const genreText = genreId === "auto"
       ? "장르를 자동으로 감지해주세요."
       : `선택된 장르: ${GENRES.find((g) => g.id === genreId)?.label}`;
-    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
-    const durationText = dur ? `${dur.label} (${dur.duration})` : "장편영화 (90~120분)";
-    return `다음 로그라인을 분석해주세요.\n\n포맷: ${durationText}\n장르: ${genreText}\n글자수: ${text.length}자\n\n로그라인:\n"${text.trim()}"`;
+    return `다음 로그라인을 분석해주세요.\n\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreText}\n글자수: ${text.length}자\n\n로그라인:\n"${text.trim()}"`;
   };
 
   // ── Analyze ──
@@ -924,8 +944,7 @@ export default function LoglineAnalyzer() {
     const ctrl = makeController("subtext");
     setSubtextLoading(true); setSubtextError(""); setSubtextResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화"}\n\n위 로그라인의 하위텍스트를 체호프-스타니슬랍스키-브레히트-핀터-마멧 이론으로 분석하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인의 하위텍스트를 체호프-스타니슬랍스키-브레히트-핀터-마멧 이론으로 분석하세요.`;
     try { const data = await callClaude(apiKey, SUBTEXT_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setSubtextResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setSubtextError(err.message || "하위텍스트 분석 중 오류가 발생했습니다."); }
     finally { setSubtextLoading(false); clearController("subtext"); }
@@ -937,8 +956,7 @@ export default function LoglineAnalyzer() {
     const ctrl = makeController("mythMap");
     setMythMapLoading(true); setMythMapError(""); setMythMapResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화"}\n\n위 로그라인을 캠벨 영웅 여정-프롭 민담 형태론-프레이저 신화 이론으로 신화적 위치를 매핑하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인을 캠벨 영웅 여정-프롭 민담 형태론-프레이저 신화 이론으로 신화적 위치를 매핑하세요.`;
     try { const data = await callClaude(apiKey, MYTH_MAP_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setMythMapResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setMythMapError(err.message || "신화 매핑 중 오류가 발생했습니다."); }
     finally { setMythMapLoading(false); clearController("mythMap"); }
@@ -950,8 +968,7 @@ export default function LoglineAnalyzer() {
     const ctrl = makeController("barthesCode");
     setBarthesCodeLoading(true); setBarthesCodeError(""); setBarthesCodeResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화"}\n\n위 로그라인을 롤랑 바르트의 S/Z(1970) 5개 서사 코드로 분석하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인을 롤랑 바르트의 S/Z(1970) 5개 서사 코드로 분석하세요.`;
     try { const data = await callClaude(apiKey, BARTHES_CODE_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setBarthesCodeResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setBarthesCodeError(err.message || "바르트 코드 분석 중 오류가 발생했습니다."); }
     finally { setBarthesCodeLoading(false); clearController("barthesCode"); }
@@ -963,8 +980,7 @@ export default function LoglineAnalyzer() {
     const ctrl = makeController("koreanMyth");
     setKoreanMythLoading(true); setKoreanMythError(""); setKoreanMythResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화"}\n\n위 로그라인의 한국 신화-미학 공명을 한(恨)-정(情)-신명(神明)-무속-유교 미학으로 분석하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인의 한국 신화-미학 공명을 한(恨)-정(情)-신명(神明)-무속-유교 미학으로 분석하세요.`;
     try { const data = await callClaude(apiKey, KOREAN_MYTH_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setKoreanMythResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setKoreanMythError(err.message || "한국 신화 분석 중 오류가 발생했습니다."); }
     finally { setKoreanMythLoading(false); clearController("koreanMyth"); }
@@ -976,8 +992,7 @@ export default function LoglineAnalyzer() {
     const ctrl = makeController("scriptCoverage");
     setScriptCoverageLoading(true); setScriptCoverageError(""); setScriptCoverageResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화"}\n\n위 로그라인에 대한 할리우드 + 한국 방송사 스타일 Script Coverage를 작성하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인에 대한 할리우드 + 한국 방송사 스타일 Script Coverage를 작성하세요.`;
     try { const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal); setScriptCoverageResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setScriptCoverageError(err.message || "Script Coverage 생성 중 오류가 발생했습니다."); }
     finally { setScriptCoverageLoading(false); clearController("scriptCoverage"); }
@@ -989,9 +1004,8 @@ export default function LoglineAnalyzer() {
     const ctrl = makeController("dialogueDev");
     setDialogueDevLoading(true); setDialogueDevError(""); setDialogueDevResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
     const charContext = charDevResult ? `\n주인공: ${charDevResult.protagonist?.name || "미정"} — ${charDevResult.protagonist?.egri?.psychology || ""}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화"}${charContext}\n\n위 로그라인의 인물들을 위한 대사 고유 목소리와 하위텍스트 대사 기법을 설계하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${charContext}\n\n위 로그라인의 인물들을 위한 대사 고유 목소리와 하위텍스트 대사 기법을 설계하세요.`;
     try { const data = await callClaude(apiKey, DIALOGUE_DEV_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setDialogueDevResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setDialogueDevError(err.message || "대사 디벨롭 중 오류가 발생했습니다."); }
     finally { setDialogueDevLoading(false); clearController("dialogueDev"); }
@@ -1002,10 +1016,9 @@ export default function LoglineAnalyzer() {
     if (!logline.trim() || !apiKey) return;
     const ctrl = makeController("structure");
     setStructureLoading(true); setStructureError(""); setStructureResult(null);
-    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || ""} — 결함: ${charDevResult.protagonist.flaw || ""} / 원하는 것: ${charDevResult.protagonist.want || ""}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화 (90~120분)"}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}\n\n위 로그라인의 3막 구조 핵심 플롯 포인트와 감정 아크를 설계하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}\n\n위 로그라인의 3막 구조 핵심 플롯 포인트와 감정 아크를 설계하세요.`;
     try { const data = await callClaude(apiKey, STRUCTURE_ANALYSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal); setStructureResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setStructureError(err.message || "구조 분석 중 오류가 발생했습니다."); }
     finally { setStructureLoading(false); clearController("structure"); }
@@ -1016,10 +1029,9 @@ export default function LoglineAnalyzer() {
     if (!logline.trim() || !apiKey) return;
     const ctrl = makeController("theme");
     setThemeLoading(true); setThemeError(""); setThemeResult(null);
-    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const charBlock = charDevResult?.protagonist ? `주인공 Want: ${charDevResult.protagonist.want || ""} / Need: ${charDevResult.protagonist.need || ""} / Ghost: ${charDevResult.protagonist.ghost || ""}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화"}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}\n\n위 로그라인의 핵심 테마, 도덕적 전제, 감정선을 분석하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}\n\n위 로그라인의 핵심 테마, 도덕적 전제, 감정선을 분석하세요.`;
     try { const data = await callClaude(apiKey, THEME_ANALYSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal); setThemeResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setThemeError(err.message || "테마 분석 중 오류가 발생했습니다."); }
     finally { setThemeLoading(false); clearController("theme"); }
@@ -1030,13 +1042,12 @@ export default function LoglineAnalyzer() {
     if (!logline.trim() || !apiKey) return;
     const ctrl = makeController("sceneList");
     setSceneListLoading(true); setSceneListError(""); setSceneListResult("");
-    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const synopsisBlock = pipelineResult ? `시놉시스:\n${pipelineResult.synopsis || ""}` : "";
     const treatmentBlock = treatmentResult ? `트리트먼트:\n${treatmentResult.slice(0, 3000)}` : "";
     const structureBlock = structureResult ? `플롯 포인트:\n${(structureResult.plot_points || []).map(pp => `- ${pp.name} (p.${pp.page}): ${pp.description}`).join("\n")}` : "";
     const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || "주인공"} — ${charDevResult.protagonist.want || ""}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화 (90~120분)"}\n장르: ${genreLabel}${charBlock ? `\n${charBlock}` : ""}${structureBlock ? `\n\n${structureBlock}` : ""}${synopsisBlock ? `\n\n${synopsisBlock}` : ""}${treatmentBlock ? `\n\n${treatmentBlock}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 씬 리스트(스텝 아웃라인)를 작성하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n${charBlock}` : ""}${structureBlock ? `\n\n${structureBlock}` : ""}${synopsisBlock ? `\n\n${synopsisBlock}` : ""}${treatmentBlock ? `\n\n${treatmentBlock}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 씬 리스트(스텝 아웃라인)를 작성하세요.`;
     try {
       const text = await callClaudeText(apiKey, SCENE_LIST_SYSTEM_PROMPT, msg, 12000, "claude-sonnet-4-6", ctrl.signal);
       setSceneListResult(text); await autoSave();
@@ -1051,11 +1062,10 @@ export default function LoglineAnalyzer() {
     const ctrl = makeController("beatSheet");
     setBeatSheetLoading(true); setBeatSheetError(""); setBeatSheetResult(null);
     setBeatScenes({}); setExpandedBeats({});
-    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const contextBlock = treatmentResult ? `트리트먼트:\n${treatmentResult.slice(0, 3000)}` : pipelineResult ? `시놉시스:\n${pipelineResult.synopsis || ""}` : "";
     const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || ""} — Want: ${charDevResult.protagonist.want || ""} / Need: ${charDevResult.protagonist.need || ""} / Ghost: ${charDevResult.protagonist.ghost || ""}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화 (90~120분)"}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${contextBlock ? `\n\n${contextBlock}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${contextBlock ? `\n\n${contextBlock}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요.`;
     try { const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal); setBeatSheetResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setBeatSheetError(err.message || "비트 시트 생성 중 오류가 발생했습니다."); }
     finally { setBeatSheetLoading(false); clearController("beatSheet"); }
@@ -1085,8 +1095,7 @@ export default function LoglineAnalyzer() {
     const ctrl = makeController("charDev");
     setCharDevLoading(true); setCharDevError(""); setCharDevResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화"}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요.`;
     try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 8000, "claude-haiku-4-5-20251001", ctrl.signal); setCharDevResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setCharDevError(err.message || "캐릭터 분석 중 오류가 발생했습니다."); }
     finally { setCharDevLoading(false); clearController("charDev"); }
@@ -1097,13 +1106,12 @@ export default function LoglineAnalyzer() {
     if (!logline.trim() || !apiKey) return;
     const ctrl = makeController("treatment");
     setTreatmentLoading(true); setTreatmentError(""); setTreatmentResult("");
-    const dur = DURATION_OPTIONS.find((d) => d.id === selectedDuration);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const structureLabel = { "3act": "3막 구조 (Field)", hero: "영웅의 여정 12단계 (Campbell)", "4act": "4막 구조", miniseries: "미니시리즈 화별 구조" }[treatmentStructure] || "3막 구조";
     const proto = treatmentChars.protagonist;
     const charBlock = [`주인공: ${proto.name || "미정"} (${proto.role || "역할 미정"})`, proto.want ? `  - 외적 목표(Want): ${proto.want}` : "", proto.need ? `  - 내적 욕구(Need): ${proto.need}` : "", proto.flaw ? `  - 핵심 결함: ${proto.flaw}` : "", ...treatmentChars.supporting.filter((s) => s.name.trim()).map((s) => `조력/적대 인물: ${s.name} (${s.role}) — ${s.relation}`)].filter(Boolean).join("\n");
     const synopsisBlock = pipelineResult ? `시놉시스 (파이프라인 생성):\n${pipelineResult.synopsis || ""}` : result ? `로그라인 분석 결과 감지 장르: ${result.detected_genre || ""}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${dur ? `${dur.label} (${dur.duration})` : "장편영화"}\n장르: ${genreLabel}\n서사 구조: ${structureLabel}\n\n등장인물 정보:\n${charBlock}\n\n${synopsisBlock}\n\n위 정보를 바탕으로 완성도 높은 트리트먼트를 한국어로 작성해주세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}\n서사 구조: ${structureLabel}\n\n등장인물 정보:\n${charBlock}\n\n${synopsisBlock}\n\n위 정보를 바탕으로 완성도 높은 트리트먼트를 한국어로 작성해주세요.`;
     try {
       const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 32000, "claude-sonnet-4-6", ctrl.signal);
       setTreatmentResult(text);
@@ -1118,8 +1126,7 @@ export default function LoglineAnalyzer() {
     if (!pipelineResult || !pipelineFeedback.trim() || !apiKey) return;
     const ctrl = makeController("pipelineRefine");
     setPipelineRefineLoading(true);
-    const durationInfo = { ultrashort: "초단편 (5분 이하)", shortform: "숏폼 (5~15분)", shortfilm: "단편영화 (20~40분)", webdrama: "웹드라마 파일럿 (15~30분/화)", tvdrama: "TV 드라마 1화 (60분)", feature: "장편영화 (90~120분)", miniseries: "미니시리즈 전체 (4~6화)", shortformseries: "숏폼 시리즈 (10~20화 × 5~15분)" }[selectedDuration] || "장편영화";
-    const msg = `원본 로그라인: "${logline.trim()}"\n포맷: ${durationInfo}\n\n── 현재 시놉시스 ──\n제목: ${pipelineResult.direction_title}\n장르/톤: ${pipelineResult.genre_tone}\n훅: ${pipelineResult.hook}\n시놉시스:\n${pipelineResult.synopsis}\n핵심 장면: ${(pipelineResult.key_scenes || []).join(" / ")}\n주제: ${pipelineResult.theme}\n결말: ${pipelineResult.ending_type}\n\n── 사용자 피드백 ──\n${pipelineFeedback.trim()}\n\n위 피드백을 반영하여 시놉시스를 수정하세요.`;
+    const msg = `원본 로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n\n── 현재 시놉시스 ──\n제목: ${pipelineResult.direction_title}\n장르/톤: ${pipelineResult.genre_tone}\n훅: ${pipelineResult.hook}\n시놉시스:\n${pipelineResult.synopsis}\n핵심 장면: ${(pipelineResult.key_scenes || []).join(" / ")}\n주제: ${pipelineResult.theme}\n결말: ${pipelineResult.ending_type}\n\n── 사용자 피드백 ──\n${pipelineFeedback.trim()}\n\n위 피드백을 반영하여 시놉시스를 수정하세요.`;
     try { const data = await callClaude(apiKey, PIPELINE_REFINE_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal); setPipelineResult(data); setPipelineFeedback(""); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") alert("다듬기 중 오류: " + (err.message || "다시 시도해주세요.")); }
     finally { setPipelineRefineLoading(false); clearController("pipelineRefine"); }
@@ -1457,7 +1464,59 @@ export default function LoglineAnalyzer() {
                       <div style={{ fontSize: 10, color: selectedDuration === d.id ? "rgba(200,168,75,0.65)" : "rgba(255,255,255,0.28)", fontFamily: "'JetBrains Mono', monospace" }}>{d.duration}</div>
                     </button>
                   ))}
+                  {/* 커스텀 버튼 */}
+                  <button onClick={() => setSelectedDuration("custom")} style={{
+                    padding: "9px 10px", borderRadius: 10, textAlign: "left", transition: "all 0.15s",
+                    border: selectedDuration === "custom" ? "1px solid rgba(139,92,246,0.6)" : "1px solid rgba(255,255,255,0.07)",
+                    background: selectedDuration === "custom" ? "rgba(139,92,246,0.1)" : "rgba(255,255,255,0.02)",
+                    color: selectedDuration === "custom" ? "#A78BFA" : "rgba(255,255,255,0.45)",
+                    cursor: "pointer",
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 1 }}>커스텀</div>
+                    <div style={{ fontSize: 10, color: selectedDuration === "custom" ? "rgba(167,139,250,0.65)" : "rgba(255,255,255,0.28)", fontFamily: "'JetBrains Mono', monospace" }}>직접 설정</div>
+                  </button>
                 </div>
+
+                {/* 커스텀 입력 필드 */}
+                {selectedDuration === "custom" && (
+                  <div style={{ marginTop: 12, padding: "14px 16px", background: "rgba(139,92,246,0.06)", borderRadius: 10, border: "1px solid rgba(139,92,246,0.2)", display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#A78BFA", marginBottom: 2 }}>커스텀 포맷 설정</div>
+                    <div>
+                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>주제 / 컨셉</div>
+                      <input
+                        value={customTheme}
+                        onChange={(e) => setCustomTheme(e.target.value)}
+                        placeholder="예: 나의 이야기 — 내가 주인공인 실제/상상 경험"
+                        style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", borderRadius: 7, border: "1px solid rgba(139,92,246,0.25)", background: "rgba(255,255,255,0.04)", color: "#e8e8f0", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none" }}
+                      />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <div>
+                        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>영상 길이</div>
+                        <input
+                          value={customDurationText}
+                          onChange={(e) => setCustomDurationText(e.target.value)}
+                          placeholder="예: 1~2분"
+                          style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", borderRadius: 7, border: "1px solid rgba(139,92,246,0.25)", background: "rgba(255,255,255,0.04)", color: "#e8e8f0", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none" }}
+                        />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>형식 / 매체</div>
+                        <input
+                          value={customFormatLabel}
+                          onChange={(e) => setCustomFormatLabel(e.target.value)}
+                          placeholder="예: 2D 애니메이션 초단편"
+                          style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", borderRadius: 7, border: "1px solid rgba(139,92,246,0.25)", background: "rgba(255,255,255,0.04)", color: "#e8e8f0", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none" }}
+                        />
+                      </div>
+                    </div>
+                    {(customFormatLabel || customDurationText || customTheme) && (
+                      <div style={{ fontSize: 11, color: "rgba(167,139,250,0.7)", padding: "6px 10px", background: "rgba(139,92,246,0.07)", borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>
+                        포맷: {customFormatLabel || "커스텀"} ({customDurationText || "?"}){customTheme ? ` · 주제: ${customTheme}` : ""}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Genre selector */}
