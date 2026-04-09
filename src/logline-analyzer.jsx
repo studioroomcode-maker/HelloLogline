@@ -1504,8 +1504,25 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
     setTreatmentLoading(true); setTreatmentError(""); setTreatmentResult("");
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const structureLabel = { "3act": "3막 구조 (Field)", hero: "영웅의 여정 12단계 (Campbell)", "4act": "4막 구조", miniseries: "미니시리즈 화별 구조" }[treatmentStructure] || "3막 구조";
-    const proto = treatmentChars.protagonist;
-    const charBlock = [`주인공: ${proto.name || "미정"} (${proto.role || "역할 미정"})`, proto.want ? `  - 외적 목표(Want): ${proto.want}` : "", proto.need ? `  - 내적 욕구(Need): ${proto.need}` : "", proto.flaw ? `  - 핵심 결함: ${proto.flaw}` : "", ...treatmentChars.supporting.filter((s) => s.name.trim()).map((s) => `조력/적대 인물: ${s.name} (${s.role}) — ${s.relation}`)].filter(Boolean).join("\n");
+    // Stage 3 캐릭터 분석 결과가 있으면 그것을 우선 사용, 없으면 treatmentChars 폼 값 사용
+    let charBlock;
+    if (charDevResult?.protagonist) {
+      const prot = charDevResult.protagonist;
+      const lines = [
+        `주인공: ${prot.name_suggestion || "주인공"} (${prot.egri_dimensions?.sociological || prot.egri_dimensions?.physiological || ""})`,
+        prot.want ? `  - 외적 목표(Want): ${prot.want}` : "",
+        prot.need ? `  - 내적 욕구(Need): ${prot.need}` : "",
+        prot.ghost ? `  - 과거 상처(Ghost): ${prot.ghost}` : "",
+        prot.lie_they_believe ? `  - 믿는 거짓: ${prot.lie_they_believe}` : "",
+        ...(charDevResult.supporting_characters || [])
+          .filter((s) => s.suggested_name || s.role_name)
+          .map((s) => `주요 인물: ${s.suggested_name || ""} (${s.role_name || s.vogler_archetype || ""}) — ${s.relationship_dynamic || s.protagonist_mirror || ""}`)
+      ];
+      charBlock = lines.filter(Boolean).join("\n");
+    } else {
+      const proto = treatmentChars.protagonist;
+      charBlock = [`주인공: ${proto.name || "미정"} (${proto.role || "역할 미정"})`, proto.want ? `  - 외적 목표(Want): ${proto.want}` : "", proto.need ? `  - 내적 욕구(Need): ${proto.need}` : "", proto.flaw ? `  - 핵심 결함: ${proto.flaw}` : "", ...treatmentChars.supporting.filter((s) => s.name.trim()).map((s) => `조력/적대 인물: ${s.name} (${s.role}) — ${s.relation}`)].filter(Boolean).join("\n");
+    }
     const storyBible = getStoryBible();
     const genreContext = result?.detected_genre ? `\n로그라인 분석 감지 장르: ${result.detected_genre}` : "";
     const structurePlotPoints = structureResult?.plot_points?.length
@@ -2775,7 +2792,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 </button>
                 {showTreatmentPanel && (
                   <div style={{ marginTop: 8 }}>
-                    <TreatmentInputPanel chars={treatmentChars} onCharsChange={setTreatmentChars} structure={treatmentStructure} onStructureChange={setTreatmentStructure} onGenerate={generateTreatment} loading={treatmentLoading} isMobile={isMobile} />
+                    <TreatmentInputPanel chars={treatmentChars} onCharsChange={setTreatmentChars} structure={treatmentStructure} onStructureChange={setTreatmentStructure} onGenerate={generateTreatment} loading={treatmentLoading} isMobile={isMobile} charDevResult={charDevResult} />
                     <ErrorMsg msg={treatmentError} />
                   </div>
                 )}

@@ -3883,7 +3883,7 @@ export function CharacterDevPanel({ data, isMobile }) {
 // ─────────────────────────────────────────────
 // 트리트먼트 입력 패널
 // ─────────────────────────────────────────────
-export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructureChange, onGenerate, loading, isMobile }) {
+export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructureChange, onGenerate, loading, isMobile, charDevResult }) {
   const proto = chars.protagonist;
 
   const setProto = (field, val) =>
@@ -3937,61 +3937,111 @@ export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructu
         </div>
       </div>
 
-      {/* 주인공 */}
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginBottom: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>주인공</div>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8, marginBottom: 8 }}>
-          <div>
-            <label style={labelStyle}>이름</label>
-            <input style={inputStyle} value={proto.name} onChange={(e) => setProto("name", e.target.value)} placeholder="예: 박민준" />
-          </div>
-          <div>
-            <label style={labelStyle}>역할 / 직업</label>
-            <input style={inputStyle} value={proto.role} onChange={(e) => setProto("role", e.target.value)} placeholder="예: 전직 형사, 40대" />
-          </div>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
-          <div>
-            <label style={labelStyle}>외적 목표 (Want)</label>
-            <input style={inputStyle} value={proto.want} onChange={(e) => setProto("want", e.target.value)} placeholder="예: 딸을 찾는다" />
-          </div>
-          <div>
-            <label style={labelStyle}>내적 욕구 (Need)</label>
-            <input style={inputStyle} value={proto.need} onChange={(e) => setProto("need", e.target.value)} placeholder="예: 죄책감을 놓아준다" />
-          </div>
-          <div>
-            <label style={labelStyle}>핵심 결함</label>
-            <input style={inputStyle} value={proto.flaw} onChange={(e) => setProto("flaw", e.target.value)} placeholder="예: 모든 것을 혼자 해결하려 함" />
-          </div>
-        </div>
-      </div>
-
-      {/* 조력/적대 인물 */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>주요 인물</div>
-          <button onClick={addSupporting} style={{ fontSize: 11, color: "rgba(251,191,36,0.7)", background: "none", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}>+ 인물 추가</button>
-        </div>
-        {chars.supporting.map((s, idx) => (
-          <div key={idx} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
-            <div>
-              <label style={labelStyle}>이름</label>
-              <input style={inputStyle} value={s.name} onChange={(e) => setSupporting(idx, "name", e.target.value)} placeholder="예: 이수연" />
+      {/* 인물 정보: Stage 3 캐릭터 분석 결과가 있으면 자동 반영 카드, 없으면 직접 입력 폼 */}
+      {charDevResult?.protagonist ? (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>인물 정보</div>
+          <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(var(--tw),0.03)", border: "1px solid rgba(var(--tw),0.07)" }}>
+            <div style={{ fontSize: 10, color: "rgba(var(--tw),0.28)", marginBottom: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>
+              ✓ 캐릭터 분석(3단계) 결과 자동 반영
             </div>
-            <div>
-              <label style={labelStyle}>역할</label>
-              <input style={inputStyle} value={s.role} onChange={(e) => setSupporting(idx, "role", e.target.value)} placeholder="예: 적대자 / 조력자" />
+            {/* 주인공 요약 */}
+            <div style={{ marginBottom: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)" }}>{charDevResult.protagonist.name_suggestion || "주인공"}</span>
+              {charDevResult.protagonist.egri_dimensions?.sociological && (
+                <span style={{ fontSize: 11, color: "rgba(var(--tw),0.38)", marginLeft: 8 }}>
+                  {charDevResult.protagonist.egri_dimensions.sociological.slice(0, 50)}{charDevResult.protagonist.egri_dimensions.sociological.length > 50 ? "…" : ""}
+                </span>
+              )}
             </div>
-            <div>
-              <label style={labelStyle}>주인공과의 관계</label>
-              <input style={inputStyle} value={s.relation} onChange={(e) => setSupporting(idx, "relation", e.target.value)} placeholder="예: 전 파트너, 진실을 숨김" />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: charDevResult.supporting_characters?.length ? 10 : 0 }}>
+              {charDevResult.protagonist.want && (
+                <span style={{ fontSize: 10, color: "rgba(var(--tw),0.5)", background: "rgba(var(--tw),0.05)", padding: "3px 8px", borderRadius: 6 }}>
+                  Want: {charDevResult.protagonist.want}
+                </span>
+              )}
+              {charDevResult.protagonist.need && (
+                <span style={{ fontSize: 10, color: "rgba(var(--tw),0.5)", background: "rgba(var(--tw),0.05)", padding: "3px 8px", borderRadius: 6 }}>
+                  Need: {charDevResult.protagonist.need}
+                </span>
+              )}
+              {charDevResult.protagonist.ghost && (
+                <span style={{ fontSize: 10, color: "rgba(var(--tw),0.5)", background: "rgba(var(--tw),0.05)", padding: "3px 8px", borderRadius: 6 }}>
+                  Ghost: {charDevResult.protagonist.ghost.slice(0, 30)}{charDevResult.protagonist.ghost.length > 30 ? "…" : ""}
+                </span>
+              )}
             </div>
-            {chars.supporting.length > 1 && (
-              <button onClick={() => removeSupporting(idx)} style={{ padding: "9px 10px", background: "none", border: "1px solid rgba(232,93,117,0.2)", borderRadius: 8, color: "rgba(232,93,117,0.6)", cursor: "pointer", fontSize: 13 }}>✕</button>
+            {/* 주요 인물 */}
+            {charDevResult.supporting_characters?.filter((s) => s.suggested_name || s.role_name).length > 0 && (
+              <div style={{ borderTop: "1px solid rgba(var(--tw),0.06)", paddingTop: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
+                {charDevResult.supporting_characters.filter((s) => s.suggested_name || s.role_name).slice(0, 5).map((s, i) => (
+                  <span key={i} style={{ fontSize: 10, color: "rgba(var(--tw),0.38)", background: "rgba(var(--tw),0.04)", padding: "2px 8px", borderRadius: 10, border: "1px solid rgba(var(--tw),0.06)" }}>
+                    {s.suggested_name || ""}{s.role_name ? ` (${s.role_name})` : ""}
+                  </span>
+                ))}
+              </div>
             )}
           </div>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <>
+          {/* 주인공 — 직접 입력 */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginBottom: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>주인공</div>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8, marginBottom: 8 }}>
+              <div>
+                <label style={labelStyle}>이름</label>
+                <input style={inputStyle} value={proto.name} onChange={(e) => setProto("name", e.target.value)} placeholder="예: 박민준" />
+              </div>
+              <div>
+                <label style={labelStyle}>역할 / 직업</label>
+                <input style={inputStyle} value={proto.role} onChange={(e) => setProto("role", e.target.value)} placeholder="예: 전직 형사, 40대" />
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
+              <div>
+                <label style={labelStyle}>외적 목표 (Want)</label>
+                <input style={inputStyle} value={proto.want} onChange={(e) => setProto("want", e.target.value)} placeholder="예: 딸을 찾는다" />
+              </div>
+              <div>
+                <label style={labelStyle}>내적 욕구 (Need)</label>
+                <input style={inputStyle} value={proto.need} onChange={(e) => setProto("need", e.target.value)} placeholder="예: 죄책감을 놓아준다" />
+              </div>
+              <div>
+                <label style={labelStyle}>핵심 결함</label>
+                <input style={inputStyle} value={proto.flaw} onChange={(e) => setProto("flaw", e.target.value)} placeholder="예: 모든 것을 혼자 해결하려 함" />
+              </div>
+            </div>
+          </div>
+
+          {/* 조력/적대 인물 — 직접 입력 */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>주요 인물</div>
+              <button onClick={addSupporting} style={{ fontSize: 11, color: "rgba(251,191,36,0.7)", background: "none", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}>+ 인물 추가</button>
+            </div>
+            {chars.supporting.map((s, idx) => (
+              <div key={idx} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
+                <div>
+                  <label style={labelStyle}>이름</label>
+                  <input style={inputStyle} value={s.name} onChange={(e) => setSupporting(idx, "name", e.target.value)} placeholder="예: 이수연" />
+                </div>
+                <div>
+                  <label style={labelStyle}>역할</label>
+                  <input style={inputStyle} value={s.role} onChange={(e) => setSupporting(idx, "role", e.target.value)} placeholder="예: 적대자 / 조력자" />
+                </div>
+                <div>
+                  <label style={labelStyle}>주인공과의 관계</label>
+                  <input style={inputStyle} value={s.relation} onChange={(e) => setSupporting(idx, "relation", e.target.value)} placeholder="예: 전 파트너, 진실을 숨김" />
+                </div>
+                {chars.supporting.length > 1 && (
+                  <button onClick={() => removeSupporting(idx)} style={{ padding: "9px 10px", background: "none", border: "1px solid rgba(232,93,117,0.2)", borderRadius: 8, color: "rgba(232,93,117,0.6)", cursor: "pointer", fontSize: 13 }}>✕</button>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {/* 생성 버튼 */}
       <button
