@@ -1579,7 +1579,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
     { id: "expression", label: isMobile ? "표현" : "표현 (30)" },
     { id: "technical", label: isMobile ? "기술" : "기술 (20)" },
     { id: "interest", label: isMobile ? "흥미도" : "흥미도 (100)" },
-    { id: "feedback", label: "피드백" },
+    { id: "feedback", label: "개선·방향" },
     ...(academicResult ? [{ id: "academic", label: "학술" }] : []),
     ...(history.length >= 1 ? [{ id: "trend", label: "추이" }] : []),
   ];
@@ -2146,6 +2146,33 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                     </div>
                   )}
 
+                  {/* ── 개선·방향 탭 유도 CTA ── */}
+                  <div
+                    onClick={() => setActiveTab("feedback")}
+                    style={{
+                      marginTop: 14, padding: "12px 16px", borderRadius: 10,
+                      background: activeTab === "feedback"
+                        ? "rgba(200,168,75,0.04)"
+                        : "linear-gradient(90deg, rgba(200,168,75,0.1) 0%, rgba(96,165,250,0.08) 100%)",
+                      border: activeTab === "feedback"
+                        ? "1px solid rgba(200,168,75,0.12)"
+                        : "1px solid rgba(200,168,75,0.22)",
+                      cursor: "pointer", display: "flex", alignItems: "center", gap: 12,
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    <div style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>🔀</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#C8A84B", marginBottom: 2 }}>
+                        이 로그라인을 발전시키고 싶다면?
+                      </div>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.6 }}>
+                        약점만 골라 수정 · 장르·관점·갈등 방향 전환 · AI 개선안 — <span style={{ color: "#C8A84B", fontWeight: 700 }}>개선·방향 탭</span>에서 확인하세요
+                      </div>
+                    </div>
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#C8A84B" strokeWidth={2} strokeLinecap="round" style={{ flexShrink: 0, opacity: 0.7 }}><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                  </div>
+
                   {/* Tab nav */}
                   <div style={{ overflowX: "auto", marginTop: 16, marginBottom: 12 }}>
                     <div style={{ display: "flex", gap: 3, background: "rgba(255,255,255,0.02)", borderRadius: 10, padding: 4, minWidth: "max-content" }}>
@@ -2222,15 +2249,45 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                     )}
                     {activeTab === "feedback" && (
                       <div>
-                        {result.overall_feedback && <div style={{ fontSize: 14, lineHeight: 1.85, color: "rgba(255,255,255,0.75)", marginBottom: 20 }}>{result.overall_feedback}</div>}
+                        {/* 탭 설명 헤더 */}
+                        <div style={{ marginBottom: 20, padding: "12px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)", marginBottom: 8, letterSpacing: 0.5 }}>이 탭에서 할 수 있는 것</div>
+                          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
+                            {[
+                              { icon: "🔧", title: "약점 수정", desc: "낮은 점수 항목만 골라 직접 고친 버전 제안" },
+                              { icon: "🔀", title: "방향 전환", desc: "장르·관점·갈등을 완전히 다르게 바꾼 3가지 버전" },
+                              { icon: "✨", title: "AI 개선안", desc: "종합 피드백을 반영한 자유 형식 개선 로그라인" },
+                            ].map((item) => (
+                              <div key={item.title} style={{ display: "flex", gap: 8, padding: "8px 10px", borderRadius: 8, background: "rgba(255,255,255,0.02)" }}>
+                                <span style={{ fontSize: 16, flexShrink: 0 }}>{item.icon}</span>
+                                <div>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: "#C8A84B" }}>{item.title}</div>
+                                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 2, lineHeight: 1.5 }}>{item.desc}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 종합 피드백 */}
+                        {result.overall_feedback && (
+                          <div style={{ fontSize: 14, lineHeight: 1.85, color: "rgba(255,255,255,0.75)", marginBottom: 20, padding: "14px 16px", borderRadius: 10, background: "rgba(200,168,75,0.04)", borderLeft: "3px solid rgba(200,168,75,0.3)" }}>
+                            {result.overall_feedback}
+                          </div>
+                        )}
+
+                        {/* AI 유도 질문 */}
                         {result.improvement_questions?.length > 0 && (
-                          <div>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.5)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>개선 질문</div>
+                          <div style={{ marginBottom: 20 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>스스로 점검해볼 질문</div>
                             {result.improvement_questions.map((q, i) => (
-                              <div key={i} style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", padding: "9px 14px", marginBottom: 6, background: "rgba(200,168,75,0.04)", borderRadius: 8, borderLeft: "2px solid rgba(200,168,75,0.3)", lineHeight: 1.7 }}>{q}</div>
+                              <div key={i} style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", padding: "9px 14px", marginBottom: 6, background: "rgba(200,168,75,0.04)", borderRadius: 8, borderLeft: "2px solid rgba(200,168,75,0.25)", lineHeight: 1.7 }}>
+                                <span style={{ color: "rgba(200,168,75,0.6)", fontWeight: 700, marginRight: 6 }}>Q{i + 1}.</span>{q}
+                              </div>
                             ))}
                           </div>
                         )}
+
                         <StoryDevPanel
                           logline={logline}
                           genre={genre}
