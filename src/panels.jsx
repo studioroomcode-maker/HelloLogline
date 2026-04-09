@@ -23,7 +23,7 @@ export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
     >
       <div
         style={{
-          background: "#13131f",
+          background: "var(--bg-surface)",
           border: "1px solid rgba(78,204,163,0.3)",
           borderRadius: 16,
           padding: 32,
@@ -35,7 +35,7 @@ export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
           style={{
             fontSize: 18,
             fontWeight: 700,
-            color: "#e8e8f0",
+            color: "var(--text-main)",
             marginBottom: 8,
             fontFamily: "'Noto Sans KR', sans-serif",
           }}
@@ -45,7 +45,7 @@ export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
         <div
           style={{
             fontSize: 13,
-            color: "rgba(255,255,255,0.5)",
+            color: "rgba(var(--tw),0.5)",
             marginBottom: 20,
             lineHeight: 1.7,
           }}
@@ -66,9 +66,9 @@ export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
               width: "100%",
               padding: "12px 44px 12px 14px",
               borderRadius: 10,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "rgba(255,255,255,0.04)",
-              color: "#e8e8f0",
+              border: "1px solid rgba(var(--tw),0.12)",
+              background: "rgba(var(--tw),0.04)",
+              color: "var(--text-main)",
               fontSize: 13,
               outline: "none",
               boxSizing: "border-box",
@@ -84,7 +84,7 @@ export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
               transform: "translateY(-50%)",
               background: "none",
               border: "none",
-              color: "rgba(255,255,255,0.4)",
+              color: "rgba(var(--tw),0.4)",
               cursor: "pointer",
               fontSize: 14,
               padding: 0,
@@ -105,8 +105,8 @@ export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
               cursor: key.trim() ? "pointer" : "not-allowed",
               background: key.trim()
                 ? "linear-gradient(135deg, #4ECCA3, #45B7D1)"
-                : "rgba(255,255,255,0.06)",
-              color: key.trim() ? "#0d0d1a" : "rgba(255,255,255,0.3)",
+                : "rgba(var(--tw),0.06)",
+              color: key.trim() ? "#0d0d1a" : "rgba(var(--tw),0.3)",
               fontWeight: 700,
               fontSize: 14,
               fontFamily: "'Noto Sans KR', sans-serif",
@@ -120,9 +120,9 @@ export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
               style={{
                 padding: "11px 20px",
                 borderRadius: 10,
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: "1px solid rgba(var(--tw),0.1)",
                 background: "transparent",
-                color: "rgba(255,255,255,0.5)",
+                color: "rgba(var(--tw),0.5)",
                 cursor: "pointer",
                 fontSize: 14,
                 fontFamily: "'Noto Sans KR', sans-serif",
@@ -136,7 +136,7 @@ export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
           style={{
             marginTop: 14,
             fontSize: 11,
-            color: "rgba(255,255,255,0.2)",
+            color: "rgba(var(--tw),0.2)",
             lineHeight: 1.6,
           }}
         >
@@ -169,8 +169,8 @@ export function GuideTooltip({ criterionKey }) {
           width: 14,
           height: 14,
           borderRadius: "50%",
-          background: show ? "rgba(78,204,163,0.2)" : "rgba(255,255,255,0.08)",
-          color: show ? "#4ECCA3" : "rgba(255,255,255,0.35)",
+          background: show ? "rgba(78,204,163,0.2)" : "rgba(var(--tw),0.08)",
+          color: show ? "#4ECCA3" : "rgba(var(--tw),0.35)",
           fontSize: 9,
           cursor: "pointer",
           fontWeight: 700,
@@ -200,7 +200,7 @@ export function GuideTooltip({ criterionKey }) {
               padding: "10px 13px",
               fontSize: 11,
               lineHeight: 1.7,
-              color: "rgba(255,255,255,0.75)",
+              color: "rgba(var(--tw),0.75)",
               boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
             }}
           >
@@ -241,7 +241,7 @@ export function RadarChart({ data, size = 280 }) {
         <polygon
           key={li}
           fill="none"
-          stroke="rgba(255,255,255,0.08)"
+          stroke="rgba(var(--tw),0.08)"
           strokeWidth={li === 4 ? 1.5 : 0.5}
           points={Array.from({ length: n }, (_, i) => {
             const p = polarToCart(i * angleStep, r * lv);
@@ -258,7 +258,7 @@ export function RadarChart({ data, size = 280 }) {
             y1={cy}
             x2={p.x}
             y2={p.y}
-            stroke="rgba(255,255,255,0.06)"
+            stroke="rgba(var(--tw),0.06)"
             strokeWidth={0.5}
           />
         );
@@ -292,7 +292,7 @@ export function RadarChart({ data, size = 280 }) {
             y={p.y}
             textAnchor="middle"
             dominantBaseline="middle"
-            fill="rgba(255,255,255,0.65)"
+            fill="rgba(var(--tw),0.65)"
             fontSize={10}
             fontFamily="'Noto Sans KR', sans-serif"
           >
@@ -341,7 +341,7 @@ export function ScoreBar({ score, max, label, found, feedback, delay = 0, criter
         <span
           style={{
             fontSize: 13,
-            color: "rgba(255,255,255,0.8)",
+            color: "rgba(var(--tw),0.8)",
             fontFamily: "'Noto Sans KR', sans-serif",
             display: "flex",
             alignItems: "center",
@@ -351,7 +351,7 @@ export function ScoreBar({ score, max, label, found, feedback, delay = 0, criter
           {label}
           <GuideTooltip criterionKey={criterionKey} />
           {feedback && (
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginLeft: 3 }}>
+            <span style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", marginLeft: 3 }}>
               {expanded ? "▲" : "▼"}
             </span>
           )}
@@ -372,7 +372,7 @@ export function ScoreBar({ score, max, label, found, feedback, delay = 0, criter
       <div
         style={{
           height: 6,
-          background: "rgba(255,255,255,0.06)",
+          background: "rgba(var(--tw),0.06)",
           borderRadius: 3,
           overflow: "hidden",
         }}
@@ -403,10 +403,10 @@ export function ScoreBar({ score, max, label, found, feedback, delay = 0, criter
         <div
           style={{
             fontSize: 12,
-            color: "rgba(255,255,255,0.6)",
+            color: "rgba(var(--tw),0.6)",
             marginTop: 6,
             padding: "8px 12px",
-            background: "rgba(255,255,255,0.03)",
+            background: "rgba(var(--tw),0.03)",
             borderRadius: 8,
             borderLeft: `2px solid ${barColor}`,
             lineHeight: 1.6,
@@ -438,7 +438,7 @@ export function CircleGauge({ score, label, subLabel, size = 120 }) {
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="rgba(255,255,255,0.06)"
+          stroke="rgba(var(--tw),0.06)"
           strokeWidth={strokeWidth}
         />
         <circle
@@ -474,7 +474,7 @@ export function CircleGauge({ score, label, subLabel, size = 120 }) {
         >
           {score}
         </div>
-        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>{label}</div>
+        <div style={{ fontSize: 10, color: "rgba(var(--tw),0.5)", marginTop: 2 }}>{label}</div>
       </div>
       <div style={{ fontSize: 12, fontWeight: 600, color, marginTop: 4 }}>
         {label === "흥미도"
@@ -482,7 +482,7 @@ export function CircleGauge({ score, label, subLabel, size = 120 }) {
           : `${gradeInfo.grade}등급 · ${gradeInfo.label}`}
       </div>
       {subLabel && (
-        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
+        <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", marginTop: 2 }}>
           {subLabel}
         </div>
       )}
@@ -500,7 +500,7 @@ export function ScoreHistoryChart({ history }) {
         style={{
           textAlign: "center",
           padding: "36px 20px",
-          color: "rgba(255,255,255,0.3)",
+          color: "rgba(var(--tw),0.3)",
           fontSize: 13,
           fontFamily: "'Noto Sans KR', sans-serif",
         }}
@@ -549,7 +549,7 @@ export function ScoreHistoryChart({ history }) {
             alignItems: "center",
             gap: 6,
             fontSize: 11,
-            color: "rgba(255,255,255,0.55)",
+            color: "rgba(var(--tw),0.55)",
           }}
         >
           <div
@@ -568,7 +568,7 @@ export function ScoreHistoryChart({ history }) {
             alignItems: "center",
             gap: 6,
             fontSize: 11,
-            color: "rgba(255,255,255,0.55)",
+            color: "rgba(var(--tw),0.55)",
           }}
         >
           <div
@@ -590,7 +590,7 @@ export function ScoreHistoryChart({ history }) {
               y1={toY(y)}
               x2={W - PX}
               y2={toY(y)}
-              stroke="rgba(255,255,255,0.05)"
+              stroke="rgba(var(--tw),0.05)"
               strokeWidth={1}
             />
             <text
@@ -598,7 +598,7 @@ export function ScoreHistoryChart({ history }) {
               y={toY(y)}
               textAnchor="end"
               dominantBaseline="middle"
-              fill="rgba(255,255,255,0.25)"
+              fill="rgba(var(--tw),0.25)"
               fontSize={9}
             >
               {y}
@@ -646,7 +646,7 @@ export function ScoreHistoryChart({ history }) {
               x={toX(i)}
               y={H - 3}
               textAnchor="middle"
-              fill="rgba(255,255,255,0.25)"
+              fill="rgba(var(--tw),0.25)"
               fontSize={8}
             >
               {formatDate(h.date).split(" ")[0]}
@@ -682,7 +682,7 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
         bottom: 0,
         width: 320,
         background: "#0f0f1e",
-        borderLeft: "1px solid rgba(255,255,255,0.06)",
+        borderLeft: "1px solid rgba(var(--tw),0.06)",
         zIndex: 200,
         display: "flex",
         flexDirection: "column",
@@ -693,7 +693,7 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
       <div
         style={{
           padding: "20px 20px 14px",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          borderBottom: "1px solid rgba(var(--tw),0.06)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -704,7 +704,7 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
           style={{
             fontSize: 14,
             fontWeight: 700,
-            color: "#e8e8f0",
+            color: "var(--text-main)",
             fontFamily: "'Noto Sans KR', sans-serif",
           }}
         >
@@ -750,7 +750,7 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
             style={{
               background: "none",
               border: "none",
-              color: "rgba(255,255,255,0.4)",
+              color: "rgba(var(--tw),0.4)",
               cursor: "pointer",
               fontSize: 20,
               lineHeight: 1,
@@ -769,7 +769,7 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
             style={{
               padding: 28,
               textAlign: "center",
-              color: "rgba(255,255,255,0.2)",
+              color: "rgba(var(--tw),0.2)",
               fontSize: 13,
               fontFamily: "'Noto Sans KR', sans-serif",
             }}
@@ -784,11 +784,11 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
                 key={entry.id}
                 style={{
                   position: "relative",
-                  borderBottom: "1px solid rgba(255,255,255,0.03)",
+                  borderBottom: "1px solid rgba(var(--tw),0.03)",
                   transition: "background 0.15s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                  e.currentTarget.style.background = "rgba(var(--tw),0.03)";
                   e.currentTarget.querySelector(".del-btn").style.opacity = "1";
                 }}
                 onMouseLeave={(e) => {
@@ -812,7 +812,7 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
                     <div
                       style={{
                         fontSize: 10,
-                        color: "rgba(255,255,255,0.3)",
+                        color: "rgba(var(--tw),0.3)",
                         fontFamily: "'Noto Sans KR', sans-serif",
                       }}
                     >
@@ -829,7 +829,7 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
                       >
                         {entry.qualityScore}
                       </span>
-                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>·</span>
+                      <span style={{ fontSize: 10, color: "rgba(var(--tw),0.2)" }}>·</span>
                       <span
                         style={{
                           fontSize: 11,
@@ -844,7 +844,7 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
                   <div
                     style={{
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.6)",
+                      color: "rgba(var(--tw),0.6)",
                       lineHeight: 1.5,
                       overflow: "hidden",
                       display: "-webkit-box",
@@ -996,7 +996,7 @@ export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze }
           style={{
             textAlign: "center",
             padding: 24,
-            color: "rgba(255,255,255,0.35)",
+            color: "rgba(var(--tw),0.35)",
             fontSize: 13,
             fontFamily: "'Noto Sans KR', sans-serif",
           }}
@@ -1025,7 +1025,7 @@ export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze }
           <div
             style={{
               padding: 16,
-              background: "rgba(255,255,255,0.04)",
+              background: "rgba(var(--tw),0.04)",
               borderRadius: 10,
               marginBottom: 14,
             }}
@@ -1034,7 +1034,7 @@ export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze }
               style={{
                 fontSize: 14,
                 lineHeight: 1.8,
-                color: "#e8e8f0",
+                color: "var(--text-main)",
                 fontFamily: "'Noto Sans KR', sans-serif",
                 marginBottom: 12,
               }}
@@ -1049,7 +1049,7 @@ export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze }
                   borderRadius: 8,
                   border: "1px solid rgba(78,204,163,0.3)",
                   background: "rgba(78,204,163,0.07)",
-                  color: copied ? "#4ECCA3" : "rgba(255,255,255,0.6)",
+                  color: copied ? "#4ECCA3" : "rgba(var(--tw),0.6)",
                   cursor: "pointer",
                   fontSize: 11,
                   fontFamily: "'Noto Sans KR', sans-serif",
@@ -1085,10 +1085,10 @@ export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze }
             <div
               style={{
                 fontSize: 12,
-                color: "rgba(255,255,255,0.5)",
+                color: "rgba(var(--tw),0.5)",
                 marginBottom: 12,
                 padding: "10px 14px",
-                background: "rgba(255,255,255,0.02)",
+                background: "rgba(var(--tw),0.02)",
                 borderRadius: 8,
                 lineHeight: 1.7,
                 borderLeft: "2px solid rgba(69,183,209,0.4)",
@@ -1105,7 +1105,7 @@ export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze }
                 style={{
                   fontSize: 11,
                   fontWeight: 600,
-                  color: "rgba(255,255,255,0.4)",
+                  color: "rgba(var(--tw),0.4)",
                   marginBottom: 7,
                   textTransform: "uppercase",
                   letterSpacing: 1,
@@ -1118,10 +1118,10 @@ export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze }
                   key={i}
                   style={{
                     fontSize: 12,
-                    color: "rgba(255,255,255,0.6)",
+                    color: "rgba(var(--tw),0.6)",
                     padding: "7px 11px",
                     marginBottom: 5,
-                    background: "rgba(255,255,255,0.02)",
+                    background: "rgba(var(--tw),0.02)",
                     borderRadius: 7,
                     borderLeft: "2px solid rgba(69,183,209,0.3)",
                     lineHeight: 1.6,
@@ -1139,7 +1139,7 @@ export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze }
               marginTop: 12,
               background: "none",
               border: "none",
-              color: "rgba(255,255,255,0.3)",
+              color: "rgba(var(--tw),0.3)",
               cursor: "pointer",
               fontSize: 11,
               fontFamily: "'Noto Sans KR', sans-serif",
@@ -1210,10 +1210,10 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
 
   const cardStyle = {
     padding: "14px 16px",
-    background: "rgba(255,255,255,0.03)",
+    background: "rgba(var(--tw),0.03)",
     borderRadius: 10,
     marginBottom: 10,
-    border: "1px solid rgba(255,255,255,0.07)",
+    border: "1px solid rgba(var(--tw),0.07)",
   };
 
   const applyBtnStyle = (color) => ({
@@ -1232,10 +1232,10 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
     <div style={{ marginTop: 24 }}>
       {/* 헤더 */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "#e8e8f0", letterSpacing: -0.3 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-main)", letterSpacing: -0.3 }}>
           이야기 발전시키기
         </div>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+        <div style={{ fontSize: 11, color: "rgba(var(--tw),0.3)", fontFamily: "'Noto Sans KR', sans-serif" }}>
           분석 결과를 바탕으로 개발 방향을 선택하세요
         </div>
       </div>
@@ -1245,7 +1245,7 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
         {/* ── 약점 집중 수정 ── */}
         <div style={{ padding: 18, background: "rgba(248,113,113,0.05)", borderRadius: 12, border: "1px solid rgba(248,113,113,0.15)" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#F87171", marginBottom: 6 }}>🔧 약점 집중 수정</div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 14, lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginBottom: 14, lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
             점수 낮은 항목만 골라 그 문제를 직접 고친 버전 제안
           </div>
 
@@ -1259,7 +1259,7 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
             </button>
           )}
           {fixState === "loading" && (
-            <div style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: 12, padding: "12px 0", fontFamily: "'Noto Sans KR', sans-serif" }}>분석 중…</div>
+            <div style={{ textAlign: "center", color: "rgba(var(--tw),0.4)", fontSize: 12, padding: "12px 0", fontFamily: "'Noto Sans KR', sans-serif" }}>분석 중…</div>
           )}
           {fixState === "error" && (
             <div style={{ fontSize: 11, color: "#F87171", fontFamily: "'Noto Sans KR', sans-serif" }}>{fixError}</div>
@@ -1269,13 +1269,13 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
               <div style={{ fontSize: 11, fontWeight: 700, color: "#F87171", marginBottom: 4 }}>
                 {fix.weakness}
               </div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 8, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
+              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginBottom: 8, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
                 {fix.score_issue}
               </div>
-              <div style={{ fontSize: 13, color: "#e8e8f0", marginBottom: 10, lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              <div style={{ fontSize: 13, color: "var(--text-main)", marginBottom: 10, lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
                 "{fix.fixed_logline}"
               </div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.35)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif" }}>
                 → {fix.key_change}
               </div>
               {onApply && (
@@ -1286,7 +1286,7 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
             </div>
           ))}
           {fixState === "done" && (
-            <button onClick={() => setFixState("idle")} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.25)", cursor: "pointer", fontSize: 11, marginTop: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>
+            <button onClick={() => setFixState("idle")} style={{ background: "none", border: "none", color: "rgba(var(--tw),0.25)", cursor: "pointer", fontSize: 11, marginTop: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>
               다시 생성
             </button>
           )}
@@ -1295,7 +1295,7 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
         {/* ── 방향 전환 ── */}
         <div style={{ padding: 18, background: "rgba(139,92,246,0.05)", borderRadius: 12, border: "1px solid rgba(139,92,246,0.15)" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#A78BFA", marginBottom: 6 }}>🔀 방향 전환</div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 14, lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginBottom: 14, lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
             같은 전제로 완전히 다른 각도 3가지 탐색
           </div>
 
@@ -1309,7 +1309,7 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
             </button>
           )}
           {pivotState === "loading" && (
-            <div style={{ textAlign: "center", color: "rgba(255,255,255,0.4)", fontSize: 12, padding: "12px 0", fontFamily: "'Noto Sans KR', sans-serif" }}>탐색 중…</div>
+            <div style={{ textAlign: "center", color: "rgba(var(--tw),0.4)", fontSize: 12, padding: "12px 0", fontFamily: "'Noto Sans KR', sans-serif" }}>탐색 중…</div>
           )}
           {pivotState === "error" && (
             <div style={{ fontSize: 11, color: "#A78BFA", fontFamily: "'Noto Sans KR', sans-serif" }}>{pivotError}</div>
@@ -1319,10 +1319,10 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
               <div style={{ fontSize: 11, fontWeight: 700, color: "#A78BFA", marginBottom: 6 }}>
                 {pivot.label}
               </div>
-              <div style={{ fontSize: 13, color: "#e8e8f0", marginBottom: 8, lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              <div style={{ fontSize: 13, color: "var(--text-main)", marginBottom: 8, lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
                 "{pivot.pivot_logline}"
               </div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
+              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.35)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
                 {pivot.why_interesting}
               </div>
               {onApply && (
@@ -1333,7 +1333,7 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
             </div>
           ))}
           {pivotState === "done" && (
-            <button onClick={() => setPivotState("idle")} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.25)", cursor: "pointer", fontSize: 11, marginTop: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>
+            <button onClick={() => setPivotState("idle")} style={{ background: "none", border: "none", color: "rgba(var(--tw),0.25)", cursor: "pointer", fontSize: 11, marginTop: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>
               다시 생성
             </button>
           )}
@@ -1507,9 +1507,9 @@ export function ExportButton({ result, logline, qualityScore, interestScore }) {
         onClick={handleExport}
         style={{
           padding: "7px 16px", borderRadius: 8,
-          border: "1px solid rgba(255,255,255,0.1)",
-          background: "rgba(255,255,255,0.03)",
-          color: copied ? "#4ECCA3" : "rgba(255,255,255,0.45)",
+          border: "1px solid rgba(var(--tw),0.1)",
+          background: "rgba(var(--tw),0.03)",
+          color: copied ? "#4ECCA3" : "rgba(var(--tw),0.45)",
           cursor: "pointer", fontSize: 12,
           fontFamily: "'Noto Sans KR', sans-serif", transition: "all 0.2s",
         }}
@@ -1545,19 +1545,19 @@ export function TheorySection({ title, ref: refText, color, children, defaultOpe
         style={{
           padding: "12px 16px", cursor: "pointer", display: "flex",
           justifyContent: "space-between", alignItems: "center",
-          background: open ? `${color}0a` : "rgba(255,255,255,0.01)",
+          background: open ? `${color}0a` : "rgba(var(--tw),0.01)",
           transition: "background 0.2s",
         }}
       >
         <div>
           <span style={{ fontSize: 13, fontWeight: 700, color, fontFamily: "'Noto Sans KR', sans-serif" }}>{title}</span>
           {refText && (
-            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginLeft: 10, fontFamily: "'JetBrains Mono', monospace" }}>
+            <span style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", marginLeft: 10, fontFamily: "'JetBrains Mono', monospace" }}>
               {refText}
             </span>
           )}
         </div>
-        <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 12 }}>{open ? "▲" : "▼"}</span>
+        <span style={{ color: "rgba(var(--tw),0.3)", fontSize: 12 }}>{open ? "▲" : "▼"}</span>
       </div>
       {open && <div style={{ padding: "14px 16px", borderTop: `1px solid ${color}15` }}>{children}</div>}
     </div>
@@ -1570,14 +1570,14 @@ export function AcademicScoreBar({ label, score, max, analysis, color }) {
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
+        <span style={{ fontSize: 12, color: "rgba(var(--tw),0.7)", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: barColor, fontFamily: "'JetBrains Mono', monospace" }}>{score}/{max}</span>
       </div>
-      <div style={{ height: 5, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden", marginBottom: 5 }}>
+      <div style={{ height: 5, background: "rgba(var(--tw),0.06)", borderRadius: 3, overflow: "hidden", marginBottom: 5 }}>
         <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 3 }} />
       </div>
       {analysis && (
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>{analysis}</div>
+        <div style={{ fontSize: 11, color: "rgba(var(--tw),0.45)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>{analysis}</div>
       )}
     </div>
   );
@@ -1587,9 +1587,9 @@ export function AcademicFieldRow({ label, value, analysis }) {
   if (!value && !analysis) return null;
   return (
     <div style={{ marginBottom: 10 }}>
-      <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", display: "block", marginBottom: 2, textTransform: "uppercase", letterSpacing: 0.8 }}>{label}</span>
-      {value && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginBottom: 3, fontFamily: "'Noto Sans KR', sans-serif" }}>{value}</div>}
-      {analysis && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{analysis}</div>}
+      <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(var(--tw),0.4)", display: "block", marginBottom: 2, textTransform: "uppercase", letterSpacing: 0.8 }}>{label}</span>
+      {value && <div style={{ fontSize: 12, color: "rgba(var(--tw),0.75)", marginBottom: 3, fontFamily: "'Noto Sans KR', sans-serif" }}>{value}</div>}
+      {analysis && <div style={{ fontSize: 12, color: "rgba(var(--tw),0.5)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{analysis}</div>}
     </div>
   );
 }
@@ -1629,7 +1629,7 @@ export function AcademicPanel({ academic }) {
       <TheorySection title="프롭 민담 형태론" ref="Morphology of the Folktale, 1928/1968" color="#45B7D1">
         {propp?.detected_functions?.length > 0 && (
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.8 }}>감지된 서사 기능</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(var(--tw),0.4)", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.8 }}>감지된 서사 기능</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
               {propp.detected_functions.map((fn, i) => (
                 <span key={i} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 6, background: "rgba(69,183,209,0.12)", color: "#45B7D1", fontFamily: "'JetBrains Mono', monospace" }}>{fn}</span>
@@ -1646,16 +1646,16 @@ export function AcademicPanel({ academic }) {
             ["목표 대상 (Sought Person)", propp?.character_spheres?.sought_person],
             ["파견자 (Dispatcher)", propp?.character_spheres?.dispatcher],
           ].map(([label, val], i) => val ? (
-            <div key={i} style={{ padding: "8px 10px", background: "rgba(255,255,255,0.02)", borderRadius: 8, border: "1px solid rgba(69,183,209,0.1)" }}>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 3 }}>{label}</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
+            <div key={i} style={{ padding: "8px 10px", background: "rgba(var(--tw),0.02)", borderRadius: 8, border: "1px solid rgba(69,183,209,0.1)" }}>
+              <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", marginBottom: 3 }}>{label}</div>
+              <div style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
             </div>
           ) : null)}
         </div>
         {propp?.character_spheres?.false_hero && (
           <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(232,93,117,0.06)", borderRadius: 8, border: "1px solid rgba(232,93,117,0.15)" }}>
             <div style={{ fontSize: 10, color: "rgba(232,93,117,0.6)", marginBottom: 3 }}>가짜 영웅 (False Hero)</div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>{propp.character_spheres.false_hero}</div>
+            <div style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", lineHeight: 1.5 }}>{propp.character_spheres.false_hero}</div>
           </div>
         )}
         <div style={{ marginTop: 10 }}>
@@ -1676,11 +1676,11 @@ export function AcademicPanel({ academic }) {
             <div key={i} style={{ display: "flex", alignItems: "center" }}>
               <div style={{ textAlign: "center", minWidth: 80, maxWidth: 100 }}>
                 <div style={{ fontSize: 10, color: step.color, fontWeight: 700, marginBottom: 4 }}>{step.label}</div>
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                <div style={{ fontSize: 10, color: "rgba(var(--tw),0.5)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>
                   {step.val ? (step.val.length > 30 ? step.val.slice(0, 30) + "…" : step.val) : "-"}
                 </div>
               </div>
-              {i < arr.length - 1 && <div style={{ fontSize: 14, color: "rgba(255,255,255,0.2)", margin: "0 4px", flexShrink: 0 }}>→</div>}
+              {i < arr.length - 1 && <div style={{ fontSize: 14, color: "rgba(var(--tw),0.2)", margin: "0 4px", flexShrink: 0 }}>→</div>}
             </div>
           ))}
         </div>
@@ -1695,12 +1695,12 @@ export function AcademicPanel({ academic }) {
           ["SYM · 상징 코드", barthes?.symbolic_code, "이항 대립 구조"],
           ["REF · 문화 코드", barthes?.cultural_code, "공유 문화 지식"],
         ].map(([label, val, sub], i) => (
-          <div key={i} style={{ marginBottom: 10, padding: "9px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 8 }}>
+          <div key={i} style={{ marginBottom: 10, padding: "9px 12px", background: "rgba(var(--tw),0.02)", borderRadius: 8 }}>
             <div style={{ display: "flex", gap: 8, alignItems: "baseline", marginBottom: 3 }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa" }}>{label}</span>
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>{sub}</span>
+              <span style={{ fontSize: 10, color: "rgba(var(--tw),0.25)" }}>{sub}</span>
             </div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>{val || "-"}</div>
+            <div style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>{val || "-"}</div>
           </div>
         ))}
       </TheorySection>
@@ -1717,7 +1717,7 @@ export function AcademicPanel({ academic }) {
           ].map((step, i) => (
             <div key={i} style={{ flex: 1, padding: "8px 6px", background: "rgba(69,183,209,0.06)", borderRadius: 8, border: "1px solid rgba(69,183,209,0.12)", textAlign: "center" }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "#45B7D1", marginBottom: 4 }}>{step.label}</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              <div style={{ fontSize: 10, color: "rgba(var(--tw),0.5)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>
                 {step.val ? (step.val.length > 25 ? step.val.slice(0, 25) + "…" : step.val) : "-"}
               </div>
             </div>
@@ -1728,10 +1728,10 @@ export function AcademicPanel({ academic }) {
       {/* 질만 + 스미스 */}
       <TheorySection title="심리학적 분석" ref="Zillmann (1983) · Smith (1995)" color="#4ECCA3">
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>질만 흥분 전이 이론</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(var(--tw),0.4)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>질만 흥분 전이 이론</div>
           <AcademicFieldRow label="각성 메커니즘" analysis={zillmann?.arousal_mechanism} />
           <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8 }}>
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>예측 각성 강도:</span>
+            <span style={{ fontSize: 12, color: "rgba(var(--tw),0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>예측 각성 강도:</span>
             <span style={{
               fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 8,
               background: zillmann?.predicted_arousal_intensity?.includes("높음") ? "rgba(232,93,117,0.15)" : "rgba(247,160,114,0.12)",
@@ -1739,12 +1739,12 @@ export function AcademicPanel({ academic }) {
             }}>
               {zillmann?.predicted_arousal_intensity || "-"}
             </span>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "'Noto Sans KR', sans-serif" }}>{zillmann?.dominant_emotion}</span>
+            <span style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", fontFamily: "'Noto Sans KR', sans-serif" }}>{zillmann?.dominant_emotion}</span>
           </div>
           <AcademicFieldRow label="전이 잠재력" analysis={zillmann?.transfer_potential} />
         </div>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>스미스 관객 참여 이론</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(var(--tw),0.4)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>스미스 관객 참여 이론</div>
           <AcademicScoreBar label="인식 (Recognition)" score={smith?.recognition?.score || 0} max={10} analysis={smith?.recognition?.analysis} />
           <AcademicScoreBar label="정렬 (Alignment)" score={smith?.alignment?.score || 0} max={10} analysis={smith?.alignment?.analysis} />
           <AcademicScoreBar label="충성 (Allegiance)" score={smith?.allegiance?.score || 0} max={10} analysis={smith?.allegiance?.analysis} />
@@ -1762,9 +1762,9 @@ export function AcademicPanel({ academic }) {
           ].map(({ label, val }) => (
             <div key={label} style={{
               padding: "5px 12px", borderRadius: 20,
-              background: val?.present ? "rgba(244,114,182,0.12)" : "rgba(255,255,255,0.03)",
-              border: val?.present ? "1px solid rgba(244,114,182,0.35)" : "1px solid rgba(255,255,255,0.07)",
-              color: val?.present ? "#f472b6" : "rgba(255,255,255,0.3)",
+              background: val?.present ? "rgba(244,114,182,0.12)" : "rgba(var(--tw),0.03)",
+              border: val?.present ? "1px solid rgba(244,114,182,0.35)" : "1px solid rgba(var(--tw),0.07)",
+              color: val?.present ? "#f472b6" : "rgba(var(--tw),0.3)",
               fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif",
             }}>
               {val?.present ? "✓ " : ""}{label}
@@ -1779,7 +1779,7 @@ export function AcademicPanel({ academic }) {
         ].filter(([, v]) => v && v !== "감지되지 않음").map(([label, val], i) => (
           <div key={i} style={{ marginBottom: 8, padding: "8px 12px", background: "rgba(244,114,182,0.04)", borderRadius: 8, borderLeft: "2px solid rgba(244,114,182,0.3)" }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(244,114,182,0.7)", marginRight: 6 }}>{label}</span>
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</span>
+            <span style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</span>
           </div>
         ))}
         <AcademicScoreBar label="한국 서사 정서 친화도" score={korean_aesthetics?.korean_narrative_strength?.score || 0} max={10} analysis={korean_aesthetics?.korean_narrative_strength?.analysis} color="#f472b6" />
@@ -1787,21 +1787,21 @@ export function AcademicPanel({ academic }) {
 
       {/* 종합 학술 평가 */}
       {integrated_assessment && (
-        <div style={{ marginTop: 16, padding: 18, background: "rgba(255,255,255,0.02)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.07)" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#e8e8f0", marginBottom: 4 }}>종합 학술 평가</div>
+        <div style={{ marginTop: 16, padding: 18, background: "rgba(var(--tw),0.02)", borderRadius: 12, border: "1px solid rgba(var(--tw),0.07)" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)", marginBottom: 4 }}>종합 학술 평가</div>
           {integrated_assessment.dominant_theory_fit && (
             <div style={{ fontSize: 11, color: "rgba(78,204,163,0.7)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif" }}>
               최적 이론: {integrated_assessment.dominant_theory_fit}
             </div>
           )}
-          <div style={{ fontSize: 13, lineHeight: 1.85, color: "rgba(255,255,255,0.72)", marginBottom: 14, fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <div style={{ fontSize: 13, lineHeight: 1.85, color: "rgba(var(--tw),0.72)", marginBottom: 14, fontFamily: "'Noto Sans KR', sans-serif" }}>
             {integrated_assessment.theoretical_verdict}
           </div>
           {integrated_assessment.strengths?.length > 0 && (
             <div style={{ marginBottom: 10 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#4ECCA3", marginBottom: 6 }}>이론적 강점</div>
               {integrated_assessment.strengths.map((s, i) => (
-                <div key={i} style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", padding: "5px 10px", marginBottom: 4, background: "rgba(78,204,163,0.05)", borderRadius: 6, borderLeft: "2px solid rgba(78,204,163,0.3)", lineHeight: 1.6 }}>{s}</div>
+                <div key={i} style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", padding: "5px 10px", marginBottom: 4, background: "rgba(78,204,163,0.05)", borderRadius: 6, borderLeft: "2px solid rgba(78,204,163,0.3)", lineHeight: 1.6 }}>{s}</div>
               ))}
             </div>
           )}
@@ -1809,14 +1809,14 @@ export function AcademicPanel({ academic }) {
             <div style={{ marginBottom: 10 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#E85D75", marginBottom: 6 }}>이론적 약점</div>
               {integrated_assessment.weaknesses.map((w, i) => (
-                <div key={i} style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", padding: "5px 10px", marginBottom: 4, background: "rgba(232,93,117,0.05)", borderRadius: 6, borderLeft: "2px solid rgba(232,93,117,0.3)", lineHeight: 1.6 }}>{w}</div>
+                <div key={i} style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", padding: "5px 10px", marginBottom: 4, background: "rgba(232,93,117,0.05)", borderRadius: 6, borderLeft: "2px solid rgba(232,93,117,0.3)", lineHeight: 1.6 }}>{w}</div>
               ))}
             </div>
           )}
           {integrated_assessment.academic_recommendation && (
             <div style={{ padding: "10px 14px", background: "rgba(167,139,250,0.05)", borderRadius: 8, border: "1px solid rgba(167,139,250,0.15)" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", marginBottom: 4 }}>학술적 개선 제언</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{integrated_assessment.academic_recommendation}</div>
+              <div style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{integrated_assessment.academic_recommendation}</div>
             </div>
           )}
         </div>
@@ -1856,30 +1856,30 @@ export function AuthenticityPanel({ data, isMobile }) {
           <div style={{ fontSize: 48, fontWeight: 700, color: scoreColor, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>
             {data.authenticity_score ?? "?"}
           </div>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", marginTop: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>AUTHENTICITY</div>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", fontFamily: "'JetBrains Mono', monospace", marginTop: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>AUTHENTICITY</div>
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: scoreColor, fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 6 }}>
             {data.authenticity_label}
           </div>
           {/* 점수 바 */}
-          <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
+          <div style={{ height: 4, background: "rgba(var(--tw),0.06)", borderRadius: 3, overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${data.authenticity_score ?? 0}%`, background: `linear-gradient(90deg, ${scoreColor}80, ${scoreColor})`, borderRadius: 3, transition: "width 0.5s ease" }} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
-            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>자기기만</span>
-            <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", fontFamily: "'JetBrains Mono', monospace" }}>실존적 각성</span>
+            <span style={{ fontSize: 9, color: "rgba(var(--tw),0.2)", fontFamily: "'JetBrains Mono', monospace" }}>자기기만</span>
+            <span style={{ fontSize: 9, color: "rgba(var(--tw),0.2)", fontFamily: "'JetBrains Mono', monospace" }}>실존적 각성</span>
           </div>
         </div>
       </div>
 
       {/* 피투성 + 자기기만 */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
-        <div style={{ padding: "14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)" }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>FACTICITY — 피투성 (Heidegger)</div>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif", margin: "0 0 6px" }}>{ft.description}</p>
+        <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.08)" }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>FACTICITY — 피투성 (Heidegger)</div>
+          <p style={{ fontSize: 11, color: "rgba(var(--tw),0.55)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif", margin: "0 0 6px" }}>{ft.description}</p>
           {ft.response_to_facticity && (
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'Noto Sans KR', sans-serif", fontStyle: "italic" }}>반응 방식: {ft.response_to_facticity}</div>
+            <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'Noto Sans KR', sans-serif", fontStyle: "italic" }}>반응 방식: {ft.response_to_facticity}</div>
           )}
         </div>
         <div style={{ padding: "14px", borderRadius: 10, background: mf.present ? "rgba(232,93,117,0.05)" : "rgba(78,204,163,0.05)", border: mf.present ? "1px solid rgba(232,93,117,0.2)" : "1px solid rgba(78,204,163,0.2)" }}>
@@ -1894,14 +1894,14 @@ export function AuthenticityPanel({ data, isMobile }) {
               ))}
             </div>
           )}
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{mf.description}</p>
+          <p style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{mf.description}</p>
         </div>
       </div>
 
       {/* 진정한 선택 */}
-      <div style={{ padding: "14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)" }}>
+      <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.08)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>GENUINE CHOICE</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>GENUINE CHOICE</div>
           <span style={{ fontSize: 10, fontWeight: 700, color: gc.has_real_choice ? "#4ECCA3" : "#E85D75", background: gc.has_real_choice ? "rgba(78,204,163,0.12)" : "rgba(232,93,117,0.12)", padding: "1px 7px", borderRadius: 5, fontFamily: "'Noto Sans KR', sans-serif" }}>
             {gc.has_real_choice ? "진짜 선택" : "선택 부재"}
           </span>
@@ -1912,9 +1912,9 @@ export function AuthenticityPanel({ data, isMobile }) {
           )}
         </div>
         {gc.choice_description && (
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 6, fontFamily: "'Noto Sans KR', sans-serif", fontStyle: "italic" }}>{gc.choice_description}</div>
+          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginBottom: 6, fontFamily: "'Noto Sans KR', sans-serif", fontStyle: "italic" }}>{gc.choice_description}</div>
         )}
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{gc.description}</p>
+        <p style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{gc.description}</p>
       </div>
 
       {/* 타자의 시선 + 부조리 */}
@@ -1923,8 +1923,8 @@ export function AuthenticityPanel({ data, isMobile }) {
           <div style={{ padding: "14px", borderRadius: 10, background: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.2)" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "#a78bfa", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>LE REGARD — 타자의 시선</div>
             {og.who && <div style={{ fontSize: 11, fontWeight: 600, color: "#a78bfa", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>{og.who}</div>}
-            {og.effect && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{og.effect}</div>}
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{og.description}</p>
+            {og.effect && <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", marginBottom: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{og.effect}</div>}
+            <p style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{og.description}</p>
           </div>
         )}
         <div style={{ padding: "14px", borderRadius: 10, background: "rgba(247,160,114,0.04)", border: "1px solid rgba(247,160,114,0.2)" }}>
@@ -1934,38 +1934,38 @@ export function AuthenticityPanel({ data, isMobile }) {
               <span style={{ fontSize: 10, fontWeight: 700, color: absurdColor[absResponse] || "#aaa", background: `${absurdColor[absResponse] || "#aaa"}15`, padding: "1px 7px", borderRadius: 5, fontFamily: "'Noto Sans KR', sans-serif" }}>{absResponse}</span>
             )}
           </div>
-          {abs.absurd_condition && <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{abs.absurd_condition}</div>}
+          {abs.absurd_condition && <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", marginBottom: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{abs.absurd_condition}</div>}
           {abs.sisyphus_moment && (
             <div style={{ fontSize: 10, color: "#F7A072", background: "rgba(247,160,114,0.08)", padding: "5px 8px", borderRadius: 6, marginBottom: 6, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
               시지프 순간: {abs.sisyphus_moment}
             </div>
           )}
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{abs.description}</p>
+          <p style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{abs.description}</p>
         </div>
       </div>
 
       {/* 키르케고르 + 니체 */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
         {kk.stage && (
-          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>KIERKEGAARD STAGE</div>
+          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.07)" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>KIERKEGAARD STAGE</div>
             <span style={{ fontSize: 12, fontWeight: 700, color: stageColor[stage] || "#aaa", background: `${stageColor[stage] || "#aaa"}18`, padding: "3px 10px", borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{stage} 실존</span>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: "8px 0 0" }}>{kk.description}</p>
+            <p style={{ fontSize: 11, color: "rgba(var(--tw),0.45)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: "8px 0 0" }}>{kk.description}</p>
           </div>
         )}
         {nz.will_to_power && (
-          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>NIETZSCHE — 의지·위버멘쉬</div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
-              <span style={{ color: "rgba(255,255,255,0.25)" }}>의지: </span>{nz.will_to_power}
+          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.07)" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>NIETZSCHE — 의지·위버멘쉬</div>
+            <div style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
+              <span style={{ color: "rgba(var(--tw),0.25)" }}>의지: </span>{nz.will_to_power}
             </div>
             {nz.ubermensch_potential && (
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
-                <span style={{ color: "rgba(255,255,255,0.25)" }}>위버멘쉬: </span>{nz.ubermensch_potential}
+              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
+                <span style={{ color: "rgba(var(--tw),0.25)" }}>위버멘쉬: </span>{nz.ubermensch_potential}
               </div>
             )}
             {nz.eternal_recurrence_test && (
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5, fontStyle: "italic" }}>영원회귀: {nz.eternal_recurrence_test}</div>
+              <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5, fontStyle: "italic" }}>영원회귀: {nz.eternal_recurrence_test}</div>
             )}
           </div>
         )}
@@ -1975,13 +1975,13 @@ export function AuthenticityPanel({ data, isMobile }) {
       {data.sartre_verdict && (
         <div style={{ padding: "14px", borderRadius: 10, background: "rgba(247,160,114,0.05)", border: "1px solid rgba(247,160,114,0.2)" }}>
           <div style={{ fontSize: 9, fontWeight: 700, color: "#F7A072", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>SARTRE VERDICT</div>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.sartre_verdict}</p>
+          <p style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.sartre_verdict}</p>
         </div>
       )}
       {data.authenticity_tip && (
         <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.15)" }}>
           <div style={{ fontSize: 9, fontWeight: 700, color: "#4ECCA3", marginBottom: 5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>AUTHENTICITY TIP</div>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.authenticity_tip}</p>
+          <p style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.authenticity_tip}</p>
         </div>
       )}
     </div>
@@ -2016,7 +2016,7 @@ export function ValueChargePanel({ data, isMobile }) {
         </div>
         {/* 가치 뒤집기 시각화 */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
-          <div style={{ padding: "8px 18px", borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", fontSize: 15, fontWeight: 700, color: "#e8e8f0", fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <div style={{ padding: "8px 18px", borderRadius: 8, background: "rgba(var(--tw),0.05)", border: "1px solid rgba(var(--tw),0.12)", fontSize: 15, fontWeight: 700, color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif" }}>
             {pc.start_pole || "?"}
           </div>
           <div style={{ fontSize: 20, color: arcColor }}>→</div>
@@ -2025,12 +2025,12 @@ export function ValueChargePanel({ data, isMobile }) {
           </div>
         </div>
         <div style={{ textAlign: "center", marginBottom: 10 }}>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <span style={{ fontSize: 11, color: "rgba(var(--tw),0.35)", fontFamily: "'Noto Sans KR', sans-serif" }}>
             {polarityLabel[pc.polarity] || ""}
           </span>
         </div>
         {pc.description && (
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>
+          <p style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>
             {pc.description}
           </p>
         )}
@@ -2040,8 +2040,8 @@ export function ValueChargePanel({ data, isMobile }) {
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
         {/* 전하 강도 */}
         {data.charge_intensity && (
-          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>CHARGE INTENSITY</div>
+          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.07)" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>CHARGE INTENSITY</div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
               <span style={{ fontSize: 24, fontWeight: 700, color: intensityColor[data.charge_intensity.label] || "#aaa", fontFamily: "'JetBrains Mono', monospace" }}>
                 {data.charge_intensity.score}
@@ -2050,24 +2050,24 @@ export function ValueChargePanel({ data, isMobile }) {
                 {data.charge_intensity.label}
               </span>
             </div>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>
+            <p style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>
               {data.charge_intensity.reason}
             </p>
           </div>
         )}
         {/* 장르 기대값 일치 */}
         {data.genre_value_match && (
-          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>GENRE MATCH</div>
+          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.07)" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>GENRE MATCH</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <span style={{ fontSize: 16, color: data.genre_value_match.actual_match ? "#4ECCA3" : "#E85D75" }}>
                 {data.genre_value_match.actual_match ? "✓" : "✗"}
               </span>
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.4 }}>
+              <span style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.4 }}>
                 {data.genre_value_match.genre_expected}
               </span>
             </div>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>
+            <p style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>
               {data.genre_value_match.analysis}
             </p>
           </div>
@@ -2076,15 +2076,15 @@ export function ValueChargePanel({ data, isMobile }) {
 
       {/* 2차 가치 전하들 */}
       {data.secondary_charges?.length > 0 && (
-        <div style={{ padding: "14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", marginBottom: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>SECONDARY CHARGES</div>
+        <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.07)" }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>SECONDARY CHARGES</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {data.secondary_charges.map((sc, i) => (
               <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: "#45B7D1", background: "rgba(69,183,209,0.12)", padding: "2px 8px", borderRadius: 5, flexShrink: 0, fontFamily: "'Noto Sans KR', sans-serif" }}>
                   {sc.arc_label}
                 </span>
-                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>{sc.description}</span>
+                <span style={{ fontSize: 11, color: "rgba(var(--tw),0.45)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>{sc.description}</span>
               </div>
             ))}
           </div>
@@ -2096,19 +2096,19 @@ export function ValueChargePanel({ data, isMobile }) {
         {data.mckee_verdict && (
           <div style={{ padding: "14px", borderRadius: 10, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.15)" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "#4ECCA3", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>McKEE VERDICT</div>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.mckee_verdict}</p>
+            <p style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.mckee_verdict}</p>
           </div>
         )}
         {data.strengthening_tip && (
           <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(247,160,114,0.04)", border: "1px solid rgba(247,160,114,0.18)" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "#F7A072", marginBottom: 5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>STRENGTHENING TIP</div>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.strengthening_tip}</p>
+            <p style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.strengthening_tip}</p>
           </div>
         )}
         {data.missing_charge && (
           <div style={{ padding: "10px 14px", borderRadius: 9, background: "rgba(232,93,117,0.04)", border: "1px solid rgba(232,93,117,0.18)" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "#E85D75", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>MISSING CHARGE</div>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.missing_charge}</p>
+            <p style={{ fontSize: 11, color: "rgba(var(--tw),0.45)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.missing_charge}</p>
           </div>
         )}
       </div>
@@ -2137,18 +2137,18 @@ export function ShadowAnalysisPanel({ data, isMobile }) {
       {/* 영웅 원형 */}
       <div style={{ padding: "16px", borderRadius: 12, border: "1px solid rgba(78,204,163,0.25)", background: "rgba(78,204,163,0.04)" }}>
         <div style={{ fontSize: 9, fontWeight: 700, color: "#4ECCA3", marginBottom: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.8, textTransform: "uppercase" }}>HERO ARCHETYPE</div>
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: "0 0 10px" }}>{hero.description}</p>
+        <p style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: "0 0 10px" }}>{hero.description}</p>
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
           {hero.wound && (
             <div style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(232,93,117,0.06)", border: "1px solid rgba(232,93,117,0.15)" }}>
               <div style={{ fontSize: 9, color: "#E85D75", fontFamily: "'JetBrains Mono', monospace", marginBottom: 3, textTransform: "uppercase", letterSpacing: 0.5 }}>WOUND</div>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", margin: 0, lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{hero.wound}</p>
+              <p style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", margin: 0, lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{hero.wound}</p>
             </div>
           )}
           {hero.persona_gap && (
             <div style={{ padding: "8px 10px", borderRadius: 8, background: "rgba(69,183,209,0.06)", border: "1px solid rgba(69,183,209,0.15)" }}>
               <div style={{ fontSize: 9, color: "#45B7D1", fontFamily: "'JetBrains Mono', monospace", marginBottom: 3, textTransform: "uppercase", letterSpacing: 0.5 }}>PERSONA GAP</div>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", margin: 0, lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{hero.persona_gap}</p>
+              <p style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", margin: 0, lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{hero.persona_gap}</p>
             </div>
           )}
         </div>
@@ -2168,11 +2168,11 @@ export function ShadowAnalysisPanel({ data, isMobile }) {
           <div style={{ fontSize: 12, fontWeight: 600, color: "#E85D75", marginBottom: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{shadow.who}</div>
         )}
         {shadow.represents && (
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 8, padding: "6px 10px", background: "rgba(232,93,117,0.06)", borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
+          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginBottom: 8, padding: "6px 10px", background: "rgba(232,93,117,0.06)", borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
             반영하는 억압된 자아: {shadow.represents}
           </div>
         )}
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{shadow.description}</p>
+        <p style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{shadow.description}</p>
       </div>
 
       {/* 아니마/아니무스 + 기타 원형 */}
@@ -2181,17 +2181,17 @@ export function ShadowAnalysisPanel({ data, isMobile }) {
           <div style={{ padding: "14px", borderRadius: 10, background: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.2)" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "#a78bfa", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>ANIMA / ANIMUS</div>
             {anima.who && <div style={{ fontSize: 12, fontWeight: 600, color: "#a78bfa", marginBottom: 5, fontFamily: "'Noto Sans KR', sans-serif" }}>{anima.who}</div>}
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{anima.description}</p>
+            <p style={{ fontSize: 11, color: "rgba(var(--tw),0.45)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{anima.description}</p>
           </div>
         )}
         {(data.other_archetypes || []).length > 0 && (
-          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)" }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>OTHER ARCHETYPES</div>
+          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.07)" }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>OTHER ARCHETYPES</div>
             {data.other_archetypes.map((a, i) => (
               <div key={i} style={{ marginBottom: 6 }}>
                 <span style={{ fontSize: 10, fontWeight: 700, color: archetypeColors[a.archetype] || "#aaa", background: `${archetypeColors[a.archetype] || "#aaa"}15`, padding: "1px 7px", borderRadius: 5, fontFamily: "'Noto Sans KR', sans-serif" }}>{a.archetype}</span>
-                {a.who && <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginLeft: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{a.who}</span>}
-                {a.description && <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", margin: "2px 0 0", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{a.description}</p>}
+                {a.who && <span style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginLeft: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{a.who}</span>}
+                {a.description && <p style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", margin: "2px 0 0", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{a.description}</p>}
               </div>
             ))}
           </div>
@@ -2207,7 +2207,7 @@ export function ShadowAnalysisPanel({ data, isMobile }) {
               <span style={{ fontSize: 10, color: "#FFD166", background: "rgba(255,209,102,0.12)", padding: "1px 7px", borderRadius: 5, fontFamily: "'Noto Sans KR', sans-serif" }}>{indiv.stage}</span>
             )}
           </div>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{indiv.description}</p>
+          <p style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{indiv.description}</p>
         </div>
       )}
 
@@ -2216,19 +2216,19 @@ export function ShadowAnalysisPanel({ data, isMobile }) {
         {data.collective_unconscious_connection && (
           <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(149,225,211,0.04)", border: "1px solid rgba(149,225,211,0.15)" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "#95E1D3", marginBottom: 5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>COLLECTIVE UNCONSCIOUS</div>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.collective_unconscious_connection}</p>
+            <p style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.collective_unconscious_connection}</p>
           </div>
         )}
         {data.jung_verdict && (
           <div style={{ padding: "14px", borderRadius: 10, background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.2)" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "#a78bfa", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>JUNG VERDICT</div>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.jung_verdict}</p>
+            <p style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.jung_verdict}</p>
           </div>
         )}
         {data.missing_archetype && (
           <div style={{ padding: "10px 14px", borderRadius: 9, background: "rgba(232,93,117,0.04)", border: "1px solid rgba(232,93,117,0.15)" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "#E85D75", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>MISSING ARCHETYPE</div>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.missing_archetype}</p>
+            <p style={{ fontSize: 11, color: "rgba(var(--tw),0.45)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.missing_archetype}</p>
           </div>
         )}
       </div>
@@ -2266,8 +2266,8 @@ export function ExpertPanelSection({ data, isMobile }) {
     <button onClick={onToggle} style={{
       width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
       padding: "10px 14px", borderRadius: 10,
-      border: "1px solid rgba(255,255,255,0.07)",
-      background: isOpen ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)",
+      border: "1px solid rgba(var(--tw),0.07)",
+      background: isOpen ? "rgba(var(--tw),0.04)" : "rgba(var(--tw),0.02)",
       cursor: "pointer", marginBottom: isOpen ? 10 : 0,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -2276,7 +2276,7 @@ export function ExpertPanelSection({ data, isMobile }) {
         </span>
         <span style={{ fontSize: 13, fontWeight: 600, color: "#e0e0ee", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
       </div>
-      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>{isOpen ? "▲" : "▼"}</span>
+      <span style={{ fontSize: 12, color: "rgba(var(--tw),0.3)" }}>{isOpen ? "▲" : "▼"}</span>
     </button>
   );
 
@@ -2290,7 +2290,7 @@ export function ExpertPanelSection({ data, isMobile }) {
       </div>
 
       {/* 전문가 아바타 줄 */}
-      <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", paddingBottom: 10, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", paddingBottom: 10, borderBottom: "1px solid rgba(var(--tw),0.06)" }}>
         {PANEL_EXPERTS.map((ex) => (
           <div key={ex.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
             <Avatar expert={ex} size={36} />
@@ -2312,14 +2312,14 @@ export function ExpertPanelSection({ data, isMobile }) {
                     <Avatar expert={ex} size={26} />
                     <div>
                       <span style={{ fontSize: 12, fontWeight: 700, color: ex.color, fontFamily: "'Noto Sans KR', sans-serif" }}>{ex.name}</span>
-                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginLeft: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{ex.role}</span>
+                      <span style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", marginLeft: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{ex.role}</span>
                     </div>
                   </div>
-                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>
+                  <p style={{ fontSize: 12, color: "rgba(var(--tw),0.7)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>
                     {item.statement}
                   </p>
                   {item.reference && (
-                    <div style={{ marginTop: 8, fontSize: 10, color: "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace", borderLeft: `2px solid ${ex.color}40`, paddingLeft: 8 }}>
+                    <div style={{ marginTop: 8, fontSize: 10, color: "rgba(var(--tw),0.25)", fontFamily: "'JetBrains Mono', monospace", borderLeft: `2px solid ${ex.color}40`, paddingLeft: 8 }}>
                       {item.reference}
                     </div>
                   )}
@@ -2345,12 +2345,12 @@ export function ExpertPanelSection({ data, isMobile }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
                     <Avatar expert={ex} size={26} />
                     <span style={{ fontSize: 12, fontWeight: 700, color: ex.color, fontFamily: "'Noto Sans KR', sans-serif" }}>{ex.name}</span>
-                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", fontFamily: "'Noto Sans KR', sans-serif" }}>→</span>
+                    <span style={{ fontSize: 10, color: "rgba(var(--tw),0.25)", fontFamily: "'Noto Sans KR', sans-serif" }}>→</span>
                     <Avatar expert={toEx} size={22} />
-                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", fontFamily: "'Noto Sans KR', sans-serif" }}>{toEx.name}에게</span>
+                    <span style={{ fontSize: 10, color: "rgba(var(--tw),0.4)", fontFamily: "'Noto Sans KR', sans-serif" }}>{toEx.name}에게</span>
                     <span style={{ fontSize: 10, fontWeight: 700, color: sc, background: `${sc}18`, padding: "2px 7px", borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{sl}</span>
                   </div>
-                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>
+                  <p style={{ fontSize: 12, color: "rgba(var(--tw),0.7)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>
                     {item.statement}
                   </p>
                 </div>
@@ -2368,7 +2368,7 @@ export function ExpertPanelSection({ data, isMobile }) {
             {/* 합의점 */}
             <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.15)" }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>CONSENSUS</div>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.consensus}</p>
+              <p style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.consensus}</p>
             </div>
             {/* 개선 제안 */}
             <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.15)" }}>
@@ -2376,7 +2376,7 @@ export function ExpertPanelSection({ data, isMobile }) {
               {(data.synthesis.improvements || []).map((imp, i) => (
                 <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
                   <span style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", background: "rgba(78,204,163,0.15)", padding: "1px 6px", borderRadius: 4, flexShrink: 0, fontFamily: "'JetBrains Mono', monospace" }}>{i + 1}</span>
-                  <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{imp}</span>
+                  <span style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{imp}</span>
                 </div>
               ))}
             </div>
@@ -2384,16 +2384,16 @@ export function ExpertPanelSection({ data, isMobile }) {
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
               <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(69,183,209,0.05)", border: "1px solid rgba(69,183,209,0.18)" }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: "#45B7D1", marginBottom: 5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>STRONGEST ELEMENT</div>
-                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.strongest_element}</p>
+                <p style={{ fontSize: 11, color: "rgba(var(--tw),0.55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.strongest_element}</p>
               </div>
               <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(232,93,117,0.05)", border: "1px solid rgba(232,93,117,0.18)" }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: "#E85D75", marginBottom: 5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>CRITICAL GAP</div>
-                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.critical_gap}</p>
+                <p style={{ fontSize: 11, color: "rgba(var(--tw),0.55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.critical_gap}</p>
               </div>
             </div>
             <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(247,160,114,0.05)", border: "1px solid rgba(247,160,114,0.18)" }}>
               <div style={{ fontSize: 9, fontWeight: 700, color: "#F7A072", marginBottom: 5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>PHILOSOPHICAL CORE</div>
-              <p style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.philosophical_core}</p>
+              <p style={{ fontSize: 11, color: "rgba(var(--tw),0.55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.philosophical_core}</p>
             </div>
           </div>
         )}
@@ -2477,14 +2477,14 @@ ${choicesSummary}
       {/* 진행 바 */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>
+          <span style={{ fontSize: 11, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>
             PIPELINE STEP {Math.min(step + 1, total)} / {total}
           </span>
           <span style={{ fontSize: 11, color: accentColor, fontFamily: "'JetBrains Mono', monospace" }}>
             {Math.round((answers.length / total) * 100)}%
           </span>
         </div>
-        <div style={{ height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
+        <div style={{ height: 3, background: "rgba(var(--tw),0.06)", borderRadius: 3, overflow: "hidden" }}>
           <div
             style={{
               height: "100%",
@@ -2524,7 +2524,7 @@ ${choicesSummary}
       {!isComplete && (
         <div
           style={{
-            background: "rgba(255,255,255,0.025)",
+            background: "rgba(var(--tw),0.025)",
             borderRadius: 12,
             border: `1px solid ${accentColor}20`,
             padding: "18px 16px",
@@ -2547,11 +2547,11 @@ ${choicesSummary}
               >
                 Q{step + 1}
               </span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#e8e8f0", fontFamily: "'Noto Sans KR', sans-serif" }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif" }}>
                 {currentQ.label}
               </span>
             </div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.28)", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.5 }}>
+            <div style={{ fontSize: 10, color: "rgba(var(--tw),0.28)", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.5 }}>
               {currentQ.subtext}
             </div>
           </div>
@@ -2606,7 +2606,7 @@ ${choicesSummary}
                           {opt.label}
                         </span>
                       </div>
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5, paddingLeft: 26 }}>
+                      <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5, paddingLeft: 26 }}>
                         {opt.desc}
                       </div>
                     </button>
@@ -2645,9 +2645,9 @@ ${choicesSummary}
             style={{
               padding: "10px 16px",
               borderRadius: 9,
-              border: "1px solid rgba(255,255,255,0.1)",
-              background: "rgba(255,255,255,0.03)",
-              color: "rgba(255,255,255,0.4)",
+              border: "1px solid rgba(var(--tw),0.1)",
+              background: "rgba(var(--tw),0.03)",
+              color: "rgba(var(--tw),0.4)",
               cursor: "pointer",
               fontSize: 12,
               fontFamily: "'Noto Sans KR', sans-serif",
@@ -2664,9 +2664,9 @@ ${choicesSummary}
               style={{
                 padding: "10px 16px",
                 borderRadius: 9,
-                border: "1px solid rgba(255,255,255,0.1)",
-                background: "rgba(255,255,255,0.03)",
-                color: "rgba(255,255,255,0.4)",
+                border: "1px solid rgba(var(--tw),0.1)",
+                background: "rgba(var(--tw),0.03)",
+                color: "rgba(var(--tw),0.4)",
                 cursor: "pointer",
                 fontSize: 12,
                 fontFamily: "'Noto Sans KR', sans-serif",
@@ -2684,7 +2684,7 @@ ${choicesSummary}
                 borderRadius: 9,
                 border: "none",
                 background: loading ? `${accentColor}20` : `linear-gradient(135deg, ${accentColor}, #45B7D1)`,
-                color: loading ? "rgba(255,255,255,0.3)" : "#0d1a14",
+                color: loading ? "rgba(var(--tw),0.3)" : "#0d1a14",
                 cursor: loading ? "not-allowed" : "pointer",
                 fontSize: 13,
                 fontWeight: 700,
@@ -2694,7 +2694,7 @@ ${choicesSummary}
             >
               {loading ? (
                 <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <span style={{ display: "inline-block", width: 12, height: 12, border: "2px solid rgba(255,255,255,0.2)", borderTop: "2px solid rgba(255,255,255,0.7)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                  <span style={{ display: "inline-block", width: 12, height: 12, border: "2px solid rgba(var(--tw),0.2)", borderTop: "2px solid rgba(var(--tw),0.7)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                   시놉시스 생성 중...
                 </span>
               ) : "✨ 선택한 요소로 시놉시스 생성"}
@@ -2747,7 +2747,7 @@ export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) 
         marginBottom: 16,
         borderRadius: 14,
         border: isSelected ? `1px solid ${color}70` : `1px solid ${color}25`,
-        background: isSelected ? `${color}06` : "rgba(255,255,255,0.02)",
+        background: isSelected ? `${color}06` : "rgba(var(--tw),0.02)",
         overflow: "hidden",
         transition: "border-color 0.2s, background 0.2s",
       }}
@@ -2784,7 +2784,7 @@ export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) 
               style={{
                 fontSize: 14,
                 fontWeight: 700,
-                color: "#e8e8f0",
+                color: "var(--text-main)",
                 fontFamily: "'Noto Sans KR', sans-serif",
               }}
             >
@@ -2809,8 +2809,8 @@ export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) 
               <span
                 style={{
                   fontSize: 10,
-                  color: "rgba(255,255,255,0.4)",
-                  background: "rgba(255,255,255,0.05)",
+                  color: "rgba(var(--tw),0.4)",
+                  background: "rgba(var(--tw),0.05)",
                   padding: "2px 8px",
                   borderRadius: 8,
                 }}
@@ -2819,11 +2819,11 @@ export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) 
               </span>
             )}
           </div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.45)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <div style={{ fontSize: 12, color: "rgba(var(--tw),0.45)", fontFamily: "'Noto Sans KR', sans-serif" }}>
             {synopsis.genre_tone}
           </div>
         </div>
-        <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 14, flexShrink: 0 }}>
+        <span style={{ color: "rgba(var(--tw),0.3)", fontSize: 14, flexShrink: 0 }}>
           {expanded ? "▲" : "▼"}
         </span>
       </div>
@@ -2856,7 +2856,7 @@ export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) 
             style={{
               fontSize: 13,
               lineHeight: 1.9,
-              color: "rgba(255,255,255,0.75)",
+              color: "rgba(var(--tw),0.75)",
               fontFamily: "'Noto Sans KR', sans-serif",
               marginBottom: 16,
               whiteSpace: "pre-line",
@@ -2872,7 +2872,7 @@ export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) 
                 style={{
                   fontSize: 11,
                   fontWeight: 700,
-                  color: "rgba(255,255,255,0.4)",
+                  color: "rgba(var(--tw),0.4)",
                   textTransform: "uppercase",
                   letterSpacing: 1,
                   marginBottom: 8,
@@ -2912,7 +2912,7 @@ export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) 
                   <span
                     style={{
                       fontSize: 12,
-                      color: "rgba(255,255,255,0.6)",
+                      color: "rgba(var(--tw),0.6)",
                       lineHeight: 1.65,
                       fontFamily: "'Noto Sans KR', sans-serif",
                     }}
@@ -2933,11 +2933,11 @@ export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) 
               flexWrap: "wrap",
               gap: 8,
               paddingTop: 12,
-              borderTop: "1px solid rgba(255,255,255,0.05)",
+              borderTop: "1px solid rgba(var(--tw),0.05)",
             }}
           >
             {synopsis.theme && (
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontStyle: "italic", fontFamily: "'Noto Sans KR', sans-serif" }}>
+              <div style={{ fontSize: 12, color: "rgba(var(--tw),0.4)", fontStyle: "italic", fontFamily: "'Noto Sans KR', sans-serif" }}>
                 주제: {synopsis.theme}
               </div>
             )}
@@ -2950,7 +2950,7 @@ export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) 
                     borderRadius: 7,
                     border: `1px solid ${isSelected ? color + "60" : color + "30"}`,
                     background: isSelected ? `${color}20` : `${color}08`,
-                    color: isSelected ? color : "rgba(255,255,255,0.5)",
+                    color: isSelected ? color : "rgba(var(--tw),0.5)",
                     cursor: "pointer",
                     fontSize: 11,
                     fontWeight: isSelected ? 700 : 400,
@@ -2968,7 +2968,7 @@ export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) 
                   borderRadius: 7,
                   border: `1px solid ${color}30`,
                   background: `${color}08`,
-                  color: copied ? color : "rgba(255,255,255,0.4)",
+                  color: copied ? color : "rgba(var(--tw),0.4)",
                   cursor: "pointer",
                   fontSize: 11,
                   fontFamily: "'Noto Sans KR', sans-serif",
@@ -2999,7 +2999,7 @@ export function CompareSection({ result1, result2, section, title, maxTotal, col
       style={{
         marginBottom: 16,
         padding: 16,
-        background: "rgba(255,255,255,0.02)",
+        background: "rgba(var(--tw),0.02)",
         borderRadius: 12,
         border: `1px solid ${color}20`,
       }}
@@ -3033,17 +3033,17 @@ export function CompareSection({ result1, result2, section, title, maxTotal, col
           <span
             style={{
               fontSize: 13,
-              color: winner === "A" ? "#4ECCA3" : "rgba(255,255,255,0.5)",
+              color: winner === "A" ? "#4ECCA3" : "rgba(var(--tw),0.5)",
               fontWeight: winner === "A" ? 700 : 400,
             }}
           >
             {t1}/{maxTotal}
           </span>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>vs</span>
+          <span style={{ fontSize: 11, color: "rgba(var(--tw),0.2)" }}>vs</span>
           <span
             style={{
               fontSize: 13,
-              color: winner === "B" ? "#45B7D1" : "rgba(255,255,255,0.5)",
+              color: winner === "B" ? "#45B7D1" : "rgba(var(--tw),0.5)",
               fontWeight: winner === "B" ? 700 : 400,
             }}
           >
@@ -3086,7 +3086,7 @@ export function CompareSection({ result1, result2, section, title, maxTotal, col
               <span
                 style={{
                   fontSize: 11,
-                  color: "rgba(255,255,255,0.55)",
+                  color: "rgba(var(--tw),0.55)",
                   fontFamily: "'Noto Sans KR', sans-serif",
                 }}
               >
@@ -3097,7 +3097,7 @@ export function CompareSection({ result1, result2, section, title, maxTotal, col
                   fontSize: 11,
                   fontFamily: "'JetBrains Mono', monospace",
                   color:
-                    diff > 0 ? "#4ECCA3" : diff < 0 ? "#E85D75" : "rgba(255,255,255,0.3)",
+                    diff > 0 ? "#4ECCA3" : diff < 0 ? "#E85D75" : "rgba(var(--tw),0.3)",
                   fontWeight: diff !== 0 ? 700 : 400,
                 }}
               >
@@ -3108,7 +3108,7 @@ export function CompareSection({ result1, result2, section, title, maxTotal, col
               <div
                 style={{
                   flex: 1,
-                  background: "rgba(255,255,255,0.05)",
+                  background: "rgba(var(--tw),0.05)",
                   borderRadius: 3,
                   overflow: "hidden",
                 }}
@@ -3125,7 +3125,7 @@ export function CompareSection({ result1, result2, section, title, maxTotal, col
               <div
                 style={{
                   flex: 1,
-                  background: "rgba(255,255,255,0.05)",
+                  background: "rgba(var(--tw),0.05)",
                   borderRadius: 3,
                   overflow: "hidden",
                 }}
@@ -3175,13 +3175,13 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
         ].map(({ label, value, color }) => (
           <div key={label} style={{ padding: "8px 14px", borderRadius: 9, border: `1px solid ${color}22`, background: `${color}0a`, textAlign: "center", flex: "1 1 auto", minWidth: 80 }}>
             <div style={{ fontSize: 16, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace" }}>{value}</div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'Noto Sans KR', sans-serif", marginTop: 2 }}>{label}</div>
+            <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'Noto Sans KR', sans-serif", marginTop: 2 }}>{label}</div>
           </div>
         ))}
       </div>
 
       {/* 진행 바 */}
-      <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", marginBottom: 18, overflow: "hidden" }}>
+      <div style={{ height: 4, borderRadius: 2, background: "rgba(var(--tw),0.06)", marginBottom: 18, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${beats.length ? (completedCount / beats.length) * 100 : 0}%`, background: "linear-gradient(90deg, #4ECCA3, #45B7D1)", borderRadius: 2, transition: "width 0.5s ease" }} />
       </div>
 
@@ -3195,7 +3195,7 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
           const pageLen = (beat.page_end || beat.page_start) - beat.page_start + 1;
 
           return (
-            <div key={beat.id} style={{ borderRadius: 12, border: `1px solid ${isExpanded ? act.color + "33" : "rgba(255,255,255,0.06)"}`, background: isExpanded ? act.bg : "rgba(255,255,255,0.01)", overflow: "hidden", transition: "all 0.2s" }}>
+            <div key={beat.id} style={{ borderRadius: 12, border: `1px solid ${isExpanded ? act.color + "33" : "rgba(var(--tw),0.06)"}`, background: isExpanded ? act.bg : "rgba(var(--tw),0.01)", overflow: "hidden", transition: "all 0.2s" }}>
               {/* 카드 헤더 */}
               <div
                 onClick={() => onToggle(beat.id)}
@@ -3208,17 +3208,17 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
                 {/* 이름 + 막 */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.88)", fontFamily: "'Noto Sans KR', sans-serif" }}>{beat.name_kr}</span>
-                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>{beat.name_en}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(var(--tw),0.88)", fontFamily: "'Noto Sans KR', sans-serif" }}>{beat.name_kr}</span>
+                    <span style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", fontFamily: "'JetBrains Mono', monospace" }}>{beat.name_en}</span>
                     <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, border: `1px solid ${act.color}33`, color: act.color, fontFamily: "'Noto Sans KR', sans-serif" }}>{beat.act}</span>
                     {hasScene && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, background: "rgba(78,204,163,0.12)", color: "#4ECCA3", fontFamily: "'Noto Sans KR', sans-serif" }}>✓ 씬 완성</span>}
                   </div>
-                  {!isExpanded && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{beat.summary}</div>}
+                  {!isExpanded && <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{beat.summary}</div>}
                 </div>
                 {/* 페이지 + 토글 */}
                 <div style={{ flexShrink: 0, textAlign: "right" }}>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "'JetBrains Mono', monospace" }}>p.{beat.page_start}{pageLen > 1 ? `~${beat.page_end}` : ""}</div>
-                  <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginTop: 2 }}>{isExpanded ? "▲" : "▼"}</div>
+                  <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", fontFamily: "'JetBrains Mono', monospace" }}>p.{beat.page_start}{pageLen > 1 ? `~${beat.page_end}` : ""}</div>
+                  <div style={{ fontSize: 10, color: "rgba(var(--tw),0.25)", marginTop: 2 }}>{isExpanded ? "▲" : "▼"}</div>
                 </div>
               </div>
 
@@ -3226,7 +3226,7 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
               {isExpanded && (
                 <div style={{ padding: "0 14px 14px" }}>
                   {/* 요약 */}
-                  <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 12, padding: "10px 12px", borderRadius: 9, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ fontSize: 13, color: "rgba(var(--tw),0.7)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 12, padding: "10px 12px", borderRadius: 9, background: "rgba(var(--tw),0.03)", border: "1px solid rgba(var(--tw),0.06)" }}>
                     {beat.summary}
                   </div>
 
@@ -3241,7 +3241,7 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
                     ].filter(f => f.val !== null || f.full).map(({ label, val, c, full }) => (
                       <div key={label} style={{ padding: "8px 10px", borderRadius: 8, border: `1px solid ${c}18`, background: `${c}07`, gridColumn: full ? "1 / -1" : undefined }}>
                         <div style={{ fontSize: 10, color: `${c}88`, fontFamily: "'JetBrains Mono', monospace", marginBottom: 3, letterSpacing: 0.3 }}>{label}</div>
-                        {val && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>{val}</div>}
+                        {val && <div style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>{val}</div>}
                       </div>
                     ))}
                   </div>
@@ -3249,7 +3249,7 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
                   {/* 핵심 요소 태그 */}
                   {beat.key_elements?.length > 0 && (
                     <div style={{ marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 5 }}>반드시 포함</div>
+                      <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 5 }}>반드시 포함</div>
                       <div>{beat.key_elements.map((el, i) => (
                         <span key={i} style={{ display: "inline-block", padding: "3px 9px", borderRadius: 20, border: `1px solid ${act.color}33`, color: act.color, fontSize: 11, fontFamily: "'Noto Sans KR', sans-serif", marginRight: 5, marginBottom: 4 }}>{el}</span>
                       ))}</div>
@@ -3274,11 +3274,11 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
                         <span style={{ fontSize: 11, color: act.color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>SCENE {beat.id}</span>
                         <button
                           onClick={() => { navigator.clipboard.writeText(beatScenes[beat.id]); }}
-                          style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", background: "none", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}
+                          style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", background: "none", border: "1px solid rgba(var(--tw),0.1)", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}
                         >복사</button>
                       </div>
                       {/* 스크립트 포맷 렌더러 */}
-                      <div style={{ padding: "16px 20px", fontFamily: "'Courier New', 'Courier', monospace", fontSize: isMobile ? 11 : 12, lineHeight: 2, color: "rgba(255,255,255,0.82)" }}>
+                      <div style={{ padding: "16px 20px", fontFamily: "'Courier New', 'Courier', monospace", fontSize: isMobile ? 11 : 12, lineHeight: 2, color: "rgba(var(--tw),0.82)" }}>
                         {beatScenes[beat.id].split("\n").map((line, idx) => {
                           const trimmed = line.trim();
                           // 씬 헤더: INT. / EXT. / INT./EXT.
@@ -3291,16 +3291,16 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
                           }
                           // 지문: (괄호)로 시작
                           if (/^\s*\(/.test(line)) {
-                            return <div key={idx} style={{ textAlign: "center", color: "rgba(255,255,255,0.5)", fontStyle: "italic", fontSize: (isMobile ? 11 : 12) - 1 }}>{line}</div>;
+                            return <div key={idx} style={{ textAlign: "center", color: "rgba(var(--tw),0.5)", fontStyle: "italic", fontSize: (isMobile ? 11 : 12) - 1 }}>{line}</div>;
                           }
                           // 전환: CUT TO / FADE / SMASH CUT
                           if (/^(CUT TO:|FADE|SMASH CUT|DISSOLVE)/.test(trimmed)) {
-                            return <div key={idx} style={{ textAlign: "right", color: "rgba(255,255,255,0.4)", fontStyle: "italic", marginTop: 6 }}>{line}</div>;
+                            return <div key={idx} style={{ textAlign: "right", color: "rgba(var(--tw),0.4)", fontStyle: "italic", marginTop: 6 }}>{line}</div>;
                           }
                           // 빈 줄
                           if (trimmed === "") return <div key={idx} style={{ height: "0.5em" }} />;
                           // 일반 액션 라인
-                          return <div key={idx} style={{ color: "rgba(255,255,255,0.75)" }}>{line}</div>;
+                          return <div key={idx} style={{ color: "rgba(var(--tw),0.75)" }}>{line}</div>;
                         })}
                       </div>
                     </div>
@@ -3314,9 +3314,9 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
 
       {/* 구조 인사이트 */}
       {data.structure_insight && (
-        <div style={{ marginTop: 16, padding: "14px 16px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6, letterSpacing: 0.5 }}>STRUCTURE INSIGHT — Snyder · Field · McKee</div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{data.structure_insight}</div>
+        <div style={{ marginTop: 16, padding: "14px 16px", borderRadius: 10, border: "1px solid rgba(var(--tw),0.07)", background: "rgba(var(--tw),0.02)" }}>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6, letterSpacing: 0.5 }}>STRUCTURE INSIGHT — Snyder · Field · McKee</div>
+          <div style={{ fontSize: 13, color: "rgba(var(--tw),0.6)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{data.structure_insight}</div>
         </div>
       )}
 
@@ -3343,33 +3343,33 @@ export function SubtextPanel({ data, isMobile }) {
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 18 }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 42, fontWeight: 800, color: scoreColor, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{data.subtext_score}</div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>하위텍스트 지수</div>
+          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.35)", marginTop: 2 }}>하위텍스트 지수</div>
         </div>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: scoreColor, fontFamily: "'Noto Sans KR', sans-serif" }}>{data.subtext_level}</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>{data.surface_story}</div>
+          <div style={{ fontSize: 12, color: "rgba(var(--tw),0.5)", marginTop: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>{data.surface_story}</div>
           <div style={{ fontSize: 12, color: "#45B7D1", marginTop: 4, fontFamily: "'Noto Sans KR', sans-serif", fontStyle: "italic" }}>→ {data.deeper_story}</div>
         </div>
       </div>
       {data.chekhovs_guns?.length > 0 && (
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>체호프의 총</div>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>체호프의 총</div>
           {data.chekhovs_guns.map((g, i) => (
             <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 8, padding: "9px 12px", borderRadius: 9, border: `1px solid ${g.is_loaded ? "rgba(78,204,163,0.2)" : "rgba(232,93,117,0.2)"}`, background: g.is_loaded ? "rgba(78,204,163,0.05)" : "rgba(232,93,117,0.05)" }}>
               <span style={{ fontSize: 14, flexShrink: 0 }}>{g.is_loaded ? "🔫" : "🚫"}</span>
-              <div><div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", fontFamily: "'Noto Sans KR', sans-serif", fontWeight: 600 }}>{g.element}</div><div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif" }}>{g.function}</div></div>
+              <div><div style={{ fontSize: 12, color: "rgba(var(--tw),0.75)", fontFamily: "'Noto Sans KR', sans-serif", fontWeight: 600 }}>{g.element}</div><div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif" }}>{g.function}</div></div>
             </div>
           ))}
         </div>
       )}
       {data.unspoken_desires?.length > 0 && (
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>말 vs 진짜 의도 (Stanislavski)</div>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>말 vs 진짜 의도 (Stanislavski)</div>
           {data.unspoken_desires.map((u, i) => (
             <div key={i} style={{ marginBottom: 8, padding: "9px 12px", borderRadius: 9, border: "1px solid rgba(69,183,209,0.15)", background: "rgba(69,183,209,0.04)" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "#45B7D1", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>{u.character}</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>말: {u.surface_want}</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", fontFamily: "'Noto Sans KR', sans-serif", marginTop: 3 }}>진짜: {u.real_need}</div>
+              <div style={{ fontSize: 12, color: "rgba(var(--tw),0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>말: {u.surface_want}</div>
+              <div style={{ fontSize: 12, color: "rgba(var(--tw),0.75)", fontFamily: "'Noto Sans KR', sans-serif", marginTop: 3 }}>진짜: {u.real_need}</div>
             </div>
           ))}
         </div>
@@ -3382,13 +3382,13 @@ export function SubtextPanel({ data, isMobile }) {
       ].map(({ label, val, c }) => val && (
         <div key={label} style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 9, border: `1px solid ${c}18`, background: `${c}07` }}>
           <div style={{ fontSize: 10, color: `${c}88`, fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>{label}</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
+          <div style={{ fontSize: 12, color: "rgba(var(--tw),0.68)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
         </div>
       ))}
       {data.dramatic_irony?.present && (
         <div style={{ padding: "10px 12px", borderRadius: 9, border: "1px solid rgba(255,209,102,0.2)", background: "rgba(255,209,102,0.06)" }}>
           <div style={{ fontSize: 10, color: "rgba(255,209,102,0.7)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>극적 아이러니</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", fontFamily: "'Noto Sans KR', sans-serif" }}>{data.dramatic_irony.description}</div>
+          <div style={{ fontSize: 12, color: "rgba(var(--tw),0.68)", fontFamily: "'Noto Sans KR', sans-serif" }}>{data.dramatic_irony.description}</div>
         </div>
       )}
     </div>
@@ -3412,7 +3412,7 @@ export function MythMapPanel({ data, isMobile }) {
       </div>
       {data.journey_phases && (
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>3단계 여정</div>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>3단계 여정</div>
           {[
             { label: "① 분리 (Departure)", val: data.journey_phases.departure, c: "#4ECCA3" },
             { label: "② 입문 (Initiation)", val: data.journey_phases.initiation, c: "#45B7D1" },
@@ -3420,19 +3420,19 @@ export function MythMapPanel({ data, isMobile }) {
           ].map(({ label, val, c }) => val && (
             <div key={label} style={{ marginBottom: 8, padding: "9px 12px", borderRadius: 9, border: `1px solid ${c}20`, background: `${c}07` }}>
               <div style={{ fontSize: 10, color: `${c}88`, fontFamily: "'JetBrains Mono', monospace", marginBottom: 3 }}>{label}</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>{val}</div>
+              <div style={{ fontSize: 12, color: "rgba(var(--tw),0.68)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>{val}</div>
             </div>
           ))}
         </div>
       )}
       {data.archetype_roles && (
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>원형 역할</div>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>원형 역할</div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 7 }}>
             {Object.entries(data.archetype_roles).filter(([, v]) => v).map(([key, val]) => (
-              <div key={key} style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
+              <div key={key} style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(var(--tw),0.07)", background: "rgba(var(--tw),0.02)" }}>
                 <div style={{ fontSize: 10, color: "rgba(255,209,102,0.6)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 3 }}>{key.toUpperCase()}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
+                <div style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
               </div>
             ))}
           </div>
@@ -3446,7 +3446,7 @@ export function MythMapPanel({ data, isMobile }) {
       ].map(({ label, val, c }) => val && (
         <div key={label} style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 9, border: `1px solid ${c}18`, background: `${c}07` }}>
           <div style={{ fontSize: 10, color: `${c}88`, fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>{label}</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
+          <div style={{ fontSize: 12, color: "rgba(var(--tw),0.68)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
         </div>
       ))}
     </div>
@@ -3469,7 +3469,7 @@ export function BarthesCodePanel({ data, isMobile }) {
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
         <div style={{ textAlign: "center", minWidth: 80 }}>
           <div style={{ fontSize: 40, fontWeight: 800, color: "#95E1D3", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{data.total_activation}</div>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>총 활성화 점수</div>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", marginTop: 2 }}>총 활성화 점수</div>
         </div>
         <div style={{ flex: 1 }}>
           {codes.map(({ key, label, color }) => {
@@ -3481,7 +3481,7 @@ export function BarthesCodePanel({ data, isMobile }) {
                   <span style={{ fontSize: 11, color, fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
                   <span style={{ fontSize: 11, color, fontFamily: "'JetBrains Mono', monospace" }}>{c.score}/20</span>
                 </div>
-                <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                <div style={{ height: 4, borderRadius: 2, background: "rgba(var(--tw),0.06)", overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 2, transition: "width 0.8s ease" }} />
                 </div>
               </div>
@@ -3495,7 +3495,7 @@ export function BarthesCodePanel({ data, isMobile }) {
           return (
             <div key={key} style={{ padding: "11px 12px", borderRadius: 10, border: `1px solid ${color}22`, background: `${color}07` }}>
               <div style={{ fontSize: 10, color, fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>{label} ({en})</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>{c.analysis}</div>
+              <div style={{ fontSize: 12, color: "rgba(var(--tw),0.68)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>{c.analysis}</div>
               {(c.binary_oppositions || c.information_gaps || c.key_connotations || c.cultural_references) && (
                 <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 4 }}>
                   {(c.binary_oppositions || c.information_gaps || c.key_connotations || c.cultural_references || []).slice(0, 2).map((t, i) => (
@@ -3514,7 +3514,7 @@ export function BarthesCodePanel({ data, isMobile }) {
       ].map(({ label, val, c }) => val && (
         <div key={label} style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 9, border: `1px solid ${c}18`, background: `${c}07` }}>
           <div style={{ fontSize: 10, color: `${c}88`, fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>{label}</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
+          <div style={{ fontSize: 12, color: "rgba(var(--tw),0.68)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
         </div>
       ))}
     </div>
@@ -3535,7 +3535,7 @@ export function KoreanMythPanel({ data, isMobile }) {
     <div>
       <div style={{ marginBottom: 18 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "'JetBrains Mono', monospace" }}>한·정·신명 공명 지수</span>
+          <span style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", fontFamily: "'JetBrains Mono', monospace" }}>한·정·신명 공명 지수</span>
           <span style={{ fontSize: 14, fontWeight: 800, color: "#E85D75", fontFamily: "'JetBrains Mono', monospace" }}>{total}/75</span>
         </div>
         {aesthetics.map(({ key, label, color, max }) => {
@@ -3546,24 +3546,24 @@ export function KoreanMythPanel({ data, isMobile }) {
                 <span style={{ fontSize: 13, fontWeight: 700, color, fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
                 <span style={{ fontSize: 12, color, fontFamily: "'JetBrains Mono', monospace" }}>{d.score}/{max}</span>
               </div>
-              <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", marginBottom: 8, overflow: "hidden" }}>
+              <div style={{ height: 4, borderRadius: 2, background: "rgba(var(--tw),0.06)", marginBottom: 8, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${(d.score / max) * 100}%`, background: color, borderRadius: 2 }} />
               </div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>{d.analysis}</div>
+              <div style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>{d.analysis}</div>
             </div>
           );
         })}
       </div>
       {data.korean_archetypes?.length > 0 && (
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>한국 원형 인물</div>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>한국 원형 인물</div>
           {data.korean_archetypes.map((a, i) => (
             <div key={i} style={{ marginBottom: 7, padding: "9px 12px", borderRadius: 9, border: "1px solid rgba(232,93,117,0.15)", background: "rgba(232,93,117,0.04)", display: "flex", gap: 10, alignItems: "flex-start" }}>
               <span style={{ fontSize: 14, flexShrink: 0 }}>🎭</span>
               <div>
                 <span style={{ fontSize: 12, fontWeight: 700, color: "#E85D75", fontFamily: "'Noto Sans KR', sans-serif" }}>{a.archetype}</span>
-                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "'Noto Sans KR', sans-serif" }}> — {a.character}</span>
-                {a.tradition && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif" }}>{a.tradition}</div>}
+                <span style={{ fontSize: 11, color: "rgba(var(--tw),0.45)", fontFamily: "'Noto Sans KR', sans-serif" }}> — {a.character}</span>
+                {a.tradition && <div style={{ fontSize: 11, color: "rgba(var(--tw),0.3)", marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif" }}>{a.tradition}</div>}
               </div>
             </div>
           ))}
@@ -3578,7 +3578,7 @@ export function KoreanMythPanel({ data, isMobile }) {
       ].map(({ label, val, c }) => val && (
         <div key={label} style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 9, border: `1px solid ${c}18`, background: `${c}07` }}>
           <div style={{ fontSize: 10, color: `${c}88`, fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>{label}</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
+          <div style={{ fontSize: 12, color: "rgba(var(--tw),0.68)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
         </div>
       ))}
     </div>
@@ -3605,8 +3605,8 @@ export function ScriptCoveragePanel({ data, isMobile }) {
       {/* 헤더 */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.85)", fontFamily: "'Noto Sans KR', sans-serif" }}>{data.title_suggestion || "제목 미정"}</div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>{data.format} | {data.genre}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(var(--tw),0.85)", fontFamily: "'Noto Sans KR', sans-serif" }}>{data.title_suggestion || "제목 미정"}</div>
+          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>{data.format} | {data.genre}</div>
         </div>
         <div style={{ textAlign: "center", padding: "8px 18px", borderRadius: 10, border: `2px solid ${recColor}`, background: `${recColor}12` }}>
           <div style={{ fontSize: 11, color: recColor, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{data.recommendation}</div>
@@ -3618,18 +3618,18 @@ export function ScriptCoveragePanel({ data, isMobile }) {
         {scoreKeys.map(({ key, label }) => {
           const s = data.scores?.[key]; if (!s) return null;
           return (
-            <div key={key} style={{ padding: "10px 12px", borderRadius: 9, border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
+            <div key={key} style={{ padding: "10px 12px", borderRadius: 9, border: "1px solid rgba(var(--tw),0.07)", background: "rgba(var(--tw),0.02)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
+                <span style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
                 <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
                   <span style={{ fontSize: 11, color: gradeColor(s.grade), fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{s.grade}</span>
-                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>{s.score}/10</span>
+                  <span style={{ fontSize: 11, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace" }}>{s.score}/10</span>
                 </div>
               </div>
-              <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.06)", marginBottom: 6, overflow: "hidden" }}>
+              <div style={{ height: 3, borderRadius: 2, background: "rgba(var(--tw),0.06)", marginBottom: 6, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${s.score * 10}%`, background: gradeColor(s.grade), borderRadius: 2 }} />
               </div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>{s.comment}</div>
+              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.45)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>{s.comment}</div>
             </div>
           );
         })}
@@ -3639,13 +3639,13 @@ export function ScriptCoveragePanel({ data, isMobile }) {
         {data.strengths?.length > 0 && (
           <div style={{ padding: "10px 12px", borderRadius: 9, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.05)" }}>
             <div style={{ fontSize: 10, color: "rgba(78,204,163,0.7)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>STRENGTHS</div>
-            {data.strengths.map((s, i) => <div key={i} style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 4 }}>✓ {s}</div>)}
+            {data.strengths.map((s, i) => <div key={i} style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 4 }}>✓ {s}</div>)}
           </div>
         )}
         {data.weaknesses?.length > 0 && (
           <div style={{ padding: "10px 12px", borderRadius: 9, border: "1px solid rgba(232,93,117,0.2)", background: "rgba(232,93,117,0.05)" }}>
             <div style={{ fontSize: 10, color: "rgba(232,93,117,0.7)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>WEAKNESSES</div>
-            {data.weaknesses.map((s, i) => <div key={i} style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 4 }}>✗ {s}</div>)}
+            {data.weaknesses.map((s, i) => <div key={i} style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 4 }}>✗ {s}</div>)}
           </div>
         )}
       </div>
@@ -3656,7 +3656,7 @@ export function ScriptCoveragePanel({ data, isMobile }) {
       ].map(({ label, val, c }) => val && (
         <div key={label} style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 9, border: `1px solid ${c}18`, background: `${c}07` }}>
           <div style={{ fontSize: 10, color: `${c}88`, fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>{label}</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
+          <div style={{ fontSize: 12, color: "rgba(var(--tw),0.68)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
         </div>
       ))}
     </div>
@@ -3671,7 +3671,7 @@ export function DialogueDevPanel({ data, isMobile }) {
     <div>
       {data.character_voices?.length > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 10, textTransform: "uppercase" }}>인물별 목소리 설계</div>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 10, textTransform: "uppercase" }}>인물별 목소리 설계</div>
           {data.character_voices.map((v, i) => (
             <div key={i} style={{ marginBottom: 10, padding: "12px 14px", borderRadius: 10, border: "1px solid rgba(251,146,60,0.2)", background: "rgba(251,146,60,0.05)" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#FB923C", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 8 }}>{v.character}</div>
@@ -3682,16 +3682,16 @@ export function DialogueDevPanel({ data, isMobile }) {
                   { l: "절대 직접 말 안 하는 것", v: v.what_they_never_say },
                   { l: "말버릇", v: v.verbal_tic },
                 ].map(({ l, v: val }) => val && (
-                  <div key={l} style={{ padding: "7px 9px", borderRadius: 7, border: "1px solid rgba(255,255,255,0.06)", background: "rgba(255,255,255,0.02)" }}>
-                    <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 3 }}>{l}</div>
-                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
+                  <div key={l} style={{ padding: "7px 9px", borderRadius: 7, border: "1px solid rgba(var(--tw),0.06)", background: "rgba(var(--tw),0.02)" }}>
+                    <div style={{ fontSize: 9, color: "rgba(var(--tw),0.3)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 3 }}>{l}</div>
+                    <div style={{ fontSize: 11, color: "rgba(var(--tw),0.65)", fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
                   </div>
                 ))}
               </div>
               {v.sample_line && (
                 <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 7, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(251,146,60,0.15)" }}>
                   <div style={{ fontSize: 9, color: "rgba(251,146,60,0.5)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 3 }}>SAMPLE LINE</div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", fontFamily: "'Noto Sans KR', sans-serif", fontStyle: "italic" }}>"{v.sample_line}"</div>
+                  <div style={{ fontSize: 12, color: "rgba(var(--tw),0.75)", fontFamily: "'Noto Sans KR', sans-serif", fontStyle: "italic" }}>"{v.sample_line}"</div>
                 </div>
               )}
             </div>
@@ -3700,10 +3700,10 @@ export function DialogueDevPanel({ data, isMobile }) {
       )}
       {data.key_scene_dialogue && (
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>핵심 씬 대사 초안</div>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>핵심 씬 대사 초안</div>
           <div style={{ padding: "14px", borderRadius: 10, border: "1px solid rgba(69,183,209,0.2)", background: "rgba(0,0,0,0.25)" }}>
             <div style={{ fontSize: 11, color: "rgba(69,183,209,0.7)", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 10 }}>{data.key_scene_dialogue.scene_context}</div>
-            <pre style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", fontFamily: "'Noto Sans KR', monospace", lineHeight: 1.85, whiteSpace: "pre-wrap", margin: 0 }}>{data.key_scene_dialogue.dialogue_draft}</pre>
+            <pre style={{ fontSize: 12, color: "rgba(var(--tw),0.75)", fontFamily: "'Noto Sans KR', monospace", lineHeight: 1.85, whiteSpace: "pre-wrap", margin: 0 }}>{data.key_scene_dialogue.dialogue_draft}</pre>
             {data.key_scene_dialogue.subtext_note && (
               <div style={{ marginTop: 10, padding: "8px 10px", borderRadius: 7, background: "rgba(69,183,209,0.07)", border: "1px solid rgba(69,183,209,0.15)", fontSize: 11, color: "rgba(69,183,209,0.8)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>
                 💬 하위텍스트: {data.key_scene_dialogue.subtext_note}
@@ -3714,12 +3714,12 @@ export function DialogueDevPanel({ data, isMobile }) {
       )}
       {data.subtext_techniques?.length > 0 && (
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>하위텍스트 기법</div>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>하위텍스트 기법</div>
           {data.subtext_techniques.map((t, i) => (
-            <div key={i} style={{ marginBottom: 8, padding: "9px 12px", borderRadius: 9, border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
+            <div key={i} style={{ marginBottom: 8, padding: "9px 12px", borderRadius: 9, border: "1px solid rgba(var(--tw),0.07)", background: "rgba(var(--tw),0.02)" }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#45B7D1", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 3 }}>{t.technique}</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>{t.when_to_use}</div>
-              {t.example && <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontFamily: "'Noto Sans KR', sans-serif", marginTop: 3, fontStyle: "italic" }}>예: {t.example}</div>}
+              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>{t.when_to_use}</div>
+              {t.example && <div style={{ fontSize: 11, color: "rgba(var(--tw),0.35)", fontFamily: "'Noto Sans KR', sans-serif", marginTop: 3, fontStyle: "italic" }}>예: {t.example}</div>}
             </div>
           ))}
         </div>
@@ -3730,7 +3730,7 @@ export function DialogueDevPanel({ data, isMobile }) {
       ].map(({ label, val, c }) => val && (
         <div key={label} style={{ marginBottom: 10, padding: "10px 12px", borderRadius: 9, border: `1px solid ${c}18`, background: `${c}07` }}>
           <div style={{ fontSize: 10, color: `${c}88`, fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>{label}</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
+          <div style={{ fontSize: 12, color: "rgba(var(--tw),0.68)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
         </div>
       ))}
     </div>
@@ -3749,8 +3749,8 @@ export function CharacterDevPanel({ data, isMobile }) {
   const Section = ({ id, title, color, children }) => {
     const open = openSection === id;
     return (
-      <div style={{ marginBottom: 12, borderRadius: 12, border: `1px solid ${open ? color + "33" : "rgba(255,255,255,0.06)"}`, overflow: "hidden", transition: "all 0.2s" }}>
-        <button onClick={() => setOpenSection(open ? null : id)} style={{ width: "100%", padding: "12px 16px", background: open ? `${color}0d` : "rgba(255,255,255,0.01)", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", color: open ? color : "rgba(255,255,255,0.55)", fontFamily: "'Noto Sans KR', sans-serif", fontSize: 13, fontWeight: 700 }}>
+      <div style={{ marginBottom: 12, borderRadius: 12, border: `1px solid ${open ? color + "33" : "rgba(var(--tw),0.06)"}`, overflow: "hidden", transition: "all 0.2s" }}>
+        <button onClick={() => setOpenSection(open ? null : id)} style={{ width: "100%", padding: "12px 16px", background: open ? `${color}0d` : "rgba(var(--tw),0.01)", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", color: open ? color : "rgba(var(--tw),0.55)", fontFamily: "'Noto Sans KR', sans-serif", fontSize: 13, fontWeight: 700 }}>
           {title}
           <span style={{ fontSize: 11, opacity: 0.6 }}>{open ? "▲" : "▼"}</span>
         </button>
@@ -3763,8 +3763,8 @@ export function CharacterDevPanel({ data, isMobile }) {
     if (!value) return null;
     return (
       <div style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif", paddingLeft: 10, borderLeft: `2px solid ${color}44` }}>{value}</div>
+        <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
+        <div style={{ fontSize: 13, color: "rgba(var(--tw),0.75)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif", paddingLeft: 10, borderLeft: `2px solid ${color}44` }}>{value}</div>
       </div>
     );
   };
@@ -3804,7 +3804,7 @@ export function CharacterDevPanel({ data, isMobile }) {
           ].map(({ label, val, c }) => val && (
             <div key={label} style={{ padding: "10px 12px", borderRadius: 9, border: `1px solid ${c}20`, background: `${c}08` }}>
               <div style={{ fontSize: 10, color: `${c}99`, fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>{label}</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>{val}</div>
+              <div style={{ fontSize: 12, color: "rgba(var(--tw),0.7)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>{val}</div>
             </div>
           ))}
         </div>
@@ -3819,7 +3819,7 @@ export function CharacterDevPanel({ data, isMobile }) {
         {proto.jungian_shadow && (
           <div style={{ marginBottom: 12, padding: "10px 12px", borderRadius: 9, border: "1px solid rgba(167,139,250,0.2)", background: "rgba(167,139,250,0.05)" }}>
             <div style={{ fontSize: 10, color: "rgba(167,139,250,0.7)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>그림자(Shadow) — Jung (1969)</div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>{proto.jungian_shadow}</div>
+            <div style={{ fontSize: 12, color: "rgba(var(--tw),0.7)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>{proto.jungian_shadow}</div>
           </div>
         )}
 
@@ -3832,9 +3832,9 @@ export function CharacterDevPanel({ data, isMobile }) {
       {supporting.length > 0 && (
         <Section id="supporting" title="주요 인물" color="#60A5FA">
           {supporting.map((s, i) => (
-            <div key={i} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: i < supporting.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+            <div key={i} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: i < supporting.length - 1 ? "1px solid rgba(var(--tw),0.05)" : "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)", fontFamily: "'Noto Sans KR', sans-serif" }}>{s.suggested_name || s.role_name}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(var(--tw),0.85)", fontFamily: "'Noto Sans KR', sans-serif" }}>{s.suggested_name || s.role_name}</span>
                 <Tag text={s.role_name} color="#60A5FA" />
                 {s.vogler_archetype && <Tag text={s.vogler_archetype} color="#A3E635" />}
               </div>
@@ -3853,7 +3853,7 @@ export function CharacterDevPanel({ data, isMobile }) {
             <div key={i} style={{ marginBottom: 12, padding: "10px 12px", borderRadius: 9, border: "1px solid rgba(244,114,182,0.12)", background: "rgba(244,114,182,0.04)" }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#F472B6", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 6 }}>{r.pair}</div>
               {r.dynamic_type && <Tag text={r.dynamic_type} color="#F472B6" />}
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", marginTop: 6 }}>{r.dramatic_tension}</div>
+              <div style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", marginTop: 6 }}>{r.dramatic_tension}</div>
             </div>
           ))}
         </Section>
@@ -3866,9 +3866,9 @@ export function CharacterDevPanel({ data, isMobile }) {
           {data.missing_archetype && <Field label="빠진 원형 (Vogler 1992)" value={data.missing_archetype} color="#FFD166" />}
           {data.character_development_tips?.length > 0 && (
             <div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 8 }}>발전 제안</div>
+              <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 8 }}>발전 제안</div>
               {data.character_development_tips.map((tip, i) => (
-                <div key={i} style={{ marginBottom: 8, padding: "9px 12px", borderRadius: 8, background: "rgba(78,204,163,0.06)", border: "1px solid rgba(78,204,163,0.12)", fontSize: 12, color: "rgba(255,255,255,0.7)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>
+                <div key={i} style={{ marginBottom: 8, padding: "9px 12px", borderRadius: 8, background: "rgba(78,204,163,0.06)", border: "1px solid rgba(78,204,163,0.12)", fontSize: 12, color: "rgba(var(--tw),0.7)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>
                   {i + 1}. {tip}
                 </div>
               ))}
@@ -3909,29 +3909,29 @@ export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructu
 
   const inputStyle = {
     width: "100%", padding: "9px 12px", borderRadius: 8,
-    border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)",
-    color: "#e8e8f0", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif",
+    border: "1px solid rgba(var(--tw),0.08)", background: "rgba(var(--tw),0.03)",
+    color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif",
     outline: "none",
   };
-  const labelStyle = { fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 4, display: "block", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase", letterSpacing: 0.5 };
+  const labelStyle = { fontSize: 10, color: "rgba(var(--tw),0.35)", marginBottom: 4, display: "block", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase", letterSpacing: 0.5 };
 
   return (
     <div style={{ padding: "20px", borderRadius: 12, border: "1px solid rgba(251,191,36,0.15)", background: "rgba(251,191,36,0.02)" }}>
 
       {/* 서사 구조 선택 */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>서사 구조</div>
+        <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginBottom: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>서사 구조</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 7 }}>
           {structures.map((s) => (
             <button key={s.id} onClick={() => onStructureChange(s.id)} style={{
               padding: "9px 12px", borderRadius: 9, textAlign: "left",
-              border: structure === s.id ? "1px solid rgba(251,191,36,0.5)" : "1px solid rgba(255,255,255,0.07)",
-              background: structure === s.id ? "rgba(251,191,36,0.1)" : "rgba(255,255,255,0.02)",
-              color: structure === s.id ? "#FBBf24" : "rgba(255,255,255,0.45)",
+              border: structure === s.id ? "1px solid rgba(251,191,36,0.5)" : "1px solid rgba(var(--tw),0.07)",
+              background: structure === s.id ? "rgba(251,191,36,0.1)" : "rgba(var(--tw),0.02)",
+              color: structure === s.id ? "#FBBf24" : "rgba(var(--tw),0.45)",
               cursor: "pointer", transition: "all 0.15s",
             }}>
               <div style={{ fontSize: 12, fontWeight: 700, fontFamily: "'Noto Sans KR', sans-serif" }}>{s.label}</div>
-              <div style={{ fontSize: 10, color: structure === s.id ? "rgba(251,191,36,0.6)" : "rgba(255,255,255,0.25)", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>{s.sub}</div>
+              <div style={{ fontSize: 10, color: structure === s.id ? "rgba(251,191,36,0.6)" : "rgba(var(--tw),0.25)", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>{s.sub}</div>
             </button>
           ))}
         </div>
@@ -3939,7 +3939,7 @@ export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructu
 
       {/* 주인공 */}
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginBottom: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>주인공</div>
+        <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginBottom: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>주인공</div>
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8, marginBottom: 8 }}>
           <div>
             <label style={labelStyle}>이름</label>
@@ -3969,7 +3969,7 @@ export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructu
       {/* 조력/적대 인물 */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>주요 인물</div>
+          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>주요 인물</div>
           <button onClick={addSupporting} style={{ fontSize: 11, color: "rgba(251,191,36,0.7)", background: "none", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}>+ 인물 추가</button>
         </div>
         {chars.supporting.map((s, idx) => (
@@ -4036,15 +4036,15 @@ export function StructureAnalysisPanel({ data, isMobile }) {
       {data.moral_argument && (
         <div style={{ padding: "12px 16px", borderRadius: 10, background: "rgba(200,168,75,0.06)", border: "1px solid rgba(200,168,75,0.2)", marginBottom: 16 }}>
           <div style={{ fontSize: 10, color: "rgba(200,168,75,0.7)", fontWeight: 700, marginBottom: 5, letterSpacing: 0.5 }}>도덕적 논증 (Truby)</div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.7 }}>{data.moral_argument}</div>
+          <div style={{ fontSize: 13, color: "rgba(var(--tw),0.85)", lineHeight: 1.7 }}>{data.moral_argument}</div>
         </div>
       )}
 
       {/* Emotional Arc Visualization */}
       {data.emotional_arc && data.emotional_arc.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>감정 아크</div>
-          <div style={{ position: "relative", height: 80, background: "rgba(255,255,255,0.02)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)", padding: "8px 12px", overflow: "hidden" }}>
+          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>감정 아크</div>
+          <div style={{ position: "relative", height: 80, background: "rgba(var(--tw),0.02)", borderRadius: 10, border: "1px solid rgba(var(--tw),0.05)", padding: "8px 12px", overflow: "hidden" }}>
             <svg width="100%" height="100%" viewBox="0 0 100 64" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="0">
@@ -4063,7 +4063,7 @@ export function StructureAnalysisPanel({ data, isMobile }) {
             </svg>
             <div style={{ position: "absolute", bottom: 4, left: 0, right: 0, display: "flex", justifyContent: "space-between", padding: "0 12px" }}>
               {data.emotional_arc.map((p, i) => (
-                <div key={i} style={{ fontSize: 8, color: "rgba(255,255,255,0.3)", textAlign: "center" }}>{p.label}</div>
+                <div key={i} style={{ fontSize: 8, color: "rgba(var(--tw),0.3)", textAlign: "center" }}>{p.label}</div>
               ))}
             </div>
           </div>
@@ -4073,13 +4073,13 @@ export function StructureAnalysisPanel({ data, isMobile }) {
       {/* Acts */}
       {data.acts && data.acts.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>막 구조</div>
+          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>막 구조</div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : `repeat(${data.acts.length}, 1fr)`, gap: 8 }}>
             {data.acts.map((act, i) => (
               <div key={i} style={{ padding: "12px 14px", borderRadius: 10, background: `${ACT_COLORS[i % ACT_COLORS.length]}08`, border: `1px solid ${ACT_COLORS[i % ACT_COLORS.length]}25` }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: ACT_COLORS[i % ACT_COLORS.length], marginBottom: 4 }}>{act.name}</div>
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>{act.page_range}</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, marginBottom: 6 }}>{act.function}</div>
+                <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>{act.page_range}</div>
+                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.6)", lineHeight: 1.6, marginBottom: 6 }}>{act.function}</div>
                 {act.protagonist_state && (
                   <div style={{ fontSize: 10, color: "rgba(200,168,75,0.7)", fontStyle: "italic" }}>"{act.protagonist_state}"</div>
                 )}
@@ -4092,7 +4092,7 @@ export function StructureAnalysisPanel({ data, isMobile }) {
       {/* Plot Points */}
       {data.plot_points && data.plot_points.length > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>핵심 플롯 포인트</div>
+          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>핵심 플롯 포인트</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {data.plot_points.map((pp, i) => {
               const color = PP_COLORS[i % PP_COLORS.length];
@@ -4102,7 +4102,7 @@ export function StructureAnalysisPanel({ data, isMobile }) {
                   <button onClick={() => setActivePoint(isActive ? null : i)} style={{
                     width: "100%", padding: "10px 14px", borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
                     border: `1px solid ${color}${isActive ? "50" : "20"}`,
-                    background: isActive ? `${color}0c` : "rgba(255,255,255,0.02)",
+                    background: isActive ? `${color}0c` : "rgba(var(--tw),0.02)",
                     display: "flex", alignItems: "center", gap: 10, textAlign: "left",
                   }}>
                     <div style={{ width: 36, height: 20, borderRadius: 10, background: `${color}20`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -4110,21 +4110,21 @@ export function StructureAnalysisPanel({ data, isMobile }) {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: color }}>{pp.name}</div>
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginTop: 1 }}>{pp.name_en}</div>
+                      <div style={{ fontSize: 10, color: "rgba(var(--tw),0.4)", marginTop: 1 }}>{pp.name_en}</div>
                     </div>
                     {pp.value_shift && (
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", flexShrink: 0 }}>{pp.value_shift}</div>
+                      <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", flexShrink: 0 }}>{pp.value_shift}</div>
                     )}
-                    <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>{isActive ? "▲" : "▼"}</div>
+                    <div style={{ fontSize: 10, color: "rgba(var(--tw),0.25)", flexShrink: 0 }}>{isActive ? "▲" : "▼"}</div>
                   </button>
                   {isActive && (
                     <div style={{ padding: "12px 14px", background: `${color}05`, border: `1px solid ${color}15`, borderTop: "none", borderRadius: "0 0 10px 10px", marginTop: -6 }}>
-                      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.7, marginBottom: 8 }}>{pp.description}</div>
+                      <div style={{ fontSize: 12, color: "rgba(var(--tw),0.75)", lineHeight: 1.7, marginBottom: 8 }}>{pp.description}</div>
                       {pp.protagonist_emotion && (
-                        <div style={{ fontSize: 11, color: "rgba(200,168,75,0.8)", marginBottom: 4 }}>주인공 감정: <span style={{ color: "rgba(255,255,255,0.6)" }}>{pp.protagonist_emotion}</span></div>
+                        <div style={{ fontSize: 11, color: "rgba(200,168,75,0.8)", marginBottom: 4 }}>주인공 감정: <span style={{ color: "rgba(var(--tw),0.6)" }}>{pp.protagonist_emotion}</span></div>
                       )}
                       {pp.structural_function && (
-                        <div style={{ fontSize: 11, color: "rgba(78,204,163,0.8)" }}>기능: <span style={{ color: "rgba(255,255,255,0.5)" }}>{pp.structural_function}</span></div>
+                        <div style={{ fontSize: 11, color: "rgba(78,204,163,0.8)" }}>기능: <span style={{ color: "rgba(var(--tw),0.5)" }}>{pp.structural_function}</span></div>
                       )}
                     </div>
                   )}
@@ -4141,7 +4141,7 @@ export function StructureAnalysisPanel({ data, isMobile }) {
           <div style={{ padding: "12px 14px", borderRadius: 10, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.12)" }}>
             <div style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, marginBottom: 7, letterSpacing: 0.5 }}>구조적 강점</div>
             {data.structural_strengths.map((s, i) => (
-              <div key={i} style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, marginBottom: 4, display: "flex", gap: 6 }}>
+              <div key={i} style={{ fontSize: 11, color: "rgba(var(--tw),0.6)", lineHeight: 1.6, marginBottom: 4, display: "flex", gap: 6 }}>
                 <span style={{ color: "#4ECCA3", flexShrink: 0 }}>+</span>{s}
               </div>
             ))}
@@ -4151,7 +4151,7 @@ export function StructureAnalysisPanel({ data, isMobile }) {
           <div style={{ padding: "12px 14px", borderRadius: 10, background: "rgba(232,93,117,0.04)", border: "1px solid rgba(232,93,117,0.12)" }}>
             <div style={{ fontSize: 10, color: "#E85D75", fontWeight: 700, marginBottom: 7, letterSpacing: 0.5 }}>구조적 보완점</div>
             {data.structural_gaps.map((g, i) => (
-              <div key={i} style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, marginBottom: 4, display: "flex", gap: 6 }}>
+              <div key={i} style={{ fontSize: 11, color: "rgba(var(--tw),0.6)", lineHeight: 1.6, marginBottom: 4, display: "flex", gap: 6 }}>
                 <span style={{ color: "#E85D75", flexShrink: 0 }}>!</span>{g}
               </div>
             ))}
@@ -4160,7 +4160,7 @@ export function StructureAnalysisPanel({ data, isMobile }) {
       </div>
 
       {data.recommended_next && (
-        <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(200,168,75,0.04)", border: "1px solid rgba(200,168,75,0.15)", fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.7 }}>
+        <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(200,168,75,0.04)", border: "1px solid rgba(200,168,75,0.15)", fontSize: 12, color: "rgba(var(--tw),0.65)", lineHeight: 1.7 }}>
           <span style={{ color: "#C8A84B", fontWeight: 700 }}>다음 단계 권고: </span>{data.recommended_next}
         </div>
       )}
@@ -4183,11 +4183,11 @@ export function ThemeAnalysisPanel({ data, isMobile }) {
         <button onClick={() => setOpenSection(isOpen ? null : id)} style={{
           width: "100%", padding: "10px 14px", borderRadius: isOpen ? "10px 10px 0 0" : 10, cursor: "pointer",
           border: `1px solid ${color}${isOpen ? "40" : "20"}`,
-          background: isOpen ? `${color}0a` : "rgba(255,255,255,0.02)",
+          background: isOpen ? `${color}0a` : "rgba(var(--tw),0.02)",
           display: "flex", justifyContent: "space-between", alignItems: "center", transition: "all 0.15s",
         }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: isOpen ? color : "rgba(255,255,255,0.6)" }}>{title}</div>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>{isOpen ? "▲" : "▼"}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: isOpen ? color : "rgba(var(--tw),0.6)" }}>{title}</div>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)" }}>{isOpen ? "▲" : "▼"}</div>
         </button>
         {isOpen && (
           <div style={{ padding: "14px 16px", background: `${color}05`, border: `1px solid ${color}15`, borderTop: "none", borderRadius: "0 0 10px 10px" }}>
@@ -4204,14 +4204,14 @@ export function ThemeAnalysisPanel({ data, isMobile }) {
       {data.controlling_idea && (
         <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(200,168,75,0.07)", border: "1px solid rgba(200,168,75,0.25)", marginBottom: 16 }}>
           <div style={{ fontSize: 10, color: "rgba(200,168,75,0.7)", fontWeight: 700, marginBottom: 6, letterSpacing: 0.5 }}>컨트롤링 아이디어 (McKee)</div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#e8e8f0", lineHeight: 1.7 }}>{data.controlling_idea}</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-main)", lineHeight: 1.7 }}>{data.controlling_idea}</div>
         </div>
       )}
 
       <Section id="premise" title="도덕적 전제 (Egri)" color="#4ECCA3">
         {data.moral_premise && (
           <div>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, marginBottom: 12, fontStyle: "italic" }}>"{data.moral_premise.statement}"</div>
+            <div style={{ fontSize: 13, color: "rgba(var(--tw),0.8)", lineHeight: 1.7, marginBottom: 12, fontStyle: "italic" }}>"{data.moral_premise.statement}"</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {[
                 { label: "긍정하는 덕목", value: data.moral_premise.virtue, color: "#4ECCA3" },
@@ -4221,7 +4221,7 @@ export function ThemeAnalysisPanel({ data, isMobile }) {
               ].map((item) => (
                 <div key={item.label} style={{ padding: "8px 10px", borderRadius: 8, background: `${item.color}06`, border: `1px solid ${item.color}15` }}>
                   <div style={{ fontSize: 9, color: `${item.color}90`, fontWeight: 700, marginBottom: 3, letterSpacing: 0.5 }}>{item.label}</div>
-                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>{item.value || "—"}</div>
+                  <div style={{ fontSize: 11, color: "rgba(var(--tw),0.65)", lineHeight: 1.5 }}>{item.value || "—"}</div>
                 </div>
               ))}
             </div>
@@ -4233,13 +4233,13 @@ export function ThemeAnalysisPanel({ data, isMobile }) {
         {data.thematic_question && (
           <div style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 10, color: "rgba(69,183,209,0.7)", fontWeight: 700, marginBottom: 4 }}>핵심 질문</div>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 1.7, fontStyle: "italic" }}>"{data.thematic_question}"</div>
+            <div style={{ fontSize: 13, color: "rgba(var(--tw),0.8)", lineHeight: 1.7, fontStyle: "italic" }}>"{data.thematic_question}"</div>
           </div>
         )}
         {data.theme_statement && (
           <div>
             <div style={{ fontSize: 10, color: "rgba(69,183,209,0.7)", fontWeight: 700, marginBottom: 4, marginTop: 10 }}>주제 진술</div>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.7 }}>{data.theme_statement}</div>
+            <div style={{ fontSize: 12, color: "rgba(var(--tw),0.7)", lineHeight: 1.7 }}>{data.theme_statement}</div>
           </div>
         )}
       </Section>
@@ -4259,7 +4259,7 @@ export function ThemeAnalysisPanel({ data, isMobile }) {
                 <div style={{ fontSize: 13, flexShrink: 0, width: 18, textAlign: "center" }}>{item.icon}</div>
                 <div>
                   <div style={{ fontSize: 9, color: "rgba(251,146,60,0.7)", fontWeight: 700, marginBottom: 2, letterSpacing: 0.5 }}>{item.label}</div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.6 }}>{item.value}</div>
+                  <div style={{ fontSize: 12, color: "rgba(var(--tw),0.7)", lineHeight: 1.6 }}>{item.value}</div>
                 </div>
               </div>
             ))}
@@ -4280,7 +4280,7 @@ export function ThemeAnalysisPanel({ data, isMobile }) {
                 <div style={{ width: 3, borderRadius: 2, background: item.color, flexShrink: 0 }} />
                 <div>
                   <div style={{ fontSize: 9, color: `${item.color}90`, fontWeight: 700, marginBottom: 2 }}>{item.label}</div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.6 }}>{item.value}</div>
+                  <div style={{ fontSize: 12, color: "rgba(var(--tw),0.7)", lineHeight: 1.6 }}>{item.value}</div>
                 </div>
               </div>
             ))}
@@ -4294,7 +4294,7 @@ export function ThemeAnalysisPanel({ data, isMobile }) {
             {data.thematic_layers.map((layer, i) => (
               <div key={i} style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.12)" }}>
                 <div style={{ fontSize: 10, color: "rgba(167,139,250,0.8)", fontWeight: 700, marginBottom: 4 }}>{layer.layer}</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.6 }}>{layer.description}</div>
+                <div style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", lineHeight: 1.6 }}>{layer.description}</div>
               </div>
             ))}
           </div>
@@ -4303,16 +4303,16 @@ export function ThemeAnalysisPanel({ data, isMobile }) {
 
       {/* Genre Conventions */}
       {data.genre_theme_conventions && (
-        <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", fontWeight: 700, marginBottom: 8, letterSpacing: 0.5 }}>장르 테마 컨벤션</div>
+        <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.06)" }}>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.4)", fontWeight: 700, marginBottom: 8, letterSpacing: 0.5 }}>장르 테마 컨벤션</div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
             <div>
               <div style={{ fontSize: 9, color: "rgba(78,204,163,0.7)", fontWeight: 700, marginBottom: 3 }}>관객 기대</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>{data.genre_theme_conventions.expected}</div>
+              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.55)", lineHeight: 1.6 }}>{data.genre_theme_conventions.expected}</div>
             </div>
             <div>
               <div style={{ fontSize: 9, color: "rgba(200,168,75,0.7)", fontWeight: 700, marginBottom: 3 }}>이 작품의 접근</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>{data.genre_theme_conventions.subversion}</div>
+              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.55)", lineHeight: 1.6 }}>{data.genre_theme_conventions.subversion}</div>
             </div>
           </div>
         </div>
@@ -4324,13 +4324,13 @@ export function ThemeAnalysisPanel({ data, isMobile }) {
           {data.thematic_weakness && (
             <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(232,93,117,0.04)", border: "1px solid rgba(232,93,117,0.12)" }}>
               <div style={{ fontSize: 9, color: "#E85D75", fontWeight: 700, marginBottom: 4 }}>테마 약점</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>{data.thematic_weakness}</div>
+              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.6)", lineHeight: 1.6 }}>{data.thematic_weakness}</div>
             </div>
           )}
           {data.thematic_recommendation && (
             <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.12)" }}>
               <div style={{ fontSize: 9, color: "#4ECCA3", fontWeight: 700, marginBottom: 4 }}>강화 권고</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>{data.thematic_recommendation}</div>
+              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.6)", lineHeight: 1.6 }}>{data.thematic_recommendation}</div>
             </div>
           )}
         </div>
@@ -4379,18 +4379,18 @@ export function SceneListPanel({ text, isMobile }) {
           MD 내보내기
         </button>
       </div>
-      <div style={{ fontSize: isMobile ? 12 : 13, lineHeight: 1.9, color: "rgba(255,255,255,0.78)" }}>
+      <div style={{ fontSize: isMobile ? 12 : 13, lineHeight: 1.9, color: "rgba(var(--tw),0.78)" }}>
         <ReactMarkdown
           components={{
             h1: ({ children }) => <h1 style={{ fontSize: isMobile ? 17 : 20, fontWeight: 800, color: "#C8A84B", marginBottom: 8, marginTop: 0, paddingBottom: 8, borderBottom: "1px solid rgba(200,168,75,0.2)" }}>{children}</h1>,
             h2: ({ children }) => <h2 style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "#4ECCA3", marginTop: 24, marginBottom: 8, paddingBottom: 4, borderBottom: "1px solid rgba(78,204,163,0.15)" }}>{children}</h2>,
-            h3: ({ children }) => <h3 style={{ fontSize: isMobile ? 12 : 13, fontWeight: 700, color: "rgba(255,255,255,0.85)", marginTop: 16, marginBottom: 6 }}>{children}</h3>,
+            h3: ({ children }) => <h3 style={{ fontSize: isMobile ? 12 : 13, fontWeight: 700, color: "rgba(var(--tw),0.85)", marginTop: 16, marginBottom: 6 }}>{children}</h3>,
             p: ({ children }) => <p style={{ marginBottom: 8, marginTop: 0 }}>{children}</p>,
-            strong: ({ children }) => <strong style={{ color: "rgba(255,255,255,0.92)", fontWeight: 700 }}>{children}</strong>,
+            strong: ({ children }) => <strong style={{ color: "rgba(var(--tw),0.92)", fontWeight: 700 }}>{children}</strong>,
             em: ({ children }) => <em style={{ color: "rgba(200,168,75,0.75)", fontStyle: "italic" }}>{children}</em>,
             ul: ({ children }) => <ul style={{ paddingLeft: 18, marginBottom: 10, marginTop: 4 }}>{children}</ul>,
-            li: ({ children }) => <li style={{ marginBottom: 4, color: "rgba(255,255,255,0.68)" }}>{children}</li>,
-            hr: () => <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.05)", margin: "16px 0" }} />,
+            li: ({ children }) => <li style={{ marginBottom: 4, color: "rgba(var(--tw),0.68)" }}>{children}</li>,
+            hr: () => <hr style={{ border: "none", borderTop: "1px solid rgba(var(--tw),0.05)", margin: "16px 0" }} />,
           }}
         >{text}</ReactMarkdown>
       </div>
@@ -4430,7 +4430,7 @@ export function ComparableWorksPanel({ data, isMobile }) {
           background: "rgba(96,165,250,0.06)", border: "1px solid rgba(96,165,250,0.2)",
         }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#60A5FA", marginBottom: 4, letterSpacing: 0.5 }}>톤 레퍼런스</div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
+          <div style={{ fontSize: 13, color: "rgba(var(--tw),0.8)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
             {data.tone_reference}
           </div>
         </div>
@@ -4443,8 +4443,8 @@ export function ComparableWorksPanel({ data, isMobile }) {
           const sc = simColor(w.similarity_score);
           return (
             <div key={i} style={{
-              borderRadius: 10, border: `1px solid ${isOpen ? sc + "40" : "rgba(255,255,255,0.07)"}`,
-              background: isOpen ? `${sc}06` : "rgba(255,255,255,0.02)",
+              borderRadius: 10, border: `1px solid ${isOpen ? sc + "40" : "rgba(var(--tw),0.07)"}`,
+              background: isOpen ? `${sc}06` : "rgba(var(--tw),0.02)",
               transition: "all 0.2s", overflow: "hidden",
             }}>
               {/* 헤더 클릭으로 펼치기 */}
@@ -4455,11 +4455,11 @@ export function ComparableWorksPanel({ data, isMobile }) {
                 {/* 유사도 게이지 */}
                 <div style={{
                   width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
-                  background: `conic-gradient(${sc} ${w.similarity_score * 3.6}deg, rgba(255,255,255,0.07) 0deg)`,
+                  background: `conic-gradient(${sc} ${w.similarity_score * 3.6}deg, rgba(var(--tw),0.07) 0deg)`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
                   <div style={{
-                    width: 30, height: 30, borderRadius: "50%", background: "#0a0a18",
+                    width: 30, height: 30, borderRadius: "50%", background: "var(--bg-page-alt)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 9, fontWeight: 700, color: sc, fontFamily: "'JetBrains Mono', monospace",
                   }}>
@@ -4469,16 +4469,16 @@ export function ComparableWorksPanel({ data, isMobile }) {
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(var(--tw),0.85)", fontFamily: "'Noto Sans KR', sans-serif" }}>
                       {w.title}
                     </span>
                     {w.year && (
-                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'JetBrains Mono', monospace" }}>
+                      <span style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace" }}>
                         {w.year}
                       </span>
                     )}
                     {w.country && (
-                      <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.4)" }}>
+                      <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, background: "rgba(var(--tw),0.06)", color: "rgba(var(--tw),0.4)" }}>
                         {w.country}
                       </span>
                     )}
@@ -4488,17 +4488,17 @@ export function ComparableWorksPanel({ data, isMobile }) {
                       {simLabel(w.similarity_score)}
                     </span>
                     {(w.similarity_types || []).map((t, ti) => (
-                      <span key={ti} style={{ fontSize: 10, color: "rgba(255,255,255,0.35)" }}>{t}</span>
+                      <span key={ti} style={{ fontSize: 10, color: "rgba(var(--tw),0.35)" }}>{t}</span>
                     ))}
                     {w.platform && (
-                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>
+                      <span style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", fontFamily: "'JetBrains Mono', monospace" }}>
                         {w.platform}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div style={{ color: isOpen ? sc : "rgba(255,255,255,0.2)", flexShrink: 0, fontSize: 12 }}>
+                <div style={{ color: isOpen ? sc : "rgba(var(--tw),0.2)", flexShrink: 0, fontSize: 12 }}>
                   {isOpen ? "▲" : "▼"}
                 </div>
               </button>
@@ -4507,27 +4507,27 @@ export function ComparableWorksPanel({ data, isMobile }) {
               {isOpen && (
                 <div style={{ padding: "0 14px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
                   {w.director_writer && (
-                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
+                    <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)" }}>
                       감독/작가: {w.director_writer}
                     </div>
                   )}
-                  <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "10px 12px" }}>
+                  <div style={{ background: "rgba(var(--tw),0.03)", borderRadius: 8, padding: "10px 12px" }}>
                     <div style={{ fontSize: 10, fontWeight: 700, color: sc, marginBottom: 5, letterSpacing: 0.5 }}>유사한 이유</div>
-                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                    <div style={{ fontSize: 12, color: "rgba(var(--tw),0.7)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
                       {w.why_comparable}
                     </div>
                   </div>
                   {w.key_difference && (
-                    <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "10px 12px" }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", marginBottom: 5, letterSpacing: 0.5 }}>차별점</div>
-                      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                    <div style={{ background: "rgba(var(--tw),0.03)", borderRadius: 8, padding: "10px 12px" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(var(--tw),0.4)", marginBottom: 5, letterSpacing: 0.5 }}>차별점</div>
+                      <div style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
                         {w.key_difference}
                       </div>
                     </div>
                   )}
                   <div style={{ background: `${sc}08`, borderRadius: 8, padding: "10px 12px", border: `1px solid ${sc}20` }}>
                     <div style={{ fontSize: 10, fontWeight: 700, color: sc, marginBottom: 5, letterSpacing: 0.5 }}>참고할 점</div>
-                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                    <div style={{ fontSize: 12, color: "rgba(var(--tw),0.75)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
                       {w.what_to_learn}
                     </div>
                   </div>
@@ -4542,7 +4542,7 @@ export function ComparableWorksPanel({ data, isMobile }) {
       {data.market_positioning && (
         <div style={{ marginBottom: 12, padding: "12px 14px", borderRadius: 9, background: "rgba(78,204,163,0.05)", border: "1px solid rgba(78,204,163,0.15)" }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", marginBottom: 6, letterSpacing: 0.5 }}>시장 포지셔닝</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.72)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <div style={{ fontSize: 12, color: "rgba(var(--tw),0.72)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
             {data.market_positioning}
           </div>
         </div>
@@ -4554,13 +4554,13 @@ export function ComparableWorksPanel({ data, isMobile }) {
           {data.positioning_strength && (
             <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.12)" }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", marginBottom: 5 }}>포지셔닝 강점</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{data.positioning_strength}</div>
+              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.6)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{data.positioning_strength}</div>
             </div>
           )}
           {data.positioning_risk && (
             <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(232,93,117,0.04)", border: "1px solid rgba(232,93,117,0.12)" }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "#E85D75", marginBottom: 5 }}>시장 리스크</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{data.positioning_risk}</div>
+              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.6)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{data.positioning_risk}</div>
             </div>
           )}
         </div>
@@ -4568,16 +4568,16 @@ export function ComparableWorksPanel({ data, isMobile }) {
 
       {/* 타겟 */}
       {data.target_audience && (
-        <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 8, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.4)", marginBottom: 6, letterSpacing: 0.5 }}>타겟 시청자</div>
+        <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 8, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.06)" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(var(--tw),0.4)", marginBottom: 6, letterSpacing: 0.5 }}>타겟 시청자</div>
           {data.target_audience.primary && (
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", marginBottom: 3, fontFamily: "'Noto Sans KR', sans-serif" }}>
-              <span style={{ color: "rgba(255,255,255,0.35)" }}>주: </span>{data.target_audience.primary}
+            <div style={{ fontSize: 11, color: "rgba(var(--tw),0.65)", marginBottom: 3, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              <span style={{ color: "rgba(var(--tw),0.35)" }}>주: </span>{data.target_audience.primary}
             </div>
           )}
           {data.target_audience.secondary && (
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginBottom: 3, fontFamily: "'Noto Sans KR', sans-serif" }}>
-              <span style={{ color: "rgba(255,255,255,0.25)" }}>보조: </span>{data.target_audience.secondary}
+            <div style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", marginBottom: 3, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              <span style={{ color: "rgba(var(--tw),0.25)" }}>보조: </span>{data.target_audience.secondary}
             </div>
           )}
           {(data.target_audience.platform_fit || []).length > 0 && (
@@ -4647,7 +4647,7 @@ export function ValuationPanel({ data, isMobile }) {
         {/* 원형 점수 */}
         <div style={{ position: "relative", width: 72, height: 72, flexShrink: 0 }}>
           <svg width={72} height={72} style={{ transform: "rotate(-90deg)" }}>
-            <circle cx={36} cy={36} r={30} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={6} />
+            <circle cx={36} cy={36} r={30} fill="none" stroke="rgba(var(--tw),0.06)" strokeWidth={6} />
             <circle cx={36} cy={36} r={30} fill="none" stroke={sc} strokeWidth={6}
               strokeDasharray={`${2 * Math.PI * 30 * data.completion_score / 100} ${2 * Math.PI * 30}`}
               strokeLinecap="round" />
@@ -4659,14 +4659,14 @@ export function ValuationPanel({ data, isMobile }) {
             <div style={{ fontSize: 18, fontWeight: 800, color: sc, lineHeight: 1, fontFamily: "'JetBrains Mono', monospace" }}>
               {data.completion_score}
             </div>
-            <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)", marginTop: 1 }}>/ 100</div>
+            <div style={{ fontSize: 8, color: "rgba(var(--tw),0.4)", marginTop: 1 }}>/ 100</div>
           </div>
         </div>
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: sc, fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 4 }}>
             {data.completion_label}
           </div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.45)", fontFamily: "'Noto Sans KR', sans-serif" }}>
             {data.market_tier}
           </div>
         </div>
@@ -4674,7 +4674,7 @@ export function ValuationPanel({ data, isMobile }) {
 
       {/* 세부 점수 */}
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", letterSpacing: 1, marginBottom: 10, textTransform: "uppercase" }}>완성도 세부 평가</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(var(--tw),0.4)", letterSpacing: 1, marginBottom: 10, textTransform: "uppercase" }}>완성도 세부 평가</div>
         {breakdownKeys.map(({ key, label, max }) => {
           const item = bd[key] || {};
           const score = item.score ?? 0;
@@ -4683,14 +4683,14 @@ export function ValuationPanel({ data, isMobile }) {
           return (
             <div key={key} style={{ marginBottom: 10 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
+                <span style={{ fontSize: 11, color: "rgba(var(--tw),0.65)", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: c, fontFamily: "'JetBrains Mono', monospace" }}>{score}/{max}</span>
               </div>
-              <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden", marginBottom: 4 }}>
+              <div style={{ height: 4, borderRadius: 2, background: "rgba(var(--tw),0.06)", overflow: "hidden", marginBottom: 4 }}>
                 <div style={{ height: "100%", width: `${pct}%`, background: c, borderRadius: 2, transition: "width 0.6s ease" }} />
               </div>
               {item.comment && (
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{item.comment}</div>
+                <div style={{ fontSize: 10, color: "rgba(var(--tw),0.4)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>{item.comment}</div>
               )}
             </div>
           );
@@ -4701,7 +4701,7 @@ export function ValuationPanel({ data, isMobile }) {
       <div style={{ marginBottom: 16, padding: "14px 16px", borderRadius: 10, background: "rgba(255,209,102,0.05)", border: "1px solid rgba(255,209,102,0.2)" }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: "#FFD166", letterSpacing: 0.5, marginBottom: 10 }}>한국 시장 예상 가격</div>
         {km.format_assumed && (
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif" }}>
             기준 포맷: {km.format_assumed}
           </div>
         )}
@@ -4709,8 +4709,8 @@ export function ValuationPanel({ data, isMobile }) {
           {km.option_price && (
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", fontFamily: "'Noto Sans KR', sans-serif" }}>옵션 계약 (개발 단계)</div>
-                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginTop: 1, fontFamily: "'Noto Sans KR', sans-serif" }}>{km.option_price.basis}</div>
+                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.55)", fontFamily: "'Noto Sans KR', sans-serif" }}>옵션 계약 (개발 단계)</div>
+                <div style={{ fontSize: 9, color: "rgba(var(--tw),0.25)", marginTop: 1, fontFamily: "'Noto Sans KR', sans-serif" }}>{km.option_price.basis}</div>
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#FFD166", fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>
                 {fmt(km.option_price.min_krw)} ~ {fmt(km.option_price.max_krw)}
@@ -4718,10 +4718,10 @@ export function ValuationPanel({ data, isMobile }) {
             </div>
           )}
           {km.full_price_rookie && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingTop: 6, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingTop: 6, borderTop: "1px solid rgba(var(--tw),0.05)" }}>
               <div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", fontFamily: "'Noto Sans KR', sans-serif" }}>신인 작가 기준</div>
-                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginTop: 1, fontFamily: "'Noto Sans KR', sans-serif" }}>{km.full_price_rookie.basis}</div>
+                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.55)", fontFamily: "'Noto Sans KR', sans-serif" }}>신인 작가 기준</div>
+                <div style={{ fontSize: 9, color: "rgba(var(--tw),0.25)", marginTop: 1, fontFamily: "'Noto Sans KR', sans-serif" }}>{km.full_price_rookie.basis}</div>
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,209,102,0.7)", fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>
                 {fmt(km.full_price_rookie.min_krw)} ~ {fmt(km.full_price_rookie.max_krw)}
@@ -4729,10 +4729,10 @@ export function ValuationPanel({ data, isMobile }) {
             </div>
           )}
           {km.full_price_experienced && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingTop: 6, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingTop: 6, borderTop: "1px solid rgba(var(--tw),0.05)" }}>
               <div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", fontFamily: "'Noto Sans KR', sans-serif" }}>경력 작가 기준</div>
-                <div style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", marginTop: 1, fontFamily: "'Noto Sans KR', sans-serif" }}>{km.full_price_experienced.basis}</div>
+                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.55)", fontFamily: "'Noto Sans KR', sans-serif" }}>경력 작가 기준</div>
+                <div style={{ fontSize: 9, color: "rgba(var(--tw),0.25)", marginTop: 1, fontFamily: "'Noto Sans KR', sans-serif" }}>{km.full_price_experienced.basis}</div>
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#FFD166", fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>
                 {fmt(km.full_price_experienced.min_krw)} ~ {fmt(km.full_price_experienced.max_krw)}
@@ -4741,8 +4741,8 @@ export function ValuationPanel({ data, isMobile }) {
           )}
         </div>
         {km.recommended_buyers && km.recommended_buyers.length > 0 && (
-          <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginBottom: 5 }}>추천 바이어</div>
+          <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid rgba(var(--tw),0.05)" }}>
+            <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", marginBottom: 5 }}>추천 바이어</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
               {km.recommended_buyers.map((b, i) => (
                 <span key={i} style={{ padding: "2px 8px", borderRadius: 5, background: "rgba(255,209,102,0.1)", color: "#FFD166", fontSize: 10, fontWeight: 600 }}>
@@ -4753,7 +4753,7 @@ export function ValuationPanel({ data, isMobile }) {
           </div>
         )}
         {km.price_rationale && (
-          <div style={{ marginTop: 10, fontSize: 11, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <div style={{ marginTop: 10, fontSize: 11, color: "rgba(var(--tw),0.5)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
             {km.price_rationale}
           </div>
         )}
@@ -4764,20 +4764,20 @@ export function ValuationPanel({ data, isMobile }) {
         <div style={{ marginBottom: 16, padding: "14px 16px", borderRadius: 10, background: "rgba(96,165,250,0.04)", border: "1px solid rgba(96,165,250,0.15)" }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#60A5FA", letterSpacing: 0.5, marginBottom: 10 }}>미국 시장 참고 (USD)</div>
           {um.format_assumed && (
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginBottom: 8, fontFamily: "'Noto Sans KR', sans-serif" }}>기준: {um.format_assumed}</div>
+            <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", marginBottom: 8, fontFamily: "'Noto Sans KR', sans-serif" }}>기준: {um.format_assumed}</div>
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {um.wga_minimum && (
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>WGA 최저 기준</div>
+                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>WGA 최저 기준</div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#60A5FA", fontFamily: "'JetBrains Mono', monospace" }}>
                   {fmtUsd(um.wga_minimum.min_usd)} ~ {fmtUsd(um.wga_minimum.max_usd)}
                 </div>
               </div>
             )}
             {um.spec_market_estimate && (
-              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 6, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>스펙 시장 추정가</div>
+              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 6, borderTop: "1px solid rgba(var(--tw),0.05)" }}>
+                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>스펙 시장 추정가</div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#60A5FA", fontFamily: "'JetBrains Mono', monospace" }}>
                   {fmtUsd(um.spec_market_estimate.min_usd)} ~ {fmtUsd(um.spec_market_estimate.max_usd)}
                 </div>
@@ -4785,7 +4785,7 @@ export function ValuationPanel({ data, isMobile }) {
             )}
           </div>
           {um.us_market_feasibility && (
-            <div style={{ marginTop: 10, fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>
+            <div style={{ marginTop: 10, fontSize: 11, color: "rgba(var(--tw),0.45)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>
               {um.us_market_feasibility}
             </div>
           )}
@@ -4799,7 +4799,7 @@ export function ValuationPanel({ data, isMobile }) {
             <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.12)" }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", marginBottom: 7 }}>가치 상승 요인</div>
               {data.factors_boosting_value.map((f, i) => (
-                <div key={i} style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 4, lineHeight: 1.4, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                <div key={i} style={{ fontSize: 11, color: "rgba(var(--tw),0.6)", marginBottom: 4, lineHeight: 1.4, fontFamily: "'Noto Sans KR', sans-serif" }}>
                   + {f}
                 </div>
               ))}
@@ -4809,7 +4809,7 @@ export function ValuationPanel({ data, isMobile }) {
             <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(232,93,117,0.04)", border: "1px solid rgba(232,93,117,0.12)" }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: "#E85D75", marginBottom: 7 }}>가치 하락 요인</div>
               {data.factors_reducing_value.map((f, i) => (
-                <div key={i} style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 4, lineHeight: 1.4, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                <div key={i} style={{ fontSize: 11, color: "rgba(var(--tw),0.6)", marginBottom: 4, lineHeight: 1.4, fontFamily: "'Noto Sans KR', sans-serif" }}>
                   - {f}
                 </div>
               ))}
@@ -4822,7 +4822,7 @@ export function ValuationPanel({ data, isMobile }) {
       {data.development_recommendation && (
         <div style={{ marginBottom: 12, padding: "12px 14px", borderRadius: 9, background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.15)" }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", marginBottom: 6, letterSpacing: 0.5 }}>가치를 높이려면</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <div style={{ fontSize: 12, color: "rgba(var(--tw),0.68)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
             {data.development_recommendation}
           </div>
         </div>
@@ -4831,17 +4831,17 @@ export function ValuationPanel({ data, isMobile }) {
       {/* 비교 거래 사례 */}
       {data.comparable_deals?.length > 0 && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: 0.5, marginBottom: 8, textTransform: "uppercase" }}>비교 거래 사례</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(var(--tw),0.3)", letterSpacing: 0.5, marginBottom: 8, textTransform: "uppercase" }}>비교 거래 사례</div>
           {data.comparable_deals.map((deal, i) => (
-            <div key={i} style={{ marginBottom: 6, padding: "9px 12px", borderRadius: 7, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 3 }}>
+            <div key={i} style={{ marginBottom: 6, padding: "9px 12px", borderRadius: 7, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.06)" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(var(--tw),0.7)", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 3 }}>
                 {deal.title}
               </div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>
+              <div style={{ fontSize: 10, color: "rgba(var(--tw),0.4)", marginBottom: 3, fontFamily: "'JetBrains Mono', monospace" }}>
                 {deal.deal_info}
               </div>
               {deal.relevance && (
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+                <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'Noto Sans KR', sans-serif" }}>
                   {deal.relevance}
                 </div>
               )}
@@ -4852,8 +4852,8 @@ export function ValuationPanel({ data, isMobile }) {
 
       {/* 면책 */}
       {data.disclaimer && (
-        <div style={{ padding: "8px 12px", borderRadius: 7, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>
+        <div style={{ padding: "8px 12px", borderRadius: 7, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.05)" }}>
+          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>
             ⚠ {data.disclaimer}
           </div>
         </div>

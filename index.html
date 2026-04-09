@@ -12,16 +12,45 @@
       rel="stylesheet"
     />
     <style>
+      /* ── Theme tokens ── */
+      :root {
+        --tw: 255,255,255;       /* theme-white: rgba overlay base (dark mode = white) */
+        --bg-page:    #0c0c1a;
+        --bg-page-alt:#0a0a18;
+        --bg-surface: #13131f;
+        --bg-nav:     rgba(12,12,26,0.9);
+        --text-main:  #e8e8f0;
+        --scrollbar-thumb: rgba(255,255,255,0.1);
+      }
+      [data-theme="light"] {
+        --tw: 0,0,0;             /* light mode = black overlays */
+        --bg-page:    #f0f2f8;
+        --bg-page-alt:#e6e9f3;
+        --bg-surface: #ffffff;
+        --bg-nav:     rgba(240,242,248,0.92);
+        --text-main:  #12122a;
+        --scrollbar-thumb: rgba(0,0,0,0.15);
+      }
+
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { background: #0d0d1a; }
+      body { background: var(--bg-page); transition: background 0.25s; }
       @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes fadeIn { from { opacity:0; transform:translateY(4px);} to { opacity:1; transform:translateY(0);} }
       ::-webkit-scrollbar { width: 4px; }
-      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+      ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 2px; }
       textarea { outline: none; }
       textarea:focus { border-color: rgba(200,168,75,0.4) !important; }
       input { outline: none; }
       button { font-family: 'Noto Sans KR', sans-serif; }
     </style>
+    <!-- Anti-flash: apply saved theme before React renders -->
+    <script>
+      (function() {
+        var t = localStorage.getItem('theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
