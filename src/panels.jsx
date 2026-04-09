@@ -2274,7 +2274,7 @@ export function ExpertPanelSection({ data, isMobile }) {
         <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", fontFamily: "'JetBrains Mono', monospace", background: "rgba(167,139,250,0.12)", padding: "2px 7px", borderRadius: 6 }}>
           {num}
         </span>
-        <span style={{ fontSize: 13, fontWeight: 600, color: "#e0e0ee", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
       </div>
       <span style={{ fontSize: 12, color: "var(--c-tx-30)" }}>{isOpen ? "▲" : "▼"}</span>
     </button>
@@ -2284,7 +2284,7 @@ export function ExpertPanelSection({ data, isMobile }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {/* 패널 제목 */}
       <div style={{ textAlign: "center", marginBottom: 4 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#e0e0ee", fontFamily: "'Noto Sans KR', sans-serif" }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif" }}>
           {data.panel_title}
         </div>
       </div>
@@ -2602,7 +2602,7 @@ ${choicesSummary}
                         >
                           {opt.id}
                         </span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "#e0e0ee", fontFamily: "'Noto Sans KR', sans-serif" }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif" }}>
                           {opt.label}
                         </span>
                       </div>
@@ -3283,7 +3283,7 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
                           const trimmed = line.trim();
                           // 씬 헤더: INT. / EXT. / INT./EXT.
                           if (/^(INT\.|EXT\.|INT\.\/EXT\.)/.test(trimmed)) {
-                            return <div key={idx} style={{ fontWeight: 800, color: "#ffffff", letterSpacing: 0.5, marginTop: idx > 0 ? 10 : 0, textTransform: "uppercase" }}>{line}</div>;
+                            return <div key={idx} style={{ fontWeight: 800, color: "var(--text-main)", letterSpacing: 0.5, marginTop: idx > 0 ? 10 : 0, textTransform: "uppercase" }}>{line}</div>;
                           }
                           // 캐릭터 큐: 짧고 대문자인 줄 (대사 앞)
                           if (trimmed.length > 0 && trimmed.length <= 30 && trimmed === trimmed.toUpperCase() && !/[.!?]$/.test(trimmed) && !/^[(\[]/.test(trimmed)) {

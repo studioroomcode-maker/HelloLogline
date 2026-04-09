@@ -258,7 +258,7 @@ function ResultCard({ children, onClose, title, color = "var(--c-bd-1)" }) {
           display: "flex", justifyContent: "space-between", alignItems: "center",
           padding: "12px 16px", borderBottom: "1px solid var(--c-card-2)",
         }}>
-          {title && <div style={{ fontSize: 13, fontWeight: 700, color: "#e0e0ee" }}>{title}</div>}
+          {title && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)" }}>{title}</div>}
           {onClose && (
             <button onClick={onClose} style={{
               background: "none", border: "none", cursor: "pointer", padding: 4,
