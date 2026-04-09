@@ -459,6 +459,19 @@ export default function LoglineAnalyzer() {
   const [scenarioDraftLoading, setScenarioDraftLoading] = useState(false);
   const [scenarioDraftError, setScenarioDraftError] = useState("");
 
+  // ── Writer Edits ──
+  const [writerEdits, setWriterEdits] = useState({});
+  // 구조: { treatment: string|null, synopsis: string|null, character: {...}|null, beats: {[id]: string} }
+
+  const [editingTreatment, setEditingTreatment] = useState(false);
+  const [treatmentEditDraft, setTreatmentEditDraft] = useState("");
+  const [editingCharacter, setEditingCharacter] = useState(false);
+  const [charEditDraft, setCharEditDraft] = useState({});
+  const [editingSynopsis, setEditingSynopsis] = useState(false);
+  const [synopsisEditDraft, setSynopsisEditDraft] = useState("");
+  const [editingBeats, setEditingBeats] = useState({}); // { [beatId]: boolean }
+  const [beatEditDrafts, setBeatEditDrafts] = useState({}); // { [beatId]: string }
+
   // ── Project persistence ──
   const [showProjects, setShowProjects] = useState(false);
   const [showStoryBible, setShowStoryBible] = useState(false);
@@ -560,6 +573,7 @@ export default function LoglineAnalyzer() {
     dialogueDevResult, scriptCoverageResult,
     structureResult, themeResult, sceneListResult, scenarioDraftResult,
     comparableResult, valuationResult,
+    writerEdits,
   });
 
   const autoSave = async () => {
@@ -619,6 +633,7 @@ export default function LoglineAnalyzer() {
     setScenarioDraftResult(proj.scenarioDraftResult || "");
     setComparableResult(proj.comparableResult || null);
     setValuationResult(proj.valuationResult || null);
+    setWriterEdits(proj.writerEdits || {});
     setCurrentProjectId(proj.id);
     setShowProjects(false);
     setCurrentStage("1");
@@ -1017,6 +1032,19 @@ export default function LoglineAnalyzer() {
     return `\n주제/컨셉: ${customTheme.trim()}`;
   };
 
+  // ── Writer Edits 헬퍼 ──
+  // 작가 수정본이 있으면 그걸, 없으면 AI 원본 반환
+  function getEffective(key, aiValue) {
+    const v = writerEdits[key];
+    return (v !== undefined && v !== null && v !== "") ? v : aiValue;
+  }
+  function setWriterEdit(key, value) {
+    setWriterEdits(prev => ({ ...prev, [key]: value }));
+  }
+  function clearWriterEdit(key) {
+    setWriterEdits(prev => { const n = { ...prev }; delete n[key]; return n; });
+  }
+
   // ── Story Bible: 확정된 시놉시스를 다음 단계 프롬프트에 전달하는 컨텍스트 블록 ──
   // 파이프라인 결과 > 사용자가 선택한 시놉시스 방향 > 빈 문자열 순으로 우선순위 결정
   const getStoryBible = () => {
@@ -1024,12 +1052,13 @@ export default function LoglineAnalyzer() {
       || (selectedSynopsisIndex !== null ? synopsisResults?.synopses?.[selectedSynopsisIndex] : null);
     if (!s) return "";
     const scenes = (s.key_scenes || []).map((sc, i) => `  ${i + 1}. ${sc}`).join("\n");
+    const storyText = getEffective("synopsis", s.synopsis || "");
     return `\n\n━━━ 확정된 시놉시스 — 반드시 이 방향으로 이야기를 발전시킬 것 ━━━
 제목/방향: ${s.direction_title || ""}
 장르/톤: ${s.genre_tone || ""}
 훅: ${s.hook || ""}
 
-${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주제: ${s.theme}` : ""}
+${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주제: ${s.theme}` : ""}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ※ 위 시놉시스의 등장인물 이름·설정·배경·핵심 장면을 그대로 유지하세요. 새로운 이야기를 창작하지 말고, 위 시놉시스를 발전시키세요.`;
@@ -1433,17 +1462,18 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
     // ── 1. 전체 캐릭터 프로필 ──
     let charBlock = "";
-    if (charDevResult?.protagonist) {
-      const p = charDevResult.protagonist;
+    if (charDevResult?.protagonist || writerEdits.character) {
+      const charOverride = writerEdits.character || {};
+      const p = charDevResult?.protagonist || {};
       const lines = [
-        `주인공: ${p.name_suggestion || "주인공"}`,
-        p.want        ? `  - 외적 목표(Want): ${p.want}` : "",
-        p.need        ? `  - 내적 욕구(Need): ${p.need}` : "",
-        p.ghost       ? `  - 심리적 상처(Ghost): ${p.ghost}` : "",
-        p.lie_they_believe ? `  - 믿는 거짓: ${p.lie_they_believe}` : "",
-        p.flaw        ? `  - 핵심 결함: ${p.flaw}` : "",
-        p.arc_type    ? `  - 변화 호(Arc): ${p.arc_type}` : "",
-        ...(charDevResult.supporting_characters || [])
+        `주인공: ${charOverride.name || p.name_suggestion || "주인공"}`,
+        (charOverride.want || p.want) ? `  - 외적 목표(Want): ${charOverride.want || p.want}` : "",
+        (charOverride.need || p.need) ? `  - 내적 욕구(Need): ${charOverride.need || p.need}` : "",
+        (charOverride.ghost || p.ghost) ? `  - 심리적 상처(Ghost): ${charOverride.ghost || p.ghost}` : "",
+        (charOverride.lie || p.lie_they_believe) ? `  - 믿는 거짓: ${charOverride.lie || p.lie_they_believe}` : "",
+        (charOverride.flaw || p.flaw) ? `  - 핵심 결함: ${charOverride.flaw || p.flaw}` : "",
+        (charOverride.arc || p.arc_type) ? `  - 변화 호(Arc): ${charOverride.arc || p.arc_type}` : "",
+        ...(charDevResult?.supporting_characters || [])
           .filter((s) => s.suggested_name || s.role_name)
           .map((s) => `인물: ${s.suggested_name || ""} (${s.role_name || ""}) — ${s.relationship_dynamic || s.protagonist_mirror || ""}`)
       ];
@@ -1468,14 +1498,16 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
       : "";
 
     // ── 4. 트리트먼트 ──
-    const treatmentBlock = treatmentResult ? `\n\n트리트먼트:\n${treatmentResult.slice(0, 2500)}` : "";
+    const effectiveTreatment = getEffective("treatment", treatmentResult);
+    const treatmentBlock = effectiveTreatment ? `\n\n트리트먼트:\n${effectiveTreatment.slice(0, 2500)}` : "";
 
     // ── 5. 비트 시트 (풍부한 정보 + 집필된 씬 참고) ──
     let beatBlock = "";
     if (beatSheetResult?.beats?.length) {
       const beatLines = beatSheetResult.beats.map((b) => {
+        const writtenSummary = writerEdits.beats?.[b.id] || b.summary;
         const written = beatScenes[b.id] ? `\n     [집필 참고: ${beatScenes[b.id].slice(0, 150)}...]` : "";
-        return `  #${b.id} ${b.name_kr} (p.${b.page_start}~${b.page_end}) | ${b.summary} | 가치: ${b.value_start}→${b.value_end} | 장소: ${b.location_hint || "미정"} | 톤: ${b.tone || ""}${written}`;
+        return `  #${b.id} ${b.name_kr} (p.${b.page_start}~${b.page_end}) | ${writtenSummary} | 가치: ${b.value_start}→${b.value_end} | 장소: ${b.location_hint || "미정"} | 톤: ${b.tone || ""}${written}`;
       });
       beatBlock = `\n\n비트 시트 (${beatSheetResult.beats.length}비트 — 이 순서와 구조를 따를 것):\n${beatLines.join("\n")}`;
     }
@@ -2712,6 +2744,85 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                       {item.node}
                     </div>
                   ))}
+
+                  {/* ── 핵심 설정 편집 ── */}
+                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--c-bd-1)" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: editingCharacter ? 14 : 0 }}>
+                      <button
+                        onClick={() => {
+                          if (!editingCharacter) {
+                            const p = charDevResult?.protagonist || {};
+                            const ov = writerEdits.character || {};
+                            setCharEditDraft({
+                              name: ov.name ?? p.name_suggestion ?? "",
+                              want: ov.want ?? p.want ?? "",
+                              need: ov.need ?? p.need ?? "",
+                              ghost: ov.ghost ?? p.ghost ?? "",
+                              lie: ov.lie ?? p.lie_they_believe ?? "",
+                              flaw: ov.flaw ?? p.flaw ?? "",
+                              arc: ov.arc ?? p.arc_type ?? "",
+                            });
+                          }
+                          setEditingCharacter(v => !v);
+                        }}
+                        style={{ fontSize: 12, color: editingCharacter ? "var(--c-tx-45)" : "#FB923C", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+                      >
+                        {editingCharacter ? "▲ 편집 닫기" : "✏ 핵심 설정 편집"}
+                        {writerEdits.character && !editingCharacter && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, background: "rgba(78,204,163,0.15)", color: "#4ECCA3", fontWeight: 600, border: "1px solid rgba(78,204,163,0.25)", marginLeft: 4 }}>수정됨</span>}
+                      </button>
+                      {writerEdits.character && !editingCharacter && (
+                        <button onClick={() => clearWriterEdit("character")} style={{ fontSize: 10, color: "rgba(232,93,117,0.6)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>AI 원본으로</button>
+                      )}
+                    </div>
+
+                    {editingCharacter && (
+                      <div style={{ background: "rgba(251,146,60,0.04)", border: "1px solid rgba(251,146,60,0.15)", borderRadius: 10, padding: "14px 16px" }}>
+                        {[
+                          { key: "name", label: "이름/유형", placeholder: "예: 전직 형사 박민준" },
+                          { key: "want", label: "외적 목표 (Want)", placeholder: "무엇을 얻으려 하는가?" },
+                          { key: "need", label: "내적 욕구 (Need)", placeholder: "진짜로 필요한 것은?" },
+                          { key: "ghost", label: "심리적 상처 (Ghost)", placeholder: "과거의 어떤 사건이 현재를 지배하는가?" },
+                          { key: "lie", label: "믿는 거짓", placeholder: "스스로에 대해 어떤 거짓을 믿는가?" },
+                          { key: "flaw", label: "핵심 결함", placeholder: "가장 큰 약점은?" },
+                          { key: "arc", label: "변화 호 (Arc)", placeholder: "어떻게 변하는가?" },
+                        ].map(({ key, label, placeholder }) => (
+                          <div key={key} style={{ marginBottom: 12 }}>
+                            <div style={{ fontSize: 10, color: "rgba(251,146,60,0.7)", fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+                            <textarea
+                              value={charEditDraft[key] || ""}
+                              onChange={e => setCharEditDraft(prev => ({ ...prev, [key]: e.target.value }))}
+                              placeholder={placeholder}
+                              rows={key === "want" || key === "need" || key === "ghost" ? 2 : 1}
+                              style={{
+                                width: "100%", padding: "8px 12px", background: "rgba(var(--tw),0.04)",
+                                border: "1px solid rgba(251,146,60,0.2)", borderRadius: 8,
+                                color: "var(--text-main)", fontSize: 12, lineHeight: 1.6,
+                                fontFamily: "'Noto Sans KR', sans-serif", resize: "vertical",
+                                boxSizing: "border-box", outline: "none",
+                              }}
+                            />
+                          </div>
+                        ))}
+                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
+                          {writerEdits.character && (
+                            <button onClick={() => { clearWriterEdit("character"); setEditingCharacter(false); }}
+                              style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.3)", background: "rgba(232,93,117,0.06)", color: "#E85D75", fontSize: 11, cursor: "pointer" }}>
+                              AI 원본으로
+                            </button>
+                          )}
+                          <button onClick={() => setEditingCharacter(false)}
+                            style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-45)", fontSize: 11, cursor: "pointer" }}>
+                            취소
+                          </button>
+                          <button
+                            onClick={() => { setWriterEdit("character", charEditDraft); setEditingCharacter(false); }}
+                            style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(78,204,163,0.4)", background: "rgba(78,204,163,0.1)", color: "#4ECCA3", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                            저장 — 시나리오에 반영
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </ResultCard>
               )}
               {getStageStatus("3") === "done" && (
@@ -3112,39 +3223,82 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   </div>
                 )}
                 {treatmentResult && (
-                  <ResultCard title="트리트먼트" onClose={() => setTreatmentResult("")} color="rgba(200,168,75,0.15)">
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-                      <button
-                        onClick={() => {
-                          const blob = new Blob([treatmentResult], { type: "text/markdown;charset=utf-8" });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement("a"); a.href = url;
-                          a.download = `treatment_${new Date().toISOString().slice(0,10)}.md`;
-                          a.click(); URL.revokeObjectURL(url);
-                        }}
-                        style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(200,168,75,0.3)", background: "rgba(200,168,75,0.06)", color: "#C8A84B", cursor: "pointer", fontSize: 11 }}
-                      >
-                        MD 내보내기
-                      </button>
-                    </div>
-                    <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: isMobile ? 13 : 14, lineHeight: 1.9, color: "rgba(var(--tw),0.82)" }}>
-                      <ReactMarkdown
-                        components={{
-                          h1: ({ children }) => <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "#C8A84B", marginBottom: 8, marginTop: 0 }}>{children}</h1>,
-                          h2: ({ children }) => <h2 style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "rgba(var(--tw),0.9)", marginTop: 28, marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid var(--c-bd-2)" }}>{children}</h2>,
-                          h3: ({ children }) => <h3 style={{ fontSize: isMobile ? 13 : 14, fontWeight: 700, color: "#C8A84B", marginTop: 18, marginBottom: 6 }}>{children}</h3>,
-                          p: ({ children }) => <p style={{ marginBottom: 12, marginTop: 0 }}>{children}</p>,
-                          strong: ({ children }) => <strong style={{ color: "rgba(var(--tw),0.95)", fontWeight: 700 }}>{children}</strong>,
-                          em: ({ children }) => <em style={{ color: "rgba(200,168,75,0.8)", fontStyle: "italic" }}>{children}</em>,
-                          ul: ({ children }) => <ul style={{ paddingLeft: 20, marginBottom: 12 }}>{children}</ul>,
-                          li: ({ children }) => <li style={{ marginBottom: 5 }}>{children}</li>,
-                          hr: () => <hr style={{ border: "none", borderTop: "1px solid var(--c-bd-1)", margin: "20px 0" }} />,
-                          table: ({ children }) => <div style={{ overflowX: "auto", marginBottom: 16 }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>{children}</table></div>,
-                          th: ({ children }) => <th style={{ padding: "7px 10px", background: "rgba(200,168,75,0.08)", color: "var(--c-tx-70)", fontWeight: 600, textAlign: "left", borderBottom: "1px solid var(--c-bd-3)" }}>{children}</th>,
-                          td: ({ children }) => <td style={{ padding: "7px 10px", color: "var(--c-tx-60)", borderBottom: "1px solid var(--c-card-2)" }}>{children}</td>,
-                        }}
-                      >{treatmentResult}</ReactMarkdown>
-                    </div>
+                  <ResultCard
+                    title={<span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      트리트먼트
+                      {writerEdits.treatment && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, background: "rgba(78,204,163,0.15)", color: "#4ECCA3", fontWeight: 600, border: "1px solid rgba(78,204,163,0.25)" }}>✏ 수정됨</span>}
+                    </span>}
+                    onClose={() => { setTreatmentResult(""); clearWriterEdit("treatment"); setEditingTreatment(false); }}
+                    color="rgba(200,168,75,0.15)"
+                  >
+                    {editingTreatment ? (
+                      <div>
+                        <textarea
+                          value={treatmentEditDraft}
+                          onChange={e => setTreatmentEditDraft(e.target.value)}
+                          style={{
+                            width: "100%", minHeight: 400, padding: "14px 16px",
+                            background: "rgba(var(--tw),0.03)", border: "1px solid rgba(200,168,75,0.3)",
+                            borderRadius: 10, color: "var(--text-main)", fontSize: 13, lineHeight: 1.8,
+                            fontFamily: "'Noto Sans KR', sans-serif", resize: "vertical", boxSizing: "border-box",
+                            outline: "none",
+                          }}
+                        />
+                        <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-end" }}>
+                          {writerEdits.treatment && (
+                            <button
+                              onClick={() => { clearWriterEdit("treatment"); setEditingTreatment(false); }}
+                              style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.3)", background: "rgba(232,93,117,0.06)", color: "#E85D75", fontSize: 11, cursor: "pointer" }}
+                            >AI 원본으로</button>
+                          )}
+                          <button
+                            onClick={() => setEditingTreatment(false)}
+                            style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-45)", fontSize: 11, cursor: "pointer" }}
+                          >취소</button>
+                          <button
+                            onClick={() => { setWriterEdit("treatment", treatmentEditDraft); setEditingTreatment(false); }}
+                            style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(78,204,163,0.4)", background: "rgba(78,204,163,0.1)", color: "#4ECCA3", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                          >저장 — 시나리오에 반영</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 10 }}>
+                          <button
+                            onClick={() => { setTreatmentEditDraft(writerEdits.treatment || treatmentResult); setEditingTreatment(true); }}
+                            style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(200,168,75,0.3)", background: "rgba(200,168,75,0.06)", color: "#C8A84B", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 5 }}
+                          >✏ 편집</button>
+                          <button
+                            onClick={() => {
+                              const blob = new Blob([writerEdits.treatment || treatmentResult], { type: "text/markdown;charset=utf-8" });
+                              const url = URL.createObjectURL(blob);
+                              const a = document.createElement("a"); a.href = url;
+                              a.download = `treatment_${new Date().toISOString().slice(0,10)}.md`;
+                              a.click(); URL.revokeObjectURL(url);
+                            }}
+                            style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(200,168,75,0.3)", background: "rgba(200,168,75,0.06)", color: "#C8A84B", cursor: "pointer", fontSize: 11 }}
+                          >MD 내보내기</button>
+                        </div>
+                        <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: isMobile ? 13 : 14, lineHeight: 1.9, color: "rgba(var(--tw),0.82)" }}>
+                          <ReactMarkdown
+                            components={{
+                              h1: ({ children }) => <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "#C8A84B", marginBottom: 8, marginTop: 0 }}>{children}</h1>,
+                              h2: ({ children }) => <h2 style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "rgba(var(--tw),0.9)", marginTop: 28, marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid var(--c-bd-2)" }}>{children}</h2>,
+                              h3: ({ children }) => <h3 style={{ fontSize: isMobile ? 13 : 14, fontWeight: 700, color: "#C8A84B", marginTop: 18, marginBottom: 6 }}>{children}</h3>,
+                              p: ({ children }) => <p style={{ marginBottom: 12, marginTop: 0 }}>{children}</p>,
+                              strong: ({ children }) => <strong style={{ color: "rgba(var(--tw),0.95)", fontWeight: 700 }}>{children}</strong>,
+                              em: ({ children }) => <em style={{ color: "rgba(200,168,75,0.8)", fontStyle: "italic" }}>{children}</em>,
+                              ul: ({ children }) => <ul style={{ paddingLeft: 20, marginBottom: 12 }}>{children}</ul>,
+                              li: ({ children }) => <li style={{ marginBottom: 5 }}>{children}</li>,
+                              hr: () => <hr style={{ border: "none", borderTop: "1px solid var(--c-bd-1)", margin: "20px 0" }} />,
+                              table: ({ children }) => <div style={{ overflowX: "auto", marginBottom: 16 }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>{children}</table></div>,
+                              th: ({ children }) => <th style={{ padding: "7px 10px", background: "rgba(200,168,75,0.08)", color: "var(--c-tx-70)", fontWeight: 600, textAlign: "left", borderBottom: "1px solid var(--c-bd-3)" }}>{children}</th>,
+                              td: ({ children }) => <td style={{ padding: "7px 10px", color: "var(--c-tx-60)", borderBottom: "1px solid var(--c-card-2)" }}>{children}</td>,
+                            }}
+                          >{writerEdits.treatment || treatmentResult}</ReactMarkdown>
+                        </div>
+                      </>
+                    )}
                   </ResultCard>
                 )}
                 {treatmentResult && (
@@ -3172,6 +3326,24 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                       expandedBeats={expandedBeats}
                       onToggle={(id) => setExpandedBeats((prev) => ({ ...prev, [id]: !prev[id] }))}
                       isMobile={isMobile}
+                      editingBeats={editingBeats}
+                      beatEditDrafts={writerEdits.beats || {}}
+                      onEditBeat={(id, val) => {
+                        if (val === null) {
+                          // 편집 시작
+                          setEditingBeats(prev => ({ ...prev, [id]: true }));
+                          setBeatEditDrafts(prev => ({ ...prev, [id]: (writerEdits.beats?.[id] || beatSheetResult.beats?.find(b => b.id === id)?.summary || "") }));
+                        } else {
+                          setBeatEditDrafts(prev => ({ ...prev, [id]: val }));
+                        }
+                      }}
+                      onSaveBeat={(id) => {
+                        setWriterEdits(prev => ({ ...prev, beats: { ...(prev.beats || {}), [id]: beatEditDrafts[id] } }));
+                        setEditingBeats(prev => ({ ...prev, [id]: false }));
+                      }}
+                      onCancelBeat={(id) => {
+                        setEditingBeats(prev => ({ ...prev, [id]: false }));
+                      }}
                     />
                   </ResultCard>
                 )}

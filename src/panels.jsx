@@ -3150,7 +3150,7 @@ export function CompareSection({ result1, result2, section, title, maxTotal, col
 // ─────────────────────────────────────────────
 // 비트 시트 패널
 // ─────────────────────────────────────────────
-export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats, onToggle, onGenerateScene, onExportAll, isMobile }) {
+export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats, onToggle, onGenerateScene, onExportAll, isMobile, editingBeats, beatEditDrafts, onEditBeat, onSaveBeat, onCancelBeat }) {
   const beats = data.beats || [];
 
   const ACT_META = {
@@ -3213,7 +3213,10 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
                     <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, border: `1px solid ${act.color}33`, color: act.color, fontFamily: "'Noto Sans KR', sans-serif" }}>{beat.act}</span>
                     {hasScene && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, background: "rgba(78,204,163,0.12)", color: "#4ECCA3", fontFamily: "'Noto Sans KR', sans-serif" }}>✓ 씬 완성</span>}
                   </div>
-                  {!isExpanded && <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{beat.summary}</div>}
+                  {!isExpanded && <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {beatEditDrafts?.[beat.id] || beat.summary}
+                    {beatEditDrafts?.[beat.id] && beatEditDrafts[beat.id] !== beat.summary && <span style={{ fontSize: 9, color: "#4ECCA3", marginLeft: 6 }}>✏</span>}
+                  </div>}
                 </div>
                 {/* 페이지 + 토글 */}
                 <div style={{ flexShrink: 0, textAlign: "right" }}>
@@ -3226,9 +3229,42 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
               {isExpanded && (
                 <div style={{ padding: "0 14px 14px" }}>
                   {/* 요약 */}
-                  <div style={{ fontSize: 13, color: "var(--c-tx-70)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 12, padding: "10px 12px", borderRadius: 9, background: "var(--c-card-1)", border: "1px solid var(--c-bd-1)" }}>
-                    {beat.summary}
-                  </div>
+                  {editingBeats?.[beat.id] ? (
+                    <div style={{ marginBottom: 12 }}>
+                      <textarea
+                        value={beatEditDrafts?.[beat.id] ?? beat.summary}
+                        onChange={e => onEditBeat(beat.id, e.target.value)}
+                        rows={3}
+                        style={{
+                          width: "100%", padding: "8px 10px",
+                          background: "rgba(var(--tw),0.04)", border: "1px solid rgba(255,209,102,0.25)",
+                          borderRadius: 8, color: "var(--text-main)", fontSize: 12, lineHeight: 1.6,
+                          fontFamily: "'Noto Sans KR', sans-serif", resize: "vertical",
+                          boxSizing: "border-box", outline: "none", marginTop: 6,
+                        }}
+                      />
+                      <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                        <button onClick={() => onCancelBeat(beat.id)}
+                          style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-45)", fontSize: 10, cursor: "pointer" }}>취소</button>
+                        <button onClick={() => onSaveBeat(beat.id)}
+                          style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(255,209,102,0.4)", background: "rgba(255,209,102,0.1)", color: "#FFD166", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>저장</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 12 }}>
+                      <div style={{ fontSize: 13, color: "var(--c-tx-70)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif", flex: 1, padding: "10px 12px", borderRadius: 9, background: "var(--c-card-1)", border: "1px solid var(--c-bd-1)" }}>
+                        {beatEditDrafts?.[beat.id] || beat.summary}
+                        {beatEditDrafts?.[beat.id] && beatEditDrafts[beat.id] !== beat.summary &&
+                          <span style={{ fontSize: 9, color: "#4ECCA3", marginLeft: 6 }}>✏</span>
+                        }
+                      </div>
+                      <button
+                        onClick={() => onEditBeat(beat.id, null)}
+                        style={{ flexShrink: 0, background: "none", border: "none", cursor: "pointer", color: "var(--c-tx-25)", fontSize: 10, padding: "2px 4px", opacity: 0.6 }}
+                        title="편집"
+                      >✏</button>
+                    </div>
+                  )}
 
                   {/* 상세 그리드 */}
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8, marginBottom: 12 }}>
