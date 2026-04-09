@@ -65,7 +65,12 @@ export async function callClaude(
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
-    throw new Error(errData?.error?.message || `API 오류 (${response.status})`);
+    const hint = response.status === 404
+      ? "API 오류 (404) — 프록시 서버가 실행 중이지 않습니다. 터미널에서 'npm run dev'로 실행하세요."
+      : response.status === 401
+      ? "API 키가 올바르지 않거나 설정되지 않았습니다."
+      : `API 오류 (${response.status})`;
+    throw new Error(errData?.error?.message || hint);
   }
 
   const data = await response.json();
@@ -155,7 +160,12 @@ export async function callClaudeText(
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
-    throw new Error(errData?.error?.message || `API 오류 (${response.status})`);
+    const hint = response.status === 404
+      ? "API 오류 (404) — 프록시 서버가 실행 중이지 않습니다. 터미널에서 'npm run dev'로 실행하세요."
+      : response.status === 401
+      ? "API 키가 올바르지 않거나 설정되지 않았습니다."
+      : `API 오류 (${response.status})`;
+    throw new Error(errData?.error?.message || hint);
   }
 
   const data = await response.json();
