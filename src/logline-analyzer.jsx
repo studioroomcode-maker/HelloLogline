@@ -358,6 +358,8 @@ export default function LoglineAnalyzer() {
   const [beatScenes, setBeatScenes] = useState({});
   const [generatingBeat, setGeneratingBeat] = useState(null);
   const [expandedBeats, setExpandedBeats] = useState({});
+  const [allScenesLoading, setAllScenesLoading] = useState(false);
+  const [allScenesProgress, setAllScenesProgress] = useState({ current: 0, total: 0 });
 
   // ── Character Development ──
   const [charDevResult, setCharDevResult] = useState(null);
@@ -1365,6 +1367,53 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
     } finally { setGeneratingBeat(null); clearController(`scene_${beat.id}`); }
   };
 
+  // ── All Scenes (batch) ──
+  const generateAllScenes = async () => {
+    if (!apiKey || !beatSheetResult?.beats?.length) return;
+    const beats = beatSheetResult.beats;
+    setAllScenesLoading(true);
+    setAllScenesProgress({ current: 0, total: beats.length });
+    setBeatSheetError("");
+    const ctrl = makeController("allScenes");
+    // local accumulator — state updates are async so we track locally too
+    const localScenes = { ...beatScenes };
+
+    try {
+      for (let i = 0; i < beats.length; i++) {
+        if (ctrl.signal.aborted) break;
+        const beat = beats[i];
+        setGeneratingBeat(beat.id);
+        setAllScenesProgress({ current: i + 1, total: beats.length });
+
+        const charSummary = charDevResult?.protagonist
+          ? `주인공: ${charDevResult.protagonist.name_suggestion || "주인공"} (Want: ${charDevResult.protagonist.want || ""}, 말투: ${charDevResult.protagonist.voice_hint || ""})`
+          : "";
+        const prevScenes = Object.entries(localScenes)
+          .filter(([id]) => Number(id) < beat.id).slice(-3)
+          .map(([id, text]) => { const b = beats.find((b) => b.id === Number(id)); return `[${b?.name_kr || `비트 ${id}`}] ${text.slice(0, 250)}...`; })
+          .join("\n\n");
+        const msg = `로그라인: "${logline.trim()}"\n${charSummary}\n\n[생성할 비트]\n비트 번호: ${beat.id} / ${beat.name_kr} (${beat.name_en})\n막: ${beat.act} — ${beat.act_phase}\n페이지 범위: p.${beat.page_start}~p.${beat.page_end}\n장소: ${beat.location_hint || "미정"}\n등장 인물: ${(beat.characters_present || []).join(", ")}\n이 씬의 기능: ${beat.dramatic_function}\n이 씬에서 일어나는 일: ${beat.summary}\n가치 변화: ${beat.value_start} → ${beat.value_end}\n톤: ${beat.tone}\n반드시 포함: ${(beat.key_elements || []).join(", ")}${prevScenes ? `\n\n이전 씬 흐름:\n${prevScenes}` : ""}\n\n위 정보로 시나리오 씬을 한국어로 작성하세요.`;
+
+        try {
+          const sceneText = await callClaudeText(apiKey, SCENE_GEN_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-4-6", ctrl.signal);
+          localScenes[beat.id] = sceneText;
+          setBeatScenes((prev) => ({ ...prev, [beat.id]: sceneText }));
+          setExpandedBeats((prev) => ({ ...prev, [beat.id]: true }));
+        } catch (err) {
+          if (err.name === "AbortError") break;
+          // 개별 씬 실패해도 다음으로 진행
+          console.warn(`씬 ${beat.id} 생성 실패:`, err.message);
+        }
+      }
+      await autoSave();
+    } finally {
+      setAllScenesLoading(false);
+      setGeneratingBeat(null);
+      setAllScenesProgress({ current: 0, total: 0 });
+      clearController("allScenes");
+    }
+  };
+
   // ── Character Dev ──
   const analyzeCharacterDev = async () => {
     if (!logline.trim() || !apiKey) return;
@@ -1541,7 +1590,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
   // ── Determine if any operation is in progress ──
   const isAnyLoading = loading || synopsisLoading || academicLoading || expertPanelLoading ||
     valueChargeLoading || shadowLoading || authenticityLoading || subtextLoading ||
-    mythMapLoading || barthesCodeLoading || koreanMythLoading || scriptCoverageLoading ||
+    mythMapLoading || barthesCodeLoading || koreanMythLoading || scriptCoverageLoading || allScenesLoading ||
     dialogueDevLoading || beatSheetLoading || charDevLoading || treatmentLoading ||
     structureLoading || themeLoading || sceneListLoading;
 
@@ -2568,6 +2617,40 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
               {beatSheetResult && (
                 <ResultCard title="비트 시트" onClose={() => setBeatSheetResult(null)} color="rgba(255,209,102,0.15)">
+                  {/* ── 전체 씬 일괄 집필 버튼 ── */}
+                  <div style={{ marginBottom: 16, padding: "14px 16px", borderRadius: 12, background: "rgba(255,209,102,0.05)", border: "1px solid rgba(255,209,102,0.15)" }}>
+                    {allScenesLoading ? (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, color: "#FFD166", fontWeight: 700, marginBottom: 8 }}>
+                            씬 집필 중... {allScenesProgress.current}/{allScenesProgress.total}
+                          </div>
+                          <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 4, overflow: "hidden" }}>
+                            <div style={{ height: "100%", background: "linear-gradient(90deg, #FFD166, #F7A072)", borderRadius: 4, width: `${allScenesProgress.total ? (allScenesProgress.current / allScenesProgress.total) * 100 : 0}%`, transition: "width 0.4s ease" }} />
+                          </div>
+                          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginTop: 6, fontFamily: "'JetBrains Mono', monospace" }}>
+                            {beatSheetResult.beats?.[allScenesProgress.current - 1]?.name_kr || ""} 작성 중
+                          </div>
+                        </div>
+                        <button onClick={() => { abortControllersRef.current["allScenes"]?.abort(); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.4)", background: "rgba(232,93,117,0.08)", color: "#E85D75", fontSize: 11, cursor: "pointer", flexShrink: 0 }}>중단</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#FFD166", marginBottom: 2 }}>전체 씬 일괄 집필</div>
+                          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
+                            {Object.keys(beatScenes).length > 0
+                              ? `${Object.keys(beatScenes).length}/${beatSheetResult.beats?.length || 0}개 완료 · 나머지 이어서 생성`
+                              : `15개 비트를 순서대로 자동 집필합니다`}
+                          </div>
+                        </div>
+                        <button onClick={generateAllScenes} disabled={allScenesLoading} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid rgba(255,209,102,0.4)", background: "rgba(255,209,102,0.12)", color: "#FFD166", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                          <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                          {Object.keys(beatScenes).length > 0 ? "이어서 집필" : "전체 집필 시작"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <BeatSheetPanel
                     data={beatSheetResult}
                     beatScenes={beatScenes}
