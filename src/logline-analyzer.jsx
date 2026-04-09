@@ -589,6 +589,11 @@ export default function LoglineAnalyzer() {
   const [writerEdits, setWriterEdits] = useState({});
   // 구조: { treatment: string|null, synopsis: string|null, character: {...}|null, beats: {[id]: string} }
 
+  // ── Generation Context Badges (결과 생성 시 사용된 컨텍스트 추적) ──
+  const [treatmentCtx, setTreatmentCtx] = useState(null);   // { char, synopsis, plotPoints, genre }
+  const [beatSheetCtx, setBeatSheetCtx] = useState(null);   // { char, treatment, synopsis, genre }
+  const [scenarioDraftCtx, setScenarioDraftCtx] = useState(null); // { char, treatment, beats, dialogue, genre }
+
   // ── Feedback Refine (각 결과물 대화형 수정) ──
   const [treatmentFeedback, setTreatmentFeedback] = useState("");
   const [treatmentRefineLoading, setTreatmentRefineLoading] = useState(false);
@@ -1679,7 +1684,16 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock}${getStoryBible()}${structureBlock}${dialogueBlock}${treatmentBlock}${beatBlock}\n\n위 모든 정보를 반드시 반영해서 시나리오 초고를 작성하세요.\n- 등장인물 이름·성격·관계를 그대로 유지하세요\n- 비트 시트가 있다면 그 순서와 구조를 따르세요\n- 대사 목소리 프로필이 있다면 각 인물의 말투를 그에 맞게 쓰세요\n- 트리트먼트가 있다면 그 방향의 이야기를 따르세요`;
     try {
       const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal);
-      setScenarioDraftResult(text); await autoSave();
+      setScenarioDraftResult(text);
+      setScenarioDraftCtx({
+        char: !!(charDevResult?.protagonist || writerEdits.character),
+        treatment: !!effectiveTreatment,
+        beats: !!beatSheetResult?.beats?.length,
+        dialogue: !!dialogueDevResult?.character_voices?.length,
+        synopsis: !!(pipelineResult || synopsisResults),
+        genre: genre !== "auto" ? genreLabel : null,
+      });
+      await autoSave();
     }
     catch (err) { if (err.name !== "AbortError") setScenarioDraftError(err.message || "시나리오 생성 중 오류가 발생했습니다."); }
     finally { setScenarioDraftLoading(false); clearController("scenarioDraft"); }
@@ -1712,7 +1726,18 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       : "";
     const genreHint = GENRE_BEAT_HINTS[genre] || "";
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}${structureBlock}${contextBlock}${genreHint ? `\n\n${genreHint}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요. 시놉시스·트리트먼트·플롯포인트가 있다면 반드시 그 방향의 이야기와 인물을 따르세요.`;
-    try { const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, BeatSheetSchema); setBeatSheetResult(data); await autoSave(); }
+    try {
+      const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, BeatSheetSchema);
+      setBeatSheetResult(data);
+      setBeatSheetCtx({
+        char: !!charDevResult?.protagonist,
+        treatment: !!treatmentResult,
+        synopsis: !!(pipelineResult || synopsisResults),
+        plotPoints: !!structureResult?.plot_points?.length,
+        genre: genre !== "auto" ? genreLabel : null,
+      });
+      await autoSave();
+    }
     catch (err) { if (err.name !== "AbortError") setBeatSheetError(err.message || "비트 시트 생성 중 오류가 발생했습니다."); }
     finally { setBeatSheetLoading(false); clearController("beatSheet"); }
   };
@@ -1834,6 +1859,13 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal);
       setTreatmentResult(text);
+      setTreatmentCtx({
+        char: !!charDevResult?.protagonist,
+        synopsis: !!(pipelineResult || synopsisResults),
+        plotPoints: !!structureResult?.plot_points?.length,
+        genre: genre !== "auto" ? genreLabel : null,
+        structure: structureLabel,
+      });
       await autoSave();
     } catch (err) {
       if (err.name !== "AbortError") setTreatmentError(err.message || "트리트먼트 생성 중 오류가 발생했습니다.");
@@ -3501,6 +3533,15 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                       </div>
                     ) : (
                       <>
+                        {treatmentCtx && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
+                            {treatmentCtx.genre && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(200,168,75,0.1)", color: "#C8A84B", border: "1px solid rgba(200,168,75,0.2)" }}>{treatmentCtx.genre}</span>}
+                            {treatmentCtx.char && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(251,146,60,0.1)", color: "#FB923C", border: "1px solid rgba(251,146,60,0.2)" }}>캐릭터 분석 반영</span>}
+                            {treatmentCtx.synopsis && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(78,204,163,0.1)", color: "#4ECCA3", border: "1px solid rgba(78,204,163,0.2)" }}>시놉시스 반영</span>}
+                            {treatmentCtx.plotPoints && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(96,165,250,0.1)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.2)" }}>플롯 포인트 반영</span>}
+                            <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(var(--tw),0.05)", color: "var(--c-tx-40)", border: "1px solid var(--c-bd-2)" }}>{treatmentCtx.structure}</span>
+                          </div>
+                        )}
                         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 10 }}>
                           <button
                             onClick={() => { setTreatmentEditDraft(writerEdits.treatment || treatmentResult); setEditingTreatment(true); }}
@@ -3570,6 +3611,15 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 <ErrorMsg msg={beatSheetError} />
                 {beatSheetResult && (
                   <ResultCard title="비트 시트" onClose={() => { setBeatSheetResult(null); setBeatSheetHistory([]); }} onUndo={() => undoHistory(setBeatSheetHistory, setBeatSheetResult, beatSheetHistory)} historyCount={beatSheetHistory.length} color="rgba(255,209,102,0.15)">
+                    {beatSheetCtx && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
+                        {beatSheetCtx.genre && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(255,209,102,0.1)", color: "#FFD166", border: "1px solid rgba(255,209,102,0.2)" }}>{beatSheetCtx.genre} 맞춤</span>}
+                        {beatSheetCtx.char && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(251,146,60,0.1)", color: "#FB923C", border: "1px solid rgba(251,146,60,0.2)" }}>캐릭터 반영</span>}
+                        {beatSheetCtx.treatment && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(200,168,75,0.1)", color: "#C8A84B", border: "1px solid rgba(200,168,75,0.2)" }}>트리트먼트 반영</span>}
+                        {beatSheetCtx.synopsis && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(78,204,163,0.1)", color: "#4ECCA3", border: "1px solid rgba(78,204,163,0.2)" }}>시놉시스 반영</span>}
+                        {beatSheetCtx.plotPoints && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(96,165,250,0.1)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.2)" }}>플롯 포인트 반영</span>}
+                      </div>
+                    )}
                     <BeatSheetPanel
                       data={beatSheetResult}
                       beatScenes={beatScenes}
@@ -3666,6 +3716,16 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               <ErrorMsg msg={scenarioDraftError} />
               {scenarioDraftResult && (
                 <ResultCard title="시나리오 초고" onClose={() => { setScenarioDraftResult(""); setScenarioDraftHistory([]); }} onUndo={() => undoHistory(setScenarioDraftHistory, setScenarioDraftResult, scenarioDraftHistory)} historyCount={scenarioDraftHistory.length} color="rgba(167,139,250,0.15)">
+                  {scenarioDraftCtx && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
+                      {scenarioDraftCtx.genre && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(167,139,250,0.1)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}>{scenarioDraftCtx.genre}</span>}
+                      {scenarioDraftCtx.char && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(251,146,60,0.1)", color: "#FB923C", border: "1px solid rgba(251,146,60,0.2)" }}>캐릭터 반영</span>}
+                      {scenarioDraftCtx.synopsis && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(78,204,163,0.1)", color: "#4ECCA3", border: "1px solid rgba(78,204,163,0.2)" }}>시놉시스 반영</span>}
+                      {scenarioDraftCtx.treatment && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(200,168,75,0.1)", color: "#C8A84B", border: "1px solid rgba(200,168,75,0.2)" }}>트리트먼트 반영</span>}
+                      {scenarioDraftCtx.beats && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(255,209,102,0.1)", color: "#FFD166", border: "1px solid rgba(255,209,102,0.2)" }}>비트 시트 반영</span>}
+                      {scenarioDraftCtx.dialogue && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(244,114,182,0.1)", color: "#F472B6", border: "1px solid rgba(244,114,182,0.2)" }}>대사 목소리 반영</span>}
+                    </div>
+                  )}
                   <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
                     <button
                       onClick={() => navigator.clipboard.writeText(scenarioDraftResult)}
