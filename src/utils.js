@@ -156,6 +156,10 @@ async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, 
   }
 
   const data = await response.json();
+  // Anthropic may return 200 with type:"error" (e.g., credit exhaustion edge cases)
+  if (data.type === "error" || (!data.content && data.error)) {
+    throw new Error(data.error?.message || "Anthropic API 오류가 발생했습니다.");
+  }
   return data.content?.map((b) => b.text || "").join("") || "";
 }
 
