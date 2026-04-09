@@ -14,6 +14,8 @@ export { TREATMENT_SYSTEM_PROMPT, BEAT_SHEET_SYSTEM_PROMPT, SCENE_LIST_SYSTEM_PR
 
 export { SCRIPT_COVERAGE_SYSTEM_PROMPT, VALUATION_SYSTEM_PROMPT } from "./stages/stage6.js";
 
+export { REWRITE_DIAG_SYSTEM_PROMPT, PARTIAL_REWRITE_SYSTEM_PROMPT, FULL_REWRITE_SYSTEM_PROMPT } from "./stages/stage8.js";
+
 // ─────────────────────────────────────────────
 // 영상 포맷 옵션 (UI 데이터 — 이동하지 않음)
 // ─────────────────────────────────────────────

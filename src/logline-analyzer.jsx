@@ -11,6 +11,7 @@ import {
   SCRIPT_COVERAGE_SYSTEM_PROMPT, DIALOGUE_DEV_SYSTEM_PROMPT, SCENARIO_DRAFT_SYSTEM_PROMPT,
   STRUCTURE_ANALYSIS_SYSTEM_PROMPT, THEME_ANALYSIS_SYSTEM_PROMPT, SCENE_LIST_SYSTEM_PROMPT,
   COMPARABLE_WORKS_SYSTEM_PROMPT, VALUATION_SYSTEM_PROMPT,
+  REWRITE_DIAG_SYSTEM_PROMPT, PARTIAL_REWRITE_SYSTEM_PROMPT, FULL_REWRITE_SYSTEM_PROMPT,
   CRITERIA_GUIDE, LABELS_KR, GENRES, DURATION_OPTIONS, EXAMPLE_LOGLINES,
 } from "./constants.js";
 import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText } from "./utils.js";
@@ -108,7 +109,8 @@ const STAGES = [
   { id: "2", num: "04", name: "개념 분석", sub: "학술 / 신화 / 전문가 / 서사 코드 / 테마 (선택)", icon: ICON.chart },
   { id: "5", num: "05", name: "트리트먼트 비트", sub: "트리트먼트 / 비트시트 / 대사", icon: ICON.film },
   { id: "6", num: "06", name: "시나리오 초고", sub: "시나리오 생성 / Field · McKee · Snyder", icon: ICON.film },
-  { id: "7", num: "07", name: "Script Coverage", sub: "최종 커버리지 리포트", icon: ICON.clipboard },
+  { id: "8", num: "07", name: "시나리오 고쳐쓰기", sub: "초고 진단 / 부분 재작성 / 전체 개고", icon: ICON.edit },
+  { id: "7", num: "08", name: "Script Coverage", sub: "최종 커버리지 리포트", icon: ICON.clipboard },
 ];
 
 /* ─── Genre-specific beat structure hints ─── */
@@ -618,6 +620,19 @@ export default function LoglineAnalyzer() {
   const [beatSheetStale, setBeatSheetStale] = useState(false);
   const [scenarioDraftStale, setScenarioDraftStale] = useState(false);
 
+  // ── Rewrite (Stage 8) ──
+  const [rewriteDiagResult, setRewriteDiagResult] = useState(null);
+  const [rewriteDiagLoading, setRewriteDiagLoading] = useState(false);
+  const [rewriteDiagError, setRewriteDiagError] = useState("");
+  const [partialRewriteInstruction, setPartialRewriteInstruction] = useState("");
+  const [partialRewriteResult, setPartialRewriteResult] = useState("");
+  const [partialRewriteLoading, setPartialRewriteLoading] = useState(false);
+  const [partialRewriteError, setPartialRewriteError] = useState("");
+  const [fullRewriteNotes, setFullRewriteNotes] = useState("");
+  const [fullRewriteResult, setFullRewriteResult] = useState("");
+  const [fullRewriteLoading, setFullRewriteLoading] = useState(false);
+  const [fullRewriteError, setFullRewriteError] = useState("");
+
   // ── Early Coverage (Stage 1 빠른 상업성 체크) ──
   const [earlyCoverageResult, setEarlyCoverageResult] = useState(null);
   const [earlyCoverageLoading, setEarlyCoverageLoading] = useState(false);
@@ -738,6 +753,7 @@ export default function LoglineAnalyzer() {
     dialogueDevResult, scriptCoverageResult,
     structureResult, themeResult, sceneListResult, scenarioDraftResult,
     comparableResult, valuationResult,
+    rewriteDiagResult, partialRewriteResult, fullRewriteResult,
     writerEdits,
     treatmentHistory, beatSheetHistory, scenarioDraftHistory, charDevHistory, pipelineHistory,
   });
@@ -797,6 +813,9 @@ export default function LoglineAnalyzer() {
     setThemeResult(proj.themeResult || null);
     setSceneListResult(proj.sceneListResult || "");
     setScenarioDraftResult(proj.scenarioDraftResult || "");
+    setRewriteDiagResult(proj.rewriteDiagResult || null);
+    setPartialRewriteResult(proj.partialRewriteResult || "");
+    setFullRewriteResult(proj.fullRewriteResult || "");
     setComparableResult(proj.comparableResult || null);
     setValuationResult(proj.valuationResult || null);
     setWriterEdits(proj.writerEdits || {});
@@ -2022,6 +2041,60 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     } finally { setScenarioDraftRefineLoading(false); clearController("scenarioRefine"); }
   };
 
+  // ── 시나리오 고쳐쓰기: 초고 진단 ──
+  const generateRewriteDiag = async () => {
+    if (!scenarioDraftResult || !apiKey) return;
+    const ctrl = makeController("rewriteDiag");
+    setRewriteDiagLoading(true);
+    setRewriteDiagError("");
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n\n── 시나리오 초고 ──\n${scenarioDraftResult.slice(0, 8000)}\n\n위 초고를 분석하고 고쳐쓰기 우선순위를 제시하세요.`;
+    try {
+      const data = await callClaude(apiKey, REWRITE_DIAG_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal);
+      setRewriteDiagResult(data);
+      await autoSave();
+    } catch (e) {
+      if (e.name !== "AbortError") setRewriteDiagError(e.message || "분석 중 오류가 발생했습니다.");
+    } finally { setRewriteDiagLoading(false); clearController("rewriteDiag"); }
+  };
+
+  // ── 시나리오 고쳐쓰기: 부분 재작성 ──
+  const generatePartialRewrite = async () => {
+    if (!scenarioDraftResult || !partialRewriteInstruction.trim() || !apiKey) return;
+    const ctrl = makeController("partialRewrite");
+    setPartialRewriteLoading(true);
+    setPartialRewriteError("");
+    const msg = `로그라인: "${logline.trim()}"\n\n── 시나리오 초고 ──\n${scenarioDraftResult.slice(0, 8000)}\n\n── 재작성 지시 ──\n${partialRewriteInstruction.trim()}\n\n위 지시에 따라 해당 부분을 재작성하세요.`;
+    try {
+      const text = await callClaudeText(apiKey, PARTIAL_REWRITE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal);
+      setPartialRewriteResult(text);
+      await autoSave();
+    } catch (e) {
+      if (e.name !== "AbortError") setPartialRewriteError(e.message || "재작성 중 오류가 발생했습니다.");
+    } finally { setPartialRewriteLoading(false); clearController("partialRewrite"); }
+  };
+
+  // ── 시나리오 고쳐쓰기: 전체 개고 ──
+  const generateFullRewrite = async () => {
+    if (!scenarioDraftResult || !apiKey) return;
+    const ctrl = makeController("fullRewrite");
+    setFullRewriteLoading(true);
+    setFullRewriteError("");
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
+    const diagSummary = rewriteDiagResult
+      ? `\n\n── 진단 결과 (반영 필수) ──\n${(rewriteDiagResult.priority_fixes || []).slice(0, 3).map((f) => `• ${f.category}: ${f.issue} → ${f.fix_direction}`).join("\n")}`
+      : "";
+    const notes = fullRewriteNotes.trim() ? `\n\n── 작가 메모 ──\n${fullRewriteNotes.trim()}` : "";
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}${diagSummary}${notes}\n\n── 개고할 초고 ──\n${scenarioDraftResult.slice(0, 8000)}\n\n위 초고를 전체적으로 개고하세요.`;
+    try {
+      const text = await callClaudeText(apiKey, FULL_REWRITE_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal);
+      setFullRewriteResult(text);
+      await autoSave();
+    } catch (e) {
+      if (e.name !== "AbortError") setFullRewriteError(e.message || "개고 중 오류가 발생했습니다.");
+    } finally { setFullRewriteLoading(false); clearController("fullRewrite"); }
+  };
+
   // ── 캐릭터 피드백 다듬기 ──
   const refineCharDev = async () => {
     if (!charDevResult || !charDevFeedback.trim() || !apiKey) return;
@@ -2152,6 +2225,11 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       if (scenarioDraftLoading) return "active";
       return "idle";
     }
+    if (stageId === "8") {
+      if (rewriteDiagResult || partialRewriteResult || fullRewriteResult) return "done";
+      if (rewriteDiagLoading || partialRewriteLoading || fullRewriteLoading) return "active";
+      return "idle";
+    }
     if (stageId === "7") {
       if (scriptCoverageResult) return "done";
       if (scriptCoverageLoading) return "active";
@@ -2182,12 +2260,15 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     if (stageId === "6") {
       return [scenarioDraftResult].filter(Boolean).length;
     }
+    if (stageId === "8") {
+      return [rewriteDiagResult, partialRewriteResult || fullRewriteResult].filter(Boolean).length;
+    }
     if (stageId === "7") {
       return [scriptCoverageResult || valuationResult].filter(Boolean).length;
     }
     return 0;
   }
-  const STAGE_TOTALS = { "1": 1, "2": 1, "3": 1, "4": 2, "5": 3, "6": 1, "7": 1 };
+  const STAGE_TOTALS = { "1": 1, "2": 1, "3": 1, "4": 2, "5": 3, "6": 1, "8": 2, "7": 1 };
 
   // ── Error display helper ──
   function ErrorMsg({ msg }) {
@@ -4102,8 +4183,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
               {getStageStatus("6") === "done" && (
                 <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={() => advanceToStage("7")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
-                    다음 단계: Script Coverage
+                  <button onClick={() => advanceToStage("8")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
+                    다음 단계: 시나리오 고쳐쓰기
                     <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                   </button>
                 </div>
@@ -4113,11 +4194,164 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
             )}
           </div>
 
+          {/* ═══ STAGE 8: 시나리오 고쳐쓰기 ═══ */}
+          <div ref={(el) => { stageRefs.current["8"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "8" ? "rgba(251,146,60,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
+            <div onClick={() => setCurrentStage("8")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "8" ? "rgba(251,146,60,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("8")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("8") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
+                {getStageStatus("8") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("8")] }}>07</span>}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "8" ? "var(--text-main)" : getStageStatus("8") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>시나리오 고쳐쓰기</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>초고 진단 / 부분 재작성 / 전체 개고</div>
+              </div>
+              {currentStage !== "8" && getStageDoneCount("8") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("8")}/{STAGE_TOTALS["8"]}</span>}
+              {getStageStatus("8") === "active" && <Spinner size={12} color="#FB923C" />}
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "8" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+            </div>
+            {currentStage === "8" && (
+              <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
+              <ErrorBoundary><div>
+
+              {/* 안내 배너 */}
+              <div style={{ marginBottom: 20, padding: "14px 16px", borderRadius: 12, background: "rgba(251,146,60,0.06)", border: "1px solid rgba(251,146,60,0.2)" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#FB923C", marginBottom: 5 }}>고쳐쓰기(Rewriting)란?</div>
+                <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.7 }}>
+                  초고를 쓴 뒤 냉정하게 다시 보는 단계입니다. 먼저 <strong style={{ color: "var(--c-tx-75)" }}>초고 진단</strong>으로 문제점을 파악하고,<br />
+                  <strong style={{ color: "var(--c-tx-75)" }}>부분 재작성</strong>으로 특정 씬을 집중 수정하거나 <strong style={{ color: "var(--c-tx-75)" }}>전체 개고</strong>로 완성도를 높이세요.
+                </div>
+              </div>
+
+              {/* ── 1. 초고 진단 ── */}
+              <div style={{ marginBottom: 20 }}>
+                <ToolButton
+                  icon={<SvgIcon d={ICON.clipboard} size={16} />}
+                  label="초고 진단"
+                  sub="고쳐쓰기 우선순위 분석"
+                  done={!!rewriteDiagResult}
+                  loading={rewriteDiagLoading}
+                  color="#FB923C"
+                  onClick={generateRewriteDiag}
+                  disabled={!scenarioDraftResult || !logline.trim()}
+                  tooltip={"시나리오 초고를 분석해 고쳐야 할 부분을 우선순위별로 제시합니다.\n\n• 구조 문제, 캐릭터 일관성, 씬 단위 약점\n• 대사 및 페이스 문제\n• 구체적인 수정 방향 제안\n\n6단계 시나리오 초고가 필요합니다."}
+                />
+                {!scenarioDraftResult && <div style={{ marginTop: 6, fontSize: 11, color: "var(--c-tx-35)", fontFamily: "'Noto Sans KR', sans-serif" }}>6단계에서 시나리오 초고를 먼저 생성하세요.</div>}
+                <ErrorMsg msg={rewriteDiagError} />
+                {rewriteDiagResult && (
+                  <ResultCard title="초고 진단 결과" onClose={() => setRewriteDiagResult(null)} color="rgba(251,146,60,0.12)">
+                    <div style={{ marginBottom: 12, padding: "12px 14px", borderRadius: 9, background: "rgba(251,146,60,0.06)", border: "1px solid rgba(251,146,60,0.15)" }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#FB923C", marginBottom: 5 }}>종합 평가</div>
+                      <div style={{ fontSize: 13, color: "var(--c-tx-65)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{rewriteDiagResult.overall_assessment}</div>
+                    </div>
+                    {(rewriteDiagResult.priority_fixes || []).map((fix, i) => (
+                      <div key={i} style={{ marginBottom: 10, padding: "12px 14px", borderRadius: 9, background: "var(--c-card-1)", border: "1px solid var(--c-bd-2)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: "#FB923C", padding: "2px 7px", borderRadius: 6, background: "rgba(251,146,60,0.12)", border: "1px solid rgba(251,146,60,0.2)" }}>우선순위 {fix.priority}</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-65)" }}>{fix.category}</span>
+                          <span style={{ fontSize: 10, color: "var(--c-tx-35)", fontFamily: "'Noto Sans KR', sans-serif" }}>{fix.location}</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: "var(--c-tx-60)", marginBottom: 6, lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>{fix.issue}</div>
+                        <div style={{ fontSize: 12, color: "#FB923C", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>→ {fix.fix_direction}</div>
+                      </div>
+                    ))}
+                    {rewriteDiagResult.strengths?.length > 0 && (
+                      <div style={{ marginBottom: 10, padding: "10px 14px", borderRadius: 9, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.12)" }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#4ECCA3", marginBottom: 6 }}>강점</div>
+                        {rewriteDiagResult.strengths.map((s, i) => <div key={i} style={{ fontSize: 12, color: "var(--c-tx-55)", marginBottom: 3, fontFamily: "'Noto Sans KR', sans-serif" }}>✓ {s}</div>)}
+                      </div>
+                    )}
+                    {rewriteDiagResult.rewrite_strategy && (
+                      <div style={{ padding: "10px 14px", borderRadius: 9, background: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.12)" }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#A78BFA", marginBottom: 5 }}>개고 전략</div>
+                        <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{rewriteDiagResult.rewrite_strategy}</div>
+                      </div>
+                    )}
+                  </ResultCard>
+                )}
+              </div>
+
+              {/* ── 2. 부분 재작성 ── */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)", marginBottom: 8 }}>✏️ 부분 재작성</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>
+                  특정 씬·섹션을 어떻게 고칠지 지시하면 AI가 해당 부분만 재작성합니다.
+                </div>
+                <textarea
+                  value={partialRewriteInstruction}
+                  onChange={(e) => setPartialRewriteInstruction(e.target.value)}
+                  placeholder={"예: 오프닝 씬을 더 강렬하게 시작하도록 수정해줘\n예: 2막 갈등 장면에서 주인공 대사가 너무 직접적이야. 하위텍스트를 넣어줘\n예: 결말 씬을 열린 결말로 바꿔줘"}
+                  style={{ width: "100%", minHeight: 90, padding: "10px 12px", borderRadius: 9, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6, resize: "vertical", boxSizing: "border-box" }}
+                />
+                <button
+                  onClick={generatePartialRewrite}
+                  disabled={!scenarioDraftResult || !partialRewriteInstruction.trim() || partialRewriteLoading}
+                  style={{ marginTop: 8, padding: "9px 20px", borderRadius: 9, border: "1px solid rgba(251,146,60,0.35)", background: partialRewriteLoading ? "rgba(251,146,60,0.05)" : "rgba(251,146,60,0.1)", color: "#FB923C", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif", opacity: (!scenarioDraftResult || !partialRewriteInstruction.trim()) ? 0.4 : 1 }}
+                >
+                  {partialRewriteLoading ? "재작성 중…" : "부분 재작성"}
+                </button>
+                <ErrorMsg msg={partialRewriteError} />
+                {partialRewriteResult && (
+                  <ResultCard title="부분 재작성 결과" onClose={() => setPartialRewriteResult("")} color="rgba(251,146,60,0.12)">
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+                      <button onClick={() => navigator.clipboard.writeText(partialRewriteResult)} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(251,146,60,0.3)", background: "rgba(251,146,60,0.08)", color: "#FB923C", fontSize: 11, cursor: "pointer" }}>복사</button>
+                    </div>
+                    <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 12 : 13, lineHeight: 1.8, color: "var(--c-tx-75)", margin: 0 }}>
+                      {partialRewriteResult}
+                    </pre>
+                  </ResultCard>
+                )}
+              </div>
+
+              {/* ── 3. 전체 개고 ── */}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)", marginBottom: 8 }}>📝 전체 개고</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>
+                  초고 진단 결과를 자동 반영하여 전체를 다시 씁니다. 추가 메모가 있으면 아래에 입력하세요.
+                </div>
+                <textarea
+                  value={fullRewriteNotes}
+                  onChange={(e) => setFullRewriteNotes(e.target.value)}
+                  placeholder={"(선택) 특별히 강조하거나 바꾸고 싶은 방향을 적어주세요\n예: 주인공을 더 능동적으로 만들어줘\n예: 결말을 비극으로 바꿔줘"}
+                  style={{ width: "100%", minHeight: 70, padding: "10px 12px", borderRadius: 9, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6, resize: "vertical", boxSizing: "border-box" }}
+                />
+                <button
+                  onClick={generateFullRewrite}
+                  disabled={!scenarioDraftResult || fullRewriteLoading}
+                  style={{ marginTop: 8, padding: "9px 20px", borderRadius: 9, border: "1px solid rgba(251,146,60,0.35)", background: fullRewriteLoading ? "rgba(251,146,60,0.05)" : "rgba(251,146,60,0.1)", color: "#FB923C", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif", opacity: !scenarioDraftResult ? 0.4 : 1 }}
+                >
+                  {fullRewriteLoading ? "개고 중… (시간이 걸릴 수 있습니다)" : "전체 개고 시작"}
+                </button>
+                <ErrorMsg msg={fullRewriteError} />
+                {fullRewriteResult && (
+                  <ResultCard title="개고된 시나리오" onClose={() => setFullRewriteResult("")} color="rgba(251,146,60,0.12)">
+                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8, gap: 6 }}>
+                      <button onClick={() => navigator.clipboard.writeText(fullRewriteResult)} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(251,146,60,0.3)", background: "rgba(251,146,60,0.08)", color: "#FB923C", fontSize: 11, cursor: "pointer" }}>전체 복사</button>
+                    </div>
+                    <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 12 : 13, lineHeight: 1.8, color: "var(--c-tx-75)", margin: 0 }}>
+                      {fullRewriteResult}
+                    </pre>
+                  </ResultCard>
+                )}
+              </div>
+
+              {getStageStatus("8") === "done" && (
+                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
+                  <button onClick={() => advanceToStage("7")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
+                    다음 단계: Script Coverage
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+              )}
+
+            </div></ErrorBoundary>
+              </div>
+            )}
+          </div>
+
           {/* ═══ STAGE 7: Script Coverage ═══ */}
           <div ref={(el) => { stageRefs.current["7"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "7" ? "rgba(96,165,250,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
             <div onClick={() => setCurrentStage("7")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "7" ? "rgba(96,165,250,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("7")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("7") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
-                {getStageStatus("7") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("7")] }}>07</span>}
+                {getStageStatus("7") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("7")] }}>08</span>}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "7" ? "var(--text-main)" : getStageStatus("7") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>Script Coverage</div>
