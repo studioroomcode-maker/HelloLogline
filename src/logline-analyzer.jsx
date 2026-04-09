@@ -8,7 +8,7 @@ import {
   AUTHENTICITY_SYSTEM_PROMPT, BEAT_SHEET_SYSTEM_PROMPT, SCENE_GEN_SYSTEM_PROMPT,
   CHARACTER_DEV_SYSTEM_PROMPT, TREATMENT_SYSTEM_PROMPT, SUBTEXT_SYSTEM_PROMPT,
   MYTH_MAP_SYSTEM_PROMPT, BARTHES_CODE_SYSTEM_PROMPT, KOREAN_MYTH_SYSTEM_PROMPT,
-  SCRIPT_COVERAGE_SYSTEM_PROMPT, DIALOGUE_DEV_SYSTEM_PROMPT,
+  SCRIPT_COVERAGE_SYSTEM_PROMPT, DIALOGUE_DEV_SYSTEM_PROMPT, SCENARIO_DRAFT_SYSTEM_PROMPT,
   STRUCTURE_ANALYSIS_SYSTEM_PROMPT, THEME_ANALYSIS_SYSTEM_PROMPT, SCENE_LIST_SYSTEM_PROMPT,
   COMPARABLE_WORKS_SYSTEM_PROMPT, VALUATION_SYSTEM_PROMPT,
   CRITERIA_GUIDE, LABELS_KR, GENRES, DURATION_OPTIONS, EXAMPLE_LOGLINES,
@@ -107,7 +107,8 @@ const STAGES = [
   { id: "3", num: "03", name: "캐릭터", sub: "그림자 / 진정성 / 캐릭터 디벨롭", icon: ICON.users },
   { id: "4", num: "04", name: "시놉시스", sub: "구조분석 / 가치전하 / 하위텍스트 / 시놉시스", icon: ICON.doc },
   { id: "5", num: "05", name: "트리트먼트 비트", sub: "트리트먼트 / 씬 리스트 / 비트시트 / 대사", icon: ICON.film },
-  { id: "6", num: "06", name: "Script Coverage", sub: "최종 커버리지 리포트", icon: ICON.clipboard },
+  { id: "6", num: "06", name: "시나리오 초고", sub: "시나리오 생성 / Field · McKee · Snyder", icon: ICON.film },
+  { id: "7", num: "07", name: "Script Coverage", sub: "최종 커버리지 리포트", icon: ICON.clipboard },
 ];
 
 /* ─── Tooltip component ─── */
@@ -209,9 +210,8 @@ function ToolButton({ icon, label, sub, done, loading, color, onClick, disabled,
       {tipVisible && tooltip && (
         <div style={{
           position: "absolute",
-          bottom: "calc(100% + 10px)",
-          left: "50%",
-          transform: "translateX(-50%)",
+          top: "calc(100% + 10px)",
+          right: 0,
           background: "var(--bg-tooltip)",
           border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: 12,
@@ -230,12 +230,11 @@ function ToolButton({ icon, label, sub, done, loading, color, onClick, disabled,
           wordBreak: "keep-all",
         }}>
           <div style={{
-            position: "absolute", top: "100%", left: "50%",
-            transform: "translateX(-50%)",
+            position: "absolute", bottom: "100%", right: 16,
             width: 0, height: 0,
             borderLeft: "7px solid transparent",
             borderRight: "7px solid transparent",
-            borderTop: "7px solid var(--bg-tooltip)",
+            borderBottom: "7px solid var(--bg-tooltip)",
           }} />
           {tooltip}
         </div>
@@ -455,6 +454,11 @@ export default function LoglineAnalyzer() {
   const [sceneListError, setSceneListError] = useState("");
   const sceneListRef = useRef(null);
 
+  // ── Scenario Draft ──
+  const [scenarioDraftResult, setScenarioDraftResult] = useState("");
+  const [scenarioDraftLoading, setScenarioDraftLoading] = useState(false);
+  const [scenarioDraftError, setScenarioDraftError] = useState("");
+
   // ── Project persistence ──
   const [showProjects, setShowProjects] = useState(false);
   const [savedProjects, setSavedProjects] = useState([]);
@@ -553,7 +557,7 @@ export default function LoglineAnalyzer() {
     synopsisResults, pipelineResult, selectedSynopsisIndex,
     treatmentResult, beatSheetResult, beatScenes,
     dialogueDevResult, scriptCoverageResult,
-    structureResult, themeResult, sceneListResult,
+    structureResult, themeResult, sceneListResult, scenarioDraftResult,
     comparableResult, valuationResult,
   });
 
@@ -611,6 +615,7 @@ export default function LoglineAnalyzer() {
     setStructureResult(proj.structureResult || null);
     setThemeResult(proj.themeResult || null);
     setSceneListResult(proj.sceneListResult || "");
+    setScenarioDraftResult(proj.scenarioDraftResult || "");
     setComparableResult(proj.comparableResult || null);
     setValuationResult(proj.valuationResult || null);
     setCurrentProjectId(proj.id);
@@ -1039,7 +1044,8 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
   // ── Analyze ──
   const analyze = async (overrideLogline) => {
     const target = overrideLogline ?? logline;
-    if (!target.trim() || !apiKey) return;
+    console.log("[analyze] called", { target: typeof target, len: target?.length, apiKey: !!apiKey, loading });
+    if (!target.trim() || !apiKey) { console.log("[analyze] early return"); return; }
     if (overrideLogline) setLogline(overrideLogline);
     const ctrl = makeController("analyze");
     setLoading(true);
@@ -1405,6 +1411,24 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
     finally { setSceneListLoading(false); clearController("sceneList"); }
   };
 
+  // ── Scenario Draft ──
+  const generateScenarioDraft = async () => {
+    if (!logline.trim() || !apiKey) return;
+    const ctrl = makeController("scenarioDraft");
+    setScenarioDraftLoading(true); setScenarioDraftError(""); setScenarioDraftResult("");
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
+    const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || "주인공"} — Want: ${charDevResult.protagonist.want || ""} / Need: ${charDevResult.protagonist.need || ""}` : "";
+    const treatmentBlock = treatmentResult ? `\n\n트리트먼트:\n${treatmentResult.slice(0, 2000)}` : "";
+    const beatBlock = beatSheetResult ? `\n\n비트 시트 (${beatSheetResult.beats?.length || 0}비트):\n${(beatSheetResult.beats || []).map((b) => `#${b.id} ${b.name_kr}: ${b.summary}`).join("\n")}` : "";
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n${charBlock}` : ""}${getStoryBible()}${treatmentBlock}${beatBlock}\n\n위 정보를 바탕으로 시나리오 초고를 작성하세요. 트리트먼트·비트 시트가 있다면 그 방향의 이야기와 인물을 반드시 따르세요.`;
+    try {
+      const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal);
+      setScenarioDraftResult(text); await autoSave();
+    }
+    catch (err) { if (err.name !== "AbortError") setScenarioDraftError(err.message || "시나리오 생성 중 오류가 발생했습니다."); }
+    finally { setScenarioDraftLoading(false); clearController("scenarioDraft"); }
+  };
+
   // ── Beat Sheet ──
   const generateBeatSheet = async () => {
     if (!logline.trim() || !apiKey) return;
@@ -1653,6 +1677,11 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
       return "idle";
     }
     if (stageId === "6") {
+      if (scenarioDraftResult) return "done";
+      if (scenarioDraftLoading) return "active";
+      return "idle";
+    }
+    if (stageId === "7") {
       if (scriptCoverageResult) return "done";
       if (scriptCoverageLoading) return "active";
       return "idle";
@@ -1680,11 +1709,14 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
       return [treatmentResult, sceneListResult, beatSheetResult, dialogueDevResult].filter(Boolean).length;
     }
     if (stageId === "6") {
+      return [scenarioDraftResult].filter(Boolean).length;
+    }
+    if (stageId === "7") {
       return [scriptCoverageResult, valuationResult].filter(Boolean).length;
     }
     return 0;
   }
-  const STAGE_TOTALS = { "1": 1, "2": 8, "3": 3, "4": 3, "5": 4, "6": 2 };
+  const STAGE_TOTALS = { "1": 1, "2": 8, "3": 3, "4": 3, "5": 4, "6": 1, "7": 2 };
 
   // ── Error display helper ──
   function ErrorMsg({ msg }) {
@@ -1704,7 +1736,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
     valueChargeLoading || shadowLoading || authenticityLoading || subtextLoading ||
     mythMapLoading || barthesCodeLoading || koreanMythLoading || scriptCoverageLoading || allScenesLoading ||
     dialogueDevLoading || beatSheetLoading || charDevLoading || treatmentLoading ||
-    structureLoading || themeLoading || sceneListLoading;
+    structureLoading || themeLoading || sceneListLoading || scenarioDraftLoading;
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-page)", color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif" }}>
@@ -1943,7 +1975,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
       }}>
 
           {/* ═══ STAGE 1: Logline ═══ */}
-          <div ref={(el) => { stageRefs.current["1"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden", border: `1px solid ${currentStage === "1" ? "rgba(200,168,75,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
+          <div ref={(el) => { stageRefs.current["1"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "1" ? "rgba(200,168,75,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
             <div onClick={() => setCurrentStage("1")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "1" ? "rgba(200,168,75,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("1")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("1") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("1") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("1")] }}>01</span>}
@@ -2119,7 +2151,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
               {/* Main analyze button */}
               <Tooltip text={"로그라인을 입력하면 AI가 시나리오 전문가 관점에서 종합 분석을 시작합니다.\n\n분석 항목:\n• 구조적 완성도 — 이야기의 뼈대가 탄탄한지\n• 표현적 매력도 — 읽는 사람을 끌어당기는 힘\n• 기술적 완성도 — 장르·캐릭터·갈등의 명확성\n• 흥미 유발 지수 — 제작사가 관심을 가질 가능성\n\n분석 결과를 바탕으로 아래 심화 도구들이 활성화됩니다."} maxWidth={340}>
-              <button onClick={analyze} disabled={loading || !logline.trim() || !apiKey} style={{
+              <button onClick={() => analyze()} disabled={loading || !logline.trim() || !apiKey} style={{
                 width: "100%", height: 48, borderRadius: 12, border: "1px solid rgba(200,168,75,0.4)",
                 cursor: loading || !logline.trim() || !apiKey ? "not-allowed" : "pointer",
                 background: loading || !logline.trim() || !apiKey ? "rgba(200,168,75,0.05)" : "linear-gradient(135deg, rgba(200,168,75,0.2), rgba(200,168,75,0.1))",
@@ -2375,7 +2407,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
           </div>
 
           {/* ═══ STAGE 2: 개념 분석 ═══ */}
-          <div ref={(el) => { stageRefs.current["2"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden", border: `1px solid ${currentStage === "2" ? "rgba(69,183,209,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
+          <div ref={(el) => { stageRefs.current["2"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "2" ? "rgba(69,183,209,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
             <div onClick={() => setCurrentStage("2")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "2" ? "rgba(69,183,209,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("2")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("2") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("2") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("2")] }}>02</span>}
@@ -2442,7 +2474,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
           </div>
 
           {/* ═══ STAGE 3: 캐릭터 ═══ */}
-          <div ref={(el) => { stageRefs.current["3"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden", border: `1px solid ${currentStage === "3" ? "rgba(251,146,60,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
+          <div ref={(el) => { stageRefs.current["3"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "3" ? "rgba(251,146,60,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
             <div onClick={() => setCurrentStage("3")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "3" ? "rgba(251,146,60,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("3")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("3") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("3") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("3")] }}>03</span>}
@@ -2496,7 +2528,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
           </div>
 
           {/* ═══ STAGE 4: 시놉시스 ═══ */}
-          <div ref={(el) => { stageRefs.current["4"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden", border: `1px solid ${currentStage === "4" ? "rgba(78,204,163,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
+          <div ref={(el) => { stageRefs.current["4"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "4" ? "rgba(78,204,163,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
             <div onClick={() => setCurrentStage("4")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "4" ? "rgba(78,204,163,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("4")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("4") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("4") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("4")] }}>04</span>}
@@ -2759,7 +2791,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
           </div>
 
           {/* ═══ STAGE 5: Treatment / Beat Sheet ═══ */}
-          <div ref={(el) => { stageRefs.current["5"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden", border: `1px solid ${currentStage === "5" ? "rgba(255,209,102,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
+          <div ref={(el) => { stageRefs.current["5"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "5" ? "rgba(255,209,102,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
             <div onClick={() => setCurrentStage("5")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "5" ? "rgba(255,209,102,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("5")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("5") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("5") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("5")] }}>05</span>}
@@ -2925,9 +2957,69 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 </ResultCard>
               )}
               {dialogueDevResult && <ResultCard title="대사 디벨롭" onClose={() => setDialogueDevResult(null)} color="rgba(244,114,182,0.15)"><ErrorBoundary><DialogueDevPanel data={dialogueDevResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
+
               {getStageStatus("5") === "done" && (
                 <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
                   <button onClick={() => advanceToStage("6")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
+                    다음 단계: 시나리오 초고
+                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+              )}
+            </div></ErrorBoundary>
+              </div>
+            )}
+          </div>
+
+          {/* ═══ STAGE 6: 시나리오 초고 ═══ */}
+          <div ref={(el) => { stageRefs.current["6"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "6" ? "rgba(167,139,250,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
+            <div onClick={() => setCurrentStage("6")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "6" ? "rgba(167,139,250,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("6")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("6") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
+                {getStageStatus("6") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("6")] }}>06</span>}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "6" ? "var(--text-main)" : getStageStatus("6") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>시나리오 초고</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>Field · McKee · Snyder</div>
+              </div>
+              {currentStage !== "6" && getStageDoneCount("6") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("6")}/{STAGE_TOTALS["6"]}</span>}
+              {getStageStatus("6") === "active" && <Spinner size={12} color="#A78BFA" />}
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "6" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+            </div>
+            {currentStage === "6" && (
+              <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
+              <ErrorBoundary><div>
+
+              <ToolButton
+                icon={<SvgIcon d={ICON.film} size={16} />}
+                label="시나리오 생성"
+                sub="Field · McKee · Snyder"
+                done={!!scenarioDraftResult}
+                loading={scenarioDraftLoading}
+                color="#A78BFA"
+                onClick={generateScenarioDraft}
+                disabled={!logline.trim()}
+                tooltip={"로그라인·캐릭터·트리트먼트·비트 시트를 바탕으로 시나리오 초고를 작성합니다.\n\n표준 시나리오 포맷 (씬 헤더 · 액션 라인 · 대사)으로 출력되며, 3막 구조 전체를 커버합니다.\n\n트리트먼트와 비트 시트를 먼저 생성하면 더 완성도 높은 초고가 나옵니다."}
+              />
+              <ErrorMsg msg={scenarioDraftError} />
+              {scenarioDraftResult && (
+                <ResultCard title="시나리오 초고" onClose={() => setScenarioDraftResult("")} color="rgba(167,139,250,0.15)">
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(scenarioDraftResult)}
+                      style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(167,139,250,0.3)", background: "rgba(167,139,250,0.08)", color: "#A78BFA", fontSize: 11, cursor: "pointer" }}
+                    >
+                      전체 복사
+                    </button>
+                  </div>
+                  <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 12 : 13, lineHeight: 1.8, color: "var(--c-tx-75)", margin: 0 }}>
+                    {scenarioDraftResult}
+                  </pre>
+                </ResultCard>
+              )}
+
+              {getStageStatus("6") === "done" && (
+                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
+                  <button onClick={() => advanceToStage("7")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
                     다음 단계: Script Coverage
                     <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                   </button>
@@ -2938,21 +3030,21 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
             )}
           </div>
 
-          {/* ═══ STAGE 6: Script Coverage ═══ */}
-          <div ref={(el) => { stageRefs.current["6"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "hidden", border: `1px solid ${currentStage === "6" ? "rgba(96,165,250,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => setCurrentStage("6")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "6" ? "rgba(96,165,250,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("6")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("6") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
-                {getStageStatus("6") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("6")] }}>06</span>}
+          {/* ═══ STAGE 7: Script Coverage ═══ */}
+          <div ref={(el) => { stageRefs.current["7"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "7" ? "rgba(96,165,250,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
+            <div onClick={() => setCurrentStage("7")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "7" ? "rgba(96,165,250,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("7")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("7") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
+                {getStageStatus("7") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("7")] }}>07</span>}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "6" ? "var(--text-main)" : getStageStatus("6") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>Script Coverage</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "7" ? "var(--text-main)" : getStageStatus("7") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>Script Coverage</div>
                 <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>최종 커버리지 · 시장 가치 평가</div>
               </div>
-              {currentStage !== "6" && getStageDoneCount("6") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("6")}/{STAGE_TOTALS["6"]}</span>}
-              {getStageStatus("6") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "6" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+              {currentStage !== "7" && getStageDoneCount("7") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("7")}/{STAGE_TOTALS["7"]}</span>}
+              {getStageStatus("7") === "active" && <Spinner size={12} color="#C8A84B" />}
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "7" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
             </div>
-            {currentStage === "6" && (
+            {currentStage === "7" && (
               <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
               <ErrorBoundary><div>
 
