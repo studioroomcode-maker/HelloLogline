@@ -1779,7 +1779,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
       return [structureResult, subtextResult, synopsisResults].filter(Boolean).length;
     }
     if (stageId === "5") {
-      return [treatmentResult, sceneListResult, beatSheetResult, dialogueDevResult].filter(Boolean).length;
+      return [treatmentResult, beatSheetResult, dialogueDevResult].filter(Boolean).length;
     }
     if (stageId === "6") {
       return [scenarioDraftResult].filter(Boolean).length;
@@ -1789,7 +1789,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
     }
     return 0;
   }
-  const STAGE_TOTALS = { "1": 1, "2": 8, "3": 3, "4": 3, "5": 4, "6": 1, "7": 2 };
+  const STAGE_TOTALS = { "1": 1, "2": 8, "3": 3, "4": 3, "5": 3, "6": 1, "7": 2 };
 
   // ── Error display helper ──
   function ErrorMsg({ msg }) {
@@ -2918,8 +2918,12 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
               <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
               <ErrorBoundary><div>
 
-              {/* Treatment */}
-              <div style={{ marginBottom: 16 }}>
+              {/* ── STEP 1: 트리트먼트 ── */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: treatmentResult ? "rgba(78,204,163,0.15)" : "rgba(200,168,75,0.12)", color: treatmentResult ? "#4ECCA3" : "#C8A84B", border: `1px solid ${treatmentResult ? "rgba(78,204,163,0.25)" : "rgba(200,168,75,0.25)"}`, fontFamily: "'JetBrains Mono', monospace" }}>{treatmentResult ? "✓ STEP 1" : "STEP 1"}</div>
+                  <span style={{ fontSize: 12, color: "var(--c-tx-45)", fontWeight: 500 }}>트리트먼트 — 스토리 전체 흐름 서술</span>
+                </div>
                 <button onClick={() => setShowTreatmentPanel(!showTreatmentPanel)} style={{
                   width: "100%", padding: "12px 16px", borderRadius: 12,
                   border: showTreatmentPanel ? "1px solid rgba(200,168,75,0.4)" : "1px solid var(--c-bd-3)",
@@ -2981,92 +2985,91 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 )}
               </div>
 
-              {/* Scene List (Step Outline) */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>씬 리스트 — 트리트먼트 → 집필 브릿지</div>
-                <ToolButton icon={<SvgIcon d={ICON.clipboard} size={16} />} label="씬 리스트 (스텝 아웃라인)" sub="Field · Truby · McKee" done={!!sceneListResult} loading={sceneListLoading} color="#60A5FA" onClick={generateSceneList} disabled={!logline.trim()}
-                  tooltip={"트리트먼트에서 실제 대본 집필로 넘어가는 중간 다리 역할을 합니다.\n\n각 씬마다 다음을 정리합니다:\n• 목적 — 이 씬이 이야기에서 하는 기능\n• 내용 — 누가 무엇을 하는지\n• 전환 — 다음 씬으로 어떻게 연결되는지\n\n집필 전 전체 흐름을 한눈에 파악하고 빈 장면을 미리 발견할 수 있습니다."} />
-                <ErrorMsg msg={sceneListError} />
-                {sceneListResult && (
-                  <ResultCard title="씬 리스트 (스텝 아웃라인)" onClose={() => setSceneListResult("")} color="rgba(96,165,250,0.15)">
-                    <ErrorBoundary><SceneListPanel text={sceneListResult} isMobile={isMobile} /></ErrorBoundary>
+              {/* ── STEP 2: 비트 시트 ── */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: beatSheetResult ? "rgba(78,204,163,0.15)" : "rgba(255,209,102,0.12)", color: beatSheetResult ? "#4ECCA3" : "#FFD166", border: `1px solid ${beatSheetResult ? "rgba(78,204,163,0.25)" : "rgba(255,209,102,0.25)"}`, fontFamily: "'JetBrains Mono', monospace" }}>{beatSheetResult ? "✓ STEP 2" : "STEP 2"}</div>
+                  <span style={{ fontSize: 12, color: "var(--c-tx-45)", fontWeight: 500 }}>비트 시트 — Snyder 15비트 구조 설계</span>
+                  {!treatmentResult && <span style={{ marginLeft: "auto", fontSize: 10, color: "rgba(255,209,102,0.55)", fontStyle: "italic" }}>Step 1 완료 후 추천</span>}
+                </div>
+                <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="비트 시트" sub="Snyder 15비트" done={!!beatSheetResult} loading={beatSheetLoading} color="#FFD166" onClick={generateBeatSheet} disabled={!logline.trim()}
+                  tooltip={"Blake Snyder의 'Save the Cat' 15비트 구조를 적용합니다.\n\n할리우드 표준 이정표 15개를 정확한 페이지 위치에 배치합니다:\n오프닝 이미지 → 테마 제시 → 설정 → 촉발사건 → 고민 → 2막 진입 → B스토리 → 재미와 게임 → 중간점 → 적의 위협 → 전부 잃다 → 영혼의 밤 → 3막 진입 → 피날레 → 클로징 이미지\n\n각 비트마다 AI가 직접 씬을 집필할 수 있습니다."} />
+                <ErrorMsg msg={beatSheetError} />
+                {beatSheetResult && (
+                  <ResultCard title="비트 시트" onClose={() => setBeatSheetResult(null)} color="rgba(255,209,102,0.15)">
+                    {/* ── 전체 씬 일괄 집필 버튼 ── */}
+                    <div style={{ marginBottom: 16, padding: "14px 16px", borderRadius: 12, background: "rgba(255,209,102,0.05)", border: "1px solid rgba(255,209,102,0.15)" }}>
+                      {allScenesLoading ? (
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 12, color: "#FFD166", fontWeight: 700, marginBottom: 8 }}>
+                              씬 집필 중... {allScenesProgress.current}/{allScenesProgress.total}
+                            </div>
+                            <div style={{ height: 4, background: "var(--c-bd-1)", borderRadius: 4, overflow: "hidden" }}>
+                              <div style={{ height: "100%", background: "linear-gradient(90deg, #FFD166, #F7A072)", borderRadius: 4, width: `${allScenesProgress.total ? (allScenesProgress.current / allScenesProgress.total) * 100 : 0}%`, transition: "width 0.4s ease" }} />
+                            </div>
+                            <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginTop: 6, fontFamily: "'JetBrains Mono', monospace" }}>
+                              {beatSheetResult.beats?.[allScenesProgress.current - 1]?.name_kr || ""} 작성 중
+                            </div>
+                          </div>
+                          <button onClick={() => { abortControllersRef.current["allScenes"]?.abort(); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.4)", background: "rgba(232,93,117,0.08)", color: "#E85D75", fontSize: 11, cursor: "pointer", flexShrink: 0 }}>중단</button>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: "#FFD166", marginBottom: 2 }}>전체 씬 일괄 집필</div>
+                              <div style={{ fontSize: 11, color: "var(--c-tx-35)" }}>
+                                {Object.keys(beatScenes).length > 0
+                                  ? `${Object.keys(beatScenes).length}/${beatSheetResult.beats?.length || 0}개 완료 · 나머지 이어서 생성`
+                                  : `${beatSheetResult.beats?.length || 0}개 비트를 순서대로 자동 집필합니다`}
+                              </div>
+                            </div>
+                            <button onClick={generateAllScenes} disabled={allScenesLoading} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid rgba(255,209,102,0.4)", background: "rgba(255,209,102,0.12)", color: "#FFD166", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                              <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+                              {Object.keys(beatScenes).length > 0 ? "이어서 집필" : "전체 집필 시작"}
+                            </button>
+                          </div>
+                          {allScenesProgress.failed?.length > 0 && (
+                            <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(232,93,117,0.08)", border: "1px solid rgba(232,93,117,0.2)", fontSize: 11, color: "#E85D75" }}>
+                              생성 실패한 씬: {allScenesProgress.failed.map((f) => `#${f.id} ${f.name}`).join(", ")} — 개별 버튼으로 재시도하세요.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <BeatSheetPanel
+                      data={beatSheetResult}
+                      beatScenes={beatScenes}
+                      generatingBeat={generatingBeat}
+                      expandedBeats={expandedBeats}
+                      onToggle={(id) => setExpandedBeats((prev) => ({ ...prev, [id]: !prev[id] }))}
+                      onGenerateScene={generateScene}
+                      onExportAll={() => {
+                        const allText = (beatSheetResult.beats || []).map((b) => {
+                          const scene = beatScenes[b.id];
+                          return `[비트 ${b.id}] ${b.name_kr} (${b.name_en})\n${b.summary}\n${scene ? `\n--- 씬 ---\n${scene}` : ""}`;
+                        }).join("\n\n===\n\n");
+                        navigator.clipboard.writeText(allText);
+                      }}
+                      isMobile={isMobile}
+                    />
                   </ResultCard>
                 )}
               </div>
 
-              {/* Beat Sheet + Dialogue */}
-              <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>비트 & 대사</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-                <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="비트 시트" sub="Snyder 15비트" done={!!beatSheetResult} loading={beatSheetLoading} color="#FFD166" onClick={generateBeatSheet} disabled={!logline.trim()}
-                  tooltip={"Blake Snyder의 'Save the Cat' 15비트 구조를 적용합니다.\n\n할리우드 표준 이정표 15개를 정확한 페이지 위치에 배치합니다:\n오프닝 이미지 → 테마 제시 → 설정 → 촉발사건 → 고민 → 2막 진입 → B스토리 → 재미와 게임 → 중간점 → 적의 위협 → 전부 잃다 → 영혼의 밤 → 3막 진입 → 피날레 → 클로징 이미지\n\n각 비트마다 AI가 직접 씬을 집필할 수 있습니다."} />
+              {/* ── STEP 3: 대사 디벨롭 ── */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: dialogueDevResult ? "rgba(78,204,163,0.15)" : "rgba(244,114,182,0.12)", color: dialogueDevResult ? "#4ECCA3" : "#F472B6", border: `1px solid ${dialogueDevResult ? "rgba(78,204,163,0.25)" : "rgba(244,114,182,0.25)"}`, fontFamily: "'JetBrains Mono', monospace" }}>{dialogueDevResult ? "✓ STEP 3" : "STEP 3"}</div>
+                  <span style={{ fontSize: 12, color: "var(--c-tx-45)", fontWeight: 500 }}>대사 디벨롭 — 캐릭터별 목소리 설계</span>
+                  {!beatSheetResult && <span style={{ marginLeft: "auto", fontSize: 10, color: "rgba(244,114,182,0.55)", fontStyle: "italic" }}>Step 2 완료 후 추천</span>}
+                </div>
                 <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="대사 디벨롭" sub="Mamet/Pinter" done={!!dialogueDevResult} loading={dialogueDevLoading} color="#F472B6" onClick={analyzeDialogueDev} disabled={!logline.trim()}
                   tooltip={"캐릭터마다 고유한 목소리와 말하는 방식을 설계합니다.\n\n• Mamet — 캐릭터는 원하는 것을 직접 말하지 않는다. 행동이 대사를 대신한다.\n• Pinter — 침묵, 공백, 반복이 대사보다 강한 의미를 만든다.\n\n결과물:\n• 주인공·조력자·대립자의 개별 말투 프로필\n• 핵심 장면의 하위텍스트 대사 예시\n• 대화 속 권력 역학과 감정 변화 지도"} />
+                <ErrorMsg msg={dialogueDevError} />
+                {dialogueDevResult && <ResultCard title="대사 디벨롭" onClose={() => setDialogueDevResult(null)} color="rgba(244,114,182,0.15)"><ErrorBoundary><DialogueDevPanel data={dialogueDevResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
               </div>
-              <ErrorMsg msg={beatSheetError} />
-              <ErrorMsg msg={dialogueDevError} />
-
-              {beatSheetResult && (
-                <ResultCard title="비트 시트" onClose={() => setBeatSheetResult(null)} color="rgba(255,209,102,0.15)">
-                  {/* ── 전체 씬 일괄 집필 버튼 ── */}
-                  <div style={{ marginBottom: 16, padding: "14px 16px", borderRadius: 12, background: "rgba(255,209,102,0.05)", border: "1px solid rgba(255,209,102,0.15)" }}>
-                    {allScenesLoading ? (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 12, color: "#FFD166", fontWeight: 700, marginBottom: 8 }}>
-                            씬 집필 중... {allScenesProgress.current}/{allScenesProgress.total}
-                          </div>
-                          <div style={{ height: 4, background: "var(--c-bd-1)", borderRadius: 4, overflow: "hidden" }}>
-                            <div style={{ height: "100%", background: "linear-gradient(90deg, #FFD166, #F7A072)", borderRadius: 4, width: `${allScenesProgress.total ? (allScenesProgress.current / allScenesProgress.total) * 100 : 0}%`, transition: "width 0.4s ease" }} />
-                          </div>
-                          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginTop: 6, fontFamily: "'JetBrains Mono', monospace" }}>
-                            {beatSheetResult.beats?.[allScenesProgress.current - 1]?.name_kr || ""} 작성 중
-                          </div>
-                        </div>
-                        <button onClick={() => { abortControllersRef.current["allScenes"]?.abort(); }} style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.4)", background: "rgba(232,93,117,0.08)", color: "#E85D75", fontSize: 11, cursor: "pointer", flexShrink: 0 }}>중단</button>
-                      </div>
-                    ) : (
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: "#FFD166", marginBottom: 2 }}>전체 씬 일괄 집필</div>
-                            <div style={{ fontSize: 11, color: "var(--c-tx-35)" }}>
-                              {Object.keys(beatScenes).length > 0
-                                ? `${Object.keys(beatScenes).length}/${beatSheetResult.beats?.length || 0}개 완료 · 나머지 이어서 생성`
-                                : `${beatSheetResult.beats?.length || 0}개 비트를 순서대로 자동 집필합니다`}
-                            </div>
-                          </div>
-                          <button onClick={generateAllScenes} disabled={allScenesLoading} style={{ padding: "8px 18px", borderRadius: 10, border: "1px solid rgba(255,209,102,0.4)", background: "rgba(255,209,102,0.12)", color: "#FFD166", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
-                            <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
-                            {Object.keys(beatScenes).length > 0 ? "이어서 집필" : "전체 집필 시작"}
-                          </button>
-                        </div>
-                        {allScenesProgress.failed?.length > 0 && (
-                          <div style={{ marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(232,93,117,0.08)", border: "1px solid rgba(232,93,117,0.2)", fontSize: 11, color: "#E85D75" }}>
-                            생성 실패한 씬: {allScenesProgress.failed.map((f) => `#${f.id} ${f.name}`).join(", ")} — 개별 버튼으로 재시도하세요.
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <BeatSheetPanel
-                    data={beatSheetResult}
-                    beatScenes={beatScenes}
-                    generatingBeat={generatingBeat}
-                    expandedBeats={expandedBeats}
-                    onToggle={(id) => setExpandedBeats((prev) => ({ ...prev, [id]: !prev[id] }))}
-                    onGenerateScene={generateScene}
-                    onExportAll={() => {
-                      const allText = (beatSheetResult.beats || []).map((b) => {
-                        const scene = beatScenes[b.id];
-                        return `[비트 ${b.id}] ${b.name_kr} (${b.name_en})\n${b.summary}\n${scene ? `\n--- 씬 ---\n${scene}` : ""}`;
-                      }).join("\n\n===\n\n");
-                      navigator.clipboard.writeText(allText);
-                    }}
-                    isMobile={isMobile}
-                  />
-                </ResultCard>
-              )}
-              {dialogueDevResult && <ResultCard title="대사 디벨롭" onClose={() => setDialogueDevResult(null)} color="rgba(244,114,182,0.15)"><ErrorBoundary><DialogueDevPanel data={dialogueDevResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
 
               {getStageStatus("5") === "done" && (
                 <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
@@ -3099,6 +3102,15 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
               <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
               <ErrorBoundary><div>
 
+              {/* ── 솔직한 안내 배너 ── */}
+              <div style={{ marginBottom: 18, padding: "14px 16px", borderRadius: 12, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.2)" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#A78BFA", marginBottom: 6 }}>이 단계에 대해 솔직하게</div>
+                <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.7 }}>
+                  이 시나리오는 <strong style={{ color: "var(--c-tx-75)" }}>구조 스캐폴드</strong>입니다 — 완성본이 아닙니다.<br />
+                  AI가 비트 시트의 흐름을 따라 전체 초고를 작성하지만, <strong style={{ color: "var(--c-tx-75)" }}>씬별 세부 집필과 대사 수정은 반드시 직접 해야 합니다.</strong><br />
+                  <span style={{ color: "rgba(167,139,250,0.7)", fontSize: 11, marginTop: 4, display: "block" }}>Stage 5의 트리트먼트·비트 시트·대사 디벨롭을 모두 완료하면 훨씬 완성도 높은 초고가 나옵니다.</span>
+                </div>
+              </div>
               <ToolButton
                 icon={<SvgIcon d={ICON.film} size={16} />}
                 label="시나리오 생성"
