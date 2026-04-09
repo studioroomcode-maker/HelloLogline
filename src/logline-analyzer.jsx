@@ -1299,6 +1299,47 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
     finally { setPipelineRefineLoading(false); clearController("pipelineRefine"); }
   };
 
+  // ── 복합 분석 함수 (여러 개별 분석을 병렬로 실행) ──
+
+  // Stage 2: 서사 이론 종합 (학술+신화+바르트+한국미학+테마 → 1버튼)
+  const analyzeNarrativeTheory = async () => {
+    if (!logline.trim() || !apiKey) return;
+    await Promise.all([
+      analyzeAcademic(),
+      analyzeMythMap(),
+      analyzeBarthesCode(),
+      analyzeKoreanMyth(),
+      analyzeTheme(),
+    ]);
+  };
+
+  // Stage 3: 캐릭터 심층 분석 (그림자+진정성+캐릭터디벨롭 → 1버튼)
+  const analyzeCharacterAll = async () => {
+    if (!logline.trim() || !apiKey) return;
+    await Promise.all([
+      analyzeShadow(),
+      analyzeAuthenticity(),
+      analyzeCharacterDev(),
+    ]);
+  };
+
+  // Stage 4: 구조 & 감정 아크 (구조분석+가치전하 → 1버튼)
+  const analyzeStructureAll = async () => {
+    if (!logline.trim() || !apiKey) return;
+    await Promise.all([
+      analyzeStructure(),
+      analyzeValueCharge(),
+    ]);
+  };
+
+  // 복합 상태 파생
+  const narrativeTheoryDone = !!(academicResult || mythMapResult || barthesCodeResult || koreanMythResult || themeResult);
+  const narrativeTheoryLoading = academicLoading || mythMapLoading || barthesCodeLoading || koreanMythLoading || themeLoading;
+  const charAllDone = !!(shadowResult || authenticityResult || charDevResult);
+  const charAllLoading = shadowLoading || authenticityLoading || charDevLoading;
+  const structureAllDone = !!(structureResult || valueChargeResult);
+  const structureAllLoading = structureLoading || valueChargeLoading;
+
   // ── Score calculations ──
   const structureTotal = calcSectionTotal(result, "structure");
   const expressionTotal = calcSectionTotal(result, "expression");
@@ -1352,8 +1393,8 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
       return "idle";
     }
     if (stageId === "4") {
-      if (valueChargeResult || subtextResult || synopsisResults || pipelineResult || structureResult) return "done";
-      if (valueChargeLoading || subtextLoading || synopsisLoading || structureLoading) return "active";
+      if (structureAllDone || subtextResult || synopsisResults || pipelineResult) return "done";
+      if (structureAllLoading || subtextLoading || synopsisLoading) return "active";
       return "idle";
     }
     if (stageId === "5") {
@@ -1963,31 +2004,43 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "rgba(200,168,75,0.5)" }}>02</span>
                   <span style={{ fontSize: 18, fontWeight: 700 }}>개념 분석</span>
                 </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>로그라인 개념을 이론·신화·전문가 관점으로 해부 — 캐릭터·시놉시스 설계의 기반</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>이야기의 서사 이론적 위치와 전문가 시각 — 시놉시스 설계의 기반</div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <ToolButton icon={<SvgIcon d={ICON.chart} size={16} />} label="학술 분석" sub="아리스토텔레스 · 캠벨 · 프롭" done={!!academicResult} loading={academicLoading} color="#45B7D1" onClick={analyzeAcademic} disabled={!logline.trim()} />
-                <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="신화 매핑" sub="Campbell / Propp / Frazer" done={!!mythMapResult} loading={mythMapLoading} color="#a78bfa" onClick={analyzeMythMap} disabled={!logline.trim()} />
-                <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="한국 신화" sub="한 · 정 · 신명 · 유교 미학" done={!!koreanMythResult} loading={koreanMythLoading} color="#E85D75" onClick={analyzeKoreanMyth} disabled={!logline.trim()} />
-                <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="전문가 패널" sub="10명 전문가 토론" done={!!expertPanelResult} loading={expertPanelLoading} color="#FFD166" onClick={runExpertPanel} disabled={!logline.trim()} />
-                <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="바르트 서사 코드" sub="S/Z 5 codes" done={!!barthesCodeResult} loading={barthesCodeLoading} color="#64DCC8" onClick={analyzeBarthesCode} disabled={!logline.trim()} />
-                <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="테마 & 감정선" sub="Egri · McKee · Truby" done={!!themeResult} loading={themeLoading} color="#F472B6" onClick={analyzeTheme} disabled={!logline.trim()} />
+              {/* ── 서사 이론 종합 (통합 버튼) ── */}
+              <div style={{ marginBottom: 12 }}>
+                <ToolButton icon={<SvgIcon d={ICON.chart} size={16} />} label="서사 이론 종합" sub="Aristotle · Campbell · Propp · Barthes · 한국 미학 · 테마" done={narrativeTheoryDone} loading={narrativeTheoryLoading} color="#45B7D1" onClick={analyzeNarrativeTheory} disabled={!logline.trim()} />
+                <ErrorMsg msg={academicError || mythMapError || barthesCodeError || koreanMythError || themeError} />
               </div>
 
-              <ErrorMsg msg={academicError} />
-              <ErrorMsg msg={mythMapError} />
-              <ErrorMsg msg={koreanMythError} />
-              <ErrorMsg msg={expertPanelError} />
-              <ErrorMsg msg={barthesCodeError} />
-              <ErrorMsg msg={themeError} />
+              {narrativeTheoryDone && (
+                <ResultCard
+                  title="서사 이론 종합 분석"
+                  onClose={() => { setAcademicResult(null); setMythMapResult(null); setBarthesCodeResult(null); setKoreanMythResult(null); setThemeResult(null); }}
+                  color="rgba(69,183,209,0.15)"
+                >
+                  {[
+                    academicResult && { label: "학술 이론 (Aristotle · Campbell · Propp · Todorov · Freytag)", node: <ErrorBoundary><AcademicPanel academic={academicResult} /></ErrorBoundary> },
+                    mythMapResult && { label: "신화적 위치 매핑 (Campbell · Propp · Frazer)", node: <ErrorBoundary><MythMapPanel data={mythMapResult} isMobile={isMobile} /></ErrorBoundary> },
+                    barthesCodeResult && { label: "바르트 서사 코드 (S/Z 5 codes)", node: <ErrorBoundary><BarthesCodePanel data={barthesCodeResult} isMobile={isMobile} /></ErrorBoundary> },
+                    koreanMythResult && { label: "한국 미학 공명 (한 · 정 · 신명)", node: <ErrorBoundary><KoreanMythPanel data={koreanMythResult} isMobile={isMobile} /></ErrorBoundary> },
+                    themeResult && { label: "테마 & 감정선 (Egri · McKee · Truby)", node: <ErrorBoundary><ThemeAnalysisPanel data={themeResult} isMobile={isMobile} /></ErrorBoundary> },
+                  ].filter(Boolean).map((item, i, arr) => (
+                    <div key={i}>
+                      {i > 0 && <div style={{ margin: "20px 0", height: 1, background: "rgba(255,255,255,0.06)" }} />}
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(69,183,209,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>{item.label}</div>
+                      {item.node}
+                    </div>
+                  ))}
+                </ResultCard>
+              )}
 
-              {academicResult && <ResultCard title="학술 이론 분석 (12 theories)" onClose={() => setAcademicResult(null)} color="rgba(69,183,209,0.15)"><ErrorBoundary><AcademicPanel academic={academicResult} /></ErrorBoundary></ResultCard>}
-              {mythMapResult && <ResultCard title="신화적 위치 매핑" onClose={() => setMythMapResult(null)} color="rgba(167,139,250,0.15)"><ErrorBoundary><MythMapPanel data={mythMapResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
-              {koreanMythResult && <ResultCard title="한국 신화 공명" onClose={() => setKoreanMythResult(null)} color="rgba(232,93,117,0.15)"><ErrorBoundary><KoreanMythPanel data={koreanMythResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
-              {expertPanelResult && <ResultCard title="전문가 패널 토론" onClose={() => setExpertPanelResult(null)} color="rgba(255,209,102,0.15)"><ErrorBoundary><ExpertPanelSection data={expertPanelResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
-              {barthesCodeResult && <ResultCard title="바르트 서사 코드" onClose={() => setBarthesCodeResult(null)} color="rgba(100,220,200,0.15)"><ErrorBoundary><BarthesCodePanel data={barthesCodeResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
-              {themeResult && <ResultCard title="테마 & 감정선 분석" onClose={() => setThemeResult(null)} color="rgba(244,114,182,0.15)"><ErrorBoundary><ThemeAnalysisPanel data={themeResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
+              {/* ── 전문가 패널 (고유 포맷 — 유지) ── */}
+              <div style={{ marginTop: 8 }}>
+                <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="전문가 패널" sub="현업 전문가 10인의 독립 시각" done={!!expertPanelResult} loading={expertPanelLoading} color="#FFD166" onClick={runExpertPanel} disabled={!logline.trim()} />
+                <ErrorMsg msg={expertPanelError} />
+                {expertPanelResult && <ResultCard title="전문가 패널 토론" onClose={() => setExpertPanelResult(null)} color="rgba(255,209,102,0.15)"><ErrorBoundary><ExpertPanelSection data={expertPanelResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
+              </div>
             </div></ErrorBoundary>
           )}
 
@@ -1999,22 +2052,31 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "rgba(200,168,75,0.5)" }}>03</span>
                   <span style={{ fontSize: 18, fontWeight: 700 }}>캐릭터</span>
                 </div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>심리 원형과 실존적 동기를 설계 — 이 인물이 이야기를 만든다</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>심리 원형 · 실존적 동기 · 3차원 인물 설계 — 이 인물이 이야기를 만든다</div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-                <ToolButton icon={<SvgIcon d={ICON.chart} size={16} />} label="그림자 분석" sub="Jung 심리 원형" done={!!shadowResult} loading={shadowLoading} color="#E85D75" onClick={analyzeShadow} disabled={!logline.trim()} />
-                <ToolButton icon={<SvgIcon d={ICON.chart} size={16} />} label="진정성 지수" sub="Sartre 실존주의" done={!!authenticityResult} loading={authenticityLoading} color="#a78bfa" onClick={analyzeAuthenticity} disabled={!logline.trim()} />
-              </div>
-              <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="캐릭터 디벨롭" sub="Egri / Hauge / Truby / Vogler / Jung / Maslow" done={!!charDevResult} loading={charDevLoading} color="#FB923C" onClick={analyzeCharacterDev} disabled={!logline.trim()} />
+              <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="캐릭터 심층 분석" sub="Jung 원형 · Sartre 실존 · Egri · Truby · Maslow · Vogler" done={charAllDone} loading={charAllLoading} color="#FB923C" onClick={analyzeCharacterAll} disabled={!logline.trim()} />
+              <ErrorMsg msg={shadowError || authenticityError || charDevError} />
 
-              <ErrorMsg msg={shadowError} />
-              <ErrorMsg msg={authenticityError} />
-              <ErrorMsg msg={charDevError} />
-
-              {shadowResult && <ResultCard title="그림자 캐릭터 분석 (Jung)" onClose={() => setShadowResult(null)} color="rgba(232,93,117,0.15)"><ErrorBoundary><ShadowAnalysisPanel data={shadowResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
-              {authenticityResult && <ResultCard title="진정성 지수 (Sartre)" onClose={() => setAuthenticityResult(null)} color="rgba(167,139,250,0.15)"><ErrorBoundary><AuthenticityPanel data={authenticityResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
-              {charDevResult && <ResultCard title="캐릭터 디벨롭" onClose={() => setCharDevResult(null)} color="rgba(251,146,60,0.15)"><ErrorBoundary><CharacterDevPanel data={charDevResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
+              {charAllDone && (
+                <ResultCard
+                  title="캐릭터 심층 분석"
+                  onClose={() => { setShadowResult(null); setAuthenticityResult(null); setCharDevResult(null); }}
+                  color="rgba(251,146,60,0.15)"
+                >
+                  {[
+                    charDevResult && { label: "3차원 인물 설계 (Egri · Truby · Hauge · Vogler · Maslow)", node: <ErrorBoundary><CharacterDevPanel data={charDevResult} isMobile={isMobile} /></ErrorBoundary> },
+                    shadowResult && { label: "심리 원형 & 그림자 (Jung)", node: <ErrorBoundary><ShadowAnalysisPanel data={shadowResult} isMobile={isMobile} /></ErrorBoundary> },
+                    authenticityResult && { label: "실존적 진정성 (Sartre)", node: <ErrorBoundary><AuthenticityPanel data={authenticityResult} isMobile={isMobile} /></ErrorBoundary> },
+                  ].filter(Boolean).map((item, i) => (
+                    <div key={i}>
+                      {i > 0 && <div style={{ margin: "20px 0", height: 1, background: "rgba(255,255,255,0.06)" }} />}
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(251,146,60,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>{item.label}</div>
+                      {item.node}
+                    </div>
+                  ))}
+                </ResultCard>
+              )}
             </div></ErrorBoundary>
           )}
 
@@ -2029,28 +2091,39 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>구조 설계 → 감정 아크 → 하위텍스트 → 시놉시스 순서로 진행</div>
               </div>
 
-              {/* ── 구조 분석 (신규) ── */}
+              {/* ── 구조 & 감정 아크 (통합 버튼) ── */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>1순위 — 구조 설계</div>
-                <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="구조 분석" sub="Field · Snyder · McKee · Hauge · Truby" done={!!structureResult} loading={structureLoading} color="#4ECCA3" onClick={analyzeStructure} disabled={!logline.trim()} />
-                <ErrorMsg msg={structureError} />
-                {structureResult && (
-                  <ResultCard title="3막 구조 분석" onClose={() => setStructureResult(null)} color="rgba(78,204,163,0.15)">
-                    <ErrorBoundary><StructureAnalysisPanel data={structureResult} isMobile={isMobile} /></ErrorBoundary>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>1순위 — 구조 & 감정 아크</div>
+                <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="구조 & 감정 아크" sub="Field · Snyder · McKee 3막 구조 + 가치 전하" done={structureAllDone} loading={structureAllLoading} color="#4ECCA3" onClick={analyzeStructureAll} disabled={!logline.trim()} />
+                <ErrorMsg msg={structureError || valueChargeError} />
+                {structureAllDone && (
+                  <ResultCard
+                    title="구조 & 감정 아크"
+                    onClose={() => { setStructureResult(null); setValueChargeResult(null); }}
+                    color="rgba(78,204,163,0.15)"
+                  >
+                    {structureResult && (
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(78,204,163,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>3막 구조 (Field · Snyder · McKee · Hauge · Truby)</div>
+                        <ErrorBoundary><StructureAnalysisPanel data={structureResult} isMobile={isMobile} /></ErrorBoundary>
+                      </div>
+                    )}
+                    {valueChargeResult && (
+                      <div>
+                        {structureResult && <div style={{ margin: "20px 0", height: 1, background: "rgba(255,255,255,0.06)" }} />}
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(78,204,163,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>가치 전하 & 감정 아크 (McKee)</div>
+                        <ValueChargePanel data={valueChargeResult} isMobile={isMobile} />
+                      </div>
+                    )}
                   </ResultCard>
                 )}
               </div>
 
-              {/* ── 시놉시스 설계 분석 도구 ── */}
+              {/* ── 하위텍스트 ── */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>시놉시스 설계 도구</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                  <ToolButton icon={<SvgIcon d={ICON.chart} size={16} />} label="가치 전하" sub="McKee 감정 아크 설계" done={!!valueChargeResult} loading={valueChargeLoading} color="#4ECCA3" onClick={analyzeValueCharge} disabled={!logline.trim()} />
-                  <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="하위텍스트" sub="Chekhov · Mamet · Pinter" done={!!subtextResult} loading={subtextLoading} color="#95E1D3" onClick={analyzeSubtext} disabled={!logline.trim()} />
-                </div>
-                <ErrorMsg msg={valueChargeError} />
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>표면 아래 이야기</div>
+                <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="하위텍스트" sub="Chekhov · Mamet · Pinter" done={!!subtextResult} loading={subtextLoading} color="#95E1D3" onClick={analyzeSubtext} disabled={!logline.trim()} />
                 <ErrorMsg msg={subtextError} />
-                {valueChargeResult && <ResultCard title="가치 전하 분석 (McKee)" onClose={() => setValueChargeResult(null)} color="rgba(78,204,163,0.15)"><ValueChargePanel data={valueChargeResult} isMobile={isMobile} /></ResultCard>}
                 {subtextResult && <ResultCard title="하위텍스트 탐지" onClose={() => setSubtextResult(null)} color="rgba(149,225,211,0.15)"><SubtextPanel data={subtextResult} isMobile={isMobile} /></ResultCard>}
               </div>
 
