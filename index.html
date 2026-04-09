@@ -14,22 +14,46 @@
     <style>
       /* ── Theme tokens ── */
       :root {
-        --tw: 255,255,255;       /* theme-white: rgba overlay base (dark mode = white) */
+        /* ── Dark mode (default) ── */
+        --tw: 255,255,255;
         --bg-page:    #0c0c1a;
         --bg-page-alt:#0a0a18;
         --bg-surface: #13131f;
         --bg-nav:     rgba(12,12,26,0.9);
         --text-main:  #e8e8f0;
         --scrollbar-thumb: rgba(255,255,255,0.1);
+        /* 카드 배경 */
+        --c-card-1: rgba(255,255,255,0.03);
+        --c-card-2: rgba(255,255,255,0.04);
+        --c-card-3: rgba(255,255,255,0.05);
+        /* 테두리 */
+        --c-bd-1: rgba(255,255,255,0.06);
+        --c-bd-2: rgba(255,255,255,0.07);
+        --c-bd-3: rgba(255,255,255,0.08);
+        --c-bd-4: rgba(255,255,255,0.10);
+        --c-bd-5: rgba(255,255,255,0.12);
+        --c-bd-6: rgba(255,255,255,0.15);
       }
       [data-theme="light"] {
-        --tw: 0,0,0;             /* light mode = black overlays */
-        --bg-page:    #f0f2f8;
-        --bg-page-alt:#e6e9f3;
+        /* ── Light mode ── */
+        --tw: 0,0,0;
+        --bg-page:    #eaecf4;
+        --bg-page-alt:#dde0ec;
         --bg-surface: #ffffff;
-        --bg-nav:     rgba(240,242,248,0.92);
-        --text-main:  #12122a;
-        --scrollbar-thumb: rgba(0,0,0,0.15);
+        --bg-nav:     rgba(234,236,244,0.94);
+        --text-main:  #0e0e24;
+        --scrollbar-thumb: rgba(0,0,0,0.18);
+        /* 카드 배경: 흰색 카드로 페이지와 분리 */
+        --c-card-1: #ffffff;
+        --c-card-2: #f9fafd;
+        --c-card-3: rgba(0,0,0,0.06);
+        /* 테두리: 2-3배 강화해 라이트 모드에서 선명하게 */
+        --c-bd-1: rgba(0,0,0,0.13);
+        --c-bd-2: rgba(0,0,0,0.16);
+        --c-bd-3: rgba(0,0,0,0.19);
+        --c-bd-4: rgba(0,0,0,0.22);
+        --c-bd-5: rgba(0,0,0,0.26);
+        --c-bd-6: rgba(0,0,0,0.30);
       }
 
       * { margin: 0; padding: 0; box-sizing: border-box; }

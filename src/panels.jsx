@@ -66,8 +66,8 @@ export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
               width: "100%",
               padding: "12px 44px 12px 14px",
               borderRadius: 10,
-              border: "1px solid rgba(var(--tw),0.12)",
-              background: "rgba(var(--tw),0.04)",
+              border: "1px solid var(--c-bd-5)",
+              background: "var(--c-card-2)",
               color: "var(--text-main)",
               fontSize: 13,
               outline: "none",
@@ -105,7 +105,7 @@ export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
               cursor: key.trim() ? "pointer" : "not-allowed",
               background: key.trim()
                 ? "linear-gradient(135deg, #4ECCA3, #45B7D1)"
-                : "rgba(var(--tw),0.06)",
+                : "var(--c-bd-1)",
               color: key.trim() ? "#0d0d1a" : "rgba(var(--tw),0.3)",
               fontWeight: 700,
               fontSize: 14,
@@ -120,7 +120,7 @@ export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
               style={{
                 padding: "11px 20px",
                 borderRadius: 10,
-                border: "1px solid rgba(var(--tw),0.1)",
+                border: "1px solid var(--c-bd-4)",
                 background: "transparent",
                 color: "rgba(var(--tw),0.5)",
                 cursor: "pointer",
@@ -169,7 +169,7 @@ export function GuideTooltip({ criterionKey }) {
           width: 14,
           height: 14,
           borderRadius: "50%",
-          background: show ? "rgba(78,204,163,0.2)" : "rgba(var(--tw),0.08)",
+          background: show ? "rgba(78,204,163,0.2)" : "var(--c-bd-3)",
           color: show ? "#4ECCA3" : "rgba(var(--tw),0.35)",
           fontSize: 9,
           cursor: "pointer",
@@ -241,7 +241,7 @@ export function RadarChart({ data, size = 280 }) {
         <polygon
           key={li}
           fill="none"
-          stroke="rgba(var(--tw),0.08)"
+          stroke="var(--c-bd-3)"
           strokeWidth={li === 4 ? 1.5 : 0.5}
           points={Array.from({ length: n }, (_, i) => {
             const p = polarToCart(i * angleStep, r * lv);
@@ -258,7 +258,7 @@ export function RadarChart({ data, size = 280 }) {
             y1={cy}
             x2={p.x}
             y2={p.y}
-            stroke="rgba(var(--tw),0.06)"
+            stroke="var(--c-bd-1)"
             strokeWidth={0.5}
           />
         );
@@ -372,7 +372,7 @@ export function ScoreBar({ score, max, label, found, feedback, delay = 0, criter
       <div
         style={{
           height: 6,
-          background: "rgba(var(--tw),0.06)",
+          background: "var(--c-bd-1)",
           borderRadius: 3,
           overflow: "hidden",
         }}
@@ -406,7 +406,7 @@ export function ScoreBar({ score, max, label, found, feedback, delay = 0, criter
             color: "rgba(var(--tw),0.6)",
             marginTop: 6,
             padding: "8px 12px",
-            background: "rgba(var(--tw),0.03)",
+            background: "var(--c-card-1)",
             borderRadius: 8,
             borderLeft: `2px solid ${barColor}`,
             lineHeight: 1.6,
@@ -438,7 +438,7 @@ export function CircleGauge({ score, label, subLabel, size = 120 }) {
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="rgba(var(--tw),0.06)"
+          stroke="var(--c-bd-1)"
           strokeWidth={strokeWidth}
         />
         <circle
@@ -590,7 +590,7 @@ export function ScoreHistoryChart({ history }) {
               y1={toY(y)}
               x2={W - PX}
               y2={toY(y)}
-              stroke="rgba(var(--tw),0.05)"
+              stroke="var(--c-card-3)"
               strokeWidth={1}
             />
             <text
@@ -682,7 +682,7 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
         bottom: 0,
         width: 320,
         background: "#0f0f1e",
-        borderLeft: "1px solid rgba(var(--tw),0.06)",
+        borderLeft: "1px solid var(--c-bd-1)",
         zIndex: 200,
         display: "flex",
         flexDirection: "column",
@@ -693,7 +693,7 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
       <div
         style={{
           padding: "20px 20px 14px",
-          borderBottom: "1px solid rgba(var(--tw),0.06)",
+          borderBottom: "1px solid var(--c-bd-1)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -784,11 +784,11 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
                 key={entry.id}
                 style={{
                   position: "relative",
-                  borderBottom: "1px solid rgba(var(--tw),0.03)",
+                  borderBottom: "1px solid var(--c-card-1)",
                   transition: "background 0.15s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(var(--tw),0.03)";
+                  e.currentTarget.style.background = "var(--c-card-1)";
                   e.currentTarget.querySelector(".del-btn").style.opacity = "1";
                 }}
                 onMouseLeave={(e) => {
@@ -1025,7 +1025,7 @@ export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze }
           <div
             style={{
               padding: 16,
-              background: "rgba(var(--tw),0.04)",
+              background: "var(--c-card-2)",
               borderRadius: 10,
               marginBottom: 14,
             }}
@@ -1210,10 +1210,10 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply }) {
 
   const cardStyle = {
     padding: "14px 16px",
-    background: "rgba(var(--tw),0.03)",
+    background: "var(--c-card-1)",
     borderRadius: 10,
     marginBottom: 10,
-    border: "1px solid rgba(var(--tw),0.07)",
+    border: "1px solid var(--c-bd-2)",
   };
 
   const applyBtnStyle = (color) => ({
@@ -1507,8 +1507,8 @@ export function ExportButton({ result, logline, qualityScore, interestScore }) {
         onClick={handleExport}
         style={{
           padding: "7px 16px", borderRadius: 8,
-          border: "1px solid rgba(var(--tw),0.1)",
-          background: "rgba(var(--tw),0.03)",
+          border: "1px solid var(--c-bd-4)",
+          background: "var(--c-card-1)",
           color: copied ? "#4ECCA3" : "rgba(var(--tw),0.45)",
           cursor: "pointer", fontSize: 12,
           fontFamily: "'Noto Sans KR', sans-serif", transition: "all 0.2s",
@@ -1573,7 +1573,7 @@ export function AcademicScoreBar({ label, score, max, analysis, color }) {
         <span style={{ fontSize: 12, color: "rgba(var(--tw),0.7)", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
         <span style={{ fontSize: 12, fontWeight: 700, color: barColor, fontFamily: "'JetBrains Mono', monospace" }}>{score}/{max}</span>
       </div>
-      <div style={{ height: 5, background: "rgba(var(--tw),0.06)", borderRadius: 3, overflow: "hidden", marginBottom: 5 }}>
+      <div style={{ height: 5, background: "var(--c-bd-1)", borderRadius: 3, overflow: "hidden", marginBottom: 5 }}>
         <div style={{ height: "100%", width: `${pct}%`, background: barColor, borderRadius: 3 }} />
       </div>
       {analysis && (
@@ -1762,8 +1762,8 @@ export function AcademicPanel({ academic }) {
           ].map(({ label, val }) => (
             <div key={label} style={{
               padding: "5px 12px", borderRadius: 20,
-              background: val?.present ? "rgba(244,114,182,0.12)" : "rgba(var(--tw),0.03)",
-              border: val?.present ? "1px solid rgba(244,114,182,0.35)" : "1px solid rgba(var(--tw),0.07)",
+              background: val?.present ? "rgba(244,114,182,0.12)" : "var(--c-card-1)",
+              border: val?.present ? "1px solid rgba(244,114,182,0.35)" : "1px solid var(--c-bd-2)",
               color: val?.present ? "#f472b6" : "rgba(var(--tw),0.3)",
               fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif",
             }}>
@@ -1787,7 +1787,7 @@ export function AcademicPanel({ academic }) {
 
       {/* 종합 학술 평가 */}
       {integrated_assessment && (
-        <div style={{ marginTop: 16, padding: 18, background: "rgba(var(--tw),0.02)", borderRadius: 12, border: "1px solid rgba(var(--tw),0.07)" }}>
+        <div style={{ marginTop: 16, padding: 18, background: "rgba(var(--tw),0.02)", borderRadius: 12, border: "1px solid var(--c-bd-2)" }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)", marginBottom: 4 }}>종합 학술 평가</div>
           {integrated_assessment.dominant_theory_fit && (
             <div style={{ fontSize: 11, color: "rgba(78,204,163,0.7)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif" }}>
@@ -1863,7 +1863,7 @@ export function AuthenticityPanel({ data, isMobile }) {
             {data.authenticity_label}
           </div>
           {/* 점수 바 */}
-          <div style={{ height: 4, background: "rgba(var(--tw),0.06)", borderRadius: 3, overflow: "hidden" }}>
+          <div style={{ height: 4, background: "var(--c-bd-1)", borderRadius: 3, overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${data.authenticity_score ?? 0}%`, background: `linear-gradient(90deg, ${scoreColor}80, ${scoreColor})`, borderRadius: 3, transition: "width 0.5s ease" }} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
@@ -1875,7 +1875,7 @@ export function AuthenticityPanel({ data, isMobile }) {
 
       {/* 피투성 + 자기기만 */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
-        <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.08)" }}>
+        <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-3)" }}>
           <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>FACTICITY — 피투성 (Heidegger)</div>
           <p style={{ fontSize: 11, color: "rgba(var(--tw),0.55)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif", margin: "0 0 6px" }}>{ft.description}</p>
           {ft.response_to_facticity && (
@@ -1899,7 +1899,7 @@ export function AuthenticityPanel({ data, isMobile }) {
       </div>
 
       {/* 진정한 선택 */}
-      <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.08)" }}>
+      <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-3)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>GENUINE CHOICE</div>
           <span style={{ fontSize: 10, fontWeight: 700, color: gc.has_real_choice ? "#4ECCA3" : "#E85D75", background: gc.has_real_choice ? "rgba(78,204,163,0.12)" : "rgba(232,93,117,0.12)", padding: "1px 7px", borderRadius: 5, fontFamily: "'Noto Sans KR', sans-serif" }}>
@@ -1947,14 +1947,14 @@ export function AuthenticityPanel({ data, isMobile }) {
       {/* 키르케고르 + 니체 */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
         {kk.stage && (
-          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.07)" }}>
+          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-2)" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>KIERKEGAARD STAGE</div>
             <span style={{ fontSize: 12, fontWeight: 700, color: stageColor[stage] || "#aaa", background: `${stageColor[stage] || "#aaa"}18`, padding: "3px 10px", borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{stage} 실존</span>
             <p style={{ fontSize: 11, color: "rgba(var(--tw),0.45)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: "8px 0 0" }}>{kk.description}</p>
           </div>
         )}
         {nz.will_to_power && (
-          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.07)" }}>
+          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-2)" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>NIETZSCHE — 의지·위버멘쉬</div>
             <div style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>
               <span style={{ color: "rgba(var(--tw),0.25)" }}>의지: </span>{nz.will_to_power}
@@ -2016,7 +2016,7 @@ export function ValueChargePanel({ data, isMobile }) {
         </div>
         {/* 가치 뒤집기 시각화 */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
-          <div style={{ padding: "8px 18px", borderRadius: 8, background: "rgba(var(--tw),0.05)", border: "1px solid rgba(var(--tw),0.12)", fontSize: 15, fontWeight: 700, color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <div style={{ padding: "8px 18px", borderRadius: 8, background: "var(--c-card-3)", border: "1px solid var(--c-bd-5)", fontSize: 15, fontWeight: 700, color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif" }}>
             {pc.start_pole || "?"}
           </div>
           <div style={{ fontSize: 20, color: arcColor }}>→</div>
@@ -2040,7 +2040,7 @@ export function ValueChargePanel({ data, isMobile }) {
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
         {/* 전하 강도 */}
         {data.charge_intensity && (
-          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.07)" }}>
+          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-2)" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>CHARGE INTENSITY</div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
               <span style={{ fontSize: 24, fontWeight: 700, color: intensityColor[data.charge_intensity.label] || "#aaa", fontFamily: "'JetBrains Mono', monospace" }}>
@@ -2057,7 +2057,7 @@ export function ValueChargePanel({ data, isMobile }) {
         )}
         {/* 장르 기대값 일치 */}
         {data.genre_value_match && (
-          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.07)" }}>
+          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-2)" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>GENRE MATCH</div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <span style={{ fontSize: 16, color: data.genre_value_match.actual_match ? "#4ECCA3" : "#E85D75" }}>
@@ -2076,7 +2076,7 @@ export function ValueChargePanel({ data, isMobile }) {
 
       {/* 2차 가치 전하들 */}
       {data.secondary_charges?.length > 0 && (
-        <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.07)" }}>
+        <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-2)" }}>
           <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>SECONDARY CHARGES</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {data.secondary_charges.map((sc, i) => (
@@ -2185,7 +2185,7 @@ export function ShadowAnalysisPanel({ data, isMobile }) {
           </div>
         )}
         {(data.other_archetypes || []).length > 0 && (
-          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.07)" }}>
+          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-2)" }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(var(--tw),0.3)", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, textTransform: "uppercase" }}>OTHER ARCHETYPES</div>
             {data.other_archetypes.map((a, i) => (
               <div key={i} style={{ marginBottom: 6 }}>
@@ -2266,8 +2266,8 @@ export function ExpertPanelSection({ data, isMobile }) {
     <button onClick={onToggle} style={{
       width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
       padding: "10px 14px", borderRadius: 10,
-      border: "1px solid rgba(var(--tw),0.07)",
-      background: isOpen ? "rgba(var(--tw),0.04)" : "rgba(var(--tw),0.02)",
+      border: "1px solid var(--c-bd-2)",
+      background: isOpen ? "var(--c-card-2)" : "rgba(var(--tw),0.02)",
       cursor: "pointer", marginBottom: isOpen ? 10 : 0,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -2290,7 +2290,7 @@ export function ExpertPanelSection({ data, isMobile }) {
       </div>
 
       {/* 전문가 아바타 줄 */}
-      <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", paddingBottom: 10, borderBottom: "1px solid rgba(var(--tw),0.06)" }}>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap", paddingBottom: 10, borderBottom: "1px solid var(--c-bd-1)" }}>
         {PANEL_EXPERTS.map((ex) => (
           <div key={ex.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
             <Avatar expert={ex} size={36} />
@@ -2484,7 +2484,7 @@ ${choicesSummary}
             {Math.round((answers.length / total) * 100)}%
           </span>
         </div>
-        <div style={{ height: 3, background: "rgba(var(--tw),0.06)", borderRadius: 3, overflow: "hidden" }}>
+        <div style={{ height: 3, background: "var(--c-bd-1)", borderRadius: 3, overflow: "hidden" }}>
           <div
             style={{
               height: "100%",
@@ -2645,8 +2645,8 @@ ${choicesSummary}
             style={{
               padding: "10px 16px",
               borderRadius: 9,
-              border: "1px solid rgba(var(--tw),0.1)",
-              background: "rgba(var(--tw),0.03)",
+              border: "1px solid var(--c-bd-4)",
+              background: "var(--c-card-1)",
               color: "rgba(var(--tw),0.4)",
               cursor: "pointer",
               fontSize: 12,
@@ -2664,8 +2664,8 @@ ${choicesSummary}
               style={{
                 padding: "10px 16px",
                 borderRadius: 9,
-                border: "1px solid rgba(var(--tw),0.1)",
-                background: "rgba(var(--tw),0.03)",
+                border: "1px solid var(--c-bd-4)",
+                background: "var(--c-card-1)",
                 color: "rgba(var(--tw),0.4)",
                 cursor: "pointer",
                 fontSize: 12,
@@ -2810,7 +2810,7 @@ export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) 
                 style={{
                   fontSize: 10,
                   color: "rgba(var(--tw),0.4)",
-                  background: "rgba(var(--tw),0.05)",
+                  background: "var(--c-card-3)",
                   padding: "2px 8px",
                   borderRadius: 8,
                 }}
@@ -2933,7 +2933,7 @@ export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) 
               flexWrap: "wrap",
               gap: 8,
               paddingTop: 12,
-              borderTop: "1px solid rgba(var(--tw),0.05)",
+              borderTop: "1px solid var(--c-card-3)",
             }}
           >
             {synopsis.theme && (
@@ -3108,7 +3108,7 @@ export function CompareSection({ result1, result2, section, title, maxTotal, col
               <div
                 style={{
                   flex: 1,
-                  background: "rgba(var(--tw),0.05)",
+                  background: "var(--c-card-3)",
                   borderRadius: 3,
                   overflow: "hidden",
                 }}
@@ -3125,7 +3125,7 @@ export function CompareSection({ result1, result2, section, title, maxTotal, col
               <div
                 style={{
                   flex: 1,
-                  background: "rgba(var(--tw),0.05)",
+                  background: "var(--c-card-3)",
                   borderRadius: 3,
                   overflow: "hidden",
                 }}
@@ -3181,7 +3181,7 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
       </div>
 
       {/* 진행 바 */}
-      <div style={{ height: 4, borderRadius: 2, background: "rgba(var(--tw),0.06)", marginBottom: 18, overflow: "hidden" }}>
+      <div style={{ height: 4, borderRadius: 2, background: "var(--c-bd-1)", marginBottom: 18, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${beats.length ? (completedCount / beats.length) * 100 : 0}%`, background: "linear-gradient(90deg, #4ECCA3, #45B7D1)", borderRadius: 2, transition: "width 0.5s ease" }} />
       </div>
 
@@ -3195,7 +3195,7 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
           const pageLen = (beat.page_end || beat.page_start) - beat.page_start + 1;
 
           return (
-            <div key={beat.id} style={{ borderRadius: 12, border: `1px solid ${isExpanded ? act.color + "33" : "rgba(var(--tw),0.06)"}`, background: isExpanded ? act.bg : "rgba(var(--tw),0.01)", overflow: "hidden", transition: "all 0.2s" }}>
+            <div key={beat.id} style={{ borderRadius: 12, border: `1px solid ${isExpanded ? act.color + "33" : "var(--c-bd-1)"}`, background: isExpanded ? act.bg : "rgba(var(--tw),0.01)", overflow: "hidden", transition: "all 0.2s" }}>
               {/* 카드 헤더 */}
               <div
                 onClick={() => onToggle(beat.id)}
@@ -3226,7 +3226,7 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
               {isExpanded && (
                 <div style={{ padding: "0 14px 14px" }}>
                   {/* 요약 */}
-                  <div style={{ fontSize: 13, color: "rgba(var(--tw),0.7)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 12, padding: "10px 12px", borderRadius: 9, background: "rgba(var(--tw),0.03)", border: "1px solid rgba(var(--tw),0.06)" }}>
+                  <div style={{ fontSize: 13, color: "rgba(var(--tw),0.7)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 12, padding: "10px 12px", borderRadius: 9, background: "var(--c-card-1)", border: "1px solid var(--c-bd-1)" }}>
                     {beat.summary}
                   </div>
 
@@ -3274,7 +3274,7 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
                         <span style={{ fontSize: 11, color: act.color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>SCENE {beat.id}</span>
                         <button
                           onClick={() => { navigator.clipboard.writeText(beatScenes[beat.id]); }}
-                          style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", background: "none", border: "1px solid rgba(var(--tw),0.1)", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}
+                          style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", background: "none", border: "1px solid var(--c-bd-4)", borderRadius: 5, padding: "3px 8px", cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}
                         >복사</button>
                       </div>
                       {/* 스크립트 포맷 렌더러 */}
@@ -3314,7 +3314,7 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
 
       {/* 구조 인사이트 */}
       {data.structure_insight && (
-        <div style={{ marginTop: 16, padding: "14px 16px", borderRadius: 10, border: "1px solid rgba(var(--tw),0.07)", background: "rgba(var(--tw),0.02)" }}>
+        <div style={{ marginTop: 16, padding: "14px 16px", borderRadius: 10, border: "1px solid var(--c-bd-2)", background: "rgba(var(--tw),0.02)" }}>
           <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6, letterSpacing: 0.5 }}>STRUCTURE INSIGHT — Snyder · Field · McKee</div>
           <div style={{ fontSize: 13, color: "rgba(var(--tw),0.6)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{data.structure_insight}</div>
         </div>
@@ -3430,7 +3430,7 @@ export function MythMapPanel({ data, isMobile }) {
           <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>원형 역할</div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 7 }}>
             {Object.entries(data.archetype_roles).filter(([, v]) => v).map(([key, val]) => (
-              <div key={key} style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(var(--tw),0.07)", background: "rgba(var(--tw),0.02)" }}>
+              <div key={key} style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid var(--c-bd-2)", background: "rgba(var(--tw),0.02)" }}>
                 <div style={{ fontSize: 10, color: "rgba(255,209,102,0.6)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 3 }}>{key.toUpperCase()}</div>
                 <div style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
               </div>
@@ -3481,7 +3481,7 @@ export function BarthesCodePanel({ data, isMobile }) {
                   <span style={{ fontSize: 11, color, fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
                   <span style={{ fontSize: 11, color, fontFamily: "'JetBrains Mono', monospace" }}>{c.score}/20</span>
                 </div>
-                <div style={{ height: 4, borderRadius: 2, background: "rgba(var(--tw),0.06)", overflow: "hidden" }}>
+                <div style={{ height: 4, borderRadius: 2, background: "var(--c-bd-1)", overflow: "hidden" }}>
                   <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 2, transition: "width 0.8s ease" }} />
                 </div>
               </div>
@@ -3546,7 +3546,7 @@ export function KoreanMythPanel({ data, isMobile }) {
                 <span style={{ fontSize: 13, fontWeight: 700, color, fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
                 <span style={{ fontSize: 12, color, fontFamily: "'JetBrains Mono', monospace" }}>{d.score}/{max}</span>
               </div>
-              <div style={{ height: 4, borderRadius: 2, background: "rgba(var(--tw),0.06)", marginBottom: 8, overflow: "hidden" }}>
+              <div style={{ height: 4, borderRadius: 2, background: "var(--c-bd-1)", marginBottom: 8, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${(d.score / max) * 100}%`, background: color, borderRadius: 2 }} />
               </div>
               <div style={{ fontSize: 12, color: "rgba(var(--tw),0.65)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>{d.analysis}</div>
@@ -3618,7 +3618,7 @@ export function ScriptCoveragePanel({ data, isMobile }) {
         {scoreKeys.map(({ key, label }) => {
           const s = data.scores?.[key]; if (!s) return null;
           return (
-            <div key={key} style={{ padding: "10px 12px", borderRadius: 9, border: "1px solid rgba(var(--tw),0.07)", background: "rgba(var(--tw),0.02)" }}>
+            <div key={key} style={{ padding: "10px 12px", borderRadius: 9, border: "1px solid var(--c-bd-2)", background: "rgba(var(--tw),0.02)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                 <span style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
                 <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
@@ -3626,7 +3626,7 @@ export function ScriptCoveragePanel({ data, isMobile }) {
                   <span style={{ fontSize: 11, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace" }}>{s.score}/10</span>
                 </div>
               </div>
-              <div style={{ height: 3, borderRadius: 2, background: "rgba(var(--tw),0.06)", marginBottom: 6, overflow: "hidden" }}>
+              <div style={{ height: 3, borderRadius: 2, background: "var(--c-bd-1)", marginBottom: 6, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${s.score * 10}%`, background: gradeColor(s.grade), borderRadius: 2 }} />
               </div>
               <div style={{ fontSize: 11, color: "rgba(var(--tw),0.45)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.5 }}>{s.comment}</div>
@@ -3682,7 +3682,7 @@ export function DialogueDevPanel({ data, isMobile }) {
                   { l: "절대 직접 말 안 하는 것", v: v.what_they_never_say },
                   { l: "말버릇", v: v.verbal_tic },
                 ].map(({ l, v: val }) => val && (
-                  <div key={l} style={{ padding: "7px 9px", borderRadius: 7, border: "1px solid rgba(var(--tw),0.06)", background: "rgba(var(--tw),0.02)" }}>
+                  <div key={l} style={{ padding: "7px 9px", borderRadius: 7, border: "1px solid var(--c-bd-1)", background: "rgba(var(--tw),0.02)" }}>
                     <div style={{ fontSize: 9, color: "rgba(var(--tw),0.3)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 3 }}>{l}</div>
                     <div style={{ fontSize: 11, color: "rgba(var(--tw),0.65)", fontFamily: "'Noto Sans KR', sans-serif" }}>{val}</div>
                   </div>
@@ -3716,7 +3716,7 @@ export function DialogueDevPanel({ data, isMobile }) {
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>하위텍스트 기법</div>
           {data.subtext_techniques.map((t, i) => (
-            <div key={i} style={{ marginBottom: 8, padding: "9px 12px", borderRadius: 9, border: "1px solid rgba(var(--tw),0.07)", background: "rgba(var(--tw),0.02)" }}>
+            <div key={i} style={{ marginBottom: 8, padding: "9px 12px", borderRadius: 9, border: "1px solid var(--c-bd-2)", background: "rgba(var(--tw),0.02)" }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#45B7D1", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 3 }}>{t.technique}</div>
               <div style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>{t.when_to_use}</div>
               {t.example && <div style={{ fontSize: 11, color: "rgba(var(--tw),0.35)", fontFamily: "'Noto Sans KR', sans-serif", marginTop: 3, fontStyle: "italic" }}>예: {t.example}</div>}
@@ -3749,7 +3749,7 @@ export function CharacterDevPanel({ data, isMobile }) {
   const Section = ({ id, title, color, children }) => {
     const open = openSection === id;
     return (
-      <div style={{ marginBottom: 12, borderRadius: 12, border: `1px solid ${open ? color + "33" : "rgba(var(--tw),0.06)"}`, overflow: "hidden", transition: "all 0.2s" }}>
+      <div style={{ marginBottom: 12, borderRadius: 12, border: `1px solid ${open ? color + "33" : "var(--c-bd-1)"}`, overflow: "hidden", transition: "all 0.2s" }}>
         <button onClick={() => setOpenSection(open ? null : id)} style={{ width: "100%", padding: "12px 16px", background: open ? `${color}0d` : "rgba(var(--tw),0.01)", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", color: open ? color : "rgba(var(--tw),0.55)", fontFamily: "'Noto Sans KR', sans-serif", fontSize: 13, fontWeight: 700 }}>
           {title}
           <span style={{ fontSize: 11, opacity: 0.6 }}>{open ? "▲" : "▼"}</span>
@@ -3832,7 +3832,7 @@ export function CharacterDevPanel({ data, isMobile }) {
       {supporting.length > 0 && (
         <Section id="supporting" title="주요 인물" color="#60A5FA">
           {supporting.map((s, i) => (
-            <div key={i} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: i < supporting.length - 1 ? "1px solid rgba(var(--tw),0.05)" : "none" }}>
+            <div key={i} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: i < supporting.length - 1 ? "1px solid var(--c-card-3)" : "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(var(--tw),0.85)", fontFamily: "'Noto Sans KR', sans-serif" }}>{s.suggested_name || s.role_name}</span>
                 <Tag text={s.role_name} color="#60A5FA" />
@@ -3909,7 +3909,7 @@ export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructu
 
   const inputStyle = {
     width: "100%", padding: "9px 12px", borderRadius: 8,
-    border: "1px solid rgba(var(--tw),0.08)", background: "rgba(var(--tw),0.03)",
+    border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)",
     color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif",
     outline: "none",
   };
@@ -3925,7 +3925,7 @@ export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructu
           {structures.map((s) => (
             <button key={s.id} onClick={() => onStructureChange(s.id)} style={{
               padding: "9px 12px", borderRadius: 9, textAlign: "left",
-              border: structure === s.id ? "1px solid rgba(251,191,36,0.5)" : "1px solid rgba(var(--tw),0.07)",
+              border: structure === s.id ? "1px solid rgba(251,191,36,0.5)" : "1px solid var(--c-bd-2)",
               background: structure === s.id ? "rgba(251,191,36,0.1)" : "rgba(var(--tw),0.02)",
               color: structure === s.id ? "#FBBf24" : "rgba(var(--tw),0.45)",
               cursor: "pointer", transition: "all 0.15s",
@@ -3941,7 +3941,7 @@ export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructu
       {charDevResult?.protagonist ? (
         <div style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>인물 정보</div>
-          <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(var(--tw),0.03)", border: "1px solid rgba(var(--tw),0.07)" }}>
+          <div style={{ padding: "14px 16px", borderRadius: 10, background: "var(--c-card-1)", border: "1px solid var(--c-bd-2)" }}>
             <div style={{ fontSize: 10, color: "rgba(var(--tw),0.28)", marginBottom: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>
               ✓ 캐릭터 분석(3단계) 결과 자동 반영
             </div>
@@ -3956,26 +3956,26 @@ export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructu
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: charDevResult.supporting_characters?.length ? 10 : 0 }}>
               {charDevResult.protagonist.want && (
-                <span style={{ fontSize: 10, color: "rgba(var(--tw),0.5)", background: "rgba(var(--tw),0.05)", padding: "3px 8px", borderRadius: 6 }}>
+                <span style={{ fontSize: 10, color: "rgba(var(--tw),0.5)", background: "var(--c-card-3)", padding: "3px 8px", borderRadius: 6 }}>
                   Want: {charDevResult.protagonist.want}
                 </span>
               )}
               {charDevResult.protagonist.need && (
-                <span style={{ fontSize: 10, color: "rgba(var(--tw),0.5)", background: "rgba(var(--tw),0.05)", padding: "3px 8px", borderRadius: 6 }}>
+                <span style={{ fontSize: 10, color: "rgba(var(--tw),0.5)", background: "var(--c-card-3)", padding: "3px 8px", borderRadius: 6 }}>
                   Need: {charDevResult.protagonist.need}
                 </span>
               )}
               {charDevResult.protagonist.ghost && (
-                <span style={{ fontSize: 10, color: "rgba(var(--tw),0.5)", background: "rgba(var(--tw),0.05)", padding: "3px 8px", borderRadius: 6 }}>
+                <span style={{ fontSize: 10, color: "rgba(var(--tw),0.5)", background: "var(--c-card-3)", padding: "3px 8px", borderRadius: 6 }}>
                   Ghost: {charDevResult.protagonist.ghost.slice(0, 30)}{charDevResult.protagonist.ghost.length > 30 ? "…" : ""}
                 </span>
               )}
             </div>
             {/* 주요 인물 */}
             {charDevResult.supporting_characters?.filter((s) => s.suggested_name || s.role_name).length > 0 && (
-              <div style={{ borderTop: "1px solid rgba(var(--tw),0.06)", paddingTop: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
+              <div style={{ borderTop: "1px solid var(--c-bd-1)", paddingTop: 8, display: "flex", flexWrap: "wrap", gap: 4 }}>
                 {charDevResult.supporting_characters.filter((s) => s.suggested_name || s.role_name).slice(0, 5).map((s, i) => (
-                  <span key={i} style={{ fontSize: 10, color: "rgba(var(--tw),0.38)", background: "rgba(var(--tw),0.04)", padding: "2px 8px", borderRadius: 10, border: "1px solid rgba(var(--tw),0.06)" }}>
+                  <span key={i} style={{ fontSize: 10, color: "rgba(var(--tw),0.38)", background: "var(--c-card-2)", padding: "2px 8px", borderRadius: 10, border: "1px solid var(--c-bd-1)" }}>
                     {s.suggested_name || ""}{s.role_name ? ` (${s.role_name})` : ""}
                   </span>
                 ))}
@@ -4094,7 +4094,7 @@ export function StructureAnalysisPanel({ data, isMobile }) {
       {data.emotional_arc && data.emotional_arc.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 10 }}>감정 아크</div>
-          <div style={{ position: "relative", height: 80, background: "rgba(var(--tw),0.02)", borderRadius: 10, border: "1px solid rgba(var(--tw),0.05)", padding: "8px 12px", overflow: "hidden" }}>
+          <div style={{ position: "relative", height: 80, background: "rgba(var(--tw),0.02)", borderRadius: 10, border: "1px solid var(--c-card-3)", padding: "8px 12px", overflow: "hidden" }}>
             <svg width="100%" height="100%" viewBox="0 0 100 64" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="0">
@@ -4353,7 +4353,7 @@ export function ThemeAnalysisPanel({ data, isMobile }) {
 
       {/* Genre Conventions */}
       {data.genre_theme_conventions && (
-        <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.06)" }}>
+        <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)" }}>
           <div style={{ fontSize: 10, color: "rgba(var(--tw),0.4)", fontWeight: 700, marginBottom: 8, letterSpacing: 0.5 }}>장르 테마 컨벤션</div>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
             <div>
@@ -4440,7 +4440,7 @@ export function SceneListPanel({ text, isMobile }) {
             em: ({ children }) => <em style={{ color: "rgba(200,168,75,0.75)", fontStyle: "italic" }}>{children}</em>,
             ul: ({ children }) => <ul style={{ paddingLeft: 18, marginBottom: 10, marginTop: 4 }}>{children}</ul>,
             li: ({ children }) => <li style={{ marginBottom: 4, color: "rgba(var(--tw),0.68)" }}>{children}</li>,
-            hr: () => <hr style={{ border: "none", borderTop: "1px solid rgba(var(--tw),0.05)", margin: "16px 0" }} />,
+            hr: () => <hr style={{ border: "none", borderTop: "1px solid var(--c-card-3)", margin: "16px 0" }} />,
           }}
         >{text}</ReactMarkdown>
       </div>
@@ -4493,7 +4493,7 @@ export function ComparableWorksPanel({ data, isMobile }) {
           const sc = simColor(w.similarity_score);
           return (
             <div key={i} style={{
-              borderRadius: 10, border: `1px solid ${isOpen ? sc + "40" : "rgba(var(--tw),0.07)"}`,
+              borderRadius: 10, border: `1px solid ${isOpen ? sc + "40" : "var(--c-bd-2)"}`,
               background: isOpen ? `${sc}06` : "rgba(var(--tw),0.02)",
               transition: "all 0.2s", overflow: "hidden",
             }}>
@@ -4505,7 +4505,7 @@ export function ComparableWorksPanel({ data, isMobile }) {
                 {/* 유사도 게이지 */}
                 <div style={{
                   width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
-                  background: `conic-gradient(${sc} ${w.similarity_score * 3.6}deg, rgba(var(--tw),0.07) 0deg)`,
+                  background: `conic-gradient(${sc} ${w.similarity_score * 3.6}deg, var(--c-bd-2) 0deg)`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
                   <div style={{
@@ -4528,7 +4528,7 @@ export function ComparableWorksPanel({ data, isMobile }) {
                       </span>
                     )}
                     {w.country && (
-                      <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, background: "rgba(var(--tw),0.06)", color: "rgba(var(--tw),0.4)" }}>
+                      <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 4, background: "var(--c-bd-1)", color: "rgba(var(--tw),0.4)" }}>
                         {w.country}
                       </span>
                     )}
@@ -4561,14 +4561,14 @@ export function ComparableWorksPanel({ data, isMobile }) {
                       감독/작가: {w.director_writer}
                     </div>
                   )}
-                  <div style={{ background: "rgba(var(--tw),0.03)", borderRadius: 8, padding: "10px 12px" }}>
+                  <div style={{ background: "var(--c-card-1)", borderRadius: 8, padding: "10px 12px" }}>
                     <div style={{ fontSize: 10, fontWeight: 700, color: sc, marginBottom: 5, letterSpacing: 0.5 }}>유사한 이유</div>
                     <div style={{ fontSize: 12, color: "rgba(var(--tw),0.7)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
                       {w.why_comparable}
                     </div>
                   </div>
                   {w.key_difference && (
-                    <div style={{ background: "rgba(var(--tw),0.03)", borderRadius: 8, padding: "10px 12px" }}>
+                    <div style={{ background: "var(--c-card-1)", borderRadius: 8, padding: "10px 12px" }}>
                       <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(var(--tw),0.4)", marginBottom: 5, letterSpacing: 0.5 }}>차별점</div>
                       <div style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
                         {w.key_difference}
@@ -4618,7 +4618,7 @@ export function ComparableWorksPanel({ data, isMobile }) {
 
       {/* 타겟 */}
       {data.target_audience && (
-        <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 8, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.06)" }}>
+        <div style={{ marginTop: 10, padding: "10px 14px", borderRadius: 8, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)" }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(var(--tw),0.4)", marginBottom: 6, letterSpacing: 0.5 }}>타겟 시청자</div>
           {data.target_audience.primary && (
             <div style={{ fontSize: 11, color: "rgba(var(--tw),0.65)", marginBottom: 3, fontFamily: "'Noto Sans KR', sans-serif" }}>
@@ -4697,7 +4697,7 @@ export function ValuationPanel({ data, isMobile }) {
         {/* 원형 점수 */}
         <div style={{ position: "relative", width: 72, height: 72, flexShrink: 0 }}>
           <svg width={72} height={72} style={{ transform: "rotate(-90deg)" }}>
-            <circle cx={36} cy={36} r={30} fill="none" stroke="rgba(var(--tw),0.06)" strokeWidth={6} />
+            <circle cx={36} cy={36} r={30} fill="none" stroke="var(--c-bd-1)" strokeWidth={6} />
             <circle cx={36} cy={36} r={30} fill="none" stroke={sc} strokeWidth={6}
               strokeDasharray={`${2 * Math.PI * 30 * data.completion_score / 100} ${2 * Math.PI * 30}`}
               strokeLinecap="round" />
@@ -4736,7 +4736,7 @@ export function ValuationPanel({ data, isMobile }) {
                 <span style={{ fontSize: 11, color: "rgba(var(--tw),0.65)", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: c, fontFamily: "'JetBrains Mono', monospace" }}>{score}/{max}</span>
               </div>
-              <div style={{ height: 4, borderRadius: 2, background: "rgba(var(--tw),0.06)", overflow: "hidden", marginBottom: 4 }}>
+              <div style={{ height: 4, borderRadius: 2, background: "var(--c-bd-1)", overflow: "hidden", marginBottom: 4 }}>
                 <div style={{ height: "100%", width: `${pct}%`, background: c, borderRadius: 2, transition: "width 0.6s ease" }} />
               </div>
               {item.comment && (
@@ -4768,7 +4768,7 @@ export function ValuationPanel({ data, isMobile }) {
             </div>
           )}
           {km.full_price_rookie && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingTop: 6, borderTop: "1px solid rgba(var(--tw),0.05)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingTop: 6, borderTop: "1px solid var(--c-card-3)" }}>
               <div>
                 <div style={{ fontSize: 11, color: "rgba(var(--tw),0.55)", fontFamily: "'Noto Sans KR', sans-serif" }}>신인 작가 기준</div>
                 <div style={{ fontSize: 9, color: "rgba(var(--tw),0.25)", marginTop: 1, fontFamily: "'Noto Sans KR', sans-serif" }}>{km.full_price_rookie.basis}</div>
@@ -4779,7 +4779,7 @@ export function ValuationPanel({ data, isMobile }) {
             </div>
           )}
           {km.full_price_experienced && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingTop: 6, borderTop: "1px solid rgba(var(--tw),0.05)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingTop: 6, borderTop: "1px solid var(--c-card-3)" }}>
               <div>
                 <div style={{ fontSize: 11, color: "rgba(var(--tw),0.55)", fontFamily: "'Noto Sans KR', sans-serif" }}>경력 작가 기준</div>
                 <div style={{ fontSize: 9, color: "rgba(var(--tw),0.25)", marginTop: 1, fontFamily: "'Noto Sans KR', sans-serif" }}>{km.full_price_experienced.basis}</div>
@@ -4791,7 +4791,7 @@ export function ValuationPanel({ data, isMobile }) {
           )}
         </div>
         {km.recommended_buyers && km.recommended_buyers.length > 0 && (
-          <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid rgba(var(--tw),0.05)" }}>
+          <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--c-card-3)" }}>
             <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", marginBottom: 5 }}>추천 바이어</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
               {km.recommended_buyers.map((b, i) => (
@@ -4826,7 +4826,7 @@ export function ValuationPanel({ data, isMobile }) {
               </div>
             )}
             {um.spec_market_estimate && (
-              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 6, borderTop: "1px solid rgba(var(--tw),0.05)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 6, borderTop: "1px solid var(--c-card-3)" }}>
                 <div style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", fontFamily: "'Noto Sans KR', sans-serif" }}>스펙 시장 추정가</div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "#60A5FA", fontFamily: "'JetBrains Mono', monospace" }}>
                   {fmtUsd(um.spec_market_estimate.min_usd)} ~ {fmtUsd(um.spec_market_estimate.max_usd)}
@@ -4883,7 +4883,7 @@ export function ValuationPanel({ data, isMobile }) {
         <div style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(var(--tw),0.3)", letterSpacing: 0.5, marginBottom: 8, textTransform: "uppercase" }}>비교 거래 사례</div>
           {data.comparable_deals.map((deal, i) => (
-            <div key={i} style={{ marginBottom: 6, padding: "9px 12px", borderRadius: 7, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.06)" }}>
+            <div key={i} style={{ marginBottom: 6, padding: "9px 12px", borderRadius: 7, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)" }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(var(--tw),0.7)", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 3 }}>
                 {deal.title}
               </div>
@@ -4902,7 +4902,7 @@ export function ValuationPanel({ data, isMobile }) {
 
       {/* 면책 */}
       {data.disclaimer && (
-        <div style={{ padding: "8px 12px", borderRadius: 7, background: "rgba(var(--tw),0.02)", border: "1px solid rgba(var(--tw),0.05)" }}>
+        <div style={{ padding: "8px 12px", borderRadius: 7, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-card-3)" }}>
           <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", lineHeight: 1.5, fontFamily: "'Noto Sans KR', sans-serif" }}>
             ⚠ {data.disclaimer}
           </div>
