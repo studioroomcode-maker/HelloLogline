@@ -492,22 +492,24 @@ export default function LoglineAnalyzer() {
 
   useEffect(() => {
     // 서버가 API 키를 갖고 있으면 클라이언트 키 불필요
-    fetch("/health")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.hasKey) {
-          setServerHasKey(true);
-          // 서버 키가 있으면 모달 안 띄우고 sentinel 값 설정
-          if (!localStorage.getItem("logline_api_key")) {
-            setApiKey("__server__");
+    // /api/health (Vercel) 또는 /health (로컬 Express) 순서로 시도
+    const checkHealth = (url) =>
+      fetch(url)
+        .then((r) => r.ok ? r.json() : Promise.reject(r.status))
+        .then((d) => {
+          if (d.hasKey) {
+            setServerHasKey(true);
+            if (!localStorage.getItem("logline_api_key")) {
+              setApiKey("__server__");
+            }
+          } else if (!apiKey) {
+            setShowApiKeyModal(true);
           }
-        } else if (!apiKey) {
-          setShowApiKeyModal(true);
-        }
-      })
-      .catch(() => {
-        if (!apiKey) setShowApiKeyModal(true);
-      });
+        });
+
+    checkHealth("/api/health")
+      .catch(() => checkHealth("/health"))
+      .catch(() => { if (!apiKey) setShowApiKeyModal(true); });
   }, []);
 
   // ── Auto-save helper ──
@@ -1917,7 +1919,11 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
               {!apiKey && !serverHasKey && <div style={{ marginTop: 8, fontSize: 11, textAlign: "center", color: "rgba(232,93,117,0.7)" }}>API 키를 먼저 설정해주세요</div>}
               {serverHasKey && apiKey === "__server__" && <div style={{ marginTop: 8, fontSize: 11, textAlign: "center", color: "rgba(78,204,163,0.7)" }}>서버 API 키 사용 중</div>}
-              <ErrorMsg msg={error} />
+              {error && (
+                <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 10, background: "rgba(232,93,117,0.1)", border: "1px solid rgba(232,93,117,0.25)", color: "#E85D75", fontSize: 12, lineHeight: 1.6 }}>
+                  ⚠️ {error}
+                </div>
+              )}
 
               {/* ── Result display ── */}
               {result && (

@@ -1,3 +1,5 @@
+export const config = { api: { bodyParser: { sizeLimit: "4mb" } } };
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: { message: "Method not allowed" } });
@@ -9,8 +11,11 @@ export default async function handler(req, res) {
   if (!apiKey) {
     return res
       .status(401)
-      .json({ error: { message: "API 키가 설정되지 않았습니다." } });
+      .json({ error: { message: "API 키가 설정되지 않았습니다. Vercel 대시보드 → Settings → Environment Variables → ANTHROPIC_API_KEY 를 추가해주세요." } });
   }
+
+  // body가 string이면 파싱, object면 그대로 사용
+  const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
   try {
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {
@@ -20,7 +25,7 @@ export default async function handler(req, res) {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(body),
     });
 
     const data = await upstream.json();
