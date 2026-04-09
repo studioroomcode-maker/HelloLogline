@@ -59,7 +59,7 @@ function SvgIcon({ d, size = 16, color = "currentColor", style = {} }) {
   );
 }
 
-function Spinner({ size = 14, color = "rgba(var(--tw),0.7)" }) {
+function Spinner({ size = 14, color = "var(--c-tx-70)" }) {
   return (
     <span style={{
       display: "inline-block", width: size, height: size,
@@ -190,12 +190,12 @@ function ToolButton({ icon, label, sub, done, loading, color, onClick, disabled,
           fontFamily: "'Noto Sans KR', sans-serif",
         }}
       >
-        <div style={{ color: done ? color : "rgba(var(--tw),0.4)", flexShrink: 0 }}>
+        <div style={{ color: done ? color : "var(--c-tx-40)", flexShrink: 0 }}>
           {icon}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: done ? color : "#e0e0ee", lineHeight: 1.3 }}>{label}</div>
-          {sub && <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", marginTop: 1 }}>{sub}</div>}
+          {sub && <div style={{ fontSize: 10, color: "var(--c-tx-30)", marginTop: 1 }}>{sub}</div>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
           {tooltip && <span style={{ fontSize: 12, color: "rgba(var(--tw),0.18)", lineHeight: 1, userSelect: "none" }}>ⓘ</span>}
@@ -263,7 +263,7 @@ function ResultCard({ children, onClose, title, color = "var(--c-bd-1)" }) {
           {onClose && (
             <button onClick={onClose} style={{
               background: "none", border: "none", cursor: "pointer", padding: 4,
-              color: "rgba(var(--tw),0.3)", lineHeight: 1,
+              color: "var(--c-tx-30)", lineHeight: 1,
             }}>
               <SvgIcon d={ICON.close} size={14} />
             </button>
@@ -1727,13 +1727,13 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
             <div style={{ padding: "20px 24px 14px", borderBottom: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-main)" }}>저장된 프로젝트</div>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.35)", marginTop: 2 }}>분석이 완료될 때마다 자동 저장됩니다</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-35)", marginTop: 2 }}>분석이 완료될 때마다 자동 저장됩니다</div>
               </div>
-              <button onClick={() => setShowProjects(false)} style={{ background: "none", border: "none", color: "rgba(var(--tw),0.4)", cursor: "pointer", fontSize: 18, lineHeight: 1 }}>×</button>
+              <button onClick={() => setShowProjects(false)} style={{ background: "none", border: "none", color: "var(--c-tx-40)", cursor: "pointer", fontSize: 18, lineHeight: 1 }}>×</button>
             </div>
             <div style={{ overflowY: "auto", flex: 1, padding: "8px 16px 8px" }}>
               {savedProjects.length === 0 ? (
-                <div style={{ textAlign: "center", color: "rgba(var(--tw),0.3)", fontSize: 13, padding: "40px 0" }}>저장된 프로젝트가 없습니다</div>
+                <div style={{ textAlign: "center", color: "var(--c-tx-30)", fontSize: 13, padding: "40px 0" }}>저장된 프로젝트가 없습니다</div>
               ) : savedProjects.map((proj) => (
                 <div key={proj.id} style={{
                   padding: "12px 14px", borderRadius: 10, marginBottom: 6,
@@ -1742,7 +1742,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-main)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{proj.title || "제목 없음"}</div>
-                    <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", marginTop: 3, fontFamily: "'JetBrains Mono', monospace" }}>
+                    <div style={{ fontSize: 10, color: "var(--c-tx-30)", marginTop: 3, fontFamily: "'JetBrains Mono', monospace" }}>
                       {new Date(proj.updatedAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
                     </div>
                   </div>
@@ -1795,12 +1795,12 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
         <div style={{ maxWidth: 860, margin: "0 auto", height: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "0 12px" : "0 28px" }}>
         <div>
           <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "var(--text-main)", letterSpacing: -0.3 }}>Hello Loglines</div>
-          {!isMobile && <div style={{ fontSize: 10, color: "rgba(var(--tw),0.3)", marginTop: -1 }}>시나리오 개발 워크스테이션</div>}
+          {!isMobile && <div style={{ fontSize: 10, color: "var(--c-tx-30)", marginTop: -1 }}>시나리오 개발 워크스테이션</div>}
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           {/* Save status */}
           {saveStatus && (
-            <span style={{ fontSize: 10, color: saveStatus === "saved" ? "#4ECCA3" : "rgba(var(--tw),0.35)", fontFamily: "'JetBrains Mono', monospace" }}>
+            <span style={{ fontSize: 10, color: saveStatus === "saved" ? "#4ECCA3" : "var(--c-tx-35)", fontFamily: "'JetBrains Mono', monospace" }}>
               {saveStatus === "saving" ? "저장 중..." : "저장됨"}
             </span>
           )}
@@ -1825,7 +1825,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
           <button onClick={openProjects} style={{
             padding: "5px 12px", borderRadius: 8,
             border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)",
-            color: "rgba(var(--tw),0.45)", cursor: "pointer", fontSize: 11,
+            color: "var(--c-tx-45)", cursor: "pointer", fontSize: 11,
             display: "flex", alignItems: "center", gap: 5,
           }}>
             프로젝트
@@ -1833,7 +1833,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
           <button onClick={() => setShowHistory(true)} style={{
             padding: "5px 12px", borderRadius: 8,
             border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)",
-            color: "rgba(var(--tw),0.45)", cursor: "pointer", fontSize: 11,
+            color: "var(--c-tx-45)", cursor: "pointer", fontSize: 11,
             display: "flex", alignItems: "center", gap: 5,
           }}>
             <SvgIcon d={ICON.history} size={12} />
@@ -1856,7 +1856,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
             style={{
               padding: "5px 8px", borderRadius: 8, fontSize: 14, lineHeight: 1,
               border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)",
-              color: "rgba(var(--tw),0.5)", cursor: "pointer",
+              color: "var(--c-tx-50)", cursor: "pointer",
             }}
           >{darkMode ? "☀️" : "🌙"}</button>
         </div>
@@ -1888,7 +1888,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   width: isMobile ? 28 : 34, height: isMobile ? 28 : 34, borderRadius: "50%", flexShrink: 0,
                   border: `2px solid ${isActive ? "#C8A84B" : st === "done" ? "#4ECCA3" : "var(--c-bd-5)"}`,
                   background: isActive ? "rgba(200,168,75,0.18)" : st === "done" ? "rgba(78,204,163,0.12)" : "transparent",
-                  color: isActive ? "#C8A84B" : st === "done" ? "#4ECCA3" : "rgba(var(--tw),0.28)",
+                  color: isActive ? "#C8A84B" : st === "done" ? "#4ECCA3" : "var(--c-tx-28)",
                   cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 9, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
                   transition: "all 0.25s",
@@ -1898,7 +1898,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   ) : s.num}
                 </button>
                 {!isMobile && (
-                  <div style={{ fontSize: 9, color: isActive ? "#C8A84B" : "rgba(var(--tw),0.25)", fontWeight: isActive ? 700 : 400, whiteSpace: "nowrap", transition: "color 0.2s" }}>
+                  <div style={{ fontSize: 9, color: isActive ? "#C8A84B" : "var(--c-tx-25)", fontWeight: isActive ? 700 : 400, whiteSpace: "nowrap", transition: "color 0.2s" }}>
                     {s.name}
                   </div>
                 )}
@@ -1914,7 +1914,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
           <div style={{ maxWidth: 860, margin: "0 auto", padding: isMobile ? "14px 16px" : "14px 28px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 200 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#C8A84B", marginBottom: 3 }}>처음 오셨나요?</div>
-              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.5)", lineHeight: 1.6 }}>
+              <div style={{ fontSize: 11, color: "var(--c-tx-50)", lineHeight: 1.6 }}>
                 로그라인을 입력하면 18개 기준으로 분석 → 시놉시스 → 트리트먼트 → 씬 대본까지 자동 생성됩니다.
               </div>
             </div>
@@ -1927,7 +1927,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
               </button>
               <button
                 onClick={dismissFirstVisit}
-                style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "none", color: "rgba(var(--tw),0.3)", cursor: "pointer", fontSize: 11 }}
+                style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-30)", cursor: "pointer", fontSize: 11 }}
               >
                 닫기
               </button>
@@ -1949,12 +1949,12 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 {getStageStatus("1") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("1")] }}>01</span>}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "1" ? "var(--text-main)" : getStageStatus("1") === "done" ? "rgba(var(--tw),0.75)" : "rgba(var(--tw),0.45)" }}>로그라인</div>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.3)", marginTop: 2 }}>입력 / 기본 분석 / AI 개선안</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "1" ? "var(--text-main)" : getStageStatus("1") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>로그라인</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>입력 / 기본 분석 / AI 개선안</div>
               </div>
               {currentStage !== "1" && getStageDoneCount("1") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("1")}/{STAGE_TOTALS["1"]}</span>}
               {getStageStatus("1") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(var(--tw),0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "1" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "1" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
             </div>
             {currentStage === "1" && (
               <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
@@ -1962,18 +1962,18 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
               {/* Duration selector */}
               <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600 }}>영상 길이</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600 }}>영상 길이</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 7 }}>
                   {DURATION_OPTIONS.map((d) => (
                     <button key={d.id} onClick={() => setSelectedDuration(d.id)} style={{
                       padding: "9px 10px", borderRadius: 10, textAlign: "left", transition: "all 0.15s",
                       border: selectedDuration === d.id ? "1px solid rgba(200,168,75,0.55)" : "1px solid var(--c-bd-2)",
                       background: selectedDuration === d.id ? "rgba(200,168,75,0.08)" : "rgba(var(--tw),0.02)",
-                      color: selectedDuration === d.id ? "#C8A84B" : "rgba(var(--tw),0.45)",
+                      color: selectedDuration === d.id ? "#C8A84B" : "var(--c-tx-45)",
                       cursor: "pointer",
                     }}>
                       <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 1 }}>{d.label}</div>
-                      <div style={{ fontSize: 10, color: selectedDuration === d.id ? "rgba(200,168,75,0.65)" : "rgba(var(--tw),0.28)", fontFamily: "'JetBrains Mono', monospace" }}>{d.duration}</div>
+                      <div style={{ fontSize: 10, color: selectedDuration === d.id ? "rgba(200,168,75,0.65)" : "var(--c-tx-28)", fontFamily: "'JetBrains Mono', monospace" }}>{d.duration}</div>
                     </button>
                   ))}
                   {/* 커스텀 버튼 */}
@@ -1981,11 +1981,11 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                     padding: "9px 10px", borderRadius: 10, textAlign: "left", transition: "all 0.15s",
                     border: selectedDuration === "custom" ? "1px solid rgba(139,92,246,0.6)" : "1px solid var(--c-bd-2)",
                     background: selectedDuration === "custom" ? "rgba(139,92,246,0.1)" : "rgba(var(--tw),0.02)",
-                    color: selectedDuration === "custom" ? "#A78BFA" : "rgba(var(--tw),0.45)",
+                    color: selectedDuration === "custom" ? "#A78BFA" : "var(--c-tx-45)",
                     cursor: "pointer",
                   }}>
                     <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 1 }}>커스텀</div>
-                    <div style={{ fontSize: 10, color: selectedDuration === "custom" ? "rgba(167,139,250,0.65)" : "rgba(var(--tw),0.28)", fontFamily: "'JetBrains Mono', monospace" }}>직접 설정</div>
+                    <div style={{ fontSize: 10, color: selectedDuration === "custom" ? "rgba(167,139,250,0.65)" : "var(--c-tx-28)", fontFamily: "'JetBrains Mono', monospace" }}>직접 설정</div>
                   </button>
                 </div>
 
@@ -1994,7 +1994,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   <div style={{ marginTop: 12, padding: "14px 16px", background: "rgba(139,92,246,0.06)", borderRadius: 10, border: "1px solid rgba(139,92,246,0.2)", display: "flex", flexDirection: "column", gap: 10 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, color: "#A78BFA", marginBottom: 2 }}>커스텀 포맷 설정</div>
                     <div>
-                      <div style={{ fontSize: 10, color: "rgba(var(--tw),0.4)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>주제 / 컨셉</div>
+                      <div style={{ fontSize: 10, color: "var(--c-tx-40)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>주제 / 컨셉</div>
                       <input
                         value={customTheme}
                         onChange={(e) => setCustomTheme(e.target.value)}
@@ -2004,7 +2004,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                       <div>
-                        <div style={{ fontSize: 10, color: "rgba(var(--tw),0.4)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>영상 길이</div>
+                        <div style={{ fontSize: 10, color: "var(--c-tx-40)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>영상 길이</div>
                         <input
                           value={customDurationText}
                           onChange={(e) => setCustomDurationText(e.target.value)}
@@ -2013,7 +2013,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                         />
                       </div>
                       <div>
-                        <div style={{ fontSize: 10, color: "rgba(var(--tw),0.4)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>형식 / 매체</div>
+                        <div style={{ fontSize: 10, color: "var(--c-tx-40)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>형식 / 매체</div>
                         <input
                           value={customFormatLabel}
                           onChange={(e) => setCustomFormatLabel(e.target.value)}
@@ -2033,14 +2033,14 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
               {/* Genre selector */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>장르</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>장르</div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {GENRES.map((g) => (
                     <button key={g.id} onClick={() => setGenre(g.id)} style={{
                       padding: "6px 12px", borderRadius: 20, cursor: "pointer", fontSize: 12, transition: "all 0.2s",
                       border: genre === g.id ? "1px solid #C8A84B" : "1px solid var(--c-bd-3)",
                       background: genre === g.id ? "rgba(200,168,75,0.1)" : "var(--c-card-1)",
-                      color: genre === g.id ? "#C8A84B" : "rgba(var(--tw),0.45)",
+                      color: genre === g.id ? "#C8A84B" : "var(--c-tx-45)",
                     }}>{g.label}</button>
                   ))}
                 </div>
@@ -2052,7 +2052,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   padding: "5px 14px", borderRadius: 20, fontSize: 11, cursor: "pointer", transition: "all 0.2s",
                   border: compareMode ? "1px solid rgba(69,183,209,0.5)" : "1px solid var(--c-bd-3)",
                   background: compareMode ? "rgba(69,183,209,0.1)" : "var(--c-card-1)",
-                  color: compareMode ? "#45B7D1" : "rgba(var(--tw),0.4)",
+                  color: compareMode ? "#45B7D1" : "var(--c-tx-40)",
                 }}>
                   {compareMode ? "비교 모드 ON" : "비교 모드"}
                 </button>
@@ -2081,7 +2081,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                       color: (() => {
                         const ranges = { ultrashort: [20, 40], shortform: [30, 50], shortfilm: [40, 70], webdrama: [50, 80], tvdrama: [60, 90], feature: [70, 110], miniseries: [90, 140], shortformseries: [60, 100] };
                         const [lo, hi] = ranges[selectedDuration] || [70, 110];
-                        return charCount > hi ? "#E85D75" : charCount >= lo ? "#4ECCA3" : charCount > 0 ? "#F7A072" : "rgba(var(--tw),0.25)";
+                        return charCount > hi ? "#E85D75" : charCount >= lo ? "#4ECCA3" : charCount > 0 ? "#F7A072" : "var(--c-tx-25)";
                       })(),
                     }}>
                       {charCount}자{charCount > 0 && (() => {
@@ -2107,7 +2107,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
               {/* Example buttons */}
               <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 11, color: "rgba(var(--tw),0.25)", lineHeight: "28px" }}>예시:</span>
+                <span style={{ fontSize: 11, color: "var(--c-tx-25)", lineHeight: "28px" }}>예시:</span>
                 {EXAMPLE_LOGLINES.map((ex, i) => (
                   <button key={i} onClick={() => setLogline(ex)} style={{
                     padding: "4px 12px", borderRadius: 14,
@@ -2174,7 +2174,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                           <CircleGauge score={interestScore} label="흥미도" subLabel="정보격차 이론 기반" size={isMobile ? 100 : 120} />
                         </div>
                         {result.detected_genre && (
-                          <div style={{ textAlign: "center", fontSize: 12, color: "rgba(var(--tw),0.35)", marginBottom: 12 }}>
+                          <div style={{ textAlign: "center", fontSize: 12, color: "var(--c-tx-35)", marginBottom: 12 }}>
                             감지된 장르: <span style={{ color: "#C8A84B" }}>{result.detected_genre}</span>
                           </div>
                         )}
@@ -2215,7 +2215,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                       <div style={{ fontSize: 13, fontWeight: 700, color: "#C8A84B", marginBottom: 2 }}>
                         이 로그라인을 발전시키고 싶다면?
                       </div>
-                      <div style={{ fontSize: 11, color: "rgba(var(--tw),0.45)", lineHeight: 1.6 }}>
+                      <div style={{ fontSize: 11, color: "var(--c-tx-45)", lineHeight: 1.6 }}>
                         약점만 골라 수정 · 장르·관점·갈등 방향 전환 · AI 개선안 — <span style={{ color: "#C8A84B", fontWeight: 700 }}>개선·방향 탭</span>에서 확인하세요
                       </div>
                     </div>
@@ -2252,9 +2252,9 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                             { label: "흥미 유발 지수", score: interestScore, max: 100, color: "#FFD700" },
                           ].map((item, i) => (
                             <div key={i} style={{ padding: isMobile ? 12 : 16, background: "rgba(var(--tw),0.02)", borderRadius: 12, border: `1px solid ${item.color}18` }}>
-                              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.45)", marginBottom: 5 }}>{item.label}</div>
+                              <div style={{ fontSize: 11, color: "var(--c-tx-45)", marginBottom: 5 }}>{item.label}</div>
                               <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: item.color, fontFamily: "'JetBrains Mono', monospace" }}>
-                                {item.score}<span style={{ fontSize: 12, fontWeight: 400, color: "rgba(var(--tw),0.25)" }}>/{item.max}</span>
+                                {item.score}<span style={{ fontSize: 12, fontWeight: 400, color: "var(--c-tx-25)" }}>/{item.max}</span>
                               </div>
                               <div style={{ marginTop: 8, height: 3, background: "var(--c-card-3)", borderRadius: 2, overflow: "hidden" }}>
                                 <div style={{ height: "100%", width: `${(item.score / item.max) * 100}%`, background: item.color, borderRadius: 2 }} />
@@ -2300,7 +2300,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                       <div>
                         {/* 탭 설명 헤더 */}
                         <div style={{ marginBottom: 20, padding: "12px 14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)" }}>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(var(--tw),0.6)", marginBottom: 8, letterSpacing: 0.5 }}>이 탭에서 할 수 있는 것</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-tx-60)", marginBottom: 8, letterSpacing: 0.5 }}>이 탭에서 할 수 있는 것</div>
                           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
                             {[
                               { icon: "🔧", title: "약점 수정", desc: "낮은 점수 항목만 골라 직접 고친 버전 제안" },
@@ -2311,7 +2311,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                                 <span style={{ fontSize: 16, flexShrink: 0 }}>{item.icon}</span>
                                 <div>
                                   <div style={{ fontSize: 12, fontWeight: 700, color: "#C8A84B" }}>{item.title}</div>
-                                  <div style={{ fontSize: 10, color: "rgba(var(--tw),0.4)", marginTop: 2, lineHeight: 1.5 }}>{item.desc}</div>
+                                  <div style={{ fontSize: 10, color: "var(--c-tx-40)", marginTop: 2, lineHeight: 1.5 }}>{item.desc}</div>
                                 </div>
                               </div>
                             ))}
@@ -2320,7 +2320,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
                         {/* 종합 피드백 */}
                         {result.overall_feedback && (
-                          <div style={{ fontSize: 14, lineHeight: 1.85, color: "rgba(var(--tw),0.75)", marginBottom: 20, padding: "14px 16px", borderRadius: 10, background: "rgba(200,168,75,0.04)", borderLeft: "3px solid rgba(200,168,75,0.3)" }}>
+                          <div style={{ fontSize: 14, lineHeight: 1.85, color: "var(--c-tx-75)", marginBottom: 20, padding: "14px 16px", borderRadius: 10, background: "rgba(200,168,75,0.04)", borderLeft: "3px solid rgba(200,168,75,0.3)" }}>
                             {result.overall_feedback}
                           </div>
                         )}
@@ -2328,9 +2328,9 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                         {/* AI 유도 질문 */}
                         {result.improvement_questions?.length > 0 && (
                           <div style={{ marginBottom: 20 }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(var(--tw),0.4)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>스스로 점검해볼 질문</div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-40)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>스스로 점검해볼 질문</div>
                             {result.improvement_questions.map((q, i) => (
-                              <div key={i} style={{ fontSize: 13, color: "rgba(var(--tw),0.6)", padding: "9px 14px", marginBottom: 6, background: "rgba(200,168,75,0.04)", borderRadius: 8, borderLeft: "2px solid rgba(200,168,75,0.25)", lineHeight: 1.7 }}>
+                              <div key={i} style={{ fontSize: 13, color: "var(--c-tx-60)", padding: "9px 14px", marginBottom: 6, background: "rgba(200,168,75,0.04)", borderRadius: 8, borderLeft: "2px solid rgba(200,168,75,0.25)", lineHeight: 1.7 }}>
                                 <span style={{ color: "rgba(200,168,75,0.6)", fontWeight: 700, marginRight: 6 }}>Q{i + 1}.</span>{q}
                               </div>
                             ))}
@@ -2381,12 +2381,12 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 {getStageStatus("2") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("2")] }}>02</span>}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "2" ? "var(--text-main)" : getStageStatus("2") === "done" ? "rgba(var(--tw),0.75)" : "rgba(var(--tw),0.45)" }}>개념 분석</div>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.3)", marginTop: 2 }}>학술 이론 · 신화 매핑 · 전문가 패널</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "2" ? "var(--text-main)" : getStageStatus("2") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>개념 분석</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>학술 이론 · 신화 매핑 · 전문가 패널</div>
               </div>
               {currentStage !== "2" && getStageDoneCount("2") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("2")}/{STAGE_TOTALS["2"]}</span>}
               {getStageStatus("2") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(var(--tw),0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "2" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "2" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
             </div>
             {currentStage === "2" && (
               <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
@@ -2448,12 +2448,12 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 {getStageStatus("3") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("3")] }}>03</span>}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "3" ? "var(--text-main)" : getStageStatus("3") === "done" ? "rgba(var(--tw),0.75)" : "rgba(var(--tw),0.45)" }}>캐릭터</div>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.3)", marginTop: 2 }}>심리 원형 · 실존적 동기 · 3차원 인물 설계</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "3" ? "var(--text-main)" : getStageStatus("3") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>캐릭터</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>심리 원형 · 실존적 동기 · 3차원 인물 설계</div>
               </div>
               {currentStage !== "3" && getStageDoneCount("3") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("3")}/{STAGE_TOTALS["3"]}</span>}
               {getStageStatus("3") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(var(--tw),0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "3" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "3" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
             </div>
             {currentStage === "3" && (
               <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
@@ -2502,12 +2502,12 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 {getStageStatus("4") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("4")] }}>04</span>}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "4" ? "var(--text-main)" : getStageStatus("4") === "done" ? "rgba(var(--tw),0.75)" : "rgba(var(--tw),0.45)" }}>시놉시스</div>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.3)", marginTop: 2 }}>구조 설계 · 감정 아크 · 하위텍스트 · 시놉시스</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "4" ? "var(--text-main)" : getStageStatus("4") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>시놉시스</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>구조 설계 · 감정 아크 · 하위텍스트 · 시놉시스</div>
               </div>
               {currentStage !== "4" && getStageDoneCount("4") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("4")}/{STAGE_TOTALS["4"]}</span>}
               {getStageStatus("4") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(var(--tw),0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "4" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "4" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
             </div>
             {currentStage === "4" && (
               <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
@@ -2515,7 +2515,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
               {/* ── 구조 & 감정 아크 (통합 버튼) ── */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>1순위 — 구조 & 감정 아크</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>1순위 — 구조 & 감정 아크</div>
                 <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="구조 & 감정 아크" sub="Field · Snyder · McKee 3막 구조 + 가치 전하" done={structureAllDone} loading={structureAllLoading} color="#4ECCA3" onClick={analyzeStructureAll} disabled={!logline.trim()}
                   tooltip={"이야기의 뼈대와 감정 흐름을 설계합니다.\n\n• 3막 구조 — Field·Snyder·McKee·Hauge·Truby의 핵심 플롯 포인트 배치\n  (1막 설정 → 촉발 사건 → 2막 대립 → 절정 → 3막 해소)\n\n• 가치 전하 (McKee) — 장면마다 긍정↔부정으로 뒤바뀌는 감정 가치를 추적합니다.\n  감정 기복이 없는 이야기는 관객을 잃습니다."} />
                 <ErrorMsg msg={structureError || valueChargeError} />
@@ -2544,7 +2544,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
               {/* ── 하위텍스트 ── */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>표면 아래 이야기</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>표면 아래 이야기</div>
                 <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="하위텍스트" sub="Chekhov · Mamet · Pinter" done={!!subtextResult} loading={subtextLoading} color="#95E1D3" onClick={analyzeSubtext} disabled={!logline.trim()}
                   tooltip={"표면 이야기 아래 숨겨진 진짜 의미를 탐지합니다.\n\n'말하지 않고 느끼게 하라' — 위대한 이야기는 항상 두 겹의 층위를 가집니다.\n\n• 표면 이야기 — 실제로 일어나는 사건\n• 하위텍스트 — 그 사건이 진짜로 말하는 것\n\n• Chekhov — 모든 장치는 발화해야 한다\n• Mamet — 캐릭터는 자신이 원하는 것을 말하지 않는다\n• Pinter — 침묵과 공백이 대사보다 강하다"} />
                 <ErrorMsg msg={subtextError} />
@@ -2553,7 +2553,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
               {/* ── 유사 작품 비교 ── */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>시장 포지셔닝</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>시장 포지셔닝</div>
                 <ToolButton
                   icon={<SvgIcon d={ICON.film} size={16} />}
                   label="유사 작품 비교 분석"
@@ -2590,7 +2590,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   themeResult && { label: "테마", color: "#F472B6" },
                 ].filter(Boolean);
                 if (badges.length === 0) return (
-                  <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--c-card-3)", background: "rgba(var(--tw),0.02)", fontSize: 11, color: "rgba(var(--tw),0.3)" }}>
+                  <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--c-card-3)", background: "rgba(var(--tw),0.02)", fontSize: 11, color: "var(--c-tx-30)" }}>
                     개념 분석·캐릭터·가치전하·하위텍스트를 먼저 실행하면 그 결과가 시놉시스 생성에 자동으로 반영됩니다.
                   </div>
                 );
@@ -2619,7 +2619,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                       padding: "8px 12px", borderRadius: 7, border: "none", cursor: "pointer",
                       fontSize: 12, fontWeight: synopsisMode === m.id ? 700 : 400,
                       background: synopsisMode === m.id ? "rgba(200,168,75,0.15)" : "transparent",
-                      color: synopsisMode === m.id ? "#C8A84B" : "rgba(var(--tw),0.35)",
+                      color: synopsisMode === m.id ? "#C8A84B" : "var(--c-tx-35)",
                       transition: "all 0.15s", width: "100%",
                     }}>{m.label}</button>
                   </Tooltip>
@@ -2630,7 +2630,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
               {synopsisMode === "auto" && (
                 <div style={{ marginBottom: 20 }}>
                   <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>서사 구조</div>
+                    <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>서사 구조</div>
                     <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 6 }}>
                       {NARRATIVE_FRAMEWORKS.map((f) => (
                         <div key={f.id} style={{ position: "relative" }}>
@@ -2638,17 +2638,17 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                             width: "100%", padding: "8px 10px", borderRadius: 9, textAlign: "left", cursor: "pointer", transition: "all 0.15s",
                             border: selectedFramework === f.id ? "1px solid rgba(200,168,75,0.5)" : "1px solid var(--c-bd-1)",
                             background: selectedFramework === f.id ? "rgba(200,168,75,0.08)" : "rgba(var(--tw),0.02)",
-                            color: selectedFramework === f.id ? "#C8A84B" : "rgba(var(--tw),0.45)",
+                            color: selectedFramework === f.id ? "#C8A84B" : "var(--c-tx-45)",
                           }}>
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
                               <div style={{ fontSize: 12, fontWeight: 600 }}>{f.label}</div>
                               <button
                                 onClick={(e) => { e.stopPropagation(); setFrameworkInfoId(frameworkInfoId === f.id ? null : f.id); }}
-                                style={{ background: "none", border: "none", cursor: "pointer", padding: "0 0 0 4px", color: "rgba(var(--tw),0.25)", fontSize: 11, lineHeight: 1, flexShrink: 0 }}
+                                style={{ background: "none", border: "none", cursor: "pointer", padding: "0 0 0 4px", color: "var(--c-tx-25)", fontSize: 11, lineHeight: 1, flexShrink: 0 }}
                                 title="설명 보기"
                               >ⓘ</button>
                             </div>
-                            <div style={{ fontSize: 9, color: "rgba(var(--tw),0.25)", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.4 }}>{f.ref}</div>
+                            <div style={{ fontSize: 9, color: "var(--c-tx-25)", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.4 }}>{f.ref}</div>
                           </button>
                         </div>
                       ))}
@@ -2661,22 +2661,22 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                         <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 10, background: "rgba(200,168,75,0.06)", border: "1px solid rgba(200,168,75,0.2)" }}>
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                             <span style={{ fontSize: 13, fontWeight: 700, color: "#C8A84B" }}>{fi.icon} {fi.label}</span>
-                            <button onClick={() => setFrameworkInfoId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(var(--tw),0.3)", fontSize: 14, padding: 0 }}>✕</button>
+                            <button onClick={() => setFrameworkInfoId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-tx-30)", fontSize: 14, padding: 0 }}>✕</button>
                           </div>
-                          <div style={{ fontSize: 12, color: "rgba(var(--tw),0.6)", marginBottom: 6, fontWeight: 500 }}>{fi.desc}</div>
+                          <div style={{ fontSize: 12, color: "var(--c-tx-60)", marginBottom: 6, fontWeight: 500 }}>{fi.desc}</div>
                           <div style={{ fontSize: 11, color: "rgba(var(--tw),0.38)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "keep-all" }}>{fi.instruction}</div>
                         </div>
                       );
                     })()}
                   </div>
                   <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
-                    <span style={{ fontSize: 11, color: "rgba(var(--tw),0.4)" }}>방향 수:</span>
+                    <span style={{ fontSize: 11, color: "var(--c-tx-40)" }}>방향 수:</span>
                     {[2, 3, 4, 5].map((n) => (
                       <button key={n} onClick={() => setDirectionCount(n)} style={{
                         padding: "5px 14px", borderRadius: 20, fontSize: 12, cursor: "pointer",
                         border: directionCount === n ? "1px solid rgba(200,168,75,0.5)" : "1px solid var(--c-bd-3)",
                         background: directionCount === n ? "rgba(200,168,75,0.1)" : "var(--c-card-1)",
-                        color: directionCount === n ? "#C8A84B" : "rgba(var(--tw),0.4)",
+                        color: directionCount === n ? "#C8A84B" : "var(--c-tx-40)",
                         fontWeight: directionCount === n ? 700 : 400,
                       }}>{n}가지</button>
                     ))}
@@ -2765,12 +2765,12 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 {getStageStatus("5") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("5")] }}>05</span>}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "5" ? "var(--text-main)" : getStageStatus("5") === "done" ? "rgba(var(--tw),0.75)" : "rgba(var(--tw),0.45)" }}>트리트먼트 & 비트</div>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.3)", marginTop: 2 }}>트리트먼트 · 씬 리스트 · 비트시트 · 대사</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "5" ? "var(--text-main)" : getStageStatus("5") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>트리트먼트 & 비트</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>트리트먼트 · 씬 리스트 · 비트시트 · 대사</div>
               </div>
               {currentStage !== "5" && getStageDoneCount("5") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("5")}/{STAGE_TOTALS["5"]}</span>}
               {getStageStatus("5") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(var(--tw),0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "5" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "5" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
             </div>
             {currentStage === "5" && (
               <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
@@ -2782,7 +2782,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                   width: "100%", padding: "12px 16px", borderRadius: 12,
                   border: showTreatmentPanel ? "1px solid rgba(200,168,75,0.4)" : "1px solid var(--c-bd-3)",
                   background: showTreatmentPanel ? "rgba(200,168,75,0.07)" : "rgba(var(--tw),0.02)",
-                  color: showTreatmentPanel ? "#C8A84B" : "rgba(var(--tw),0.45)",
+                  color: showTreatmentPanel ? "#C8A84B" : "var(--c-tx-45)",
                   cursor: "pointer", fontSize: 14, fontWeight: 600,
                   display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 0.2s",
                 }}>
@@ -2825,8 +2825,8 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                           li: ({ children }) => <li style={{ marginBottom: 5 }}>{children}</li>,
                           hr: () => <hr style={{ border: "none", borderTop: "1px solid var(--c-bd-1)", margin: "20px 0" }} />,
                           table: ({ children }) => <div style={{ overflowX: "auto", marginBottom: 16 }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>{children}</table></div>,
-                          th: ({ children }) => <th style={{ padding: "7px 10px", background: "rgba(200,168,75,0.08)", color: "rgba(var(--tw),0.7)", fontWeight: 600, textAlign: "left", borderBottom: "1px solid var(--c-bd-3)" }}>{children}</th>,
-                          td: ({ children }) => <td style={{ padding: "7px 10px", color: "rgba(var(--tw),0.6)", borderBottom: "1px solid var(--c-card-2)" }}>{children}</td>,
+                          th: ({ children }) => <th style={{ padding: "7px 10px", background: "rgba(200,168,75,0.08)", color: "var(--c-tx-70)", fontWeight: 600, textAlign: "left", borderBottom: "1px solid var(--c-bd-3)" }}>{children}</th>,
+                          td: ({ children }) => <td style={{ padding: "7px 10px", color: "var(--c-tx-60)", borderBottom: "1px solid var(--c-card-2)" }}>{children}</td>,
                         }}
                       >{treatmentResult}</ReactMarkdown>
                     </div>
@@ -2841,7 +2841,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
               {/* Scene List (Step Outline) */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>씬 리스트 — 트리트먼트 → 집필 브릿지</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>씬 리스트 — 트리트먼트 → 집필 브릿지</div>
                 <ToolButton icon={<SvgIcon d={ICON.clipboard} size={16} />} label="씬 리스트 (스텝 아웃라인)" sub="Field · Truby · McKee" done={!!sceneListResult} loading={sceneListLoading} color="#60A5FA" onClick={generateSceneList} disabled={!logline.trim()}
                   tooltip={"트리트먼트에서 실제 대본 집필로 넘어가는 중간 다리 역할을 합니다.\n\n각 씬마다 다음을 정리합니다:\n• 목적 — 이 씬이 이야기에서 하는 기능\n• 내용 — 누가 무엇을 하는지\n• 전환 — 다음 씬으로 어떻게 연결되는지\n\n집필 전 전체 흐름을 한눈에 파악하고 빈 장면을 미리 발견할 수 있습니다."} />
                 <ErrorMsg msg={sceneListError} />
@@ -2853,7 +2853,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
               </div>
 
               {/* Beat Sheet + Dialogue */}
-              <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>비트 & 대사</div>
+              <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>비트 & 대사</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
                 <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="비트 시트" sub="Snyder 15비트" done={!!beatSheetResult} loading={beatSheetLoading} color="#FFD166" onClick={generateBeatSheet} disabled={!logline.trim()}
                   tooltip={"Blake Snyder의 'Save the Cat' 15비트 구조를 적용합니다.\n\n할리우드 표준 이정표 15개를 정확한 페이지 위치에 배치합니다:\n오프닝 이미지 → 테마 제시 → 설정 → 촉발사건 → 고민 → 2막 진입 → B스토리 → 재미와 게임 → 중간점 → 적의 위협 → 전부 잃다 → 영혼의 밤 → 3막 진입 → 피날레 → 클로징 이미지\n\n각 비트마다 AI가 직접 씬을 집필할 수 있습니다."} />
@@ -2876,7 +2876,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                           <div style={{ height: 4, background: "var(--c-bd-1)", borderRadius: 4, overflow: "hidden" }}>
                             <div style={{ height: "100%", background: "linear-gradient(90deg, #FFD166, #F7A072)", borderRadius: 4, width: `${allScenesProgress.total ? (allScenesProgress.current / allScenesProgress.total) * 100 : 0}%`, transition: "width 0.4s ease" }} />
                           </div>
-                          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.35)", marginTop: 6, fontFamily: "'JetBrains Mono', monospace" }}>
+                          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginTop: 6, fontFamily: "'JetBrains Mono', monospace" }}>
                             {beatSheetResult.beats?.[allScenesProgress.current - 1]?.name_kr || ""} 작성 중
                           </div>
                         </div>
@@ -2887,7 +2887,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                           <div>
                             <div style={{ fontSize: 13, fontWeight: 700, color: "#FFD166", marginBottom: 2 }}>전체 씬 일괄 집필</div>
-                            <div style={{ fontSize: 11, color: "rgba(var(--tw),0.35)" }}>
+                            <div style={{ fontSize: 11, color: "var(--c-tx-35)" }}>
                               {Object.keys(beatScenes).length > 0
                                 ? `${Object.keys(beatScenes).length}/${beatSheetResult.beats?.length || 0}개 완료 · 나머지 이어서 생성`
                                 : `${beatSheetResult.beats?.length || 0}개 비트를 순서대로 자동 집필합니다`}
@@ -2945,12 +2945,12 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
                 {getStageStatus("6") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("6")] }}>06</span>}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "6" ? "var(--text-main)" : getStageStatus("6") === "done" ? "rgba(var(--tw),0.75)" : "rgba(var(--tw),0.45)" }}>Script Coverage</div>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.3)", marginTop: 2 }}>최종 커버리지 · 시장 가치 평가</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "6" ? "var(--text-main)" : getStageStatus("6") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>Script Coverage</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>최종 커버리지 · 시장 가치 평가</div>
               </div>
               {currentStage !== "6" && getStageDoneCount("6") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("6")}/{STAGE_TOTALS["6"]}</span>}
               {getStageStatus("6") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="rgba(var(--tw),0.25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "6" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "6" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
             </div>
             {currentStage === "6" && (
               <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
@@ -2973,7 +2973,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
 
               {/* ── 시장 가치 평가 ── */}
               <div style={{ marginTop: 20 }}>
-                <div style={{ fontSize: 11, color: "rgba(var(--tw),0.4)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>시장 가치 평가</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>시장 가치 평가</div>
                 <ToolButton
                   icon={<SvgIcon d={ICON.chart} size={16} />}
                   label="완성도 점수 + 판매가 예측"
@@ -3005,7 +3005,7 @@ ${s.synopsis || ""}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `
         background: "var(--bg-page-alt)",
       }}>
         <div style={{ maxWidth: 860, margin: "0 auto", padding: isMobile ? "14px 12px" : "16px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ fontSize: 10, color: "rgba(var(--tw),0.2)", fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ fontSize: 10, color: "var(--c-tx-20)", fontFamily: "'JetBrains Mono', monospace" }}>
             &copy; {new Date().getFullYear()} Hello Loglines &nbsp;·&nbsp; Powered by Claude AI
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
