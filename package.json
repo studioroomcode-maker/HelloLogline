@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/kill-port.mjs 3001",
     "dev": "concurrently -n server,vite -c cyan,yellow \"node server.js\" \"vite\"",
     "server": "node server.js",
     "client": "vite",
