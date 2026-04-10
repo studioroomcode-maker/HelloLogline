@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { readFileSync, writeFileSync } from "fs";
-import jwt from "jsonwebtoken";
+import { createHmac } from "crypto";
 
 const app = express();
 const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
@@ -82,8 +82,28 @@ app.post("/api/claude", async (req, res) => {
 // ── OAuth helpers ──
 const JWT_SECRET = process.env.JWT_SECRET || "hll-jwt-fallback-secret";
 
+function b64url(obj) {
+  return Buffer.from(JSON.stringify(obj)).toString("base64url");
+}
+
+function issueJwt(payload) {
+  const header = b64url({ alg: "HS256", typ: "JWT" });
+  const body = b64url({ ...payload, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 30 * 24 * 3600 });
+  const sig = createHmac("sha256", JWT_SECRET).update(`${header}.${body}`).digest("base64url");
+  return `${header}.${body}.${sig}`;
+}
+
+function verifyJwt(token) {
+  const [header, body, sig] = token.split(".");
+  const expected = createHmac("sha256", JWT_SECRET).update(`${header}.${body}`).digest("base64url");
+  if (sig !== expected) throw new Error("Invalid signature");
+  const payload = JSON.parse(Buffer.from(body, "base64url").toString());
+  if (payload.exp < Math.floor(Date.now() / 1000)) throw new Error("Expired");
+  return payload;
+}
+
 function issueToken(user, frontendUrl) {
-  const token = jwt.sign(user, JWT_SECRET, { expiresIn: "30d" });
+  const token = issueJwt(user);
   return `${frontendUrl}?auth_token=${token}`;
 }
 
@@ -214,7 +234,7 @@ app.get("/api/auth/me", (req, res) => {
   const auth = req.headers.authorization;
   if (!auth?.startsWith("Bearer ")) return res.status(401).json({ error: "No token" });
   try {
-    const user = jwt.verify(auth.slice(7), JWT_SECRET);
+    const user = verifyJwt(auth.slice(7));
     res.json({ user: { id: user.id, provider: user.provider, name: user.name, email: user.email, avatar: user.avatar } });
   } catch {
     res.status(401).json({ error: "Invalid token" });
