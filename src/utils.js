@@ -185,7 +185,7 @@ function koreanizeError(errData, httpStatus) {
 /**
  * Fetch one Claude response (raw text returned from API).
  */
-async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal) {
+async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature = null) {
   const headers = { "Content-Type": "application/json" };
   if (apiKey) headers["x-client-api-key"] = apiKey;
   const authToken = localStorage.getItem("hll_auth_token");
@@ -200,11 +200,16 @@ async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, 
       // system as array enables prompt caching (90% discount on repeated system prompts)
       system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: userMessage }],
+      _feature: feature,
     }),
     signal,
   });
 
   if (!response.ok) {
+    if (response.status === 402) {
+      window.dispatchEvent(new CustomEvent("hll:credits-empty"));
+      throw new Error("크레딧이 부족합니다. 크레딧을 충전해주세요.");
+    }
     const errData = await response.json().catch(() => ({}));
     const fallback = response.status === 404
       ? "API 오류 (404) — 프록시 서버가 실행 중이지 않습니다. 터미널에서 'npm run dev'로 실행하세요."
@@ -245,9 +250,10 @@ export async function callClaude(
   maxTokens = 5000,
   model = "claude-haiku-4-5-20251001",
   signal = null,
-  schema = null
+  schema = null,
+  feature = null
 ) {
-  const text = await fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal);
+  const text = await fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature);
   const parsed = parseClaudeJson(text);
 
   if (!schema) return parsed;
@@ -259,7 +265,7 @@ export async function callClaude(
   console.warn("[schema] 1차 검증 실패, 재시도합니다.", first.error.issues.slice(0, 3));
 
   // Retry (same prompt — Claude responses are non-deterministic, retry often fixes it)
-  const retryText = await fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal);
+  const retryText = await fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature);
   const retryParsed = parseClaudeJson(retryText);
   const second = schema.safeParse(retryParsed);
 
@@ -286,7 +292,8 @@ export async function callClaudeText(
   userMessage,
   maxTokens = 8000,
   model = "claude-sonnet-4-6",
-  signal = null
+  signal = null,
+  feature = null
 ) {
   const headers = { "Content-Type": "application/json" };
   if (apiKey) headers["x-client-api-key"] = apiKey;
@@ -301,11 +308,16 @@ export async function callClaudeText(
       max_tokens: maxTokens,
       system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: userMessage }],
+      _feature: feature,
     }),
     signal,
   });
 
   if (!response.ok) {
+    if (response.status === 402) {
+      window.dispatchEvent(new CustomEvent("hll:credits-empty"));
+      throw new Error("크레딧이 부족합니다. 크레딧을 충전해주세요.");
+    }
     const errData = await response.json().catch(() => ({}));
     const fallback = response.status === 404
       ? "API 오류 (404) — 프록시 서버가 실행 중이지 않습니다. 터미널에서 'npm run dev'로 실행하세요."

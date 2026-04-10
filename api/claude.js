@@ -1,5 +1,17 @@
 import { createHmac } from "crypto";
-import { rcall } from "./_redis.js";
+import { rcall, deductCredits } from "./_redis.js";
+
+const CREDIT_COSTS = {
+  logline: 0, improve: 0,
+  character: 0, shadow: 0, authenticity: 0, chardev: 0,
+  synopsis: 1, structure: 1, valuecharge: 1, subtext: 1,
+  academic: 1, mythmap: 1, barthes: 1, koreantmyth: 1,
+  expertpanel: 1, theme: 1, dialoguedev: 1, scenelist: 1,
+  comparable: 1, rewrite_diag: 1,
+  pipeline: 2, treatment: 2, beatsheet: 2, coverage: 2, partial_rewrite: 2, valuation: 2,
+  full_rewrite: 3,
+  scenario: 5,
+};
 
 export const config = { api: { bodyParser: { sizeLimit: "4mb" } } };
 
@@ -60,12 +72,37 @@ export default async function handler(req, res) {
   }
 
   // ── API 키 확인 ──
-  const apiKey = process.env.ANTHROPIC_API_KEY || req.headers["x-client-api-key"];
+  const clientApiKey = req.headers["x-client-api-key"];
+  const serverApiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = clientApiKey || serverApiKey;
   if (!apiKey) {
     return res.status(401).json({ error: { message: "API 키가 설정되지 않았습니다." } });
   }
 
   const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+
+  // ── 크레딧 차감 (서버 키 사용 + basic 등급) ──
+  const usingServerKey = !clientApiKey && !!serverApiKey;
+  if (usingServerKey && tier === "basic") {
+    const feature = body._feature || "logline";
+    const cost = CREDIT_COSTS[feature] ?? 1;
+    if (cost > 0) {
+      let payload_email;
+      try {
+        const parts = authHeader.split(".");
+        payload_email = JSON.parse(Buffer.from(parts[1], "base64url").toString()).email;
+      } catch { payload_email = null; }
+      if (payload_email) {
+        const newBalance = await deductCredits(payload_email, cost);
+        if (newBalance !== null && newBalance === -1) {
+          return res.status(402).json({ error: { message: "크레딧이 부족합니다. 크레딧을 충전해주세요." } });
+        }
+      }
+    }
+  }
+
+  // _feature 필드는 내부 라우팅용이므로 Anthropic에 전달하지 않음
+  const { _feature: _f, ...anthropicBody } = body;
 
   try {
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {
@@ -76,7 +113,7 @@ export default async function handler(req, res) {
         "anthropic-version": "2023-06-01",
         "anthropic-beta": "prompt-caching-2024-07-31",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(anthropicBody),
     });
 
     const data = await upstream.json();

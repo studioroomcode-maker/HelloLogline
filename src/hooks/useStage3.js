@@ -80,7 +80,7 @@ export function useStage3({
     const charHint = buildCharHint();
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel()}${charHint}\n\n위 로그라인의 캐릭터 원형을 Jung의 분석심리학으로 분석하세요.`;
     try {
-      const data = await callClaude(apiKey, SHADOW_ANALYSIS_SYSTEM_PROMPT, msg, 3000, "claude-haiku-4-5-20251001", ctrl.signal, ShadowAnalysisSchema);
+      const data = await callClaude(apiKey, SHADOW_ANALYSIS_SYSTEM_PROMPT, msg, 3000, "claude-haiku-4-5-20251001", ctrl.signal, ShadowAnalysisSchema, "character");
       setShadowResult(data);
       await autoSave();
     } catch (err) {
@@ -95,7 +95,7 @@ export function useStage3({
     const charHint = buildCharHint();
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel()}${charHint}\n\n위 로그라인의 진정성 지수를 실존주의 철학으로 분석하세요.`;
     try {
-      const data = await callClaude(apiKey, AUTHENTICITY_SYSTEM_PROMPT, msg, 3000, "claude-haiku-4-5-20251001", ctrl.signal, AuthenticitySchema);
+      const data = await callClaude(apiKey, AUTHENTICITY_SYSTEM_PROMPT, msg, 3000, "claude-haiku-4-5-20251001", ctrl.signal, AuthenticitySchema, "character");
       setAuthenticityResult(data);
       await autoSave();
     } catch (err) {
@@ -112,7 +112,7 @@ export function useStage3({
     const charHint = buildCharHint(true);
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel()}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}${charHint}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요. 시놉시스가 있다면 그 방향의 인물 이름·설정을 따르세요.`;
     try {
-      const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema);
+      const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema, "character");
       setCharDevResult(data);
       await autoSave();
     } catch (err) {

@@ -51,7 +51,7 @@ export function useStage8({
     setRewriteDiagError("");
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel()}\n\n── 시나리오 초고 ──\n${scenarioDraftResult.slice(0, 8000)}\n\n위 초고를 분석하고 고쳐쓰기 우선순위를 제시하세요.`;
     try {
-      const data = await callClaude(apiKey, REWRITE_DIAG_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal);
+      const data = await callClaude(apiKey, REWRITE_DIAG_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, null, "rewrite_diag");
       setRewriteDiagResult(data);
       await autoSave();
     } catch (e) {
@@ -66,7 +66,7 @@ export function useStage8({
     setPartialRewriteError("");
     const msg = `로그라인: "${logline.trim()}"\n\n── 시나리오 초고 ──\n${scenarioDraftResult.slice(0, 8000)}\n\n── 재작성 지시 ──\n${partialRewriteInstruction.trim()}\n\n위 지시에 따라 해당 부분을 재작성하세요.`;
     try {
-      const text = await callClaudeText(apiKey, PARTIAL_REWRITE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal);
+      const text = await callClaudeText(apiKey, PARTIAL_REWRITE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, "partial_rewrite");
       setPartialRewriteResult(text);
       await autoSave();
     } catch (e) {
@@ -85,7 +85,7 @@ export function useStage8({
     const notes = fullRewriteNotes.trim() ? `\n\n── 작가 메모 ──\n${fullRewriteNotes.trim()}` : "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel()}${diagSummary}${notes}\n\n── 개고할 초고 ──\n${scenarioDraftResult.slice(0, 8000)}\n\n위 초고를 전체적으로 개고하세요.`;
     try {
-      const text = await callClaudeText(apiKey, FULL_REWRITE_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal);
+      const text = await callClaudeText(apiKey, FULL_REWRITE_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal, "full_rewrite");
       setFullRewriteResult(text);
       await autoSave();
     } catch (e) {

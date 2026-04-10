@@ -130,3 +130,31 @@ export async function rcall(command, ...args) {
 
 /** 어떤 DB를 사용 중인지 반환 (관리자 패널 안내용) */
 export const dbProvider = () => usingSupa() ? "supabase" : usingRedis() ? "upstash" : "none";
+
+// ─── 크레딧 함수 (Supabase 전용) ────────────────────────────────
+export async function getCredits(email) {
+  if (!usingSupa()) return null;
+  const rows = await supaReq(`hll_users?email=eq.${encodeURIComponent(email)}&select=credits`);
+  if (!Array.isArray(rows) || rows.length === 0) return 0;
+  return rows[0].credits ?? 0;
+}
+
+/** 크레딧 차감. 반환값: 남은 크레딧 (잔액 부족 시 -1, DB 없음 시 null) */
+export async function deductCredits(email, amount) {
+  if (!usingSupa()) return null;
+  const result = await supaReq("rpc/deduct_credits", {
+    method: "POST",
+    body: { user_email: email, amount },
+  });
+  return result ?? -1;
+}
+
+/** 크레딧 추가. 반환값: 새 잔액 */
+export async function addCreditsDb(email, amount) {
+  if (!usingSupa()) return null;
+  const result = await supaReq("rpc/add_credits", {
+    method: "POST",
+    body: { user_email: email, amount },
+  });
+  return result;
+}
