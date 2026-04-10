@@ -188,9 +188,9 @@ export const ShadowAnalysisSchema = z
 
 export const AuthenticitySchema = z
   .object({
-    authenticity_score: z.number(),
-    authenticity_label: z.string().optional(),
-    existential_verdict: z.string(),
+    authenticity_score: z.number().catch(0),
+    authenticity_label: z.string().optional().catch(undefined),
+    existential_verdict: z.string().catch(""),
   })
   .passthrough();
 

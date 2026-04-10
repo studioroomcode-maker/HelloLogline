@@ -691,6 +691,7 @@ export default function LoglineAnalyzer() {
     protagonist: { name: "", role: "", want: "", need: "", flaw: "" },
     supporting: [{ name: "", role: "", relation: "" }],
   });
+  const [showManualCharInput, setShowManualCharInput] = useState(false);
   const [treatmentStructure, setTreatmentStructure] = useState("3act");
   const [treatmentResult, setTreatmentResult] = useState("");
   const [treatmentLoading, setTreatmentLoading] = useState(false);
@@ -3338,6 +3339,107 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   />
                 </ResultCard>
               )}
+              {/* ── 인물 직접 설정 ── */}
+              <div style={{ marginTop: 24, borderRadius: 12, border: "1px solid rgba(251,146,60,0.15)", background: "rgba(251,146,60,0.03)" }}>
+                <button
+                  onClick={() => setShowManualCharInput(v => !v)}
+                  style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+                >
+                  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#FB923C" strokeWidth={2} strokeLinecap="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#FB923C" }}>인물 직접 설정</div>
+                    <div style={{ fontSize: 11, color: "var(--c-tx-35)", marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                      주인공·조연 이름·성격을 직접 입력 — 트리트먼트·비트시트·시나리오에 자동 반영
+                      {(treatmentChars.protagonist.name || treatmentChars.supporting.some(s => s.name)) && (
+                        <span style={{ marginLeft: 8, fontSize: 10, padding: "1px 7px", borderRadius: 10, background: "rgba(78,204,163,0.15)", color: "#4ECCA3", border: "1px solid rgba(78,204,163,0.25)", fontWeight: 600 }}>입력됨</span>
+                      )}
+                    </div>
+                  </div>
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-30)" strokeWidth={2} strokeLinecap="round" style={{ transform: showManualCharInput ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                {showManualCharInput && (
+                  <div style={{ borderTop: "1px solid rgba(251,146,60,0.1)", padding: "16px 16px 20px" }}>
+                    {/* 주인공 */}
+                    <div style={{ marginBottom: 18 }}>
+                      <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>주인공</div>
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>이름</div>
+                          <input
+                            value={treatmentChars.protagonist.name}
+                            onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, name: e.target.value } }))}
+                            placeholder="예: 피노키오"
+                            style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
+                          />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>역할 / 직업</div>
+                          <input
+                            value={treatmentChars.protagonist.role}
+                            onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, role: e.target.value } }))}
+                            placeholder="예: 200년 된 로봇수리공"
+                            style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
+                          />
+                        </div>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
+                        {[
+                          { key: "want", label: "외적 목표 (Want)", placeholder: "무엇을 원하는가?" },
+                          { key: "need", label: "내적 욕구 (Need)", placeholder: "진짜 필요한 것은?" },
+                          { key: "flaw", label: "핵심 결함", placeholder: "가장 큰 약점은?" },
+                        ].map(({ key, label, placeholder }) => (
+                          <div key={key}>
+                            <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>{label}</div>
+                            <input
+                              value={treatmentChars.protagonist[key]}
+                              onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, [key]: e.target.value } }))}
+                              placeholder={placeholder}
+                              style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* 조연 */}
+                    <div>
+                      <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>조연 인물</div>
+                      {treatmentChars.supporting.map((s, idx) => (
+                        <div key={idx} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
+                          {[
+                            { key: "name", label: "이름", placeholder: "예: 제페토" },
+                            { key: "role", label: "역할", placeholder: "예: 조력자" },
+                            { key: "relation", label: "주인공과의 관계", placeholder: "예: 아버지" },
+                          ].map(({ key, label, placeholder }) => (
+                            <div key={key}>
+                              {idx === 0 && <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>{label}</div>}
+                              <input
+                                value={s[key]}
+                                onChange={e => {
+                                  const updated = treatmentChars.supporting.map((sup, i) => i === idx ? { ...sup, [key]: e.target.value } : sup);
+                                  setTreatmentChars(prev => ({ ...prev, supporting: updated }));
+                                }}
+                                placeholder={placeholder}
+                                style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
+                              />
+                            </div>
+                          ))}
+                          {treatmentChars.supporting.length > 1 && (
+                            <button
+                              onClick={() => setTreatmentChars(prev => ({ ...prev, supporting: prev.supporting.filter((_, i) => i !== idx) }))}
+                              style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.25)", background: "rgba(232,93,117,0.06)", color: "#E85D75", cursor: "pointer", fontSize: 13, lineHeight: 1, marginTop: idx === 0 ? 18 : 0 }}
+                            >✕</button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => setTreatmentChars(prev => ({ ...prev, supporting: [...prev.supporting, { name: "", role: "", relation: "" }] }))}
+                        style={{ marginTop: 4, padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(251,146,60,0.25)", background: "rgba(251,146,60,0.06)", color: "#FB923C", fontSize: 11, cursor: "pointer", fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif" }}
+                      >+ 인물 추가</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {getStageStatus("3") === "done" && (
                 <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
                   <button onClick={() => advanceToStage("4")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
