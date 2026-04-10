@@ -1,6 +1,6 @@
 import { createHmac } from "crypto";
 
-const SECRET = process.env.JWT_SECRET || "hll-jwt-fallback-secret";
+const SECRET = (process.env.JWT_SECRET || "hll-jwt-fallback-secret").trim();
 
 function b64url(obj) {
   return Buffer.from(JSON.stringify(obj)).toString("base64url");
@@ -13,30 +13,29 @@ function issueToken(payload) {
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + 30 * 24 * 3600,
   });
-  const sig = createHmac("sha256", SECRET)
-    .update(`${header}.${body}`)
-    .digest("base64url");
+  const sig = createHmac("sha256", SECRET).update(`${header}.${body}`).digest("base64url");
   return `${header}.${body}.${sig}`;
 }
 
 export default async function handler(req, res) {
   const { code } = req.query;
-  const proto = req.headers["x-forwarded-proto"] || "https";
-  const host = req.headers["x-forwarded-host"] || req.headers.host;
-  const frontendBase = process.env.FRONTEND_URL || `${proto}://${host}`;
+  const proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0].trim();
+  const host = (req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
+  const frontendBase = (process.env.FRONTEND_URL || `${proto}://${host}`).trim();
   const errUrl = `${frontendBase}/?auth_error=kakao`;
 
   if (!code) return res.redirect(errUrl);
 
   try {
     const redirectUri = `${proto}://${host}/auth/kakao/callback`;
+    const clientId = (process.env.KAKAO_REST_API_KEY || "").trim();
 
     const tokenRes = await fetch("https://kauth.kakao.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         grant_type: "authorization_code",
-        client_id: process.env.KAKAO_REST_API_KEY,
+        client_id: clientId,
         redirect_uri: redirectUri,
         code,
       }),
