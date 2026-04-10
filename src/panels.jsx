@@ -207,14 +207,14 @@ export function GuideTooltip({ criterionKey }) {
               top: -4,
               zIndex: 100,
               width: 230,
-              background: "#1a1a2e",
+              background: "var(--bg-tooltip)",
               border: "1px solid rgba(78,204,163,0.25)",
               borderRadius: 10,
               padding: "10px 13px",
               fontSize: 11,
               lineHeight: 1.7,
-              color: "var(--c-tx-75)",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+              color: "var(--text-tooltip)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
             }}
           >
             {guide}
@@ -694,12 +694,12 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
         right: 0,
         bottom: 0,
         width: 320,
-        background: "#0f0f1e",
-        borderLeft: "1px solid var(--c-bd-1)",
+        background: "var(--bg-surface)",
+        borderLeft: "1px solid var(--c-bd-2)",
         zIndex: 200,
         display: "flex",
         flexDirection: "column",
-        boxShadow: "-20px 0 60px rgba(0,0,0,0.5)",
+        boxShadow: "-8px 0 32px rgba(0,0,0,0.2)",
       }}
     >
       {/* 헤더 */}
@@ -3361,7 +3361,7 @@ export function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats
 
                   {/* 생성된 씬 텍스트 — 파이널 드래프트 스타일 */}
                   {hasScene && (
-                    <div style={{ borderRadius: 10, border: `1px solid ${act.color}22`, background: "rgba(0,0,0,0.3)", overflow: "hidden" }}>
+                    <div style={{ borderRadius: 10, border: `1px solid ${act.color}22`, background: "var(--bg-page)", overflow: "hidden" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", borderBottom: `1px solid ${act.color}15` }}>
                         <span style={{ fontSize: 11, color: act.color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>SCENE {beat.id}</span>
                         <button
@@ -3781,7 +3781,7 @@ export function DialogueDevPanel({ data, isMobile }) {
                 ))}
               </div>
               {v.sample_line && (
-                <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 7, background: "rgba(0,0,0,0.2)", border: "1px solid rgba(251,146,60,0.15)" }}>
+                <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 7, background: "var(--c-card-3)", border: "1px solid rgba(251,146,60,0.15)" }}>
                   <div style={{ fontSize: 9, color: "rgba(251,146,60,0.5)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 3 }}>SAMPLE LINE</div>
                   <div style={{ fontSize: 12, color: "var(--c-tx-75)", fontFamily: "'Noto Sans KR', sans-serif", fontStyle: "italic" }}>"{v.sample_line}"</div>
                 </div>
@@ -3793,7 +3793,7 @@ export function DialogueDevPanel({ data, isMobile }) {
       {data.key_scene_dialogue && (
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 10, color: "var(--c-tx-35)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8, textTransform: "uppercase" }}>핵심 씬 대사 초안</div>
-          <div style={{ padding: "14px", borderRadius: 10, border: "1px solid rgba(69,183,209,0.2)", background: "rgba(0,0,0,0.25)" }}>
+          <div style={{ padding: "14px", borderRadius: 10, border: "1px solid rgba(69,183,209,0.2)", background: "var(--c-card-3)" }}>
             <div style={{ fontSize: 11, color: "rgba(69,183,209,0.7)", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 10 }}>{data.key_scene_dialogue.scene_context}</div>
             <pre style={{ fontSize: 12, color: "var(--c-tx-75)", fontFamily: "'Noto Sans KR', monospace", lineHeight: 1.85, whiteSpace: "pre-wrap", margin: 0 }}>{data.key_scene_dialogue.dialogue_draft}</pre>
             {data.key_scene_dialogue.subtext_note && (
