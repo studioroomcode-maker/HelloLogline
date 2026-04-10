@@ -7,6 +7,7 @@ import { ImprovementSchema, WeaknessFixSchema, StoryPivotSchema, SynopsisSchema 
 export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
   const [key, setKey] = useState(initialKey);
   const [showKey, setShowKey] = useState(false);
+  const [remember, setRemember] = useState(!!localStorage.getItem("logline_api_key"));
 
   return (
     <div
@@ -60,7 +61,7 @@ export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
             type={showKey ? "text" : "password"}
             value={key}
             onChange={(e) => setKey(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && key.trim() && onSave(key.trim())}
+            onKeyDown={(e) => e.key === "Enter" && key.trim() && onSave(key.trim(), remember)}
             placeholder="sk-ant-api03-..."
             style={{
               width: "100%",
@@ -93,9 +94,21 @@ export function ApiKeyModal({ initialKey = "", onSave, onCancel }) {
             {showKey ? "🙈" : "👁"}
           </button>
         </div>
+        {/* 기기에 저장 옵션 */}
+        <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={e => setRemember(e.target.checked)}
+            style={{ width: 15, height: 15, accentColor: "#4ECCA3", cursor: "pointer" }}
+          />
+          <span style={{ fontSize: 12, color: "var(--c-tx-45)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+            이 기기에 저장 <span style={{ color: "var(--c-tx-25)", fontSize: 11 }}>(해제 시 탭 닫으면 초기화)</span>
+          </span>
+        </label>
         <div style={{ display: "flex", gap: 8 }}>
           <button
-            onClick={() => key.trim() && onSave(key.trim())}
+            onClick={() => key.trim() && onSave(key.trim(), remember)}
             disabled={!key.trim()}
             style={{
               flex: 1,

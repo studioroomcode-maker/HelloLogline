@@ -417,6 +417,7 @@ function ToastContainer({ toasts, onDismiss }) {
     error:   { bg: "rgba(232,93,117,0.12)", border: "rgba(232,93,117,0.35)", text: "#E85D75", icon: "✕" },
     success: { bg: "rgba(78,204,163,0.12)",  border: "rgba(78,204,163,0.35)",  text: "#4ECCA3", icon: "✓" },
     info:    { bg: "rgba(96,165,250,0.12)",  border: "rgba(96,165,250,0.35)",  text: "#60A5FA", icon: "ℹ" },
+    warn:    { bg: "rgba(200,168,75,0.12)",  border: "rgba(200,168,75,0.35)",  text: "#C8A84B", icon: "🔒" },
   };
   return (
     <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 2000, display: "flex", flexDirection: "column", gap: 8, maxWidth: 380, pointerEvents: "none" }}>
@@ -712,6 +713,7 @@ export default function LoglineAnalyzer() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   // ── Toast notifications ──
   const [toasts, setToasts] = useState([]);
@@ -2483,6 +2485,15 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     dialogueDevLoading || beatSheetLoading || charDevLoading || treatmentLoading ||
     structureLoading || themeLoading || sceneListLoading || scenarioDraftLoading;
 
+  // ── Tier helpers ──
+  const tier = user?.tier || "basic";
+  const isAdmin = tier === "admin";
+  const isPro = tier === "admin" || tier === "pro";
+  const isBlocked = tier === "blocked";
+
+  const TIER_LABEL = { admin: "관리자", pro: "프리미엄", basic: "기본", blocked: "차단" };
+  const TIER_COLOR = { admin: "#C8A84B", pro: "#60A5FA", basic: "var(--c-tx-35)", blocked: "#E85D75" };
+
   // ── Auth guard ──
   if (authLoading) {
     return (
@@ -2493,6 +2504,18 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   }
   if (!user && !isDemoMode) {
     return <LoginScreen onDemo={activateDemo} authError={authError} />;
+  }
+  if (isBlocked) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--bg-page)", color: "var(--text-main)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Noto Sans KR', sans-serif", gap: 16 }}>
+        <div style={{ fontSize: 40 }}>🚫</div>
+        <div style={{ fontSize: 20, fontWeight: 700 }}>접근이 차단된 계정입니다</div>
+        <div style={{ fontSize: 13, color: "var(--c-tx-40)" }}>관리자에게 문의하세요.</div>
+        <button onClick={handleLogout} style={{ marginTop: 8, padding: "8px 20px", borderRadius: 10, border: "1px solid var(--c-bd-4)", background: "transparent", color: "var(--c-tx-40)", cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}>
+          로그아웃
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -2903,7 +2926,15 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 </div>
               )}
               {!isMobile && (
-                <span style={{ fontSize: 11, color: "var(--c-tx-50)", maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  <span style={{ fontSize: 11, color: "var(--c-tx-50)", maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: TIER_COLOR[tier], letterSpacing: 0.5, fontFamily: "'JetBrains Mono', monospace" }}>{TIER_LABEL[tier]}</span>
+                </div>
+              )}
+              {isAdmin && (
+                <button onClick={() => setShowAdminPanel(true)} title="관리자 패널" style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, cursor: "pointer", border: "1px solid rgba(200,168,75,0.3)", background: "rgba(200,168,75,0.08)", color: "#C8A84B", fontFamily: "'Noto Sans KR', sans-serif", fontWeight: 700 }}>
+                  관리
+                </button>
               )}
               <button onClick={handleLogout} style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, cursor: "pointer", border: "1px solid var(--c-bd-3)", background: "transparent", color: "var(--c-tx-35)", fontFamily: "'Noto Sans KR', sans-serif" }}>
                 로그아웃
@@ -2935,7 +2966,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 }} />
               )}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                <button onClick={() => setCurrentStage(s.id)} title={s.name} style={{
+                <button onClick={() => { if (s.id !== "1" && !isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage(s.id); }} title={s.name} style={{
                   width: isMobile ? 28 : 34, height: isMobile ? 28 : 34, borderRadius: "50%", flexShrink: 0,
                   border: `2px solid ${isActive ? "#C8A84B" : st === "done" ? "#4ECCA3" : "var(--c-bd-5)"}`,
                   background: isActive ? "rgba(200,168,75,0.18)" : st === "done" ? "rgba(78,204,163,0.12)" : "transparent",
@@ -3584,7 +3615,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 3: 캐릭터 ═══ */}
           <div ref={(el) => { stageRefs.current["3"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "3" ? "rgba(251,146,60,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => setCurrentStage("3")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "3" ? "rgba(251,146,60,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("3"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "3" ? "rgba(251,146,60,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("3")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("3") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("3") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("3")] }}>03</span>}
               </div>
@@ -3840,7 +3871,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 4: 시놉시스 ═══ */}
           <div ref={(el) => { stageRefs.current["4"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "4" ? "rgba(78,204,163,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => setCurrentStage("4")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "4" ? "rgba(78,204,163,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("4"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "4" ? "rgba(78,204,163,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("4")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("4") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("4") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("4")] }}>04</span>}
               </div>
@@ -4185,7 +4216,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 2: 개념 분석 (선택) ═══ */}
           <div ref={(el) => { stageRefs.current["2"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "2" ? "rgba(69,183,209,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => setCurrentStage("2")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "2" ? "rgba(69,183,209,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("2"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "2" ? "rgba(69,183,209,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("2")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("2") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("2") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("2")] }}>04</span>}
               </div>
@@ -4232,7 +4263,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 5: Treatment / Beat Sheet ═══ */}
           <div ref={(el) => { stageRefs.current["5"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "5" ? "rgba(255,209,102,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => setCurrentStage("5")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "5" ? "rgba(255,209,102,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("5"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "5" ? "rgba(255,209,102,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("5")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("5") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("5") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("5")] }}>05</span>}
               </div>
@@ -4573,7 +4604,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 6: 시나리오 초고 ═══ */}
           <div ref={(el) => { stageRefs.current["6"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "6" ? "rgba(167,139,250,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => setCurrentStage("6")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "6" ? "rgba(167,139,250,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("6"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "6" ? "rgba(167,139,250,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("6")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("6") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("6") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("6")] }}>06</span>}
               </div>
@@ -4695,7 +4726,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 8: 시나리오 고쳐쓰기 ═══ */}
           <div ref={(el) => { stageRefs.current["8"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "8" ? "rgba(251,146,60,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => setCurrentStage("8")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "8" ? "rgba(251,146,60,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("8"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "8" ? "rgba(251,146,60,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("8")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("8") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("8") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("8")] }}>07</span>}
               </div>
@@ -4848,7 +4879,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 7: Script Coverage ═══ */}
           <div ref={(el) => { stageRefs.current["7"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "7" ? "rgba(96,165,250,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => setCurrentStage("7")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "7" ? "rgba(96,165,250,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("7"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "7" ? "rgba(96,165,250,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("7")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("7") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("7") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("7")] }}>08</span>}
               </div>
@@ -4890,6 +4921,72 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
           </div>
 
         </div>
+
+      {/* ─── Admin Panel Modal ─── */}
+      {showAdminPanel && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? 16 : 24 }} onClick={() => setShowAdminPanel(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ maxWidth: 560, width: "100%", background: "var(--bg-surface)", border: "1px solid rgba(200,168,75,0.35)", borderRadius: 20, padding: isMobile ? "24px 20px" : "32px 36px", overflowY: "auto", maxHeight: "88vh", fontFamily: "'Noto Sans KR', sans-serif" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#C8A84B" }}>관리자 패널</div>
+              <button onClick={() => setShowAdminPanel(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--c-tx-35)", padding: 4 }}>
+                <SvgIcon d={ICON.close} size={18} />
+              </button>
+            </div>
+
+            {/* 등급 안내 */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-35)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>사용자 등급 체계</div>
+              {[
+                { tier: "admin", label: "관리자", color: "#C8A84B", desc: "모든 기능 무제한, 서버 API 키 사용" },
+                { tier: "pro", label: "프리미엄", color: "#60A5FA", desc: "전체 8단계 기능 사용 가능" },
+                { tier: "basic", label: "기본", color: "var(--c-tx-35)", desc: "Stage 1 (로그라인 분석)만 사용 가능" },
+                { tier: "blocked", label: "차단", color: "#E85D75", desc: "API 접근 완전 차단" },
+              ].map(({ tier: t, label, color, desc }) => (
+                <div key={t} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)", marginBottom: 6 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color, fontFamily: "'JetBrains Mono', monospace", minWidth: 48 }}>{label}</span>
+                  <span style={{ fontSize: 12, color: "var(--c-tx-55)" }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* 등급 설정 방법 */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-35)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>등급 설정 방법</div>
+              <div style={{ fontSize: 12, color: "var(--c-tx-60)", lineHeight: 1.8, marginBottom: 10 }}>
+                Vercel 대시보드 → Settings → Environment Variables에서 아래 환경변수를 설정하세요.
+              </div>
+              <div style={{ background: "rgba(0,0,0,0.35)", borderRadius: 10, padding: "12px 14px", marginBottom: 12, fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>
+                <div style={{ color: "var(--c-tx-40)", marginBottom: 4 }}># 관리자 이메일 (콤마 구분)</div>
+                <div style={{ color: "#C8A84B" }}>ADMIN_EMAILS=<span style={{ color: "var(--c-tx-70)" }}>admin@example.com,admin2@example.com</span></div>
+              </div>
+              <div style={{ background: "rgba(0,0,0,0.35)", borderRadius: 10, padding: "12px 14px", marginBottom: 12, fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>
+                <div style={{ color: "var(--c-tx-40)", marginBottom: 4 }}># 차단 이메일 (콤마 구분)</div>
+                <div style={{ color: "#E85D75" }}>BLOCKED_EMAILS=<span style={{ color: "var(--c-tx-70)" }}>spam@example.com</span></div>
+              </div>
+              <div style={{ background: "rgba(0,0,0,0.35)", borderRadius: 10, padding: "12px 14px", fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>
+                <div style={{ color: "var(--c-tx-40)", marginBottom: 4 }}># 사용자별 등급 (JSON)</div>
+                <div style={{ color: "#60A5FA" }}>USER_TIERS=<span style={{ color: "var(--c-tx-70)" }}>{`{"user@email.com":"pro","other@email.com":"blocked"}`}</span></div>
+              </div>
+            </div>
+
+            {/* 현재 등급 */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-35)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>내 계정</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: "rgba(200,168,75,0.06)", border: "1px solid rgba(200,168,75,0.2)" }}>
+                {user.avatar ? <img src={user.avatar} alt="" style={{ width: 28, height: 28, borderRadius: "50%" }} /> : <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(200,168,75,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#C8A84B" }}>{user.name?.[0] || "?"}</div>}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-main)" }}>{user.name}</div>
+                  <div style={{ fontSize: 11, color: "var(--c-tx-45)" }}>{user.email} · <span style={{ color: "#C8A84B", fontWeight: 700 }}>{TIER_LABEL[tier]}</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: 11, color: "var(--c-tx-30)", lineHeight: 1.7 }}>
+              * 등급 변경 후 사용자가 재로그인하면 즉시 반영됩니다.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── Footer ─── */}
       <div style={{

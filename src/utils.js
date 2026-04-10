@@ -188,6 +188,8 @@ function koreanizeError(errData, httpStatus) {
 async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal) {
   const headers = { "Content-Type": "application/json" };
   if (apiKey) headers["x-client-api-key"] = apiKey;
+  const authToken = localStorage.getItem("hll_auth_token");
+  if (authToken) headers["x-auth-token"] = authToken;
 
   const response = await fetch("/api/claude", {
     method: "POST",
@@ -288,6 +290,8 @@ export async function callClaudeText(
 ) {
   const headers = { "Content-Type": "application/json" };
   if (apiKey) headers["x-client-api-key"] = apiKey;
+  const authToken = localStorage.getItem("hll_auth_token");
+  if (authToken) headers["x-auth-token"] = authToken;
 
   const response = await fetch("/api/claude", {
     method: "POST",

@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /d D:\\MakingApps\\Apps\\HelloLogline && npx vite build 2>&1 | tail -5",
+            "command": "cd /d D:\\MakingApps\\Apps\\HelloLoglines && npx vite build 2>&1 | tail -5",
             "timeout": 60,
             "statusMessage": "빌드 검증 중..."
           }
