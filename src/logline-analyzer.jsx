@@ -856,7 +856,7 @@ export default function LoglineAnalyzer() {
     if (!user) { setCredits(null); return; }
     const token = localStorage.getItem("hll_auth_token");
     if (!token) return;
-    fetch("/api/credits/balance", { headers: { "x-auth-token": token } })
+    fetch("/api/credits", { headers: { "x-auth-token": token } })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d && d.credits != null) setCredits(d.credits); })
       .catch(() => {});
@@ -878,7 +878,7 @@ export default function LoglineAnalyzer() {
       window.history.replaceState({}, "", window.location.pathname);
       const token = localStorage.getItem("hll_auth_token");
       setCreditPurchasing(true);
-      fetch("/api/payments/toss-confirm", {
+      fetch("/api/credits", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-auth-token": token || "" },
         body: JSON.stringify({ paymentKey, orderId, amount }),
