@@ -2490,6 +2490,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   const isAdmin = tier === "admin";
   const isPro = tier === "admin" || tier === "pro";
   const isBlocked = tier === "blocked";
+  const hasOwnApiKey = !!(apiKey && apiKey !== "__server__");
+  const canUseAllStages = isPro || hasOwnApiKey;
 
   const TIER_LABEL = { admin: "관리자", pro: "프리미엄", basic: "기본", blocked: "차단" };
   const TIER_COLOR = { admin: "#C8A84B", pro: "#60A5FA", basic: "var(--c-tx-35)", blocked: "#E85D75" };
@@ -3615,7 +3617,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 3: 캐릭터 ═══ */}
           <div ref={(el) => { stageRefs.current["3"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "3" ? "rgba(251,146,60,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("3"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "3" ? "rgba(251,146,60,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("3"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "3" ? "rgba(251,146,60,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("3")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("3") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("3") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("3")] }}>03</span>}
               </div>
@@ -3871,7 +3873,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 4: 시놉시스 ═══ */}
           <div ref={(el) => { stageRefs.current["4"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "4" ? "rgba(78,204,163,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("4"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "4" ? "rgba(78,204,163,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("4"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "4" ? "rgba(78,204,163,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("4")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("4") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("4") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("4")] }}>04</span>}
               </div>
@@ -4216,7 +4218,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 2: 개념 분석 (선택) ═══ */}
           <div ref={(el) => { stageRefs.current["2"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "2" ? "rgba(69,183,209,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("2"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "2" ? "rgba(69,183,209,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("2"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "2" ? "rgba(69,183,209,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("2")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("2") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("2") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("2")] }}>04</span>}
               </div>
@@ -4263,7 +4265,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 5: Treatment / Beat Sheet ═══ */}
           <div ref={(el) => { stageRefs.current["5"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "5" ? "rgba(255,209,102,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("5"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "5" ? "rgba(255,209,102,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("5"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "5" ? "rgba(255,209,102,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("5")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("5") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("5") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("5")] }}>05</span>}
               </div>
@@ -4604,7 +4606,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 6: 시나리오 초고 ═══ */}
           <div ref={(el) => { stageRefs.current["6"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "6" ? "rgba(167,139,250,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("6"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "6" ? "rgba(167,139,250,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("6"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "6" ? "rgba(167,139,250,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("6")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("6") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("6") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("6")] }}>06</span>}
               </div>
@@ -4726,7 +4728,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 8: 시나리오 고쳐쓰기 ═══ */}
           <div ref={(el) => { stageRefs.current["8"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "8" ? "rgba(251,146,60,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("8"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "8" ? "rgba(251,146,60,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("8"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "8" ? "rgba(251,146,60,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("8")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("8") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("8") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("8")] }}>07</span>}
               </div>
@@ -4879,7 +4881,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
           {/* ═══ STAGE 7: Script Coverage ═══ */}
           <div ref={(el) => { stageRefs.current["7"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "7" ? "rgba(96,165,250,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage("7"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "7" ? "rgba(96,165,250,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
+            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("7"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "7" ? "rgba(96,165,250,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("7")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("7") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
                 {getStageStatus("7") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("7")] }}>08</span>}
               </div>
