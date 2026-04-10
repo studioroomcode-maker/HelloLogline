@@ -15,6 +15,13 @@ import {
   CRITERIA_GUIDE, LABELS_KR, GENRES, DURATION_OPTIONS, EXAMPLE_LOGLINES,
 } from "./constants.js";
 import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText } from "./utils.js";
+import { exportToPdf, exportToMarkdown } from "./utils-pdf.js";
+import {
+  DEMO_LOGLINE, DEMO_GENRE, DEMO_RESULT, DEMO_CHAR_DEV_RESULT,
+  DEMO_SHADOW_RESULT, DEMO_AUTHENTICITY_RESULT, DEMO_SYNOPSIS_RESULTS,
+  DEMO_TREATMENT_RESULT, DEMO_BEAT_SHEET_RESULT, DEMO_SCRIPT_COVERAGE_RESULT,
+  DEMO_VALUATION_RESULT, DEMO_STRUCTURE_RESULT, DEMO_REWRITE_DIAG_RESULT,
+} from "./demo-data.js";
 import {
   LoglineAnalysisSchema, SynopsisSchema, AcademicAnalysisSchema,
   MythMapSchema, BarthesCodeSchema, KoreanMythSchema, ExpertPanelSchema,
@@ -24,6 +31,7 @@ import {
   ComparableWorksSchema, ValuationSchema, EarlyCoverageSchema,
 } from "./schemas.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
+import LoginScreen from "./LoginScreen.jsx";
 import { saveProject, loadProjects, deleteProject } from "./db.js";
 import {
   ApiKeyModal, HistoryPanel, ImprovementPanel, ExportButton, StoryDevPanel,
@@ -402,6 +410,38 @@ function ResultCard({ children, onClose, title, color = "var(--c-bd-1)", onUndo,
   );
 }
 
+/* ─── Toast component ─── */
+function ToastContainer({ toasts, onDismiss }) {
+  if (!toasts.length) return null;
+  const colors = {
+    error:   { bg: "rgba(232,93,117,0.12)", border: "rgba(232,93,117,0.35)", text: "#E85D75", icon: "✕" },
+    success: { bg: "rgba(78,204,163,0.12)",  border: "rgba(78,204,163,0.35)",  text: "#4ECCA3", icon: "✓" },
+    info:    { bg: "rgba(96,165,250,0.12)",  border: "rgba(96,165,250,0.35)",  text: "#60A5FA", icon: "ℹ" },
+  };
+  return (
+    <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 2000, display: "flex", flexDirection: "column", gap: 8, maxWidth: 380, pointerEvents: "none" }}>
+      {toasts.map(t => {
+        const c = colors[t.type] || colors.info;
+        return (
+          <div key={t.id} style={{
+            display: "flex", alignItems: "flex-start", gap: 10,
+            padding: "12px 16px", borderRadius: 12,
+            background: c.bg, border: `1px solid ${c.border}`,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+            backdropFilter: "blur(8px)",
+            animation: "fadeSlideUp 0.25s ease",
+            pointerEvents: "auto",
+          }}>
+            <span style={{ fontSize: 13, color: c.text, flexShrink: 0, marginTop: 1 }}>{c.icon}</span>
+            <span style={{ fontSize: 12, color: "var(--c-tx-70)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", flex: 1 }}>{t.message}</span>
+            <button onClick={() => onDismiss(t.id)} style={{ background: "none", border: "none", color: "var(--c-tx-35)", cursor: "pointer", padding: 0, fontSize: 14, lineHeight: 1, flexShrink: 0 }}>×</button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ─── Main Component ─── */
 export default function LoglineAnalyzer() {
   // ── Theme ──
@@ -415,9 +455,9 @@ export default function LoglineAnalyzer() {
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
-  // ── API Key ──
+  // ── API Key ── (sessionStorage 우선, localStorage 하위 호환)
   const [apiKey, setApiKey] = useState(
-    () => localStorage.getItem("logline_api_key") || ""
+    () => sessionStorage.getItem("logline_api_key") || localStorage.getItem("logline_api_key") || ""
   );
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [serverHasKey, setServerHasKey] = useState(false);
@@ -662,6 +702,25 @@ export default function LoglineAnalyzer() {
 
   // ── First visit onboarding ──
   const [isFirstVisit] = useState(() => !localStorage.getItem("logline_visited"));
+  const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem("logline_visited"));
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  // ── Demo mode ──
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  // ── Auth ──
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState(false);
+
+  // ── Toast notifications ──
+  const [toasts, setToasts] = useState([]);
+  const showToast = (type, message, duration = 4000) => {
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev.slice(-4), { id, type, message }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration);
+  };
+  const dismissToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
 
   // ── Abort controllers (per operation key) ──
   const abortControllersRef = useRef({});
@@ -717,6 +776,43 @@ export default function LoglineAnalyzer() {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
+  // ── Auth: check token on mount ──
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tokenFromUrl = params.get("auth_token");
+    const errorFromUrl = params.get("auth_error");
+
+    if (tokenFromUrl || errorFromUrl) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    if (errorFromUrl) {
+      setAuthError(true);
+      setAuthLoading(false);
+      return;
+    }
+
+    const token = tokenFromUrl || localStorage.getItem("hll_auth_token");
+    if (tokenFromUrl) {
+      localStorage.setItem("hll_auth_token", tokenFromUrl);
+      localStorage.setItem("logline_visited", "1");
+    }
+
+    if (!token) { setAuthLoading(false); return; }
+
+    fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => {
+        if (data.user) {
+          setUser(data.user);
+          localStorage.setItem("logline_visited", "1");
+        } else {
+          localStorage.removeItem("hll_auth_token");
+        }
+      })
+      .catch(() => localStorage.removeItem("hll_auth_token"))
+      .finally(() => setAuthLoading(false));
+  }, []);
+
   useEffect(() => {
     // 서버가 API 키를 갖고 있으면 클라이언트 키 불필요
     // /api/health (Vercel) 또는 /health (로컬 Express) 순서로 시도
@@ -726,17 +822,22 @@ export default function LoglineAnalyzer() {
         .then((d) => {
           if (d.hasKey) {
             setServerHasKey(true);
-            if (!localStorage.getItem("logline_api_key")) {
+            if (!sessionStorage.getItem("logline_api_key") && !localStorage.getItem("logline_api_key")) {
               setApiKey("__server__");
             }
           } else if (!apiKey) {
-            setShowApiKeyModal(true);
+            if (!localStorage.getItem("logline_visited")) {
+              // 첫 방문자는 welcome 오버레이 닫은 후 API 키 모달 표시
+              setTimeout(() => setShowApiKeyModal(true), 100);
+            } else {
+              setShowApiKeyModal(true);
+            }
           }
         });
 
     checkHealth("/api/health")
       .catch(() => checkHealth("/health"))
-      .catch(() => { if (!apiKey) setShowApiKeyModal(true); });
+      .catch(() => { if (!apiKey && localStorage.getItem("logline_visited")) setShowApiKeyModal(true); });
   }, []);
 
   // ── Auto-save helper ──
@@ -874,10 +975,82 @@ export default function LoglineAnalyzer() {
     setLogline(example);
     setGenre("comedy");
     localStorage.setItem("logline_visited", "1");
+    setShowWelcome(false);
+    if (!apiKey && !serverHasKey) setShowApiKeyModal(true);
   };
 
   const dismissFirstVisit = () => {
     localStorage.setItem("logline_visited", "1");
+    setShowWelcome(false);
+    if (!apiKey && !serverHasKey) setShowApiKeyModal(true);
+  };
+
+  // ── 데모 모드 활성화 ──
+  const activateDemo = () => {
+    localStorage.setItem("logline_visited", "1");
+    setShowWelcome(false);
+    setIsDemoMode(true);
+    setLogline(DEMO_LOGLINE);
+    setGenre(DEMO_GENRE);
+    setResult(DEMO_RESULT);
+    setCharDevResult(DEMO_CHAR_DEV_RESULT);
+    setShadowResult(DEMO_SHADOW_RESULT);
+    setAuthenticityResult(DEMO_AUTHENTICITY_RESULT);
+    setSynopsisResults(DEMO_SYNOPSIS_RESULTS);
+    setTreatmentResult(DEMO_TREATMENT_RESULT);
+    setBeatSheetResult(DEMO_BEAT_SHEET_RESULT);
+    setScriptCoverageResult(DEMO_SCRIPT_COVERAGE_RESULT);
+    setValuationResult(DEMO_VALUATION_RESULT);
+    setStructureResult(DEMO_STRUCTURE_RESULT);
+    setRewriteDiagResult(DEMO_REWRITE_DIAG_RESULT);
+    setCurrentStage("1");
+    showToast("info", "데모 모드입니다. 샘플 로그라인의 분석 결과를 자유롭게 둘러보세요.");
+  };
+
+  // ── 데모 모드 해제 ──
+  const deactivateDemo = () => {
+    setIsDemoMode(false);
+    setLogline("");
+    setGenre("auto");
+    setResult(null);
+    setCharDevResult(null);
+    setShadowResult(null);
+    setAuthenticityResult(null);
+    setSynopsisResults(null);
+    setTreatmentResult("");
+    setBeatSheetResult(null);
+    setScriptCoverageResult(null);
+    setValuationResult(null);
+    setStructureResult(null);
+    setRewriteDiagResult(null);
+    if (!apiKey && !serverHasKey) setShowApiKeyModal(true);
+  };
+
+  // ── Logout ──
+  const handleLogout = async () => {
+    try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
+    localStorage.removeItem("hll_auth_token");
+    setUser(null);
+    setIsDemoMode(false);
+  };
+
+  // ── PDF 분석 리포트 내보내기 ──
+  const handleExportPdf = async () => {
+    if (pdfLoading) return;
+    setPdfLoading(true);
+    try {
+      const safeLogline = logline.slice(0, 20).replace(/\s+/g, "-").replace(/[^\w가-힣-]/g, "");
+      await exportToPdf({
+        logline, genre, result, charDevResult, shadowResult, authenticityResult,
+        synopsisResults, pipelineResult, structureResult, valueChargeResult,
+        treatmentResult, beatSheetResult, scenarioDraftResult, rewriteDiagResult,
+        scriptCoverageResult, valuationResult, darkMode,
+      }, `hellologline-${safeLogline || "report"}`);
+    } catch (e) {
+      console.error("PDF 생성 실패:", e);
+    } finally {
+      setPdfLoading(false);
+    }
   };
 
   // ── Application Document PDF Generator ──
@@ -1183,8 +1356,14 @@ export default function LoglineAnalyzer() {
     }
   };
 
-  const saveApiKey = (key) => {
-    localStorage.setItem("logline_api_key", key);
+  const saveApiKey = (key, remember = false) => {
+    if (remember) {
+      localStorage.setItem("logline_api_key", key);
+      sessionStorage.setItem("logline_api_key", key);
+    } else {
+      sessionStorage.setItem("logline_api_key", key);
+      localStorage.removeItem("logline_api_key");
+    }
     setApiKey(key);
     setShowApiKeyModal(false);
   };
@@ -1282,6 +1461,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const target = overrideLogline ?? logline;
     if (!target.trim() || !apiKey) return;
     if (overrideLogline) setLogline(overrideLogline);
+    if (isDemoMode) setIsDemoMode(false);
     const ctrl = makeController("analyze");
     setLoading(true);
     setError("");
@@ -1296,6 +1476,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       const qScore = sT + eT + tT;
       setResult(parsed);
       saveToHistory(target, genre, parsed, qScore, iT);
+      showToast("success", `로그라인 분석 완료 — 품질 ${qScore}점 / 흥미 ${iT}점`);
       if (compareMode && logline2.trim()) {
         setLoading2(true);
         try {
@@ -1311,7 +1492,10 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       }
       await autoSave();
     } catch (err) {
-      if (err.name !== "AbortError") setError(err.message || "분석 중 오류가 발생했습니다.");
+      if (err.name !== "AbortError") {
+        setError(err.message || "분석 중 오류가 발생했습니다.");
+        showToast("error", err.message || "분석 중 오류가 발생했습니다.");
+      }
     } finally { setLoading(false); clearController("analyze"); }
   };
 
@@ -1439,7 +1623,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const ctrl = makeController("shadow");
     setShadowLoading(true); setShadowError(""); setShadowResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n\n위 로그라인의 캐릭터 원형을 Jung의 분석심리학으로 분석하세요.`;
+    const charHint = treatmentChars.protagonist.name ? `\n\n[작가 설정]\n주인공: ${treatmentChars.protagonist.name}${treatmentChars.protagonist.role ? ` (${treatmentChars.protagonist.role})` : ""}${treatmentChars.protagonist.want ? `\n외적 목표: ${treatmentChars.protagonist.want}` : ""}${treatmentChars.protagonist.need ? `\n내적 욕구: ${treatmentChars.protagonist.need}` : ""}${treatmentChars.protagonist.flaw ? `\n핵심 결함: ${treatmentChars.protagonist.flaw}` : ""}${treatmentChars.supporting.filter(s => s.name).map(s => `\n조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}`).join("")}` : "";
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}${charHint}\n\n위 로그라인의 캐릭터 원형을 Jung의 분석심리학으로 분석하세요.`;
     try { const data = await callClaude(apiKey, SHADOW_ANALYSIS_SYSTEM_PROMPT, msg, 3000, "claude-haiku-4-5-20251001", ctrl.signal, ShadowAnalysisSchema); setShadowResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setShadowError(err.message || "그림자 분석 중 오류가 발생했습니다."); }
     finally { setShadowLoading(false); clearController("shadow"); }
@@ -1451,7 +1636,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const ctrl = makeController("authenticity");
     setAuthenticityLoading(true); setAuthenticityError(""); setAuthenticityResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n\n위 로그라인의 진정성 지수를 실존주의 철학으로 분석하세요.`;
+    const charHint = treatmentChars.protagonist.name ? `\n\n[작가 설정]\n주인공: ${treatmentChars.protagonist.name}${treatmentChars.protagonist.role ? ` (${treatmentChars.protagonist.role})` : ""}${treatmentChars.protagonist.want ? `\n외적 목표: ${treatmentChars.protagonist.want}` : ""}${treatmentChars.protagonist.need ? `\n내적 욕구: ${treatmentChars.protagonist.need}` : ""}${treatmentChars.protagonist.flaw ? `\n핵심 결함: ${treatmentChars.protagonist.flaw}` : ""}${treatmentChars.supporting.filter(s => s.name).map(s => `\n조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}`).join("")}` : "";
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}${charHint}\n\n위 로그라인의 진정성 지수를 실존주의 철학으로 분석하세요.`;
     try { const data = await callClaude(apiKey, AUTHENTICITY_SYSTEM_PROMPT, msg, 3000, "claude-haiku-4-5-20251001", ctrl.signal, AuthenticitySchema); setAuthenticityResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setAuthenticityError(err.message || "진정성 분석 중 오류가 발생했습니다."); }
     finally { setAuthenticityLoading(false); clearController("authenticity"); }
@@ -1921,7 +2107,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     pushHistory(setCharDevHistory, charDevResult, "character");
     setCharDevResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요. 시놉시스가 있다면 그 방향의 인물 이름·설정을 따르세요.`;
+    const charHint = treatmentChars.protagonist.name ? `\n\n[작가 설정 — 이 정보를 우선하여 캐릭터를 분석하세요]\n주인공: ${treatmentChars.protagonist.name}${treatmentChars.protagonist.role ? ` (${treatmentChars.protagonist.role})` : ""}${treatmentChars.protagonist.want ? `\n외적 목표: ${treatmentChars.protagonist.want}` : ""}${treatmentChars.protagonist.need ? `\n내적 욕구: ${treatmentChars.protagonist.need}` : ""}${treatmentChars.protagonist.flaw ? `\n핵심 결함: ${treatmentChars.protagonist.flaw}` : ""}${treatmentChars.supporting.filter(s => s.name).map(s => `\n조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}`).join("")}` : "";
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}${charHint}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요. 시놉시스가 있다면 그 방향의 인물 이름·설정을 따르세요.`;
     try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema); setCharDevResult(data); if (treatmentResult) setTreatmentStale(true); if (beatSheetResult) setBeatSheetStale(true); if (scenarioDraftResult) setScenarioDraftStale(true); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setCharDevError(err.message || "캐릭터 분석 중 오류가 발생했습니다."); }
     finally { setCharDevLoading(false); clearController("charDev"); }
@@ -2272,11 +2459,16 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   const STAGE_TOTALS = { "1": 1, "2": 1, "3": 1, "4": 2, "5": 3, "6": 1, "8": 2, "7": 1 };
 
   // ── Error display helper ──
-  function ErrorMsg({ msg }) {
+  function ErrorMsg({ msg, onRetry }) {
     if (!msg) return null;
     return (
-      <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 8, background: "rgba(232,93,117,0.08)", border: "1px solid rgba(232,93,117,0.2)", color: "#E85D75", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif" }}>
-        {msg}
+      <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 8, background: "rgba(232,93,117,0.08)", border: "1px solid rgba(232,93,117,0.2)", color: "#E85D75", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+        <span style={{ flex: 1, lineHeight: 1.6 }}>{msg}</span>
+        {onRetry && (
+          <button onClick={onRetry} style={{ flexShrink: 0, padding: "3px 10px", borderRadius: 6, border: "1px solid rgba(232,93,117,0.4)", background: "rgba(232,93,117,0.1)", color: "#E85D75", fontSize: 11, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
+            다시 시도
+          </button>
+        )}
       </div>
     );
   }
@@ -2291,8 +2483,23 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     dialogueDevLoading || beatSheetLoading || charDevLoading || treatmentLoading ||
     structureLoading || themeLoading || sceneListLoading || scenarioDraftLoading;
 
+  // ── Auth guard ──
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: "100vh", background: "var(--bg-page)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Spinner size={28} color="#C8A84B" />
+      </div>
+    );
+  }
+  if (!user && !isDemoMode) {
+    return <LoginScreen onDemo={activateDemo} authError={authError} />;
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg-page)", color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+
+      {/* ─── Toast notifications ─── */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       {/* ─── Modals ─── */}
       {showApiKeyModal && (
@@ -2337,7 +2544,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                       const beatLines = beatSheetResult.beats.map((b) => `- #${b.id} ${b.name_kr} (p.${b.page_start}): ${b.summary}`).join("\n");
                       sections.push(`## 비트 시트\n${beatLines}\n`);
                     }
-                    navigator.clipboard.writeText(sections.join("\n---\n\n"));
+                    navigator.clipboard.writeText(sections.join("\n---\n\n")).then(() => showToast("success", "스토리 바이블이 클립보드에 복사되었습니다."));
                   }}
                   style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(78,204,163,0.3)", background: "rgba(78,204,163,0.07)", color: "#4ECCA3", fontSize: 11, cursor: "pointer", fontWeight: 600 }}
                 >
@@ -2562,9 +2769,14 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
         height: 56,
       }}>
         <div style={{ maxWidth: 860, margin: "0 auto", height: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "0 12px" : "0 28px" }}>
-        <div>
-          <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "var(--text-main)", letterSpacing: -0.3 }}>Hello Loglines</div>
-          {!isMobile && <div style={{ fontSize: 10, color: "var(--c-tx-30)", marginTop: -1 }}>시나리오 개발 워크스테이션</div>}
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div>
+            <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 700, color: "var(--text-main)", letterSpacing: -0.3 }}>Hello Loglines</div>
+            {!isMobile && <div style={{ fontSize: 10, color: "var(--c-tx-30)", marginTop: -1 }}>시나리오 개발 워크스테이션</div>}
+          </div>
+          {isDemoMode && (
+            <span style={{ fontSize: 10, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: "#FFD166", background: "rgba(255,209,102,0.12)", border: "1px solid rgba(255,209,102,0.3)", borderRadius: 6, padding: "3px 8px", letterSpacing: 1 }}>DEMO</span>
+          )}
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           {/* Save status */}
@@ -2600,6 +2812,47 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
             }}>
               <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
               스토리 바이블
+            </button>
+          )}
+          {result && (
+            <button
+              onClick={handleExportPdf}
+              disabled={pdfLoading}
+              title="분석 결과를 PDF로 내보내기"
+              style={{
+                padding: "5px 12px", borderRadius: 8,
+                border: "1px solid rgba(96,165,250,0.3)", background: "rgba(96,165,250,0.07)",
+                color: pdfLoading ? "var(--c-tx-25)" : "#60A5FA",
+                cursor: pdfLoading ? "default" : "pointer", fontSize: 11, fontWeight: 600,
+                display: "flex", alignItems: "center", gap: 5,
+              }}
+            >
+              {pdfLoading
+                ? <><Spinner size={10} color="#60A5FA" /> PDF 생성 중...</>
+                : <><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> PDF</>
+              }
+            </button>
+          )}
+          {result && (
+            <button
+              onClick={() => {
+                const safeLogline = logline.slice(0, 20).replace(/\s+/g, "-").replace(/[^\w가-힣-]/g, "");
+                exportToMarkdown({
+                  logline, genre, result, charDevResult, synopsisResults, pipelineResult,
+                  treatmentResult, beatSheetResult, scenarioDraftResult, scriptCoverageResult, valuationResult,
+                }, `hellologline-${safeLogline || "report"}`);
+                showToast("success", "Markdown 파일이 다운로드되었습니다.");
+              }}
+              title="분석 결과를 Markdown으로 내보내기"
+              style={{
+                padding: "5px 12px", borderRadius: 8,
+                border: "1px solid rgba(167,139,250,0.3)", background: "rgba(167,139,250,0.07)",
+                color: "#A78BFA", cursor: "pointer", fontSize: 11, fontWeight: 600,
+                display: "flex", alignItems: "center", gap: 5,
+              }}
+            >
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              MD
             </button>
           )}
           <button onClick={openProjects} style={{
@@ -2639,6 +2892,24 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               color: "var(--c-tx-50)", cursor: "pointer",
             }}
           >{darkMode ? "☀️" : "🌙"}</button>
+          {/* ── User avatar & logout ── */}
+          {user && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 2 }}>
+              {user.avatar ? (
+                <img src={user.avatar} alt="" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--c-bd-4)", flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(200,168,75,0.2)", border: "1px solid rgba(200,168,75,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#C8A84B", flexShrink: 0 }}>
+                  {user.name?.[0] || "?"}
+                </div>
+              )}
+              {!isMobile && (
+                <span style={{ fontSize: 11, color: "var(--c-tx-50)", maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</span>
+              )}
+              <button onClick={handleLogout} style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, cursor: "pointer", border: "1px solid var(--c-bd-3)", background: "transparent", color: "var(--c-tx-35)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+                로그아웃
+              </button>
+            </div>
+          )}
         </div>
         </div>
       </div>
@@ -2688,29 +2959,89 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
         })}
       </div>
 
-      {/* ─── 첫 방문 온보딩 배너 ─── */}
-      {isFirstVisit && !result && (
-        <div style={{ background: "rgba(200,168,75,0.07)", borderBottom: "1px solid rgba(200,168,75,0.15)" }}>
-          <div style={{ maxWidth: 860, margin: "0 auto", padding: isMobile ? "14px 16px" : "14px 28px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-            <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#C8A84B", marginBottom: 3 }}>처음 오셨나요?</div>
-              <div style={{ fontSize: 11, color: "var(--c-tx-50)", lineHeight: 1.6 }}>
-                로그라인을 입력하면 18개 기준으로 분석 → 시놉시스 → 트리트먼트 → 씬 대본까지 자동 생성됩니다.
+      {/* ─── 첫 방문 웰컴 오버레이 ─── */}
+      {showWelcome && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 900, background: "rgba(0,0,0,0.88)", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? 16 : 24 }}>
+          <div style={{ maxWidth: 600, width: "100%", background: "var(--bg-surface)", border: "1px solid rgba(78,204,163,0.25)", borderRadius: 20, padding: isMobile ? "24px 20px" : "36px 40px", overflowY: "auto", maxHeight: "90vh" }}>
+            {/* 헤더 */}
+            <div style={{ textAlign: "center", marginBottom: 28 }}>
+              <div style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, color: "var(--text-main)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: -0.5, marginBottom: 8 }}>
+                Hello<span style={{ color: "#4ECCA3" }}>Logline</span>
+              </div>
+              <div style={{ fontSize: isMobile ? 13 : 14, color: "var(--c-tx-55)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                로그라인 한 줄로 시작하는 <strong style={{ color: "var(--c-tx-75)" }}>8단계 시나리오 개발 워크스테이션</strong><br />
+                아리스토텔레스부터 블레이크 스나이더까지, 학술 이론이 AI로 작동합니다
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+
+            {/* 8단계 파이프라인 */}
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-35)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 14, textAlign: "center" }}>8단계 파이프라인</div>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 8 }}>
+                {[
+                  { num: "01", name: "로그라인", desc: "18개 기준 분석", color: "#C8A84B" },
+                  { num: "02", name: "캐릭터", desc: "Jung · Maslow · Truby", color: "#FB923C" },
+                  { num: "03", name: "시놉시스", desc: "구조 · 시놉시스 생성", color: "#4ECCA3" },
+                  { num: "04", name: "개념 분석", desc: "캠벨 · 바르트 · 롤랑", color: "#45B7D1" },
+                  { num: "05", name: "트리트먼트", desc: "비트시트 · 대사", color: "#FFD166" },
+                  { num: "06", name: "시나리오", desc: "Field · McKee · Snyder", color: "#A78BFA" },
+                  { num: "07", name: "고쳐쓰기", desc: "진단 · 재작성 · 개고", color: "#FB923C" },
+                  { num: "08", name: "Coverage", desc: "Script Coverage 리포트", color: "#60A5FA" },
+                ].map(s => (
+                  <div key={s.num} style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(var(--tw),0.03)", border: "1px solid var(--c-bd-1)", textAlign: "center" }}>
+                    <div style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: s.color, fontWeight: 700, marginBottom: 4 }}>{s.num}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-tx-70)", marginBottom: 2, fontFamily: "'Noto Sans KR', sans-serif" }}>{s.name}</div>
+                    <div style={{ fontSize: 10, color: "var(--c-tx-35)", fontFamily: "'Noto Sans KR', sans-serif" }}>{s.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 주요 기능 포인트 */}
+            <div style={{ marginBottom: 28, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
+              {[
+                { icon: "🎯", text: "로그라인 품질 점수 + 개선 제안" },
+                { icon: "🧠", text: "학술 이론 기반 심층 분석" },
+                { icon: "📝", text: "트리트먼트·비트시트 자동 생성" },
+                { icon: "✍️", text: "시나리오 초고 → 고쳐쓰기까지" },
+              ].map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)" }}>
+                  <span style={{ fontSize: 16 }}>{item.icon}</span>
+                  <span style={{ fontSize: 12, color: "var(--c-tx-55)", fontFamily: "'Noto Sans KR', sans-serif" }}>{item.text}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* 안내 */}
+            <div style={{ marginBottom: 20, padding: "10px 14px", borderRadius: 8, background: "rgba(78,204,163,0.05)", border: "1px solid rgba(78,204,163,0.15)" }}>
+              <div style={{ fontSize: 11, color: "var(--c-tx-45)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                💡 <strong style={{ color: "var(--c-tx-65)" }}>Anthropic API 키</strong>가 필요합니다. <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" style={{ color: "#4ECCA3", textDecoration: "none" }}>console.anthropic.com</a>에서 무료로 발급받으세요. 키는 이 브라우저에만 저장됩니다.
+              </div>
+            </div>
+
+            {/* 버튼 */}
+            <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
               <button
-                onClick={() => { applyExampleLogline(); }}
-                style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.12)", color: "#C8A84B", cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}
+                onClick={activateDemo}
+                style={{ width: "100%", padding: "14px 16px", borderRadius: 10, border: "none", background: "linear-gradient(135deg, #4ECCA3, #45B7D1)", color: "#0d0d1a", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
               >
-                예시 로그라인 입력
+                <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                API 키 없이 데모 체험하기
               </button>
-              <button
-                onClick={dismissFirstVisit}
-                style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-30)", cursor: "pointer", fontSize: 11 }}
-              >
-                닫기
-              </button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={applyExampleLogline}
+                  style={{ flex: 1, padding: "11px 14px", borderRadius: 10, border: "1px solid rgba(78,204,163,0.35)", background: "rgba(78,204,163,0.08)", color: "#4ECCA3", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}
+                >
+                  예시 로그라인으로 시작
+                </button>
+                <button
+                  onClick={dismissFirstVisit}
+                  style={{ flex: 1, padding: "11px 14px", borderRadius: 10, border: "1px solid var(--c-bd-4)", background: "transparent", color: "var(--c-tx-45)", fontSize: 12, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}
+                >
+                  직접 시작
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2721,6 +3052,33 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
         maxWidth: 860, width: "100%", margin: "0 auto", boxSizing: "border-box",
         padding: isMobile ? "16px 12px 80px" : "24px 28px 80px",
       }}>
+
+          {/* ── 데모 모드 배너 ── */}
+          {isDemoMode && (
+            <div style={{ marginBottom: 16, padding: "14px 18px", borderRadius: 12, background: "rgba(255,209,102,0.07)", border: "1px solid rgba(255,209,102,0.25)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 16 }}>🎬</span>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#FFD166", marginBottom: 2 }}>데모 모드 — 샘플 분석 결과 체험 중</div>
+                  <div style={{ fontSize: 11, color: "var(--c-tx-45)", fontFamily: "'Noto Sans KR', sans-serif" }}>로그라인: "{DEMO_LOGLINE.slice(0, 40)}…" — 8단계 결과를 자유롭게 둘러보세요.</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                <button
+                  onClick={() => { deactivateDemo(); setShowApiKeyModal(true); }}
+                  style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: "#FFD166", color: "#0d0d1a", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}
+                >
+                  내 API 키로 시작
+                </button>
+                <button
+                  onClick={deactivateDemo}
+                  style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid rgba(255,209,102,0.3)", background: "transparent", color: "#FFD166", fontSize: 11, cursor: "pointer" }}
+                >
+                  데모 종료
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* ═══ STAGE 1: Logline ═══ */}
           <div ref={(el) => { stageRefs.current["1"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "1" ? "rgba(200,168,75,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
@@ -2845,6 +3203,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   <div style={{ position: "relative" }}>
                     <textarea
                       value={logline} onChange={(e) => setLogline(e.target.value)}
+                      onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); if (logline.trim() && apiKey && !loading) analyze(); } }}
                       placeholder="로그라인을 입력하세요..."
                       rows={compareMode ? 5 : 4}
                       style={{
@@ -2885,6 +3244,16 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 )}
               </div>
 
+              {/* Logline quality hint */}
+              {logline.trim().length > 0 && !compareMode && (() => {
+                const ranges = { ultrashort: [20, 40], shortform: [30, 50], shortfilm: [40, 70], webdrama: [50, 80], tvdrama: [60, 90], feature: [70, 110], miniseries: [90, 140], shortformseries: [60, 100] };
+                const [lo, hi] = ranges[selectedDuration] || [70, 110];
+                const n = logline.trim().length;
+                if (n < lo) return <div style={{ marginBottom: 10, fontSize: 11, color: "#F7A072", display: "flex", alignItems: "center", gap: 6 }}><span>⚠</span> 로그라인이 너무 짧습니다. 주인공·목표·장애·결과를 구체적으로 작성해보세요. (현재 {n}자 / 권장 {lo}자 이상)</div>;
+                if (n > hi) return <div style={{ marginBottom: 10, fontSize: 11, color: "#E85D75", display: "flex", alignItems: "center", gap: 6 }}><span>⚠</span> 로그라인이 너무 깁니다. 한 문장으로 압축해보세요. (현재 {n}자 / 권장 {hi}자 이하)</div>;
+                return <div style={{ marginBottom: 10, fontSize: 11, color: "#4ECCA3", display: "flex", alignItems: "center", gap: 6 }}><span>✓</span> 적절한 길이입니다. ({n}자)</div>;
+              })()}
+
               {/* Example buttons */}
               <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 11, color: "var(--c-tx-25)", lineHeight: "28px" }}>예시:</span>
@@ -2913,6 +3282,9 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               </button>
               </Tooltip>
 
+              <div style={{ marginTop: 6, textAlign: "right", fontSize: 10, color: "var(--c-tx-25)", fontFamily: "'JetBrains Mono', monospace" }}>
+                {navigator.platform?.includes("Mac") ? "⌘" : "Ctrl"}+Enter
+              </div>
               {!apiKey && !serverHasKey && <div style={{ marginTop: 8, fontSize: 11, textAlign: "center", color: "rgba(232,93,117,0.7)" }}>API 키를 먼저 설정해주세요</div>}
               {serverHasKey && apiKey === "__server__" && <div style={{ marginTop: 8, fontSize: 11, textAlign: "center", color: "rgba(78,204,163,0.7)" }}>서버 API 키 사용 중</div>}
               {error && (
@@ -3228,9 +3600,123 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
               <ErrorBoundary><div>
 
+              {/* ── 인물 직접 설정 ── */}
+              <div style={{ marginBottom: 16, borderRadius: 12, border: "1px solid rgba(251,146,60,0.15)", background: "rgba(251,146,60,0.03)" }}>
+                <button
+                  onClick={() => setShowManualCharInput(v => !v)}
+                  style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+                >
+                  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#FB923C" strokeWidth={2} strokeLinecap="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#FB923C" }}>인물 직접 설정</div>
+                    <div style={{ fontSize: 11, color: "var(--c-tx-35)", marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                      주인공·조연 이름·성격을 직접 입력 — 캐릭터 종합 분석 및 트리트먼트·비트시트·시나리오에 자동 반영
+                      {(treatmentChars.protagonist.name || treatmentChars.supporting.some(s => s.name)) && (
+                        <span style={{ marginLeft: 8, fontSize: 10, padding: "1px 7px", borderRadius: 10, background: "rgba(78,204,163,0.15)", color: "#4ECCA3", border: "1px solid rgba(78,204,163,0.25)", fontWeight: 600 }}>입력됨</span>
+                      )}
+                    </div>
+                  </div>
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-30)" strokeWidth={2} strokeLinecap="round" style={{ transform: showManualCharInput ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                {showManualCharInput && (
+                  <div style={{ borderTop: "1px solid rgba(251,146,60,0.1)", padding: "16px 16px 20px" }}>
+                    {/* 주인공 */}
+                    <div style={{ marginBottom: 18 }}>
+                      <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>주인공</div>
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                        <div>
+                          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>이름</div>
+                          <input
+                            value={treatmentChars.protagonist.name}
+                            onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, name: e.target.value } }))}
+                            placeholder="예: 피노키오"
+                            style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
+                          />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>역할 / 직업</div>
+                          <input
+                            value={treatmentChars.protagonist.role}
+                            onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, role: e.target.value } }))}
+                            placeholder="예: 200년 된 로봇수리공"
+                            style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
+                          />
+                        </div>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
+                        {[
+                          { key: "want", label: "외적 목표 (Want)", placeholder: "무엇을 원하는가?" },
+                          { key: "need", label: "내적 욕구 (Need)", placeholder: "진짜 필요한 것은?" },
+                          { key: "flaw", label: "핵심 결함", placeholder: "가장 큰 약점은?" },
+                        ].map(({ key, label, placeholder }) => (
+                          <div key={key}>
+                            <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>{label}</div>
+                            <input
+                              value={treatmentChars.protagonist[key]}
+                              onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, [key]: e.target.value } }))}
+                              placeholder={placeholder}
+                              style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* 조연 */}
+                    <div>
+                      <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>조연 인물</div>
+                      {treatmentChars.supporting.map((s, idx) => (
+                        <div key={idx} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
+                          {[
+                            { key: "name", label: "이름", placeholder: "예: 제페토" },
+                            { key: "role", label: "역할", placeholder: "예: 조력자" },
+                            { key: "relation", label: "주인공과의 관계", placeholder: "예: 아버지" },
+                          ].map(({ key, label, placeholder }) => (
+                            <div key={key}>
+                              {idx === 0 && <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>{label}</div>}
+                              <input
+                                value={s[key]}
+                                onChange={e => {
+                                  const updated = treatmentChars.supporting.map((sup, i) => i === idx ? { ...sup, [key]: e.target.value } : sup);
+                                  setTreatmentChars(prev => ({ ...prev, supporting: updated }));
+                                }}
+                                placeholder={placeholder}
+                                style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
+                              />
+                            </div>
+                          ))}
+                          {treatmentChars.supporting.length > 1 && (
+                            <button
+                              onClick={() => setTreatmentChars(prev => ({ ...prev, supporting: prev.supporting.filter((_, i) => i !== idx) }))}
+                              style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.25)", background: "rgba(232,93,117,0.06)", color: "#E85D75", cursor: "pointer", fontSize: 13, lineHeight: 1, marginTop: idx === 0 ? 18 : 0 }}
+                            >✕</button>
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => setTreatmentChars(prev => ({ ...prev, supporting: [...prev.supporting, { name: "", role: "", relation: "" }] }))}
+                        style={{ marginTop: 4, padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(251,146,60,0.25)", background: "rgba(251,146,60,0.06)", color: "#FB923C", fontSize: 11, cursor: "pointer", fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif" }}
+                      >+ 인물 추가</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="캐릭터 종합 분석" sub="Jung 그림자 · 진정성 · Want/Need/Ghost/Arc" done={!!(shadowResult || authenticityResult || charDevResult)} loading={shadowLoading || authenticityLoading || charDevLoading} color="#FB923C" onClick={async () => { await analyzeShadow(); await analyzeAuthenticity(); await analyzeCharacterDev(); }} disabled={!logline.trim()}
                 tooltip={"이 로그라인의 주인공이 얼마나 입체적인 캐릭터인지 다각도로 분석합니다.\n\n• Jung — 영웅·그림자·아니마·페르소나 원형과 개성화 여정\n• Sartre — 실존적 진정성과 자기기만 구조\n• Egri·Truby — 생리·사회·심리 3차원 인물 설계\n• Maslow — 욕구 위계(생존→안전→소속→존중→자아실현)\n• Vogler — 영웅의 여정 속 캐릭터 기능 역할"} />
-              <ErrorMsg msg={shadowError || authenticityError || charDevError} />
+              <ErrorMsg msg={shadowError || authenticityError || charDevError} onRetry={shadowError ? analyzeShadow : authenticityError ? analyzeAuthenticity : charDevError ? analyzeCharacterDev : undefined} />
+              {(shadowLoading || authenticityLoading || charDevLoading) && (
+                <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
+                  {[
+                    { label: "Jung 그림자", loading: shadowLoading, done: !!shadowResult },
+                    { label: "실존 진정성", loading: authenticityLoading, done: !!authenticityResult },
+                    { label: "캐릭터 디벨롭", loading: charDevLoading, done: !!charDevResult },
+                  ].map((item, i) => (
+                    <span key={i} style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: item.done ? "#4ECCA3" : item.loading ? "#FB923C" : "var(--c-tx-25)", display: "flex", alignItems: "center", gap: 4 }}>
+                      {item.done ? "✓" : item.loading ? <Spinner size={9} color="#FB923C" /> : "○"} {item.label}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {charAllDone && (
                 <ResultCard
@@ -3339,107 +3825,6 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   />
                 </ResultCard>
               )}
-              {/* ── 인물 직접 설정 ── */}
-              <div style={{ marginTop: 24, borderRadius: 12, border: "1px solid rgba(251,146,60,0.15)", background: "rgba(251,146,60,0.03)" }}>
-                <button
-                  onClick={() => setShowManualCharInput(v => !v)}
-                  style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
-                >
-                  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#FB923C" strokeWidth={2} strokeLinecap="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#FB923C" }}>인물 직접 설정</div>
-                    <div style={{ fontSize: 11, color: "var(--c-tx-35)", marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif" }}>
-                      주인공·조연 이름·성격을 직접 입력 — 트리트먼트·비트시트·시나리오에 자동 반영
-                      {(treatmentChars.protagonist.name || treatmentChars.supporting.some(s => s.name)) && (
-                        <span style={{ marginLeft: 8, fontSize: 10, padding: "1px 7px", borderRadius: 10, background: "rgba(78,204,163,0.15)", color: "#4ECCA3", border: "1px solid rgba(78,204,163,0.25)", fontWeight: 600 }}>입력됨</span>
-                      )}
-                    </div>
-                  </div>
-                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-30)" strokeWidth={2} strokeLinecap="round" style={{ transform: showManualCharInput ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
-                </button>
-                {showManualCharInput && (
-                  <div style={{ borderTop: "1px solid rgba(251,146,60,0.1)", padding: "16px 16px 20px" }}>
-                    {/* 주인공 */}
-                    <div style={{ marginBottom: 18 }}>
-                      <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>주인공</div>
-                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8, marginBottom: 8 }}>
-                        <div>
-                          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>이름</div>
-                          <input
-                            value={treatmentChars.protagonist.name}
-                            onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, name: e.target.value } }))}
-                            placeholder="예: 피노키오"
-                            style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
-                          />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>역할 / 직업</div>
-                          <input
-                            value={treatmentChars.protagonist.role}
-                            onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, role: e.target.value } }))}
-                            placeholder="예: 200년 된 로봇수리공"
-                            style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
-                          />
-                        </div>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
-                        {[
-                          { key: "want", label: "외적 목표 (Want)", placeholder: "무엇을 원하는가?" },
-                          { key: "need", label: "내적 욕구 (Need)", placeholder: "진짜 필요한 것은?" },
-                          { key: "flaw", label: "핵심 결함", placeholder: "가장 큰 약점은?" },
-                        ].map(({ key, label, placeholder }) => (
-                          <div key={key}>
-                            <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>{label}</div>
-                            <input
-                              value={treatmentChars.protagonist[key]}
-                              onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, [key]: e.target.value } }))}
-                              placeholder={placeholder}
-                              style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    {/* 조연 */}
-                    <div>
-                      <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>조연 인물</div>
-                      {treatmentChars.supporting.map((s, idx) => (
-                        <div key={idx} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
-                          {[
-                            { key: "name", label: "이름", placeholder: "예: 제페토" },
-                            { key: "role", label: "역할", placeholder: "예: 조력자" },
-                            { key: "relation", label: "주인공과의 관계", placeholder: "예: 아버지" },
-                          ].map(({ key, label, placeholder }) => (
-                            <div key={key}>
-                              {idx === 0 && <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>{label}</div>}
-                              <input
-                                value={s[key]}
-                                onChange={e => {
-                                  const updated = treatmentChars.supporting.map((sup, i) => i === idx ? { ...sup, [key]: e.target.value } : sup);
-                                  setTreatmentChars(prev => ({ ...prev, supporting: updated }));
-                                }}
-                                placeholder={placeholder}
-                                style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
-                              />
-                            </div>
-                          ))}
-                          {treatmentChars.supporting.length > 1 && (
-                            <button
-                              onClick={() => setTreatmentChars(prev => ({ ...prev, supporting: prev.supporting.filter((_, i) => i !== idx) }))}
-                              style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.25)", background: "rgba(232,93,117,0.06)", color: "#E85D75", cursor: "pointer", fontSize: 13, lineHeight: 1, marginTop: idx === 0 ? 18 : 0 }}
-                            >✕</button>
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => setTreatmentChars(prev => ({ ...prev, supporting: [...prev.supporting, { name: "", role: "", relation: "" }] }))}
-                        style={{ marginTop: 4, padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(251,146,60,0.25)", background: "rgba(251,146,60,0.06)", color: "#FB923C", fontSize: 11, cursor: "pointer", fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif" }}
-                      >+ 인물 추가</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
               {getStageStatus("3") === "done" && (
                 <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
                   <button onClick={() => advanceToStage("4")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
@@ -3477,6 +3862,18 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="구조 & 감정 아크" sub="Field · Snyder · McKee 3막 구조 + 가치 전하" done={structureAllDone} loading={structureAllLoading} color="#4ECCA3" onClick={analyzeStructureAll} disabled={!logline.trim()}
                   tooltip={"이야기의 뼈대와 감정 흐름을 설계합니다.\n\n• 3막 구조 — Field·Snyder·McKee·Hauge·Truby의 핵심 플롯 포인트 배치\n  (1막 설정 → 촉발 사건 → 2막 대립 → 절정 → 3막 해소)\n\n• 가치 전하 (McKee) — 장면마다 긍정↔부정으로 뒤바뀌는 감정 가치를 추적합니다.\n  감정 기복이 없는 이야기는 관객을 잃습니다."} />
                 <ErrorMsg msg={structureError || valueChargeError} />
+                {(structureLoading || valueChargeLoading) && (
+                  <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
+                    {[
+                      { label: "3막 구조", loading: structureLoading, done: !!structureResult },
+                      { label: "가치 전하", loading: valueChargeLoading, done: !!valueChargeResult },
+                    ].map((item, i) => (
+                      <span key={i} style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: item.done ? "#4ECCA3" : item.loading ? "#4ECCA3" : "var(--c-tx-25)", display: "flex", alignItems: "center", gap: 4 }}>
+                        {item.done ? "✓" : item.loading ? <Spinner size={9} color="#4ECCA3" /> : "○"} {item.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {structureAllDone && (
                   <ResultCard
                     title="구조 & 감정 아크"
@@ -3639,7 +4036,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   }}>
                     {synopsisLoading ? (<><Spinner size={14} color="#C8A84B" />{directionCount}가지 시놉시스 작성 중...</>) : `${directionCount}가지 방향으로 시놉시스 생성`}
                   </button>
-                  <ErrorMsg msg={synopsisError} />
+                  <ErrorMsg msg={synopsisError} onRetry={synopsisError ? generateSynopsis : undefined} />
                   {synopsisResults?.synopses && (
                     <div style={{ marginTop: 16 }}>
                       {selectedSynopsisIndex !== null && (
@@ -3879,7 +4276,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 {showTreatmentPanel && (
                   <div style={{ marginTop: 8 }}>
                     <TreatmentInputPanel chars={treatmentChars} onCharsChange={setTreatmentChars} structure={treatmentStructure} onStructureChange={setTreatmentStructure} onGenerate={generateTreatment} loading={treatmentLoading} isMobile={isMobile} charDevResult={charDevResult} />
-                    <ErrorMsg msg={treatmentError} />
+                    <ErrorMsg msg={treatmentError} onRetry={treatmentError ? generateTreatment : undefined} />
                   </div>
                 )}
                 {treatmentStale && treatmentResult && (
@@ -4212,7 +4609,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 disabled={!logline.trim()}
                 tooltip={"로그라인·캐릭터·트리트먼트·비트 시트를 바탕으로 시나리오 초고를 작성합니다.\n\n표준 시나리오 포맷 (씬 헤더 · 액션 라인 · 대사)으로 출력되며, 3막 구조 전체를 커버합니다.\n\n트리트먼트와 비트 시트를 먼저 생성하면 더 완성도 높은 초고가 나옵니다."}
               />
-              <ErrorMsg msg={scenarioDraftError} />
+              <ErrorMsg msg={scenarioDraftError} onRetry={scenarioDraftError ? generateScenarioDraft : undefined} />
               {scenarioDraftStale && scenarioDraftResult && (
                 <div style={{
                   display: "flex", alignItems: "center", gap: 10,
@@ -4246,7 +4643,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   )}
                   <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
                     <button
-                      onClick={() => navigator.clipboard.writeText(scenarioDraftResult)}
+                      onClick={() => navigator.clipboard.writeText(scenarioDraftResult).then(() => showToast("success", "시나리오 초고가 복사되었습니다."))}
                       style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(167,139,250,0.3)", background: "rgba(167,139,250,0.08)", color: "#A78BFA", fontSize: 11, cursor: "pointer" }}
                     >
                       전체 복사
@@ -4394,7 +4791,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 {partialRewriteResult && (
                   <ResultCard title="부분 재작성 결과" onClose={() => setPartialRewriteResult("")} color="rgba(251,146,60,0.12)">
                     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-                      <button onClick={() => navigator.clipboard.writeText(partialRewriteResult)} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(251,146,60,0.3)", background: "rgba(251,146,60,0.08)", color: "#FB923C", fontSize: 11, cursor: "pointer" }}>복사</button>
+                      <button onClick={() => navigator.clipboard.writeText(partialRewriteResult).then(() => showToast("success", "복사되었습니다."))} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(251,146,60,0.3)", background: "rgba(251,146,60,0.08)", color: "#FB923C", fontSize: 11, cursor: "pointer" }}>복사</button>
                     </div>
                     <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 12 : 13, lineHeight: 1.8, color: "var(--c-tx-75)", margin: 0 }}>
                       {partialRewriteResult}
@@ -4426,7 +4823,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 {fullRewriteResult && (
                   <ResultCard title="개고된 시나리오" onClose={() => setFullRewriteResult("")} color="rgba(251,146,60,0.12)">
                     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8, gap: 6 }}>
-                      <button onClick={() => navigator.clipboard.writeText(fullRewriteResult)} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(251,146,60,0.3)", background: "rgba(251,146,60,0.08)", color: "#FB923C", fontSize: 11, cursor: "pointer" }}>전체 복사</button>
+                      <button onClick={() => navigator.clipboard.writeText(fullRewriteResult).then(() => showToast("success", "전체 개고본이 복사되었습니다."))} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(251,146,60,0.3)", background: "rgba(251,146,60,0.08)", color: "#FB923C", fontSize: 11, cursor: "pointer" }}>전체 복사</button>
                     </div>
                     <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 12 : 13, lineHeight: 1.8, color: "var(--c-tx-75)", margin: 0 }}>
                       {fullRewriteResult}
@@ -4469,7 +4866,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
               <ToolButton icon={<SvgIcon d={ICON.clipboard} size={16} />} label="최종 평가" sub="Script Coverage · 시장 가치" done={!!(scriptCoverageResult || valuationResult)} loading={scriptCoverageLoading || valuationLoading} color="#60A5FA" onClick={async () => { await analyzeScriptCoverage(); await analyzeValuation(); }} disabled={!logline.trim()}
                 tooltip={"할리우드 스튜디오와 한국 방송사 스타일의 공식 심사 보고서를 생성하고 시장 가치를 추정합니다.\n\n• Script Coverage — RECOMMEND / CONSIDER / PASS 3단계 판정\n• 시장 가치 — 한국·미국 시장 추정 판매가 · 신인/경력 기준"} />
-              <ErrorMsg msg={scriptCoverageError || valuationError} />
+              <ErrorMsg msg={scriptCoverageError || valuationError} onRetry={scriptCoverageError ? generateScriptCoverage : valuationError ? generateValuation : undefined} />
 
               {scriptCoverageResult && (
                 <>

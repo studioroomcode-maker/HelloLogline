@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { readFileSync, writeFileSync } from "fs";
+import jwt from "jsonwebtoken";
 
 const app = express();
 const BASE_PORT = process.env.PORT ? parseInt(process.env.PORT) : 3001;
@@ -77,6 +78,150 @@ app.post("/api/claude", async (req, res) => {
     }
   }
 });
+
+// ── OAuth helpers ──
+const JWT_SECRET = process.env.JWT_SECRET || "hll-jwt-fallback-secret";
+
+function issueToken(user, frontendUrl) {
+  const token = jwt.sign(user, JWT_SECRET, { expiresIn: "30d" });
+  return `${frontendUrl}?auth_token=${token}`;
+}
+
+// Kakao
+app.get("/auth/kakao", (req, res) => {
+  const redirectUri = `http://localhost:${BASE_PORT}/auth/kakao/callback`;
+  const url = `https://kauth.kakao.com/oauth/authorize?client_id=${process.env.KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`;
+  res.redirect(url);
+});
+
+app.get("/auth/kakao/callback", async (req, res) => {
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const { code } = req.query;
+  if (!code) return res.redirect(`${frontendUrl}?auth_error=kakao`);
+  try {
+    const redirectUri = `http://localhost:${BASE_PORT}/auth/kakao/callback`;
+    const tokenRes = await fetch("https://kauth.kakao.com/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ grant_type: "authorization_code", client_id: process.env.KAKAO_REST_API_KEY, redirect_uri: redirectUri, code }),
+    });
+    const td = await tokenRes.json();
+    if (td.error) throw new Error(td.error_description);
+    const userRes = await fetch("https://kapi.kakao.com/v2/user/me", {
+      headers: { Authorization: `Bearer ${td.access_token}` },
+    });
+    const ud = await userRes.json();
+    const user = {
+      id: `kakao_${ud.id}`,
+      provider: "kakao",
+      name: ud.kakao_account?.profile?.nickname || "카카오 사용자",
+      email: ud.kakao_account?.email || "",
+      avatar: ud.kakao_account?.profile?.profile_image_url || "",
+    };
+    res.redirect(issueToken(user, frontendUrl));
+  } catch (err) {
+    console.error("[Kakao OAuth]", err.message);
+    res.redirect(`${frontendUrl}?auth_error=kakao`);
+  }
+});
+
+// Google
+app.get("/auth/google", (req, res) => {
+  const redirectUri = `http://localhost:${BASE_PORT}/auth/google/callback`;
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: "openid email profile",
+    access_type: "offline",
+  });
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+});
+
+app.get("/auth/google/callback", async (req, res) => {
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const { code } = req.query;
+  if (!code) return res.redirect(`${frontendUrl}?auth_error=google`);
+  try {
+    const redirectUri = `http://localhost:${BASE_PORT}/auth/google/callback`;
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ code, client_id: process.env.GOOGLE_CLIENT_ID, client_secret: process.env.GOOGLE_CLIENT_SECRET, redirect_uri: redirectUri, grant_type: "authorization_code" }),
+    });
+    const td = await tokenRes.json();
+    if (td.error) throw new Error(td.error_description);
+    const userRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${td.access_token}` },
+    });
+    const ud = await userRes.json();
+    const user = {
+      id: `google_${ud.sub}`,
+      provider: "google",
+      name: ud.name || "Google 사용자",
+      email: ud.email || "",
+      avatar: ud.picture || "",
+    };
+    res.redirect(issueToken(user, frontendUrl));
+  } catch (err) {
+    console.error("[Google OAuth]", err.message);
+    res.redirect(`${frontendUrl}?auth_error=google`);
+  }
+});
+
+// Naver
+app.get("/auth/naver", (req, res) => {
+  const redirectUri = `http://localhost:${BASE_PORT}/auth/naver/callback`;
+  const state = Math.random().toString(36).slice(2, 10);
+  const params = new URLSearchParams({ client_id: process.env.NAVER_CLIENT_ID, redirect_uri: redirectUri, response_type: "code", state });
+  res.redirect(`https://nid.naver.com/oauth2.0/authorize?${params}`);
+});
+
+app.get("/auth/naver/callback", async (req, res) => {
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+  const { code, state } = req.query;
+  if (!code) return res.redirect(`${frontendUrl}?auth_error=naver`);
+  try {
+    const redirectUri = `http://localhost:${BASE_PORT}/auth/naver/callback`;
+    const tokenRes = await fetch("https://nid.naver.com/oauth2.0/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ grant_type: "authorization_code", client_id: process.env.NAVER_CLIENT_ID, client_secret: process.env.NAVER_CLIENT_SECRET, code, state }),
+    });
+    const td = await tokenRes.json();
+    if (td.error) throw new Error(td.error_description);
+    const userRes = await fetch("https://openapi.naver.com/v1/nid/me", {
+      headers: { Authorization: `Bearer ${td.access_token}` },
+    });
+    const ud = await userRes.json();
+    const profile = ud.response || {};
+    const user = {
+      id: `naver_${profile.id}`,
+      provider: "naver",
+      name: profile.name || profile.nickname || "네이버 사용자",
+      email: profile.email || "",
+      avatar: profile.profile_image || "",
+    };
+    res.redirect(issueToken(user, frontendUrl));
+  } catch (err) {
+    console.error("[Naver OAuth]", err.message);
+    res.redirect(`${frontendUrl}?auth_error=naver`);
+  }
+});
+
+// JWT verification
+app.get("/api/auth/me", (req, res) => {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith("Bearer ")) return res.status(401).json({ error: "No token" });
+  try {
+    const user = jwt.verify(auth.slice(7), JWT_SECRET);
+    res.json({ user: { id: user.id, provider: user.provider, name: user.name, email: user.email, avatar: user.avatar } });
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
+  }
+});
+
+app.post("/api/auth/logout", (_req, res) => res.json({ ok: true }));
 
 // ── Port auto-fallback ──
 function startServer(port) {

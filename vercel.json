@@ -2,6 +2,12 @@
   "buildCommand": "vite build",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/auth/kakao/callback", "destination": "/api/auth/kakao/callback" },
+    { "source": "/auth/google/callback", "destination": "/api/auth/google/callback" },
+    { "source": "/auth/naver/callback", "destination": "/api/auth/naver/callback" },
+    { "source": "/auth/kakao", "destination": "/api/auth/kakao" },
+    { "source": "/auth/google", "destination": "/api/auth/google" },
+    { "source": "/auth/naver", "destination": "/api/auth/naver" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }

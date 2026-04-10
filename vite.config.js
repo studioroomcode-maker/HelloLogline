@@ -9,6 +9,10 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
       },
+      '/auth': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
     },
   },
   build: {
@@ -18,6 +22,8 @@ export default defineConfig({
           'react-vendor': ['react', 'react-dom'],
           'markdown': ['react-markdown'],
           'zod': ['zod'],
+          'panels': ['./src/panels.jsx'],
+          'jsonrepair': ['jsonrepair'],
         },
       },
     },
