@@ -5002,17 +5002,40 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   </button>
                 </div>
 
-                {/* Redis 미설정 안내 */}
+                {/* DB 미설정 안내 */}
                 {!adminRedisOk && !adminUsersLoading && (
                   <div style={{ background: "rgba(200,168,75,0.06)", border: "1px solid rgba(200,168,75,0.2)", borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#C8A84B", marginBottom: 8 }}>Upstash Redis 연동 필요</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#C8A84B", marginBottom: 10 }}>DB 연동 필요</div>
                     <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.8, marginBottom: 12 }}>
-                      사용자 목록을 보려면 Upstash Redis를 연동해야 합니다.<br/>
-                      <strong style={{ color: "var(--c-tx-70)" }}>upstash.com</strong>에서 무료 Redis DB를 만들고 아래 환경변수를 Vercel에 추가하세요.
+                      사용자 목록을 보려면 Supabase 또는 Upstash Redis 중 하나를 연동해야 합니다.
                     </div>
-                    <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 8, padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--c-tx-65)" }}>
-                      <div>UPSTASH_REDIS_REST_URL=https://xxx.upstash.io</div>
-                      <div>UPSTASH_REDIS_REST_TOKEN=your_token_here</div>
+
+                    {/* Supabase 안내 */}
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#4ECCA3", marginBottom: 6 }}>▸ Supabase (권장 · 무료)</div>
+                      <div style={{ fontSize: 11, color: "var(--c-tx-50)", marginBottom: 6, lineHeight: 1.7 }}>
+                        1. <strong style={{ color: "var(--c-tx-70)" }}>supabase.com</strong>에서 프로젝트 생성<br/>
+                        2. SQL Editor에서 실행:
+                      </div>
+                      <div style={{ background: "rgba(0,0,0,0.35)", borderRadius: 7, padding: "8px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#4ECCA3", marginBottom: 6 }}>
+                        {`CREATE TABLE hll_users (\n  email text PRIMARY KEY,\n  name text, provider text, avatar text,\n  last_seen bigint DEFAULT 0,\n  tier text DEFAULT 'basic'\n);`}
+                      </div>
+                      <div style={{ fontSize: 11, color: "var(--c-tx-50)", marginBottom: 4 }}>
+                        3. Project Settings → API → 아래 값을 Vercel 환경변수에 추가:
+                      </div>
+                      <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 7, padding: "8px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--c-tx-65)" }}>
+                        <div>SUPABASE_URL=https://xxxx.supabase.co</div>
+                        <div>SUPABASE_SERVICE_KEY=eyJhbGci...</div>
+                      </div>
+                    </div>
+
+                    {/* Upstash 안내 */}
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#60A5FA", marginBottom: 6 }}>▸ Upstash Redis (대안)</div>
+                      <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 7, padding: "8px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--c-tx-65)" }}>
+                        <div>UPSTASH_REDIS_REST_URL=https://xxx.upstash.io</div>
+                        <div>UPSTASH_REDIS_REST_TOKEN=your_token</div>
+                      </div>
                     </div>
                   </div>
                 )}
