@@ -1,4 +1,5 @@
 import { createHmac } from "crypto";
+import { rcall } from "./_redis.js";
 
 export const config = { api: { bodyParser: { sizeLimit: "4mb" } } };
 
@@ -15,17 +16,22 @@ function verifyToken(token) {
   return payload;
 }
 
-function getUserTier(email, userId) {
-  const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+async function getUserTier(email, userId) {
+  const adminEmails   = (process.env.ADMIN_EMAILS   || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
   const blockedEmails = (process.env.BLOCKED_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
   let userTiers = {};
   try { userTiers = JSON.parse(process.env.USER_TIERS || "{}"); } catch {}
 
-  const e = (email || "").toLowerCase();
+  const e  = (email  || "").toLowerCase();
   const id = (userId || "").toLowerCase();
 
-  if (adminEmails.includes(e) || adminEmails.includes(id)) return "admin";
+  if (adminEmails.includes(e)   || adminEmails.includes(id))   return "admin";
   if (blockedEmails.includes(e) || blockedEmails.includes(id)) return "blocked";
+
+  // Redis tier override
+  const redisTier = await rcall("get", `hll:tier:${e}`);
+  if (redisTier) return redisTier;
+
   return userTiers[e] || userTiers[id] || userTiers[email] || userTiers[userId] || "basic";
 }
 
@@ -43,7 +49,7 @@ export default async function handler(req, res) {
   let tier = "basic";
   try {
     const payload = verifyToken(authHeader);
-    tier = getUserTier(payload.email, payload.id);
+    tier = await getUserTier(payload.email, payload.id);
   } catch {
     return res.status(401).json({ error: { message: "인증 토큰이 유효하지 않습니다. 다시 로그인해주세요." } });
   }

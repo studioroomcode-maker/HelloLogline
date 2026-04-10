@@ -1,4 +1,5 @@
 import { createHmac } from "crypto";
+import { rcall } from "../_redis.js";
 
 const SECRET = (process.env.JWT_SECRET || "hll-jwt-fallback-secret").trim();
 
@@ -13,26 +14,33 @@ function verifyToken(token) {
   return payload;
 }
 
-function getUserTier(email, userId) {
-  const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
+async function getUserTier(email, userId) {
+  const adminEmails  = (process.env.ADMIN_EMAILS  || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
   const blockedEmails = (process.env.BLOCKED_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
-  let userTiers = {};
-  try { userTiers = JSON.parse(process.env.USER_TIERS || "{}"); } catch {}
 
-  const e = (email || "").toLowerCase();
+  const e  = (email  || "").toLowerCase();
   const id = (userId || "").toLowerCase();
 
-  if (adminEmails.includes(e) || adminEmails.includes(id)) return "admin";
+  // Env-var admins/blocked override everything
+  if (adminEmails.includes(e)  || adminEmails.includes(id))  return "admin";
   if (blockedEmails.includes(e) || blockedEmails.includes(id)) return "blocked";
+
+  // Redis tier override (set by admin panel)
+  const redisTier = await rcall("get", `hll:tier:${e}`);
+  if (redisTier) return redisTier;
+
+  // Fall back to USER_TIERS env var
+  let userTiers = {};
+  try { userTiers = JSON.parse(process.env.USER_TIERS || "{}"); } catch {}
   return userTiers[e] || userTiers[id] || userTiers[email] || userTiers[userId] || "basic";
 }
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const auth = req.headers.authorization;
   if (!auth?.startsWith("Bearer ")) return res.status(401).json({ error: "No token" });
   try {
     const payload = verifyToken(auth.slice(7));
-    const tier = getUserTier(payload.email, payload.id);
+    const tier = await getUserTier(payload.email, payload.id);
     res.json({
       user: {
         id: payload.id,

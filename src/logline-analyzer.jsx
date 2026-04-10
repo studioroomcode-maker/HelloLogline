@@ -714,6 +714,10 @@ export default function LoglineAnalyzer() {
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
+  const [adminRedisOk, setAdminRedisOk] = useState(true);
+  const [tierSaving, setTierSaving] = useState({});
 
   // ── Toast notifications ──
   const [toasts, setToasts] = useState([]);
@@ -841,6 +845,43 @@ export default function LoglineAnalyzer() {
       .catch(() => checkHealth("/health"))
       .catch(() => { if (!apiKey && localStorage.getItem("logline_visited")) setShowApiKeyModal(true); });
   }, []);
+
+  // ── Admin: fetch users when panel opens ──
+  useEffect(() => {
+    if (!showAdminPanel || !isAdmin) return;
+    setAdminUsersLoading(true);
+    const token = localStorage.getItem("hll_auth_token");
+    fetch("/api/admin/users", { headers: { "x-auth-token": token || "" } })
+      .then(r => r.json())
+      .then(d => {
+        setAdminRedisOk(d.configured !== false);
+        setAdminUsers(d.users || []);
+      })
+      .catch(() => setAdminUsers([]))
+      .finally(() => setAdminUsersLoading(false));
+  }, [showAdminPanel]);
+
+  const handleSetTier = async (email, newTier) => {
+    setTierSaving(prev => ({ ...prev, [email]: true }));
+    try {
+      const token = localStorage.getItem("hll_auth_token");
+      const r = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-auth-token": token || "" },
+        body: JSON.stringify({ email, tier: newTier }),
+      });
+      if (r.ok) {
+        setAdminUsers(prev => prev.map(u => u.email === email ? { ...u, tier: newTier } : u));
+        showToast("success", `${email} → ${newTier} 변경 완료`);
+      } else {
+        showToast("error", "등급 변경에 실패했습니다.");
+      }
+    } catch {
+      showToast("error", "네트워크 오류가 발생했습니다.");
+    } finally {
+      setTierSaving(prev => ({ ...prev, [email]: false }));
+    }
+  };
 
   // ── Auto-save helper ──
   const collectProjectSnapshot = () => ({
@@ -4926,65 +4967,152 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
       {/* ─── Admin Panel Modal ─── */}
       {showAdminPanel && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? 16 : 24 }} onClick={() => setShowAdminPanel(false)}>
-          <div onClick={e => e.stopPropagation()} style={{ maxWidth: 560, width: "100%", background: "var(--bg-surface)", border: "1px solid rgba(200,168,75,0.35)", borderRadius: 20, padding: isMobile ? "24px 20px" : "32px 36px", overflowY: "auto", maxHeight: "88vh", fontFamily: "'Noto Sans KR', sans-serif" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "#C8A84B" }}>관리자 패널</div>
+        <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? 12 : 24 }} onClick={() => setShowAdminPanel(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ maxWidth: 620, width: "100%", background: "var(--bg-surface)", border: "1px solid rgba(200,168,75,0.35)", borderRadius: 20, overflowY: "auto", maxHeight: "90vh", fontFamily: "'Noto Sans KR', sans-serif", display: "flex", flexDirection: "column" }}>
+
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 16px", borderBottom: "1px solid var(--c-bd-2)", flexShrink: 0 }}>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "#C8A84B" }}>관리자 패널</div>
               <button onClick={() => setShowAdminPanel(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--c-tx-35)", padding: 4 }}>
                 <SvgIcon d={ICON.close} size={18} />
               </button>
             </div>
 
-            {/* 등급 안내 */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-35)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>사용자 등급 체계</div>
-              {[
-                { tier: "admin", label: "관리자", color: "#C8A84B", desc: "모든 기능 무제한, 서버 API 키 사용" },
-                { tier: "pro", label: "프리미엄", color: "#60A5FA", desc: "전체 8단계 기능 사용 가능" },
-                { tier: "basic", label: "기본", color: "var(--c-tx-35)", desc: "Stage 1 (로그라인 분석)만 사용 가능" },
-                { tier: "blocked", label: "차단", color: "#E85D75", desc: "API 접근 완전 차단" },
-              ].map(({ tier: t, label, color, desc }) => (
-                <div key={t} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(255,255,255,0.03)", marginBottom: 6 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color, fontFamily: "'JetBrains Mono', monospace", minWidth: 48 }}>{label}</span>
-                  <span style={{ fontSize: 12, color: "var(--c-tx-55)" }}>{desc}</span>
+            <div style={{ padding: "20px 24px", flex: 1, overflowY: "auto" }}>
+
+              {/* ── 사용자 목록 ── */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-35)", textTransform: "uppercase", letterSpacing: 1 }}>
+                    로그인 사용자 목록
+                  </div>
+                  <button
+                    onClick={() => {
+                      setAdminUsersLoading(true);
+                      const token = localStorage.getItem("hll_auth_token");
+                      fetch("/api/admin/users", { headers: { "x-auth-token": token || "" } })
+                        .then(r => r.json())
+                        .then(d => { setAdminRedisOk(d.configured !== false); setAdminUsers(d.users || []); })
+                        .catch(() => setAdminUsers([]))
+                        .finally(() => setAdminUsersLoading(false));
+                    }}
+                    style={{ fontSize: 10, color: "var(--c-tx-35)", background: "transparent", border: "1px solid var(--c-bd-3)", borderRadius: 6, padding: "3px 8px", cursor: "pointer" }}
+                  >
+                    새로고침
+                  </button>
                 </div>
-              ))}
-            </div>
 
-            {/* 등급 설정 방법 */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-35)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>등급 설정 방법</div>
-              <div style={{ fontSize: 12, color: "var(--c-tx-60)", lineHeight: 1.8, marginBottom: 10 }}>
-                Vercel 대시보드 → Settings → Environment Variables에서 아래 환경변수를 설정하세요.
-              </div>
-              <div style={{ background: "rgba(0,0,0,0.35)", borderRadius: 10, padding: "12px 14px", marginBottom: 12, fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>
-                <div style={{ color: "var(--c-tx-40)", marginBottom: 4 }}># 관리자 이메일 (콤마 구분)</div>
-                <div style={{ color: "#C8A84B" }}>ADMIN_EMAILS=<span style={{ color: "var(--c-tx-70)" }}>admin@example.com,admin2@example.com</span></div>
-              </div>
-              <div style={{ background: "rgba(0,0,0,0.35)", borderRadius: 10, padding: "12px 14px", marginBottom: 12, fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>
-                <div style={{ color: "var(--c-tx-40)", marginBottom: 4 }}># 차단 이메일 (콤마 구분)</div>
-                <div style={{ color: "#E85D75" }}>BLOCKED_EMAILS=<span style={{ color: "var(--c-tx-70)" }}>spam@example.com</span></div>
-              </div>
-              <div style={{ background: "rgba(0,0,0,0.35)", borderRadius: 10, padding: "12px 14px", fontFamily: "'JetBrains Mono', monospace", fontSize: 11 }}>
-                <div style={{ color: "var(--c-tx-40)", marginBottom: 4 }}># 사용자별 등급 (JSON)</div>
-                <div style={{ color: "#60A5FA" }}>USER_TIERS=<span style={{ color: "var(--c-tx-70)" }}>{`{"user@email.com":"pro","other@email.com":"blocked"}`}</span></div>
-              </div>
-            </div>
+                {/* Redis 미설정 안내 */}
+                {!adminRedisOk && !adminUsersLoading && (
+                  <div style={{ background: "rgba(200,168,75,0.06)", border: "1px solid rgba(200,168,75,0.2)", borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#C8A84B", marginBottom: 8 }}>Upstash Redis 연동 필요</div>
+                    <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.8, marginBottom: 12 }}>
+                      사용자 목록을 보려면 Upstash Redis를 연동해야 합니다.<br/>
+                      <strong style={{ color: "var(--c-tx-70)" }}>upstash.com</strong>에서 무료 Redis DB를 만들고 아래 환경변수를 Vercel에 추가하세요.
+                    </div>
+                    <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 8, padding: "10px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--c-tx-65)" }}>
+                      <div>UPSTASH_REDIS_REST_URL=https://xxx.upstash.io</div>
+                      <div>UPSTASH_REDIS_REST_TOKEN=your_token_here</div>
+                    </div>
+                  </div>
+                )}
 
-            {/* 현재 등급 */}
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-35)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>내 계정</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: "rgba(200,168,75,0.06)", border: "1px solid rgba(200,168,75,0.2)" }}>
-                {user.avatar ? <img src={user.avatar} alt="" style={{ width: 28, height: 28, borderRadius: "50%" }} /> : <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(200,168,75,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#C8A84B" }}>{user.name?.[0] || "?"}</div>}
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-main)" }}>{user.name}</div>
-                  <div style={{ fontSize: 11, color: "var(--c-tx-45)" }}>{user.email} · <span style={{ color: "#C8A84B", fontWeight: 700 }}>{TIER_LABEL[tier]}</span></div>
-                </div>
-              </div>
-            </div>
+                {/* 로딩 */}
+                {adminUsersLoading && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "20px 0", color: "var(--c-tx-35)", fontSize: 13 }}>
+                    <Spinner size={14} /> 사용자 목록 불러오는 중...
+                  </div>
+                )}
 
-            <div style={{ fontSize: 11, color: "var(--c-tx-30)", lineHeight: 1.7 }}>
-              * 등급 변경 후 사용자가 재로그인하면 즉시 반영됩니다.
+                {/* 사용자 없음 */}
+                {!adminUsersLoading && adminRedisOk && adminUsers.length === 0 && (
+                  <div style={{ padding: "20px 0", color: "var(--c-tx-30)", fontSize: 13, textAlign: "center" }}>
+                    아직 로그인한 사용자가 없습니다.
+                  </div>
+                )}
+
+                {/* 사용자 목록 */}
+                {!adminUsersLoading && adminUsers.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {adminUsers.map(u => {
+                      const uTier = u.tier || "basic";
+                      const uColor = TIER_COLOR[uTier] || "var(--c-tx-35)";
+                      const isSelf = u.email === user?.email;
+                      return (
+                        <div key={u.email} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: isSelf ? "rgba(200,168,75,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${isSelf ? "rgba(200,168,75,0.2)" : "var(--c-bd-2)"}` }}>
+                          {/* Avatar */}
+                          {u.avatar ? (
+                            <img src={u.avatar} alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                          ) : (
+                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(96,165,250,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#60A5FA", flexShrink: 0 }}>
+                              {u.name?.[0] || "?"}
+                            </div>
+                          )}
+                          {/* Info */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-main)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {u.name || u.email}
+                              {isSelf && <span style={{ marginLeft: 6, fontSize: 9, color: "#C8A84B", fontWeight: 700 }}>나</span>}
+                            </div>
+                            <div style={{ fontSize: 11, color: "var(--c-tx-40)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {u.email}
+                              {u.provider && <span style={{ marginLeft: 6, fontSize: 9, color: "var(--c-tx-25)", fontFamily: "'JetBrains Mono', monospace" }}>{u.provider}</span>}
+                            </div>
+                          </div>
+                          {/* Tier select */}
+                          <div style={{ position: "relative", flexShrink: 0 }}>
+                            {tierSaving[u.email] ? (
+                              <Spinner size={14} color={uColor} />
+                            ) : (
+                              <select
+                                value={uTier}
+                                disabled={isSelf}
+                                onChange={e => handleSetTier(u.email, e.target.value)}
+                                style={{
+                                  appearance: "none", WebkitAppearance: "none",
+                                  padding: "4px 24px 4px 10px",
+                                  borderRadius: 8, border: `1px solid ${uColor}55`,
+                                  background: `${uColor}11`,
+                                  color: uColor,
+                                  fontSize: 11, fontWeight: 700,
+                                  fontFamily: "'JetBrains Mono', monospace",
+                                  cursor: isSelf ? "not-allowed" : "pointer",
+                                  opacity: isSelf ? 0.5 : 1,
+                                }}
+                              >
+                                <option value="basic">기본</option>
+                                <option value="pro">프리미엄</option>
+                                <option value="admin">관리자</option>
+                                <option value="blocked">차단</option>
+                              </select>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* ── 등급 안내 ── */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-35)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>등급 체계</div>
+                {[
+                  { t: "admin", label: "관리자", color: "#C8A84B", desc: "모든 기능 무제한, 서버 API 키 사용" },
+                  { t: "pro", label: "프리미엄", color: "#60A5FA", desc: "전체 8단계 기능 사용 가능" },
+                  { t: "basic", label: "기본", color: "var(--c-tx-35)", desc: "Stage 1만 또는 자기 API 키로 전체 이용" },
+                  { t: "blocked", label: "차단", color: "#E85D75", desc: "API 접근 완전 차단" },
+                ].map(({ t, label, color, desc }) => (
+                  <div key={t} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 7, background: "rgba(255,255,255,0.02)", marginBottom: 4 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color, fontFamily: "'JetBrains Mono', monospace", minWidth: 44 }}>{label}</span>
+                    <span style={{ fontSize: 11, color: "var(--c-tx-45)" }}>{desc}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ fontSize: 11, color: "var(--c-tx-28)", lineHeight: 1.7 }}>
+                * 등급 변경은 즉시 저장됩니다. 대상자가 재로그인 시 반영됩니다.
+              </div>
             </div>
           </div>
         </div>

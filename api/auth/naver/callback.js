@@ -1,4 +1,5 @@
 import { createHmac } from "crypto";
+import { rcall } from "../../_redis.js";
 
 const SECRET = (process.env.JWT_SECRET || "hll-jwt-fallback-secret").trim();
 
@@ -60,6 +61,13 @@ export default async function handler(req, res) {
     };
 
     const token = issueToken(user);
+    if (user.email) {
+      const info = JSON.stringify({ name: user.name, provider: user.provider, avatar: user.avatar, lastSeen: Date.now() });
+      await Promise.all([
+        rcall("sadd", "hll:users", user.email.toLowerCase()),
+        rcall("set", `hll:user:${user.email.toLowerCase()}`, info),
+      ]);
+    }
     res.redirect(`${frontendBase}/?auth_token=${token}`);
   } catch (err) {
     console.error("[Naver callback]", err.message);
