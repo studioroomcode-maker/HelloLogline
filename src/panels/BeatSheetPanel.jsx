@@ -14,6 +14,25 @@ export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expan
   // 진행률 계산
   const completedCount = Object.keys(beatScenes).length;
 
+  // 감정 강도 매핑 (−5 ~ +5)
+  const BEAT_EMOTION = {
+    "Opening Image":          -2,
+    "Theme Stated":            0,
+    "Set-Up":                 -1,
+    "Catalyst":               +2,
+    "Debate":                 -2,
+    "Break Into Two":         +2,
+    "B Story":                +1,
+    "Fun and Games":          +3,
+    "Midpoint":               +2,
+    "Bad Guys Close In":      -2,
+    "All Is Lost":            -5,
+    "Dark Night of the Soul": -4,
+    "Break Into Three":       +2,
+    "Finale":                 +4,
+    "Final Image":            +3,
+  };
+
   const BEAT_WRITER_ACTIONS = {
     "Opening Image":    "첫 이미지는 마지막 이미지와 정확히 대비되어야 합니다. 주인공의 변화 전 세계를 한 컷으로 보여주세요. 대사 없이 톤이 전달되어야 합니다.",
     "Theme Stated":     "아직 이해하지 못할 조언이 여기서 나옵니다. 주인공이 결말에서 깨달을 진실을 지금은 흘려듣게 하세요.",
@@ -62,6 +81,78 @@ export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expan
       <div style={{ height: 4, borderRadius: 2, background: "var(--c-bd-1)", marginBottom: 18, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${beats.length ? (completedCount / beats.length) * 100 : 0}%`, background: "linear-gradient(90deg, #4ECCA3, #45B7D1)", borderRadius: 2, transition: "width 0.5s ease" }} />
       </div>
+
+      {/* 감정 아크 그래프 */}
+      {beats.length >= 3 && (() => {
+        const W = 560, H = 100, PX = 28, PY = 12;
+        const innerW = W - PX * 2, innerH = H - PY * 2;
+        const points = beats.map((b, i) => {
+          const emo = BEAT_EMOTION[b.name_en] ?? 0;
+          const x = PX + (i / (beats.length - 1)) * innerW;
+          const y = PY + ((5 - emo) / 10) * innerH;
+          return { x, y, emo, beat: b };
+        });
+
+        // 부드러운 bezier 경로 생성
+        const pathD = points.reduce((acc, pt, i) => {
+          if (i === 0) return `M ${pt.x} ${pt.y}`;
+          const prev = points[i - 1];
+          const cpX = (prev.x + pt.x) / 2;
+          return `${acc} C ${cpX} ${prev.y}, ${cpX} ${pt.y}, ${pt.x} ${pt.y}`;
+        }, "");
+
+        // 채우기용 닫힌 경로
+        const fillD = `${pathD} L ${points[points.length - 1].x} ${PY + innerH / 2} L ${points[0].x} ${PY + innerH / 2} Z`;
+
+        const zeroY = PY + (5 / 10) * innerH;
+
+        return (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 10, color: "var(--c-tx-30)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, marginBottom: 6, textTransform: "uppercase" }}>Emotional Arc</div>
+            <div style={{ position: "relative", width: "100%", overflow: "hidden", borderRadius: 10, border: "1px solid var(--c-bd-1)", background: "rgba(var(--tw),0.01)", padding: "0 0 4px" }}>
+              <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", display: "block" }} preserveAspectRatio="none">
+                {/* 기준선 (감정 0) */}
+                <line x1={PX} y1={zeroY} x2={W - PX} y2={zeroY} stroke="rgba(255,255,255,0.07)" strokeWidth={1} strokeDasharray="4 3" />
+                {/* y축 레이블 */}
+                {[5, 0, -5].map(v => {
+                  const ly = PY + ((5 - v) / 10) * innerH;
+                  return (
+                    <text key={v} x={PX - 4} y={ly + 3.5} fontSize={7} textAnchor="end" fill="rgba(255,255,255,0.2)" fontFamily="monospace">{v > 0 ? `+${v}` : v}</text>
+                  );
+                })}
+                {/* 채우기 */}
+                <defs>
+                  <linearGradient id="emo-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#4ECCA3" stopOpacity="0.15" />
+                    <stop offset="50%" stopColor="#4ECCA3" stopOpacity="0.04" />
+                    <stop offset="100%" stopColor="#E85D75" stopOpacity="0.15" />
+                  </linearGradient>
+                  <linearGradient id="emo-line" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#45B7D1" />
+                    <stop offset="50%" stopColor="#4ECCA3" />
+                    <stop offset="100%" stopColor="#C8A84B" />
+                  </linearGradient>
+                </defs>
+                <path d={fillD} fill="url(#emo-fill)" />
+                {/* 메인 라인 */}
+                <path d={pathD} fill="none" stroke="url(#emo-line)" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+                {/* 비트 점 */}
+                {points.map((pt, i) => (
+                  <g key={i}>
+                    <circle cx={pt.x} cy={pt.y} r={3.5} fill={pt.emo < 0 ? "#E85D75" : pt.emo > 0 ? "#4ECCA3" : "#666"} stroke="var(--bg-page)" strokeWidth={1.2} />
+                    {/* 비트 이름 (짝수만, 공간 확보) */}
+                    {i % 2 === 0 && (
+                      <text x={pt.x} y={H - 2} fontSize={6} textAnchor="middle" fill="rgba(255,255,255,0.25)" fontFamily="monospace" style={{ userSelect: "none" }}>
+                        {pt.beat.name_en?.split(" ").slice(-1)[0] || i + 1}
+                      </text>
+                    )}
+                  </g>
+                ))}
+              </svg>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 비트 카드 목록 */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

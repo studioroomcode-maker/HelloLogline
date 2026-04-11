@@ -240,6 +240,28 @@ export const SubtextSchema = z
   })
   .passthrough();
 
+export const EpisodeSeriesSchema = z
+  .object({
+    series_type: z.string().catch("미니시리즈"),
+    episode_count: z.number().catch(8),
+    season_logline: z.string().catch(""),
+    episodes: z.array(
+      z.object({
+        number: z.union([z.string(), z.number()]).transform(v => Number(v)),
+        title: z.string().catch(""),
+        logline: z.string().catch(""),
+        key_scene: z.string().catch(""),
+        cliffhanger: z.string().optional().catch(undefined),
+      }).passthrough()
+    ).catch([]),
+    series_arc: z.object({
+      season_want: z.string().catch(""),
+      midpoint: z.string().catch(""),
+      finale: z.string().catch(""),
+    }).passthrough().optional().catch(undefined),
+  })
+  .passthrough();
+
 // ─── Stage 5: 트리트먼트/비트 ─────────────────────────────────────────────────
 
 export const BeatSheetSchema = z
@@ -350,5 +372,26 @@ export const EarlyCoverageSchema = z
     key_strengths: z.array(z.string()),   // 강점 2~3개
     key_risks: z.array(z.string()),       // 위험 2~3개
     development_priority: z.string(),     // 지금 당장 보완해야 할 것 1가지
+  })
+  .passthrough();
+
+// ─── 통합 마스터 리포트 ──────────────────────────────────────────────────────
+
+export const MasterReportSchema = z
+  .object({
+    overall_score: z.number().catch(0),
+    production_readiness: z.enum(["READY", "NEAR_READY", "DEVELOPING", "EARLY_STAGE"]).catch("DEVELOPING"),
+    verdict: z.string().catch(""),
+    strengths: z.array(z.string()).catch([]),
+    weaknesses: z.array(z.string()).catch([]),
+    critical_fixes: z.array(z.string()).catch([]),
+    stage_assessments: z.object({
+      logline: z.string().optional().catch(undefined),
+      character: z.string().optional().catch(undefined),
+      story: z.string().optional().catch(undefined),
+      treatment: z.string().optional().catch(undefined),
+      coverage: z.string().optional().catch(undefined),
+    }).passthrough().optional().catch(undefined),
+    next_priority: z.string().catch(""),
   })
   .passthrough();

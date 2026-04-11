@@ -2,6 +2,15 @@ import { useRef, useEffect, Suspense, useState } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import SidebarNavItem from "./SidebarNavItem.jsx";
 
+function DashboardIcon() {
+  return (
+    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+      <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+    </svg>
+  );
+}
+
 // 각 스테이지 설정
 const STAGE_META = [
   { id: "1", title: "로그라인", sub: "한 줄 입력 → 분석", color: "#C8A84B" },
@@ -14,8 +23,30 @@ const STAGE_META = [
   { id: "8", title: "고쳐쓰기", sub: "진단 → 수정 → 개고", color: "#FB923C" },
 ];
 
+const STAGE_ICONS = ["📝","🎭","👤","📖","📋","✍️","📊","🔧"];
+
+function MobileNavTab({ id, icon, label, active, color, status, onClick }) {
+  return (
+    <button onClick={onClick} style={{
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      gap: 2, padding: "6px 10px", minWidth: 52, flexShrink: 0,
+      background: "none", border: "none", cursor: "pointer",
+      borderTop: `2px solid ${active ? color : "transparent"}`,
+      transition: "all 0.15s", fontFamily: "'Noto Sans KR', sans-serif",
+    }}>
+      <span style={{ fontSize: 15, lineHeight: 1 }}>{icon}</span>
+      <span style={{ fontSize: 8, fontWeight: active ? 700 : 400, color: active ? color : "var(--c-tx-35)", whiteSpace: "nowrap" }}>
+        {label}
+      </span>
+      {status === "done" && !active && (
+        <div style={{ width: 3, height: 3, borderRadius: "50%", background: "#4ECCA3", marginTop: 1 }} />
+      )}
+    </button>
+  );
+}
+
 export default function SidebarLayout({ stageProps, isMobile }) {
-  const { currentStage, logline, genre, shareSnapshot, showToast } = useLoglineCtx();
+  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus } = useLoglineCtx();
   const mainPanelRef = useRef(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState(null);
@@ -75,7 +106,30 @@ export default function SidebarLayout({ stageProps, isMobile }) {
           paddingTop: 16,
           paddingBottom: 24,
         }}>
-          <div style={{ paddingLeft: 16, paddingBottom: 12 }}>
+          {/* 대시보드 버튼 */}
+          <div style={{ paddingLeft: 10, paddingRight: 10, paddingBottom: 8 }}>
+            <button
+              onClick={() => setCurrentStage("dashboard")}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 8,
+                padding: "8px 10px", borderRadius: 8, cursor: "pointer",
+                border: currentStage === "dashboard"
+                  ? "1px solid rgba(200,168,75,0.35)"
+                  : "1px solid transparent",
+                background: currentStage === "dashboard"
+                  ? "rgba(200,168,75,0.08)"
+                  : "transparent",
+                color: currentStage === "dashboard" ? "#C8A84B" : "var(--c-tx-40)",
+                fontSize: 11, fontWeight: 700, transition: "all 0.18s",
+                fontFamily: "'Noto Sans KR', sans-serif",
+              }}
+            >
+              <DashboardIcon />
+              대시보드
+            </button>
+          </div>
+
+          <div style={{ paddingLeft: 16, paddingBottom: 8, paddingTop: 4 }}>
             <div style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--c-tx-25)", fontWeight: 700, textTransform: "uppercase" }}>워크플로우</div>
           </div>
           {STAGE_META.map(s => (
@@ -142,6 +196,21 @@ export default function SidebarLayout({ stageProps, isMobile }) {
         </aside>
       )}
 
+      {/* ── 모바일 하단 내비게이션 ── */}
+      {isMobile && (
+        <div style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 900,
+          background: "var(--bg-page)", borderTop: "1px solid var(--c-bd-2)",
+          display: "flex", overflowX: "auto", WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none", paddingBottom: "env(safe-area-inset-bottom)",
+        }}>
+          <MobileNavTab id="dashboard" icon="⊞" label="대시" active={currentStage === "dashboard"} color="#C8A84B" onClick={() => setCurrentStage("dashboard")} />
+          {STAGE_META.map((s, i) => (
+            <MobileNavTab key={s.id} id={s.id} icon={STAGE_ICONS[i]} label={s.title.slice(0,4)} active={currentStage === s.id} color={s.color} status={getStageStatus(s.id)} onClick={() => setCurrentStage(s.id)} />
+          ))}
+        </div>
+      )}
+
       {/* ── 메인 패널 ── */}
       <main
         ref={mainPanelRef}
@@ -149,6 +218,7 @@ export default function SidebarLayout({ stageProps, isMobile }) {
           flex: 1,
           minWidth: 0,
           padding: isMobile ? "20px 16px" : "28px 32px",
+          paddingBottom: isMobile ? "80px" : undefined,
           maxWidth: isMobile ? "100%" : 780,
         }}
       >

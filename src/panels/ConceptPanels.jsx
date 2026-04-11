@@ -15,12 +15,22 @@ export function ExpertPanelSection({ data, isMobile }) {
       background: `${expert.color}22`,
       border: `1.5px solid ${expert.color}55`,
       display: "flex", alignItems: "center", justifyContent: "center",
-      flexShrink: 0,
+      flexShrink: 0, overflow: "hidden",
       fontSize: size < 30 ? 9 : 11,
       fontWeight: 700, color: expert.color,
       fontFamily: "'JetBrains Mono', monospace",
     }}>
-      {expert.initial}
+      {expert.image ? (
+        <img
+          src={expert.image}
+          alt={expert.name}
+          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }}
+          onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.nextSibling.style.display = "flex"; }}
+        />
+      ) : null}
+      <span style={{ display: expert.image ? "none" : "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+        {expert.initial}
+      </span>
     </div>
   );
 

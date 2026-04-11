@@ -226,94 +226,108 @@ export function GuideTooltip({ criterionKey }) {
 }
 
 // ─────────────────────────────────────────────
-// 레이더 차트 SVG
+// 레이더 차트 SVG (13축, 섹션별 색상)
 // ─────────────────────────────────────────────
+const RADAR_SECTION_COLORS = {
+  structure:  "#4ECCA3",
+  expression: "#45B7D1",
+  technical:  "#FB923C",
+};
+
 export function RadarChart({ data, size = 280 }) {
   const cx = size / 2;
   const cy = size / 2;
-  const r = size * 0.38;
+  const r = size * 0.34;
   const n = data.length;
   const angleStep = 360 / n;
-  const gridLevels = [0.2, 0.4, 0.6, 0.8, 1.0];
+  const gridLevels = [0.25, 0.5, 0.75, 1.0];
 
   function polarToCart(angle, radius) {
     const a = ((angle - 90) * Math.PI) / 180;
     return { x: cx + radius * Math.cos(a), y: cy + radius * Math.sin(a) };
   }
 
-  const points = data
-    .map((d, i) => {
-      const p = polarToCart(i * angleStep, r * d.value);
-      return `${p.x},${p.y}`;
-    })
-    .join(" ");
+  const polyPoints = data.map((d, i) => {
+    const p = polarToCart(i * angleStep, r * Math.max(0.04, d.value));
+    return `${p.x},${p.y}`;
+  }).join(" ");
+
+  // 섹션별 부분 채우기 경로 (섹션이 있을 때)
+  const hasSections = data.some(d => d.section);
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} style={{ width: "100%", maxWidth: size }}>
-      {gridLevels.map((lv, li) => (
-        <polygon
-          key={li}
-          fill="none"
-          stroke="var(--c-bd-3)"
-          strokeWidth={li === 4 ? 1.5 : 0.5}
-          points={Array.from({ length: n }, (_, i) => {
-            const p = polarToCart(i * angleStep, r * lv);
-            return `${p.x},${p.y}`;
-          }).join(" ")}
-        />
-      ))}
-      {data.map((_, i) => {
-        const p = polarToCart(i * angleStep, r);
-        return (
-          <line
-            key={i}
-            x1={cx}
-            y1={cy}
-            x2={p.x}
-            y2={p.y}
-            stroke="var(--c-bd-1)"
-            strokeWidth={0.5}
-          />
-        );
-      })}
-      <polygon
-        points={points}
-        fill="rgba(78,204,163,0.18)"
-        stroke="#4ECCA3"
-        strokeWidth={2}
-      />
-      {data.map((d, i) => {
-        const p = polarToCart(i * angleStep, r * d.value);
-        return (
-          <circle
-            key={i}
-            cx={p.x}
-            cy={p.y}
-            r={3.5}
-            fill="#4ECCA3"
-            stroke="#1a1a2e"
-            strokeWidth={1.5}
-          />
-        );
-      })}
-      {data.map((d, i) => {
-        const p = polarToCart(i * angleStep, r + 22);
-        return (
-          <text
-            key={i}
-            x={p.x}
-            y={p.y}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill="var(--c-tx-65)"
-            fontSize={10}
-            fontFamily="'Noto Sans KR', sans-serif"
-          >
-            {d.label}
-          </text>
-        );
-      })}
-    </svg>
+    <div>
+      <svg viewBox={`0 0 ${size} ${size}`} style={{ width: "100%", maxWidth: size }}>
+        {/* 그리드 */}
+        {gridLevels.map((lv, li) => (
+          <polygon key={li} fill="none" stroke="var(--c-bd-3)"
+            strokeWidth={li === 3 ? 1.2 : 0.4}
+            points={Array.from({ length: n }, (_, i) => {
+              const p = polarToCart(i * angleStep, r * lv);
+              return `${p.x},${p.y}`;
+            }).join(" ")} />
+        ))}
+        {/* 축선 */}
+        {data.map((d, i) => {
+          const p = polarToCart(i * angleStep, r);
+          const color = hasSections ? (RADAR_SECTION_COLORS[d.section] || "var(--c-bd-1)") : "var(--c-bd-1)";
+          return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke={color} strokeWidth={0.4} strokeOpacity={0.4} />;
+        })}
+        {/* 메인 폴리곤 */}
+        <polygon points={polyPoints} fill="rgba(78,204,163,0.12)" stroke="#4ECCA3" strokeWidth={1.5} strokeOpacity={0.8} />
+        {/* 데이터 점 + 스코어 레이블 */}
+        {data.map((d, i) => {
+          const p = polarToCart(i * angleStep, r * Math.max(0.04, d.value));
+          const color = hasSections ? (RADAR_SECTION_COLORS[d.section] || "#4ECCA3") : "#4ECCA3";
+          // 텍스트 앵커 방향 계산
+          const angle = i * angleStep;
+          const anchor = angle > 15 && angle < 165 ? "start" : angle > 195 && angle < 345 ? "end" : "middle";
+          const scoreText = d.rawScore !== undefined ? `${d.rawScore}` : null;
+          const scorePt = polarToCart(i * angleStep, r * Math.max(0.04, d.value) + (d.value > 0.7 ? -11 : 11));
+          return (
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r={3} fill={color} stroke="var(--bg-page)" strokeWidth={1} />
+              {scoreText && (
+                <text x={scorePt.x} y={scorePt.y} textAnchor={anchor} dominantBaseline="middle"
+                  fontSize={7} fill={color} fontFamily="'JetBrains Mono', monospace"
+                  style={{ userSelect: "none" }}>
+                  {scoreText}
+                </text>
+              )}
+            </g>
+          );
+        })}
+        {/* 축 레이블 */}
+        {data.map((d, i) => {
+          const p = polarToCart(i * angleStep, r + (size < 240 ? 16 : 20));
+          const color = hasSections ? (RADAR_SECTION_COLORS[d.section] || "var(--c-tx-55)") : "var(--c-tx-65)";
+          const angle = i * angleStep;
+          const anchor = angle > 15 && angle < 165 ? "start" : angle > 195 && angle < 345 ? "end" : "middle";
+          return (
+            <text key={i} x={p.x} y={p.y} textAnchor={anchor} dominantBaseline="middle"
+              fill={color} fontSize={size < 240 ? 8 : 9} fontFamily="'Noto Sans KR', sans-serif"
+              style={{ userSelect: "none" }}>
+              {d.label}
+            </text>
+          );
+        })}
+      </svg>
+      {/* 섹션 범례 */}
+      {hasSections && (
+        <div style={{ display: "flex", justifyContent: "center", gap: 14, marginTop: 4 }}>
+          {[
+            { key: "structure",  label: "구조" },
+            { key: "expression", label: "표현" },
+            { key: "technical",  label: "기술" },
+          ].map(({ key, label }) => (
+            <div key={key} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: RADAR_SECTION_COLORS[key] }} />
+              <span style={{ fontSize: 9, color: RADAR_SECTION_COLORS[key], fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

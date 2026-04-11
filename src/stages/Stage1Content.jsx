@@ -85,13 +85,22 @@ export default function Stage1Content({
   const interestScore2 = calcSectionTotal(result2, "interest");
 
   const radarData = result ? [
-    { label: "구조", value: structureTotal / 50 },
-    { label: "아이러니", value: (result.expression?.irony?.score || 0) / 10 },
-    { label: "심상", value: (result.expression?.mental_picture?.score || 0) / 8 },
-    { label: "감정", value: (result.expression?.emotional_hook?.score || 0) / 7 },
-    { label: "독창성", value: (result.expression?.originality?.score || 0) / 5 },
-    { label: "간결성", value: (result.technical?.conciseness?.score || 0) / 8 },
-    { label: "흥미", value: interestScore / 100 },
+    // 구조 (5항목, 각 /10)
+    { label: "주인공",  section: "structure",  rawScore: result.structure?.protagonist?.score       || 0, rawMax: 10, value: (result.structure?.protagonist?.score       || 0) / 10 },
+    { label: "촉발사건",section: "structure",  rawScore: result.structure?.inciting_incident?.score || 0, rawMax: 10, value: (result.structure?.inciting_incident?.score || 0) / 10 },
+    { label: "목표",    section: "structure",  rawScore: result.structure?.goal?.score              || 0, rawMax: 10, value: (result.structure?.goal?.score              || 0) / 10 },
+    { label: "갈등",    section: "structure",  rawScore: result.structure?.conflict?.score          || 0, rawMax: 10, value: (result.structure?.conflict?.score          || 0) / 10 },
+    { label: "스테이크",section: "structure",  rawScore: result.structure?.stakes?.score            || 0, rawMax: 10, value: (result.structure?.stakes?.score            || 0) / 10 },
+    // 표현 (4항목)
+    { label: "아이러니",section: "expression", rawScore: result.expression?.irony?.score            || 0, rawMax: 10, value: (result.expression?.irony?.score            || 0) / 10 },
+    { label: "심상",    section: "expression", rawScore: result.expression?.mental_picture?.score   || 0, rawMax: 8,  value: (result.expression?.mental_picture?.score   || 0) / 8  },
+    { label: "감정공명",section: "expression", rawScore: result.expression?.emotional_hook?.score   || 0, rawMax: 7,  value: (result.expression?.emotional_hook?.score   || 0) / 7  },
+    { label: "독창성",  section: "expression", rawScore: result.expression?.originality?.score      || 0, rawMax: 5,  value: (result.expression?.originality?.score      || 0) / 5  },
+    // 기술 (4항목)
+    { label: "간결성",  section: "technical",  rawScore: result.technical?.conciseness?.score       || 0, rawMax: 8,  value: (result.technical?.conciseness?.score       || 0) / 8  },
+    { label: "능동언어",section: "technical",  rawScore: result.technical?.active_language?.score   || 0, rawMax: 5,  value: (result.technical?.active_language?.score   || 0) / 5  },
+    { label: "금기사항",section: "technical",  rawScore: result.technical?.no_violations?.score     || 0, rawMax: 3,  value: (result.technical?.no_violations?.score     || 0) / 3  },
+    { label: "장르톤",  section: "technical",  rawScore: result.technical?.genre_tone?.score        || 0, rawMax: 4,  value: (result.technical?.genre_tone?.score        || 0) / 4  },
   ] : [];
 
   const tabs = [

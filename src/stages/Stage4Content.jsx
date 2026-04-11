@@ -99,6 +99,7 @@ export default function Stage4Content({
   pipelineFeedback, setPipelineFeedback,
   refinePipelineSynopsis, pipelineRefineLoading,
   undoHistory,
+  episodeDesignResult, episodeDesignLoading, episodeDesignError, generateEpisodeDesign,
 }) {
   const { logline, isMobile, cc, getStageStatus, advanceToStage, showToast, apiKey, openApplicationDoc } = useLoglineCtx();
 
@@ -106,13 +107,38 @@ export default function Stage4Content({
     <ErrorBoundary><div>
 
     {/* ── 단계 안내 ── */}
-    <div style={{ marginBottom: 18, padding: "12px 16px", borderRadius: 10, background: "rgba(78,204,163,0.05)", border: "1px solid rgba(78,204,163,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
+    <div style={{ marginBottom: charDevResult ? 12 : 18, padding: "12px 16px", borderRadius: 10, background: "rgba(78,204,163,0.05)", border: "1px solid rgba(78,204,163,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
       <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>🗺️</span>
       <div style={{ fontSize: 12, color: "var(--c-tx-50)", lineHeight: 1.65 }}>
         <strong style={{ color: "rgba(78,204,163,0.9)" }}>이야기의 뼈대와 방향을 확정하는 단계입니다.</strong>{" "}
         먼저 3막 구조를 분석해 플롯 포인트를 잡고, 이야기가 담을 테마를 정합니다. 여러 방향의 시놉시스를 생성한 뒤 하나를 선택하면 이후 단계의 기준이 됩니다.
       </div>
     </div>
+
+    {/* ── 캐릭터 컨텍스트 반영 배너 ── */}
+    {charDevResult && (
+      <div style={{
+        marginBottom: 18, padding: "10px 14px", borderRadius: 9,
+        background: "rgba(251,146,60,0.05)", border: "1px solid rgba(251,146,60,0.2)",
+        display: "flex", alignItems: "center", gap: 10,
+      }}>
+        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#FB923C" strokeWidth={2} strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <div style={{ flex: 1 }}>
+          <span style={{ fontSize: 11, color: "#FB923C", fontWeight: 700 }}>캐릭터 컨텍스트 반영됨</span>
+          <span style={{ fontSize: 11, color: "var(--c-tx-45)", marginLeft: 8 }}>
+            {charDevResult.protagonist?.name_suggestion && (
+              <>{charDevResult.protagonist.name_suggestion}의 Want·Need·Arc가 시놉시스 파이프라인에 포함됩니다.</>
+            )}
+            {!charDevResult.protagonist?.name_suggestion && "Stage 3 캐릭터 데이터가 시놉시스 생성에 자동 반영됩니다."}
+          </span>
+        </div>
+        {charDevResult.supporting_characters?.length > 0 && (
+          <span style={{ fontSize: 10, color: "rgba(251,146,60,0.5)", whiteSpace: "nowrap" }}>
+            +조연 {charDevResult.supporting_characters.length}명
+          </span>
+        )}
+      </div>
+    )}
 
     {!logline.trim() && (
       <div style={{ marginBottom: 14, padding: "8px 12px", borderRadius: 8, background: "rgba(200,168,75,0.06)", border: "1px solid rgba(200,168,75,0.15)", fontSize: 11, color: "var(--c-tx-40)", display: "flex", alignItems: "center", gap: 7 }}>
@@ -408,6 +434,93 @@ export default function Stage4Content({
     {(synopsisResults || pipelineResult) && (
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
         <DocButton label="시놉시스 PDF" sub="A4 한 장 시놉시스 문서" onClick={() => openApplicationDoc("synopsis")} />
+      </div>
+    )}
+
+    {/* ── 에피소드 시리즈 설계 ── */}
+    {(pipelineResult || synopsisResults) && (
+      <div style={{ marginTop: 28, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)" }}>에피소드 시리즈 설계</div>
+            <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginTop: 2 }}>
+              시놉시스를 N부작 시리즈로 구성 — 각 에피소드 갈등·클리프행어 설계
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {[4, 6, 8, 12, 16].map(n => (
+              <button key={n} onClick={() => generateEpisodeDesign(n)} disabled={episodeDesignLoading}
+                style={{
+                  padding: "6px 12px", borderRadius: 8, cursor: episodeDesignLoading ? "wait" : "pointer",
+                  border: "1px solid rgba(78,204,163,0.3)", background: "rgba(78,204,163,0.07)",
+                  color: "#4ECCA3", fontSize: 11, fontWeight: 700,
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}>
+                {episodeDesignLoading ? "생성 중..." : `${n}부작`}
+              </button>
+            ))}
+          </div>
+        </div>
+        {episodeDesignError && <div style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(232,93,117,0.08)", border: "1px solid rgba(232,93,117,0.2)", fontSize: 11, color: "#E85D75" }}>{episodeDesignError}</div>}
+        {episodeDesignResult && (
+          <div>
+            {/* 헤더 */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+              {[
+                { label: "포맷", value: episodeDesignResult.series_type || "—", color: "#4ECCA3" },
+                { label: "회차", value: `${episodeDesignResult.episode_count || episodeDesignResult.episodes?.length || "?"}부작`, color: "#45B7D1" },
+              ].map(({ label, value, color }) => (
+                <div key={label} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${color}22`, background: `${color}0a` }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace" }}>{value}</div>
+                  <div style={{ fontSize: 9, color: "var(--c-tx-30)", marginTop: 2 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+            {episodeDesignResult.season_logline && (
+              <div style={{ marginBottom: 14, padding: "10px 14px", borderRadius: 9, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.04)", fontSize: 13, color: "var(--c-tx-65)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                {episodeDesignResult.season_logline}
+              </div>
+            )}
+            {/* 에피소드 카드 */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {(episodeDesignResult.episodes || []).map((ep, i) => (
+                <div key={i} style={{ padding: "12px 14px", borderRadius: 10, border: "1px solid var(--c-bd-1)", background: "rgba(var(--tw),0.01)" }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(78,204,163,0.15)", border: "1px solid rgba(78,204,163,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: "#4ECCA3", fontFamily: "'JetBrains Mono', monospace" }}>{ep.number || i + 1}</span>
+                    </div>
+                    {ep.title && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main)" }}>{ep.title}</span>}
+                  </div>
+                  {ep.logline && <div style={{ fontSize: 12, color: "var(--c-tx-60)", lineHeight: 1.65, marginBottom: ep.cliffhanger ? 6 : 0 }}>{ep.logline}</div>}
+                  {ep.key_scene && <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginTop: 4, fontStyle: "italic" }}>씬: {ep.key_scene}</div>}
+                  {ep.cliffhanger && (
+                    <div style={{ marginTop: 6, fontSize: 11, color: "#F7A072", padding: "4px 8px", borderRadius: 5, background: "rgba(247,160,114,0.07)", border: "1px solid rgba(247,160,114,0.2)", display: "inline-block" }}>
+                      🔗 {ep.cliffhanger}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            {/* 시즌 아크 */}
+            {episodeDesignResult.series_arc && (
+              <div style={{ marginTop: 14, padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(69,183,209,0.2)", background: "rgba(69,183,209,0.04)" }}>
+                <div style={{ fontSize: 10, color: "rgba(69,183,209,0.7)", fontWeight: 700, marginBottom: 8, letterSpacing: 0.5, textTransform: "uppercase" }}>시즌 아크</div>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
+                  {[
+                    { label: "시즌 목표", value: episodeDesignResult.series_arc.season_want },
+                    { label: "중반 반전", value: episodeDesignResult.series_arc.midpoint },
+                    { label: "피날레", value: episodeDesignResult.series_arc.finale },
+                  ].filter(f => f.value).map(({ label, value }) => (
+                    <div key={label} style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid rgba(69,183,209,0.15)", background: "rgba(69,183,209,0.05)" }}>
+                      <div style={{ fontSize: 9, color: "rgba(69,183,209,0.6)", marginBottom: 4, fontWeight: 700 }}>{label}</div>
+                      <div style={{ fontSize: 11, color: "var(--c-tx-60)", lineHeight: 1.6 }}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     )}
     {getStageStatus("4") === "done" && (() => {

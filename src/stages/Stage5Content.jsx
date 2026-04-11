@@ -13,6 +13,7 @@ export default function Stage5Content({
   treatmentChars, setTreatmentChars,
   treatmentStructure, setTreatmentStructure,
   selectedDuration,
+  pipelineResult,
   charDevResult,
   treatmentResult, setTreatmentResult,
   treatmentLoading, treatmentError,
@@ -53,13 +54,32 @@ export default function Stage5Content({
     <ErrorBoundary><div>
 
               {/* ── 단계 안내 ── */}
-              <div style={{ marginBottom: 18, padding: "12px 16px", borderRadius: 10, background: "rgba(255,209,102,0.05)", border: "1px solid rgba(255,209,102,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
+              <div style={{ marginBottom: (pipelineResult || charDevResult) ? 10 : 18, padding: "12px 16px", borderRadius: 10, background: "rgba(255,209,102,0.05)", border: "1px solid rgba(255,209,102,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
                 <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>🎬</span>
                 <div style={{ fontSize: 12, color: "var(--c-tx-50)", lineHeight: 1.65 }}>
                   <strong style={{ color: "rgba(255,209,102,0.9)" }}>시나리오 쓰기 직전, 장면을 설계하는 단계입니다.</strong>{" "}
                   트리트먼트는 각 씬의 흐름을 산문으로 정리합니다. 비트시트는 15개 이정표에 맞춰 페이지 단위로 구성을 배치합니다. 여기서 확정된 내용이 6단계 초고의 뼈대가 됩니다.
                 </div>
               </div>
+
+              {/* ── 스토리 컨텍스트 배너 ── */}
+              {pipelineResult && (
+                <div style={{
+                  marginBottom: 14, padding: "10px 14px", borderRadius: 9,
+                  background: "rgba(78,204,163,0.05)", border: "1px solid rgba(78,204,163,0.2)",
+                  display: "flex", alignItems: "center", gap: 10,
+                }}>
+                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2} strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 11, color: "#4ECCA3", fontWeight: 700 }}>시놉시스 반영됨</span>
+                    <span style={{ fontSize: 11, color: "var(--c-tx-45)", marginLeft: 8 }}>
+                      {pipelineResult.direction_title
+                        ? `"${pipelineResult.direction_title}" 방향이 트리트먼트 기준으로 사용됩니다.`
+                        : "Stage 4 시놉시스 구조가 트리트먼트에 자동 반영됩니다."}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {!logline.trim() && (
                 <div style={{ marginBottom: 14, padding: "8px 12px", borderRadius: 8, background: "rgba(200,168,75,0.06)", border: "1px solid rgba(200,168,75,0.15)", fontSize: 11, color: "var(--c-tx-40)", display: "flex", alignItems: "center", gap: 7 }}>

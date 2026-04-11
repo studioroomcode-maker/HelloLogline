@@ -13,6 +13,8 @@ import {
   COMPARABLE_WORKS_SYSTEM_PROMPT, VALUATION_SYSTEM_PROMPT,
   REWRITE_DIAG_SYSTEM_PROMPT, PARTIAL_REWRITE_SYSTEM_PROMPT, FULL_REWRITE_SYSTEM_PROMPT,
   CRITERIA_GUIDE, LABELS_KR, GENRES, DURATION_OPTIONS, EXAMPLE_LOGLINES,
+  EPISODE_SERIES_SYSTEM_PROMPT,
+  MASTER_REPORT_SYSTEM_PROMPT,
 } from "./constants.js";
 import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText } from "./utils.js";
 import { exportToPdf, exportToMarkdown } from "./utils-pdf.js";
@@ -29,6 +31,8 @@ import {
   StructureAnalysisSchema, ThemeAnalysisSchema, SubtextSchema,
   BeatSheetSchema, DialogueDevSchema, ScriptCoverageSchema,
   ComparableWorksSchema, ValuationSchema, EarlyCoverageSchema, InsightSchema,
+  EpisodeSeriesSchema,
+  MasterReportSchema,
 } from "./schemas.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import LoginScreen from "./LoginScreen.jsx";
@@ -48,12 +52,22 @@ const Stage6Content = lazy(() => import("./stages/Stage6Content.jsx"));
 const Stage8Content = lazy(() => import("./stages/Stage8Content.jsx"));
 const Stage4Content = lazy(() => import("./stages/Stage4Content.jsx"));
 const Stage5Content = lazy(() => import("./stages/Stage5Content.jsx"));
+const DashboardView = lazy(() => import("./stages/DashboardView.jsx"));
 const ScriptCoveragePanel = lazy(() =>
   import("./panels/EvaluationPanels.jsx").then((m) => ({ default: m.ScriptCoveragePanel }))
 );
 const ValuationPanel = lazy(() =>
   import("./panels/EvaluationPanels.jsx").then((m) => ({ default: m.ValuationPanel }))
 );
+
+/* ─── 크레딧 사용 내역 트래킹 ─── */
+function trackCreditUsage(feature, amount = 1) {
+  try {
+    const history = JSON.parse(localStorage.getItem("hll_credit_history") || "[]");
+    history.unshift({ date: new Date().toISOString(), feature, amount });
+    localStorage.setItem("hll_credit_history", JSON.stringify(history.slice(0, 50)));
+  } catch {}
+}
 
 /* ─── SVG Icon Paths ─── */
 const ICON = {
@@ -738,6 +752,16 @@ export default function LoglineAnalyzer() {
   const [comparableError, setComparableError] = useState("");
   const comparableRef = useRef(null);
 
+  // ── Master Report ──
+  const [masterReportResult, setMasterReportResult] = useState(null);
+  const [masterReportLoading, setMasterReportLoading] = useState(false);
+  const [masterReportError, setMasterReportError] = useState("");
+
+  // ── Episode Series Design ──
+  const [episodeDesignResult, setEpisodeDesignResult] = useState(null);
+  const [episodeDesignLoading, setEpisodeDesignLoading] = useState(false);
+  const [episodeDesignError, setEpisodeDesignError] = useState("");
+
   // ── Valuation ──
   const [valuationResult, setValuationResult] = useState(null);
   const [valuationLoading, setValuationLoading] = useState(false);
@@ -939,6 +963,17 @@ export default function LoglineAnalyzer() {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
+  // ── 키보드 단축키 (Alt+0~8) ──
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if (e.key === "0") { setCurrentStage("dashboard"); e.preventDefault(); }
+      else if (e.key >= "1" && e.key <= "8") { setCurrentStage(e.key); e.preventDefault(); }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   // ── Auth: check token on mount ──
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1105,7 +1140,7 @@ export default function LoglineAnalyzer() {
     treatmentResult, beatSheetResult, beatScenes,
     dialogueDevResult, scriptCoverageResult,
     structureResult, themeResult, sceneListResult, scenarioDraftResult,
-    comparableResult, valuationResult,
+    comparableResult, valuationResult, episodeDesignResult, masterReportResult,
     rewriteDiagResult, partialRewriteResult, fullRewriteResult,
     writerEdits,
     treatmentHistory, beatSheetHistory, scenarioDraftHistory, charDevHistory, pipelineHistory,
@@ -1171,6 +1206,8 @@ export default function LoglineAnalyzer() {
     setFullRewriteResult(proj.fullRewriteResult || "");
     setComparableResult(proj.comparableResult || null);
     setValuationResult(proj.valuationResult || null);
+    setEpisodeDesignResult(proj.episodeDesignResult || null);
+    setMasterReportResult(proj.masterReportResult || null);
     setWriterEdits(proj.writerEdits || {});
     setTreatmentHistory(proj.treatmentHistory || []);
     setBeatSheetHistory(proj.beatSheetHistory || []);
@@ -2202,6 +2239,201 @@ export default function LoglineAnalyzer() {
     }
   };
 
+  // ── 피치 덱 생성 (10슬라이드) ──────────────────────────────────
+  const openPitchDeck = () => {
+    const genreLabel = genre === "auto" ? (result?.detected_genre || "미정") : GENRES.find(g => g.id === genre)?.label || "미정";
+    const today = new Date().toLocaleDateString("ko-KR");
+    const qualScore = result ? (calcSectionTotal(result,"structure") + calcSectionTotal(result,"expression") + calcSectionTotal(result,"technical")) : null;
+    const synopsis = pipelineResult?.synopsis || synopsisResults?.synopses?.[0]?.synopsis || "";
+    const synopsisTitle = pipelineResult?.direction_title || synopsisResults?.synopses?.[0]?.direction_title || "";
+    const theme = pipelineResult?.theme || synopsisResults?.synopses?.[0]?.theme || "";
+    const hook = pipelineResult?.hook || synopsisResults?.synopses?.[0]?.hook || "";
+    const protagonist = charDevResult?.protagonist;
+    const supporting = charDevResult?.supporting_characters || [];
+    const coverage = scriptCoverageResult;
+
+    const slide = (num, title, bg, content) => `
+      <section class="slide" style="background:${bg};">
+        <div class="slide-num">${num}/10</div>
+        <div class="slide-title">${title}</div>
+        <div class="slide-body">${content}</div>
+      </section>`;
+
+    const slides = [
+      // 1. Title
+      slide(1, "TITLE", "linear-gradient(135deg,#0f0f1a,#1a1a2e)", `
+        <div style="text-align:center;padding-top:40px;">
+          <div style="font-size:11px;letter-spacing:4px;color:#C8A84B;text-transform:uppercase;margin-bottom:16px;">${genreLabel} / ${getDurText()}</div>
+          <div style="font-size:36px;font-weight:900;color:#fff;line-height:1.25;max-width:700px;margin:0 auto;">${logline || "로그라인을 입력하세요"}</div>
+          <div style="margin-top:40px;font-size:12px;color:rgba(255,255,255,0.35);">${today}</div>
+        </div>`),
+
+      // 2. The Concept
+      slide(2, "THE CONCEPT", "#0d1117", `
+        ${qualScore ? `<div style="display:flex;gap:20px;justify-content:center;margin-bottom:28px;">${[["로그라인 품질",`${qualScore}/100`,"#C8A84B"],["장르",genreLabel,"#45B7D1"],["포맷",getDurText(),"#4ECCA3"]].map(([l,v,c])=>`<div style="text-align:center;padding:16px 24px;border:1px solid ${c}30;border-radius:10px;"><div style="font-size:22px;font-weight:800;color:${c};">${v}</div><div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px;">${l}</div></div>`).join("")}</div>` : ""}
+        ${hook ? `<blockquote style="font-size:18px;color:#fff;border-left:3px solid #C8A84B;padding:12px 20px;margin:0;line-height:1.6;">${hook}</blockquote>` : ""}`),
+
+      // 3. The Story
+      slide(3, "THE STORY", "#0d1117", `
+        ${synopsisTitle ? `<div style="font-size:11px;letter-spacing:3px;color:#4ECCA3;text-transform:uppercase;margin-bottom:12px;">${synopsisTitle}</div>` : ""}
+        <div style="font-size:14px;color:rgba(255,255,255,0.8);line-height:1.8;max-height:280px;overflow:hidden;">${synopsis ? synopsis.slice(0,600)+(synopsis.length>600?"…":"") : "시놉시스를 Stage 4에서 생성하세요."}</div>`),
+
+      // 4. Protagonist
+      slide(4, "PROTAGONIST", "#0d1117", `
+        ${protagonist ? `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            ${[["Want (외적 목표)", protagonist.want],["Need (내적 욕구)", protagonist.need],["캐릭터 아크", protagonist.arc_type],["Ghost (상처)", protagonist.ghost]].filter(([,v])=>v).map(([l,v])=>`<div style="padding:14px 16px;border:1px solid rgba(255,255,255,0.08);border-radius:8px;"><div style="font-size:9px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;">${l}</div><div style="font-size:13px;color:#fff;line-height:1.6;">${v}</div></div>`).join("")}
+          </div>` : "<div style='color:rgba(255,255,255,0.4);'>Stage 3에서 캐릭터를 설계하세요.</div>"}`),
+
+      // 5. Supporting Cast
+      slide(5, "ENSEMBLE CAST", "#0d1117", `
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          ${supporting.slice(0,4).map(s=>`<div style="display:flex;align-items:center;gap:14px;padding:10px 14px;border:1px solid rgba(255,255,255,0.07);border-radius:8px;"><div style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:16px;">👤</div><div><div style="font-size:13px;font-weight:700;color:#fff;">${s.name||s.character_name||"—"}</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">${s.role||s.function||""} ${s.relationship?"· "+s.relationship:""}</div></div></div>`).join("")}
+          ${supporting.length === 0 ? "<div style='color:rgba(255,255,255,0.4);'>Stage 3에서 캐릭터를 설계하세요.</div>" : ""}
+        </div>`),
+
+      // 6. Theme & Tone
+      slide(6, "THEME & TONE", "#0d1117", `
+        ${theme ? `<blockquote style="font-size:20px;color:#C8A84B;font-weight:700;border-left:3px solid #C8A84B;padding:12px 20px;margin:0 0 20px;line-height:1.5;">"${theme}"</blockquote>` : ""}
+        ${result?.overall_feedback ? `<div style="font-size:13px;color:rgba(255,255,255,0.65);line-height:1.8;max-height:160px;overflow:hidden;">${result.overall_feedback.slice(0,400)}</div>` : ""}`),
+
+      // 7. Market Position
+      slide(7, "MARKET POSITION", "#0d1117", `
+        ${comparableResult ? `
+          <div style="margin-bottom:16px;">
+            <div style="font-size:10px;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;margin-bottom:10px;">비교 작품</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">${(comparableResult.comparable_works||[]).slice(0,4).map(w=>`<div style="padding:8px 14px;border:1px solid rgba(255,255,255,0.1);border-radius:20px;font-size:12px;color:rgba(255,255,255,0.7);">${typeof w==="string"?w:(w.title||"")}</div>`).join("")}</div>
+          </div>` : ""}
+        ${valuationResult ? `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            ${valuationResult.platform_fit ? `<div style="padding:12px;border:1px solid rgba(96,165,250,0.2);border-radius:8px;"><div style="font-size:9px;color:rgba(96,165,250,0.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">추천 플랫폼</div><div style="font-size:13px;color:#60A5FA;">${valuationResult.platform_fit}</div></div>` : ""}
+            ${valuationResult.target_audience ? `<div style="padding:12px;border:1px solid rgba(78,204,163,0.2);border-radius:8px;"><div style="font-size:9px;color:rgba(78,204,163,0.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">핵심 타겟</div><div style="font-size:13px;color:#4ECCA3;">${valuationResult.target_audience}</div></div>` : ""}
+          </div>` : "<div style='color:rgba(255,255,255,0.4);'>Stage 7에서 시장 분석을 실행하세요.</div>"}`),
+
+      // 8. Script Coverage
+      slide(8, "SCRIPT COVERAGE", "#0d1117", `
+        ${coverage ? `
+          <div style="display:flex;gap:20px;justify-content:center;margin-bottom:20px;">
+            <div style="text-align:center;padding:20px 30px;border:2px solid ${coverage.recommendation==="RECOMMEND"?"#4ECCA3":coverage.recommendation==="PASS"?"#E85D75":"#FFD166"}40;border-radius:12px;">
+              <div style="font-size:32px;font-weight:900;color:${coverage.recommendation==="RECOMMEND"?"#4ECCA3":coverage.recommendation==="PASS"?"#E85D75":"#FFD166"};">${coverage.recommendation||"—"}</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:6px;">방송사 판정</div>
+            </div>
+          </div>
+          ${coverage.overall_impression ? `<div style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.8;text-align:center;">${coverage.overall_impression.slice(0,300)}</div>` : ""}` : "<div style='color:rgba(255,255,255,0.4);'>Stage 7에서 Script Coverage를 실행하세요.</div>"}`),
+
+      // 9. Development Status
+      slide(9, "DEVELOPMENT STATUS", "#0d1117", `
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+          ${["로그라인","개념 분석","캐릭터","스토리 설계","트리트먼트","초고","Coverage","고쳐쓰기"].map((name,i)=>{
+            const sid = String(i+1);
+            const done = getStageStatus(sid) === "done";
+            return `<div style="padding:12px;border:1px solid ${done?"rgba(78,204,163,0.3)":"rgba(255,255,255,0.06)"};border-radius:8px;text-align:center;background:${done?"rgba(78,204,163,0.08)":"transparent"};"><div style="font-size:16px;margin-bottom:6px;">${done?"✅":"⬜"}</div><div style="font-size:10px;color:${done?"#4ECCA3":"rgba(255,255,255,0.35)"};">${name}</div></div>`;
+          }).join("")}
+        </div>`),
+
+      // 10. Next Steps
+      slide(10, "NEXT STEPS", "linear-gradient(135deg,#0f0f1a,#1a1a2e)", `
+        <div style="text-align:center;padding-top:20px;">
+          <div style="font-size:24px;font-weight:800;color:#C8A84B;margin-bottom:16px;">준비됐습니까?</div>
+          <div style="font-size:14px;color:rgba(255,255,255,0.6);line-height:2;">기획개발 협업 · 공동제작 · 투자 문의</div>
+          <div style="margin-top:40px;padding:20px;border:1px solid rgba(200,168,75,0.3);border-radius:12px;max-width:400px;margin-left:auto;margin-right:auto;">
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);">Generated by HelloLogline</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:6px;">${today}</div>
+          </div>
+        </div>`),
+    ].join("");
+
+    const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>피치 덱 — ${logline?.slice(0,30)||"Logline"}</title>
+    <style>
+      *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+      body { font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif; background:#000; color:#fff; }
+      .slide { min-height:100vh; padding:60px 80px; display:flex; flex-direction:column; position:relative; page-break-after:always; }
+      .slide-num { position:absolute; top:24px; right:32px; font-size:10px; color:rgba(255,255,255,0.2); font-family:monospace; letter-spacing:1px; }
+      .slide-title { font-size:10px; letter-spacing:4px; text-transform:uppercase; color:rgba(255,255,255,0.3); margin-bottom:40px; font-family:monospace; }
+      .slide-body { flex:1; }
+      @media print { body { margin:0; } .slide { page-break-after:always; } }
+    </style></head><body>${slides}
+    <script>document.title="피치 덱 — ${(logline||"").slice(0,20)}";</script>
+    </body></html>`;
+
+    const win = window.open("", "_blank", "width=900,height=700");
+    if (win) { win.document.write(html); win.document.close(); }
+  };
+
+  // ── 스토리 바이블 HTML 출력 ─────────────────────────────────────
+  const openStoryBibleDoc = () => {
+    const genreLabel = genre === "auto" ? (result?.detected_genre || "미정") : GENRES.find(g => g.id === genre)?.label || "미정";
+    const today = new Date().toLocaleDateString("ko-KR");
+    const protagonist = charDevResult?.protagonist;
+    const supporting = charDevResult?.supporting_characters || [];
+    const synopsis = pipelineResult?.synopsis || synopsisResults?.synopses?.[0]?.synopsis || "";
+    const synopsisTitle = pipelineResult?.direction_title || synopsisResults?.synopses?.[0]?.direction_title || "";
+    const theme = pipelineResult?.theme || synopsisResults?.synopses?.[0]?.theme || "";
+    const tone = pipelineResult?.genre_tone || synopsisResults?.synopses?.[0]?.genre_tone || "";
+
+    const sec = (title, content) => content ? `
+      <div class="section">
+        <div class="sec-head">${title}</div>
+        <div class="sec-body">${content}</div>
+      </div>` : "";
+    const kv = (label, value) => value ? `<div class="kv"><span class="kv-label">${label}</span><span class="kv-value">${value}</span></div>` : "";
+
+    const charSection = protagonist ? `
+      <div class="char-card">
+        <div class="char-name">주인공</div>
+        ${kv("Want", protagonist.want)}
+        ${kv("Need", protagonist.need)}
+        ${kv("Arc", protagonist.arc_type)}
+        ${kv("Ghost", protagonist.ghost)}
+        ${protagonist.wound ? kv("상처", protagonist.wound) : ""}
+      </div>
+      ${supporting.slice(0,5).map(s=>`
+        <div class="char-card">
+          <div class="char-name">${s.name||s.character_name||"조연"} <span class="char-role">${s.role||s.function||""}</span></div>
+          ${kv("역할", s.relationship||"")}
+          ${kv("기능", s.narrative_function||"")}
+        </div>`).join("")}` : "<p>Stage 3에서 캐릭터를 설계하세요.</p>";
+
+    const html = `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>스토리 바이블 — ${logline?.slice(0,30)||"Logline"}</title>
+    <style>
+      body { font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif; background:#fff; color:#1a1a2e; max-width:800px; margin:0 auto; padding:60px 40px; line-height:1.75; }
+      h1 { font-size:26px; font-weight:900; margin-bottom:6px; }
+      .meta { font-size:12px; color:#888; margin-bottom:40px; }
+      .section { margin-bottom:40px; page-break-inside:avoid; }
+      .sec-head { font-size:10px; letter-spacing:3px; text-transform:uppercase; font-weight:700; color:#1a1a2e; border-bottom:2px solid #1a1a2e; padding-bottom:6px; margin-bottom:16px; }
+      .sec-body { font-size:14px; color:#333; }
+      .kv { display:flex; gap:12px; margin-bottom:8px; }
+      .kv-label { min-width:80px; font-size:11px; color:#999; font-weight:600; flex-shrink:0; }
+      .kv-value { font-size:14px; color:#1a1a2e; }
+      .char-card { padding:16px 20px; border:1px solid #e0e0e0; border-radius:8px; margin-bottom:12px; }
+      .char-name { font-size:15px; font-weight:700; margin-bottom:10px; }
+      .char-role { font-size:11px; color:#888; font-weight:400; margin-left:8px; }
+      .logline-box { background:#fafafa; border-left:4px solid #1a1a2e; padding:16px 20px; margin-bottom:16px; font-size:16px; font-weight:600; line-height:1.6; }
+      @media print { body { padding:40px; } .section { page-break-inside:avoid; } }
+    </style></head><body>
+      <h1>${synopsisTitle || logline?.slice(0,40) || "스토리 바이블"}</h1>
+      <div class="meta">${genreLabel} / ${getDurText()} &nbsp;·&nbsp; ${today} &nbsp;·&nbsp; HelloLogline</div>
+
+      ${sec("로그라인", `<div class="logline-box">${logline||""}</div>`)}
+      ${sec("테마 & 톤", `${kv("주제", theme)}${kv("톤", tone)}`)}
+      ${sec("시놉시스", synopsis ? `<p>${synopsis}</p>` : "")}
+      ${sec("인물 설계", charSection)}
+      ${beatSheetResult?.beats?.length ? sec("비트 구조", `
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <tr style="background:#f5f5f5;"><th style="text-align:left;padding:6px 8px;border:1px solid #e0e0e0;">비트</th><th style="text-align:left;padding:6px 8px;border:1px solid #e0e0e0;">막</th><th style="text-align:left;padding:6px 8px;border:1px solid #e0e0e0;">요약</th><th style="text-align:right;padding:6px 8px;border:1px solid #e0e0e0;">페이지</th></tr>
+          ${beatSheetResult.beats.map(b=>`<tr><td style="padding:5px 8px;border:1px solid #e0e0e0;font-weight:600;">${b.name_kr}</td><td style="padding:5px 8px;border:1px solid #e0e0e0;color:#888;">${b.act||""}</td><td style="padding:5px 8px;border:1px solid #e0e0e0;">${(b.summary||"").slice(0,80)}</td><td style="padding:5px 8px;border:1px solid #e0e0e0;text-align:right;color:#888;">p.${b.page_start||""}</td></tr>`).join("")}
+        </table>`) : ""}
+      ${treatmentResult?.scenes?.length ? sec("주요 씬 목록", `
+        <ol style="font-size:13px;color:#333;padding-left:18px;">
+          ${treatmentResult.scenes.slice(0,10).map(s=>`<li style="margin-bottom:8px;">${s.scene_heading||s.location||""} — ${(s.description||s.action||"").slice(0,100)}</li>`).join("")}
+        </ol>`) : ""}
+      <script>document.title="스토리 바이블 — ${(logline||"").slice(0,20)}";</script>
+    </body></html>`;
+
+    const win = window.open("", "_blank", "width=900,height=1100");
+    if (win) { win.document.write(html); win.document.close(); }
+  };
+
   const saveApiKey = (key, remember = false) => {
     if (remember) {
       localStorage.setItem("logline_api_key", key);
@@ -2387,6 +2619,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       const qScore = sT + eT + tT;
       setResult(parsed);
       saveToHistory(target, genre, parsed, qScore, iT);
+      trackCreditUsage("로그라인 분석", 2);
       showToast("success", `로그라인 분석 완료 — 품질 ${qScore}점 / 흥미 ${iT}점`);
       if (compareMode && logline2.trim()) {
         setLoading2(true);
@@ -2531,6 +2764,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const data = await callClaude(apiKey, SYNOPSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, SynopsisSchema, "synopsis");
       setSynopsisResults(data);
+      trackCreditUsage("시놉시스 생성", 3);
       await autoSave();
     } catch (err) {
       if (err.name !== "AbortError") setSynopsisError(err.message || "시놉시스 생성 중 오류가 발생했습니다.");
@@ -2654,7 +2888,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setScriptCoverageLoading(true); setScriptCoverageError(""); setScriptCoverageResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인에 대한 할리우드 + 한국 방송사 스타일 Script Coverage를 작성하세요.`;
-    try { const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, ScriptCoverageSchema, "coverage"); setScriptCoverageResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, ScriptCoverageSchema, "coverage"); setScriptCoverageResult(data); trackCreditUsage("Script Coverage", 2); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setScriptCoverageError(err.message || "Script Coverage 생성 중 오류가 발생했습니다."); }
     finally { setScriptCoverageLoading(false); clearController("scriptCoverage"); }
   };
@@ -2694,6 +2928,62 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     } finally {
       setRewriteGuideLoading(false);
     }
+  };
+
+  // ── Master Report ──
+  const generateMasterReport = async () => {
+    if (!logline.trim() || !apiKey) return;
+    setMasterReportLoading(true); setMasterReportError(""); setMasterReportResult(null);
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find(g => g.id === genre)?.label || "";
+    const parts = [`로그라인: "${logline.trim()}"`, `장르: ${genreLabel} / 포맷: ${getDurText()}`, ""];
+    if (result) {
+      const sT = calcSectionTotal(result, "structure"), eT = calcSectionTotal(result, "expression"), tT = calcSectionTotal(result, "technical"), iT = calcSectionTotal(result, "interest");
+      parts.push(`[Stage 1] 로그라인 품질: 구조 ${sT}/50, 표현 ${eT}/30, 기술 ${tT}/20, 흥미 ${iT}/100`);
+      if (result.overall_feedback) parts.push(`  피드백: ${result.overall_feedback.slice(0, 200)}`);
+    }
+    if (charDevResult?.protagonist) {
+      const p = charDevResult.protagonist;
+      parts.push(`[Stage 3] 주인공 — Want: ${p.want||""} / Need: ${p.need||""} / Arc: ${p.arc_type||""}`);
+    }
+    if (pipelineResult?.synopsis) parts.push(`[Stage 4] 시놉시스 방향: ${pipelineResult.direction_title||""} — ${pipelineResult.synopsis.slice(0,200)}`);
+    if (beatSheetResult?.beats?.length) parts.push(`[Stage 5] 비트시트: ${beatSheetResult.beats.length}개 비트 완성`);
+    if (scenarioDraftResult) parts.push(`[Stage 6] 시나리오 초고 완성`);
+    if (scriptCoverageResult) parts.push(`[Stage 7] Script Coverage: ${scriptCoverageResult.recommendation||""} — ${scriptCoverageResult.overall_impression?.slice(0,150)||""}`);
+    if (rewriteDiagResult) parts.push(`[Stage 8] 고쳐쓰기 진단 완료`);
+    const msg = parts.join("\n");
+    try {
+      const data = await callClaude(apiKey, MASTER_REPORT_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-4-6", null, MasterReportSchema, "master_report");
+      setMasterReportResult(data);
+      trackCreditUsage("통합 마스터 리포트", 3);
+      await autoSave();
+    } catch (err) {
+      setMasterReportError(err.message || "마스터 리포트 생성 중 오류가 발생했습니다.");
+    } finally { setMasterReportLoading(false); }
+  };
+
+  // ── Episode Series Design ──
+  const generateEpisodeDesign = async (episodeCount = 8) => {
+    if (!logline.trim() || !apiKey) return;
+    const ctrl = makeController("episode");
+    setEpisodeDesignLoading(true); setEpisodeDesignError(""); setEpisodeDesignResult(null);
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find(g => g.id === genre)?.label || "";
+    const synopsisCtx = pipelineResult?.synopsis
+      ? `\n\n확정 시놉시스:\n${pipelineResult.synopsis}`
+      : synopsisResults?.synopses?.[0]?.synopsis
+      ? `\n\n시놉시스 방향:\n${synopsisResults.synopses[0].synopsis}`
+      : "";
+    const charCtx = charDevResult?.protagonist
+      ? `\n\n주인공: ${charDevResult.protagonist.want || ""} / Need: ${charDevResult.protagonist.need || ""}`
+      : "";
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}\n에피소드 수: ${episodeCount}부작${synopsisCtx}${charCtx}\n\n위 로그라인을 기반으로 ${episodeCount}부작 시리즈 구조를 설계하세요. 각 에피소드의 개별 갈등과 클리프행어, 시즌 전체 아크를 포함하세요.`;
+    try {
+      const data = await callClaude(apiKey, EPISODE_SERIES_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, EpisodeSeriesSchema, "episode");
+      setEpisodeDesignResult(data);
+      trackCreditUsage("에피소드 시리즈 설계", 3);
+      await autoSave();
+    } catch (err) {
+      if (err.name !== "AbortError") setEpisodeDesignError(err.message || "에피소드 설계 중 오류가 발생했습니다.");
+    } finally { setEpisodeDesignLoading(false); clearController("episode"); }
   };
 
   // ── Comparable Works ──
@@ -2922,6 +3212,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const genreHint = GENRE_BEAT_HINTS[genre] || "";
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}${structureBlock}${contextBlock}${genreHint ? `\n\n${genreHint}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요. 시놉시스·트리트먼트·플롯포인트가 있다면 반드시 그 방향의 이야기와 인물을 따르세요.`;
     try {
+      trackCreditUsage("비트시트 생성", 3);
       const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, BeatSheetSchema, "beatsheet");
       setBeatSheetResult(data);
       setBeatSheetStale(false);
@@ -3078,7 +3369,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const charHint = treatmentChars.protagonist.name ? `\n\n[작가 설정 — 이 정보를 우선하여 캐릭터를 분석하세요]\n주인공: ${treatmentChars.protagonist.name}${treatmentChars.protagonist.role ? ` (${treatmentChars.protagonist.role})` : ""}${treatmentChars.protagonist.want ? `\n외적 목표: ${treatmentChars.protagonist.want}` : ""}${treatmentChars.protagonist.need ? `\n내적 욕구: ${treatmentChars.protagonist.need}` : ""}${treatmentChars.protagonist.flaw ? `\n핵심 결함: ${treatmentChars.protagonist.flaw}` : ""}${treatmentChars.supporting.filter(s => s.name).map(s => `\n조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}${s.mbti ? ` [MBTI: ${s.mbti}]` : ""}${s.description ? `\n  설명: ${s.description}` : ""}`).join("")}` : "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}${charHint}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요. 시놉시스가 있다면 그 방향의 인물 이름·설정을 따르세요.`;
-    try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema, "character"); setCharDevResult(data); if (treatmentResult) setTreatmentStale(true); if (beatSheetResult) setBeatSheetStale(true); if (scenarioDraftResult) setScenarioDraftStale(true); await autoSave(); }
+    try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema, "character"); setCharDevResult(data); trackCreditUsage("캐릭터 설계", 3); if (treatmentResult) setTreatmentStale(true); if (beatSheetResult) setBeatSheetStale(true); if (scenarioDraftResult) setScenarioDraftStale(true); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setCharDevError(err.message || "캐릭터 분석 중 오류가 발생했습니다."); }
     finally { setCharDevLoading(false); clearController("charDev"); }
   };
@@ -3488,10 +3779,18 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     );
   }
 
-  // 각 스테이지 완료 상태 요약 (사이드바 표시용)
+  // 각 스테이지 완료 상태 요약 (사이드바 + 대시보드 표시용)
   const stageResultSummary = {
     "1": result ? `${qualityScore}점` : null,
-    "7": scriptCoverageResult ? (scriptCoverageResult.recommendation || null) : null,
+    "2": expertPanelResult ? "패널 완료" : (
+      (mythMapResult || barthesCodeResult || koreanMythResult || academicResult) ? "분석 완료" : null
+    ),
+    "3": charDevResult ? (charDevResult.protagonist?.name ? `${charDevResult.protagonist.name}` : "캐릭터 완료") : null,
+    "4": pipelineResult ? (pipelineResult.direction_title ? pipelineResult.direction_title.slice(0, 12) : "시놉시스 완료") : (synopsisResults ? "방향 선택 완료" : null),
+    "5": treatmentResult ? "트리트먼트 완료" : (beatSheetResult ? "비트시트 완료" : null),
+    "6": scenarioDraftResult ? "초고 완료" : null,
+    "7": scriptCoverageResult ? (scriptCoverageResult.recommendation || "커버리지 완료") : null,
+    "8": fullRewriteResult ? "전면 개고 완료" : (rewriteDiagResult ? "진단 완료" : null),
   };
 
   // 공유용 snapshot (logline + stage1 분석 + script coverage)
@@ -3514,7 +3813,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     // 스테이지 상태 헬퍼
     getStageStatus, getStageDoneCount, STAGE_TOTALS, statusDotColor,
     // 액션
-    showToast, openApplicationDoc,
+    showToast, openApplicationDoc, openPitchDeck, openStoryBibleDoc,
+    generateMasterReport, masterReportResult, masterReportLoading, masterReportError,
     // 포맷 헬퍼
     getDurText, getCustomContext,
     // 스테이지 결과 요약 (사이드바 배지용)
@@ -4135,6 +4435,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
             stageProps={{
               renderStage: (stageId) => {
                 switch (stageId) {
+                  case "dashboard": return <DashboardView />;
                   case "1": return (
                     <Stage1Content
                       result={result}
@@ -4296,6 +4597,10 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                       refinePipelineSynopsis={refinePipelineSynopsis}
                       pipelineRefineLoading={pipelineRefineLoading}
                       undoHistory={undoHistory}
+                      episodeDesignResult={episodeDesignResult}
+                      episodeDesignLoading={episodeDesignLoading}
+                      episodeDesignError={episodeDesignError}
+                      generateEpisodeDesign={generateEpisodeDesign}
                     />
                   );
                   case "5": return (
@@ -4307,6 +4612,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                       treatmentStructure={treatmentStructure}
                       setTreatmentStructure={setTreatmentStructure}
                       selectedDuration={selectedDuration}
+                      pipelineResult={pipelineResult}
                       charDevResult={charDevResult}
                       treatmentResult={treatmentResult}
                       setTreatmentResult={setTreatmentResult}

@@ -182,3 +182,58 @@ export const LABELS_KR = {
   universal_relatability: "보편적 공감",
   unpredictability: "예측 불가능성",
 };
+
+// ─────────────────────────────────────────────
+// 통합 마스터 리포트 프롬프트
+// ─────────────────────────────────────────────
+export const MASTER_REPORT_SYSTEM_PROMPT = `당신은 K-드라마·영화 기획개발 총괄 프로듀서입니다. 제공된 모든 분석 데이터를 종합하여 이 프로젝트의 제작 준비도를 냉정하게 평가하세요.
+
+반드시 JSON 형식으로만 응답하세요:
+{
+  "overall_score": 0~100 (제작 준비도 종합 점수),
+  "production_readiness": "READY" | "NEAR_READY" | "DEVELOPING" | "EARLY_STAGE",
+  "verdict": "한 단락 종합 판정 (현실적이고 구체적으로)",
+  "strengths": ["핵심 강점 1", "핵심 강점 2", "핵심 강점 3"],
+  "weaknesses": ["핵심 약점 1", "핵심 약점 2", "핵심 약점 3"],
+  "critical_fixes": ["제작 전 반드시 해결해야 할 문제 1", "문제 2"],
+  "stage_assessments": {
+    "logline": "로그라인 단계 평가 (1~2문장)",
+    "character": "캐릭터 설계 평가",
+    "story": "스토리 구조 평가",
+    "treatment": "트리트먼트/비트 평가",
+    "coverage": "Script Coverage 판정 요약"
+  },
+  "next_priority": "지금 당장 해야 할 가장 중요한 한 가지"
+}
+
+점수 기준: 80+ READY, 60-79 NEAR_READY, 40-59 DEVELOPING, 40 미만 EARLY_STAGE`;
+
+// ─────────────────────────────────────────────
+// 에피소드 시리즈 설계 프롬프트
+// ─────────────────────────────────────────────
+export const EPISODE_SERIES_SYSTEM_PROMPT = `당신은 드라마·시리즈 개발 전문 작가입니다. 주어진 로그라인과 시놉시스를 기반으로 에피소드 시리즈 구조를 설계하세요.
+
+반드시 JSON 형식으로만 응답하세요:
+{
+  "series_type": "미니시리즈 8부작 | 시즌제 드라마 | OTT 시리즈 등",
+  "episode_count": 8,
+  "season_logline": "시즌 전체를 한 줄로 요약",
+  "episodes": [
+    {
+      "number": 1,
+      "title": "에피소드 제목",
+      "logline": "이 에피소드의 핵심 사건 한 줄 요약",
+      "key_scene": "이 에피소드에서 가장 강렬한 씬 묘사",
+      "cliffhanger": "다음 화로 연결되는 엔딩 훅 (마지막 화 제외)"
+    }
+  ],
+  "series_arc": {
+    "season_want": "시즌 전체의 외적 목표",
+    "midpoint": "중반부 반전 또는 전환점",
+    "finale": "시즌 피날레 방향성"
+  }
+}
+
+각 에피소드는 독립된 갈등을 가지면서도 시즌 전체 아크에 기여해야 합니다.
+K-드라마 형식을 기본으로 하되, 사용자 지정 포맷을 따르세요.`;
+

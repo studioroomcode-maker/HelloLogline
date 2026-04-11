@@ -459,8 +459,48 @@ export default function Stage3Content({
                   />
                 </ResultCard>
               )}
+              {/* ── 캐릭터 → 스토리 교차 연결 힌트 ── */}
+              {charDevResult && (
+                <div style={{
+                  marginTop: 20, padding: "14px 16px", borderRadius: 10,
+                  background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.18)",
+                }}>
+                  <div style={{ fontSize: 10, letterSpacing: 1, color: "rgba(78,204,163,0.7)", fontWeight: 700, textTransform: "uppercase", marginBottom: 8 }}>
+                    Stage 4 연결 준비됨
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--c-tx-50)", lineHeight: 1.65, marginBottom: 10 }}>
+                    {charDevResult.protagonist && (
+                      <>
+                        <strong style={{ color: "var(--c-tx-70)" }}>{charDevResult.protagonist.name_suggestion || "주인공"}</strong>
+                        {charDevResult.protagonist.want && (
+                          <span>의 외적 목표 <em style={{ color: "rgba(78,204,163,0.8)" }}>"{charDevResult.protagonist.want}"</em></span>
+                        )}
+                        {charDevResult.protagonist.need && (
+                          <span>와 내적 욕구 <em style={{ color: "rgba(78,204,163,0.8)" }}>"{charDevResult.protagonist.need}"</em></span>
+                        )}
+                        가 시놉시스 구조에 자동 반영됩니다.
+                      </>
+                    )}
+                    {!charDevResult.protagonist && "캐릭터 데이터가 시놉시스 파이프라인에 자동으로 반영됩니다."}
+                  </div>
+                  {charDevResult.supporting_characters?.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
+                      {charDevResult.supporting_characters.slice(0, 4).map((c, i) => (
+                        <span key={i} style={{
+                          fontSize: 10, padding: "2px 8px", borderRadius: 20,
+                          background: "rgba(78,204,163,0.08)", color: "rgba(78,204,163,0.7)",
+                          border: "1px solid rgba(78,204,163,0.2)",
+                        }}>
+                          {c.character_name || c.name || `조연 ${i + 1}`}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {getStageStatus("3") === "done" && (
-                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
+                <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end", gap: 8 }}>
                   <button onClick={() => advanceToStage("4")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
                     다음 단계: 시놉시스
                     <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
