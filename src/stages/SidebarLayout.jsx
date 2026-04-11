@@ -211,22 +211,23 @@ export default function SidebarLayout({ stageProps, isMobile }) {
         </div>
       )}
 
-      {/* ── 메인 패널 ── */}
-      <main
-        ref={mainPanelRef}
-        style={{
-          flex: 1,
-          minWidth: 0,
-          padding: isMobile ? "20px 16px" : "28px 32px",
-          paddingBottom: isMobile ? "80px" : undefined,
-          maxWidth: isMobile ? "100%" : 780,
-        }}
-      >
-        <Suspense fallback={<div style={{ padding: 20, color: "var(--c-tx-30)", fontSize: 12 }}>로딩 중...</div>}>
-          {/* stageProps에서 현재 스테이지 콘텐츠를 렌더링 */}
-          {stageProps.renderStage(currentStage)}
-        </Suspense>
-      </main>
+      {/* ── 메인 패널 래퍼 (가운데 정렬) ── */}
+      <div style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}>
+        <main
+          ref={mainPanelRef}
+          style={{
+            width: "100%",
+            padding: isMobile ? "20px 16px" : "28px 32px",
+            paddingBottom: isMobile ? "80px" : undefined,
+            maxWidth: isMobile ? "100%" : 780,
+          }}
+        >
+          <Suspense fallback={<div style={{ padding: 20, color: "var(--c-tx-30)", fontSize: 12 }}>로딩 중...</div>}>
+            {/* stageProps에서 현재 스테이지 콘텐츠를 렌더링 */}
+            {stageProps.renderStage(currentStage)}
+          </Suspense>
+        </main>
+      </div>
     </div>
   );
 }
