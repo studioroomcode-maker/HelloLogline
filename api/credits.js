@@ -31,6 +31,11 @@ function verifyToken(token) {
 }
 
 export default async function handler(req, res) {
+  // ── Health check (인증 불필요) ──
+  if (req.query?.health === "1") {
+    return res.json({ status: "ok", hasKey: !!process.env.ANTHROPIC_API_KEY });
+  }
+
   const authHeader = req.headers["x-auth-token"] || req.headers.authorization?.replace("Bearer ", "");
   if (!authHeader) {
     return res.status(401).json({ error: "로그인이 필요합니다." });

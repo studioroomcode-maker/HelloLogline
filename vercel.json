@@ -2,6 +2,7 @@
   "buildCommand": "vite build",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/api/health", "destination": "/api/credits?health=1" },
     { "source": "/auth/kakao/callback", "destination": "/api/auth/kakao/callback" },
     { "source": "/auth/google/callback", "destination": "/api/auth/google/callback" },
     { "source": "/auth/naver/callback", "destination": "/api/auth/naver/callback" },
