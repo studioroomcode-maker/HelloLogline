@@ -185,6 +185,13 @@ function koreanizeError(errData, httpStatus) {
 }
 
 /**
+ * 다음 N번의 API 호출을 무료 재시도로 표시 (크레딧 미차감).
+ * ErrorMsg "다시 시도" 버튼 또는 내부 자동 재시도에서 사용.
+ */
+let _retryCredits = 0;
+export function markNextCallsAsRetry(n = 2) { _retryCredits = n; }
+
+/**
  * Fetch one Claude response (raw text returned from API).
  */
 async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature = null) {
@@ -192,6 +199,9 @@ async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, 
   if (apiKey) headers["x-client-api-key"] = apiKey;
   const authToken = localStorage.getItem("hll_auth_token");
   if (authToken) headers["x-auth-token"] = authToken;
+
+  const isRetry = _retryCredits > 0;
+  if (isRetry) _retryCredits--;
 
   const response = await fetch("/api/claude", {
     method: "POST",
@@ -203,6 +213,7 @@ async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, 
       system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
       messages: [{ role: "user", content: userMessage }],
       _feature: feature,
+      ...(isRetry ? { _retry: true } : {}),
     }),
     signal,
   });
@@ -267,6 +278,8 @@ export async function callClaude(
   console.warn("[schema] 1차 검증 실패, 재시도합니다.", first.error.issues.slice(0, 3));
 
   // Retry (same prompt — Claude responses are non-deterministic, retry often fixes it)
+  // 내부 자동 재시도는 크레딧 미차감
+  markNextCallsAsRetry(1);
   const retryText = await fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature);
   const retryParsed = parseClaudeJson(retryText);
   const second = schema.safeParse(retryParsed);

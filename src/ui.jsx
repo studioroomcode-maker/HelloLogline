@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { markNextCallsAsRetry } from "./utils.js";
 
 /* ─── SVG Icon Paths ─── */
 export const ICON = {
@@ -277,7 +278,7 @@ export function ErrorMsg({ msg, onRetry }) {
     <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 8, background: "rgba(232,93,117,0.08)", border: "1px solid rgba(232,93,117,0.2)", color: "#E85D75", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
       <span style={{ flex: 1, lineHeight: 1.6 }}>{msg}</span>
       {onRetry && (
-        <button onClick={onRetry} style={{ flexShrink: 0, padding: "3px 10px", borderRadius: 6, border: "1px solid rgba(232,93,117,0.4)", background: "rgba(232,93,117,0.1)", color: "#E85D75", fontSize: 11, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
+        <button onClick={() => { markNextCallsAsRetry(2); onRetry(); }} style={{ flexShrink: 0, padding: "3px 10px", borderRadius: 6, border: "1px solid rgba(232,93,117,0.4)", background: "rgba(232,93,117,0.1)", color: "#E85D75", fontSize: 11, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>
           다시 시도
         </button>
       )}

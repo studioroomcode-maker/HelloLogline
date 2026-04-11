@@ -100,9 +100,9 @@ export default async function handler(req, res) {
 
   const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
-  // ── 크레딧 차감 (서버 키 사용 + basic 등급) ──
+  // ── 크레딧 차감 (서버 키 사용 + basic 등급, 재시도 제외) ──
   const usingServerKey = !clientApiKey && !!serverApiKey;
-  if (usingServerKey && tier === "basic") {
+  if (usingServerKey && tier === "basic" && !body._retry) {
     const feature = body._feature || "logline";
     const cost = CREDIT_COSTS[feature] ?? 1;
     if (cost > 0) {
@@ -123,8 +123,8 @@ export default async function handler(req, res) {
     }
   }
 
-  // _feature 필드는 내부 라우팅용이므로 Anthropic에 전달하지 않음
-  const { _feature: _f, ...anthropicBody } = body;
+  // _feature, _retry 필드는 내부 라우팅용이므로 Anthropic에 전달하지 않음
+  const { _feature: _f, _retry: _r, ...anthropicBody } = body;
 
   try {
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {
