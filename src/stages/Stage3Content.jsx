@@ -25,21 +25,17 @@ const MBTI_INFO = {
 };
 
 function MbtiInput({ value, onChange }) {
-  const [focused, setFocused] = useState(false);
   const info = MBTI_INFO[value];
-  const showBubble = focused || (value.length === 4 && info);
 
   return (
-    <div style={{ position: "relative", display: "inline-block" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <input
         value={value}
         onChange={e => onChange(e.target.value.toUpperCase().slice(0, 4))}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
         placeholder="예: INFJ"
         maxLength={4}
         style={{
-          width: 90, padding: "9px 12px", borderRadius: 8,
+          width: 90, padding: "9px 12px", borderRadius: 8, flexShrink: 0,
           border: `1px solid ${info ? "rgba(200,168,75,0.5)" : "var(--c-bd-3)"}`,
           background: info ? "rgba(200,168,75,0.06)" : "var(--bg-page)",
           color: "var(--text-main)", fontSize: 12,
@@ -48,45 +44,14 @@ function MbtiInput({ value, onChange }) {
           transition: "border-color 0.2s, background 0.2s",
         }}
       />
-      {showBubble && info && (
-        <div style={{
-          position: "absolute",
-          bottom: "calc(100% + 10px)",
-          left: 0,
-          width: 220,
-          background: "var(--bg-tooltip, #1e1e2e)",
-          border: "1px solid rgba(200,168,75,0.25)",
-          borderRadius: 12,
-          padding: "11px 14px",
-          zIndex: 500,
-          pointerEvents: "none",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
-        }}>
-          {/* 말풍선 꼬리 */}
-          <div style={{
-            position: "absolute", top: "100%", left: 20,
-            width: 0, height: 0,
-            borderLeft: "7px solid transparent",
-            borderRight: "7px solid transparent",
-            borderTop: "7px solid rgba(200,168,75,0.25)",
-          }} />
-          <div style={{
-            position: "absolute", top: "calc(100% - 1px)", left: 21,
-            width: 0, height: 0,
-            borderLeft: "6px solid transparent",
-            borderRight: "6px solid transparent",
-            borderTop: "6px solid var(--bg-tooltip, #1e1e2e)",
-          }} />
-          {/* 내용 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
-            <span style={{ fontSize: 18, lineHeight: 1 }}>{info.emoji}</span>
-            <div>
-              <span style={{ fontSize: 11, fontWeight: 800, color: "#C8A84B", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>{value}</span>
-              <span style={{ fontSize: 10, color: "rgba(200,168,75,0.7)", marginLeft: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{info.nickname}</span>
+      {info && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 16, lineHeight: 1 }}>{info.emoji}</span>
+          <div>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#C8A84B", fontFamily: "'Noto Sans KR', sans-serif" }}>{info.nickname}</span>
+            <div style={{ fontSize: 11, color: "var(--c-tx-50)", lineHeight: 1.55, fontFamily: "'Noto Sans KR', sans-serif", wordBreak: "keep-all", marginTop: 1 }}>
+              {info.desc}
             </div>
-          </div>
-          <div style={{ fontSize: 11, color: "var(--text-tooltip, #ccc)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif", wordBreak: "keep-all" }}>
-            {info.desc}
           </div>
         </div>
       )}
