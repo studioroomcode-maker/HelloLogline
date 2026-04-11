@@ -1,6 +1,7 @@
 import { useRef, useEffect, Suspense, useState } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import SidebarNavItem from "./SidebarNavItem.jsx";
+import ErrorBoundary from "../ErrorBoundary.jsx";
 
 function DashboardIcon() {
   return (
@@ -222,10 +223,12 @@ export default function SidebarLayout({ stageProps, isMobile }) {
             maxWidth: isMobile ? "100%" : 780,
           }}
         >
-          <Suspense fallback={<div style={{ padding: 20, color: "var(--c-tx-30)", fontSize: 12 }}>로딩 중...</div>}>
-            {/* stageProps에서 현재 스테이지 콘텐츠를 렌더링 */}
-            {stageProps.renderStage(currentStage)}
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<div style={{ padding: 20, color: "var(--c-tx-30)", fontSize: 12 }}>로딩 중...</div>}>
+              {/* stageProps에서 현재 스테이지 콘텐츠를 렌더링 */}
+              {stageProps.renderStage(currentStage)}
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
     </div>
