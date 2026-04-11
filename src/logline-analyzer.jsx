@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import {
   SYSTEM_PROMPT, IMPROVEMENT_SYSTEM_PROMPT, SYNOPSIS_SYSTEM_PROMPT,
@@ -28,22 +28,32 @@ import {
   ValueChargeSchema, ShadowAnalysisSchema, AuthenticitySchema, CharacterDevSchema,
   StructureAnalysisSchema, ThemeAnalysisSchema, SubtextSchema,
   BeatSheetSchema, DialogueDevSchema, ScriptCoverageSchema,
-  ComparableWorksSchema, ValuationSchema, EarlyCoverageSchema,
+  ComparableWorksSchema, ValuationSchema, EarlyCoverageSchema, InsightSchema,
 } from "./schemas.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 import LoginScreen from "./LoginScreen.jsx";
+import { LoglineProvider } from "./context/LoglineContext.jsx";
+import WelcomeModal from "./WelcomeModal.jsx";
+import SidebarLayout from "./stages/SidebarLayout.jsx";
 import { saveProject, loadProjects, deleteProject } from "./db.js";
-import {
-  ApiKeyModal, HistoryPanel, ImprovementPanel, ExportButton, StoryDevPanel,
-  AcademicPanel, AuthenticityPanel, ValueChargePanel, ShadowAnalysisPanel,
-  ExpertPanelSection, PipelinePanel, SynopsisCard, CompareSection,
-  BeatSheetPanel, TreatmentInputPanel, CharacterDevPanel,
-  SubtextPanel, MythMapPanel, BarthesCodePanel, KoreanMythPanel,
-  ScriptCoveragePanel, DialogueDevPanel,
-  StructureAnalysisPanel, ThemeAnalysisPanel, SceneListPanel,
-  ComparableWorksPanel, ValuationPanel,
-  RadarChart, CircleGauge, ScoreBar, ScoreHistoryChart,
-} from "./panels.jsx";
+import { ApiKeyModal, HistoryPanel } from "./panels.jsx";
+
+/* ─── Lazy-loaded heavy panels ─── */
+/* ─── Lazy-loaded stage content ─── */
+const Stage1Content = lazy(() => import("./stages/Stage1Content.jsx"));
+const Stage2Content = lazy(() => import("./stages/Stage2Content.jsx"));
+const Stage3Content = lazy(() => import("./stages/Stage3Content.jsx"));
+const Stage7Content = lazy(() => import("./stages/Stage7Content.jsx"));
+const Stage6Content = lazy(() => import("./stages/Stage6Content.jsx"));
+const Stage8Content = lazy(() => import("./stages/Stage8Content.jsx"));
+const Stage4Content = lazy(() => import("./stages/Stage4Content.jsx"));
+const Stage5Content = lazy(() => import("./stages/Stage5Content.jsx"));
+const ScriptCoveragePanel = lazy(() =>
+  import("./panels/EvaluationPanels.jsx").then((m) => ({ default: m.ScriptCoveragePanel }))
+);
+const ValuationPanel = lazy(() =>
+  import("./panels/EvaluationPanels.jsx").then((m) => ({ default: m.ValuationPanel }))
+);
 
 /* ─── SVG Icon Paths ─── */
 const ICON = {
@@ -112,14 +122,43 @@ function DocButton({ label, sub, onClick, disabled }) {
 /* ─── Stage definitions ─── */
 const STAGES = [
   { id: "1", num: "01", name: "로그라인", sub: "입력 / 기본 분석 / 개선", icon: ICON.edit },
-  { id: "3", num: "02", name: "캐릭터", sub: "그림자 / 진정성 / 캐릭터 디벨롭", icon: ICON.users },
-  { id: "4", num: "03", name: "시놉시스", sub: "구조분석 / 가치전하 / 하위텍스트 / 시놉시스", icon: ICON.doc },
-  { id: "2", num: "04", name: "개념 분석", sub: "학술 / 신화 / 전문가 / 서사 코드 / 테마 (선택)", icon: ICON.chart },
+  { id: "2", num: "02", name: "개념 분석", sub: "테마 / 신화구조 / 학술 / 전문가 (선택)", icon: ICON.chart },
+  { id: "3", num: "03", name: "캐릭터", sub: "그림자 / 진정성 / 캐릭터 디벨롭", icon: ICON.users },
+  { id: "4", num: "04", name: "시놉시스", sub: "구조분석 / 가치전하 / 하위텍스트 / 시놉시스", icon: ICON.doc },
   { id: "5", num: "05", name: "트리트먼트 비트", sub: "트리트먼트 / 비트시트 / 대사", icon: ICON.film },
   { id: "6", num: "06", name: "시나리오 초고", sub: "시나리오 생성 / Field · McKee · Snyder", icon: ICON.film },
-  { id: "8", num: "07", name: "시나리오 고쳐쓰기", sub: "초고 진단 / 부분 재작성 / 전체 개고", icon: ICON.edit },
-  { id: "7", num: "08", name: "Script Coverage", sub: "최종 커버리지 리포트", icon: ICON.clipboard },
+  { id: "7", num: "07", name: "Script Coverage", sub: "커버리지 · 시장가치 · 고쳐쓰기 전 진단", icon: ICON.clipboard },
+  { id: "8", num: "08", name: "시나리오 고쳐쓰기", sub: "초고 진단 / 부분 재작성 / 전체 개고", icon: ICON.edit },
 ];
+
+/* ─── AI Transition Hint Prompts ─── */
+const CHAR_HINT_PROMPT = `당신은 시나리오 개발 컨설턴트입니다.
+로그라인 분석 결과를 바탕으로 캐릭터 개발 단계에서 집중해야 할 핵심 3가지를 제시합니다.
+낮은 점수 항목을 직접 보완하는 캐릭터 전략으로 연결하세요. 구체적이고 실행 가능하게.
+
+반드시 아래 JSON 형식으로만 응답하세요.
+{
+  "weakness": "로그라인의 핵심 약점 한 줄 요약 (구체적으로)",
+  "points": [
+    {"focus": "집중 항목명 (짧게)", "action": "캐릭터 개발 시 구체적으로 할 것 (1문장)"},
+    {"focus": "집중 항목명 (짧게)", "action": "캐릭터 개발 시 구체적으로 할 것 (1문장)"},
+    {"focus": "집중 항목명 (짧게)", "action": "캐릭터 개발 시 구체적으로 할 것 (1문장)"}
+  ]
+}`;
+
+const REWRITE_HINT_PROMPT = `당신은 스크립트 에디터입니다.
+Script Coverage 결과를 바탕으로 고쳐쓰기 우선순위 3가지를 제시합니다.
+가장 낮은 등급 영역을 중심으로 구체적이고 실행 가능한 수정 방향을 제시하세요.
+
+반드시 아래 JSON 형식으로만 응답하세요.
+{
+  "verdict": "고쳐쓰기 핵심 방향 한 줄",
+  "priorities": [
+    {"rank": 1, "area": "영역명", "issue": "문제점 (1문장)", "action": "수정 방향 (1문장)"},
+    {"rank": 2, "area": "영역명", "issue": "문제점 (1문장)", "action": "수정 방향 (1문장)"},
+    {"rank": 3, "area": "영역명", "issue": "문제점 (1문장)", "action": "수정 방향 (1문장)"}
+  ]
+}`;
 
 /* ─── Genre-specific beat structure hints ─── */
 const GENRE_BEAT_HINTS = {
@@ -213,7 +252,7 @@ function Tooltip({ text, children, maxWidth = 300, align = "center" }) {
           bottom: "calc(100% + 10px)",
           ...posStyle,
           background: "var(--bg-tooltip)",
-          border: "1px solid rgba(255,255,255,0.1)",
+          border: "1px solid var(--border-tooltip)",
           borderRadius: 12,
           padding: "12px 16px",
           fontSize: 12,
@@ -244,8 +283,98 @@ function Tooltip({ text, children, maxWidth = 300, align = "center" }) {
   );
 }
 
+/* ─── MBTI 데이터 & 말풍선 입력 컴포넌트 ─── */
+const MBTI_INFO = {
+  INTJ: { emoji: "🏰", nickname: "전략가", desc: "독립적이고 냉철한 설계자. 장기 계획을 즐기며, 비효율을 혐오한다. 감정보다 논리로 움직인다." },
+  INTP: { emoji: "🔬", nickname: "논리술사", desc: "조용한 분석가. 이론과 원리에 집착하며 끝없이 질문한다. 규칙보다 진실을 따른다." },
+  ENTJ: { emoji: "👑", nickname: "통솔자", desc: "타고난 리더. 목표를 향해 거침없이 달리며 다른 사람을 이끈다. 도전을 즐긴다." },
+  ENTP: { emoji: "⚡", nickname: "변론가", desc: "아이디어 발전기. 논쟁을 즐기고 고정관념을 깨기 좋아한다. 지루함을 못 참는다." },
+  INFJ: { emoji: "🌙", nickname: "옹호자", desc: "깊은 통찰력을 지닌 이상주의자. 타인의 감정을 직감적으로 읽는다. 혼자만의 시간이 필요하다." },
+  INFP: { emoji: "🌿", nickname: "중재자", desc: "내면 세계가 풍부한 몽상가. 자신의 가치관에 강한 신념을 품는다. 공감 능력이 뛰어나다." },
+  ENFJ: { emoji: "🌟", nickname: "선도자", desc: "카리스마 넘치는 조력자. 다른 사람의 성장을 위해 헌신한다. 갈등 조율에 능하다." },
+  ENFP: { emoji: "🎨", nickname: "활동가", desc: "에너지 넘치는 자유로운 영혼. 새로운 가능성에 열광하며 사람들을 북돋운다. 루틴을 싫어한다." },
+  ISTJ: { emoji: "📋", nickname: "현실주의자", desc: "철두철미한 관리자. 규칙과 책임을 중시하며 약속을 반드시 지킨다. 변화를 불편해한다." },
+  ISFJ: { emoji: "🛡", nickname: "수호자", desc: "헌신적인 보호자. 가까운 사람들을 위해 묵묵히 희생한다. 갈등을 피하려는 경향이 있다." },
+  ESTJ: { emoji: "⚖️", nickname: "경영자", desc: "질서와 원칙의 수호자. 체계적으로 일을 처리하며 주도권을 쥐려 한다. 직설적이다." },
+  ESFJ: { emoji: "🤝", nickname: "집정관", desc: "사교적인 돌봄 제공자. 주변 사람의 감정과 필요에 민감하게 반응한다. 인정받고 싶어한다." },
+  ISTP: { emoji: "🔧", nickname: "장인", desc: "조용한 문제 해결사. 실용적이고 손으로 직접 해결하는 것을 선호한다. 감정 표현이 적다." },
+  ISFP: { emoji: "🎶", nickname: "모험가", desc: "온화하고 감각적인 예술가. 아름다움과 조화를 추구하며 자유롭게 살고 싶어한다." },
+  ESTP: { emoji: "🏄", nickname: "사업가", desc: "대담하고 현실 감각이 뛰어난 행동파. 순간에 집중하며 위험을 즐긴다. 지루함과 이론을 싫어한다." },
+  ESFP: { emoji: "🎉", nickname: "연예인", desc: "삶을 축제로 만드는 엔터테이너. 사람과 어울리는 것을 좋아하며 즉흥적이다. 현재에 충실하다." },
+};
+
+function MbtiInput({ value, onChange }) {
+  const [focused, setFocused] = useState(false);
+  const info = MBTI_INFO[value];
+  const showBubble = focused || (value.length === 4 && info);
+
+  return (
+    <div style={{ position: "relative", display: "inline-block" }}>
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value.toUpperCase().slice(0, 4))}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder="예: INFJ"
+        maxLength={4}
+        style={{
+          width: 90, padding: "9px 12px", borderRadius: 8,
+          border: `1px solid ${info ? "rgba(200,168,75,0.5)" : "var(--c-bd-3)"}`,
+          background: info ? "rgba(200,168,75,0.06)" : "var(--bg-page)",
+          color: "var(--text-main)", fontSize: 12,
+          fontFamily: "'JetBrains Mono', monospace",
+          outline: "none", boxSizing: "border-box", letterSpacing: 2,
+          transition: "border-color 0.2s, background 0.2s",
+        }}
+      />
+      {showBubble && info && (
+        <div style={{
+          position: "absolute",
+          bottom: "calc(100% + 10px)",
+          left: 0,
+          width: 220,
+          background: "var(--bg-tooltip, #1e1e2e)",
+          border: "1px solid rgba(200,168,75,0.25)",
+          borderRadius: 12,
+          padding: "11px 14px",
+          zIndex: 500,
+          pointerEvents: "none",
+          boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
+        }}>
+          {/* 말풍선 꼬리 */}
+          <div style={{
+            position: "absolute", top: "100%", left: 20,
+            width: 0, height: 0,
+            borderLeft: "7px solid transparent",
+            borderRight: "7px solid transparent",
+            borderTop: "7px solid rgba(200,168,75,0.25)",
+          }} />
+          <div style={{
+            position: "absolute", top: "calc(100% - 1px)", left: 21,
+            width: 0, height: 0,
+            borderLeft: "6px solid transparent",
+            borderRight: "6px solid transparent",
+            borderTop: "6px solid var(--bg-tooltip, #1e1e2e)",
+          }} />
+          {/* 내용 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+            <span style={{ fontSize: 18, lineHeight: 1 }}>{info.emoji}</span>
+            <div>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "#C8A84B", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 1 }}>{value}</span>
+              <span style={{ fontSize: 10, color: "rgba(200,168,75,0.7)", marginLeft: 6, fontFamily: "'Noto Sans KR', sans-serif" }}>{info.nickname}</span>
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text-tooltip, #ccc)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif", wordBreak: "keep-all" }}>
+            {info.desc}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── ToolButton component ─── */
-function ToolButton({ icon, label, sub, done, loading, color, onClick, disabled, tooltip }) {
+function ToolButton({ icon, label, sub, done, loading, color, onClick, disabled, tooltip, creditCost = 0 }) {
   const [hovered, setHovered] = useState(false);
   const [tipVisible, setTipVisible] = useState(false);
   return (
@@ -274,6 +403,14 @@ function ToolButton({ icon, label, sub, done, loading, color, onClick, disabled,
           {sub && <div style={{ fontSize: 10, color: "var(--c-tx-30)", marginTop: 1 }}>{sub}</div>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          {creditCost > 0 && (
+            <span style={{
+              fontSize: 9, padding: "2px 5px", borderRadius: 6,
+              background: "rgba(200,168,75,0.12)", color: "#C8A84B",
+              border: "1px solid rgba(200,168,75,0.25)",
+              fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, lineHeight: 1.2,
+            }}>{creditCost}cr</span>
+          )}
           {tooltip && <span style={{ fontSize: 12, color: "rgba(var(--tw),0.18)", lineHeight: 1, userSelect: "none" }}>ⓘ</span>}
           {loading ? <Spinner size={12} color={color} /> : done ? (
             <SvgIcon d={ICON.check} size={14} color={color} />
@@ -288,7 +425,7 @@ function ToolButton({ icon, label, sub, done, loading, color, onClick, disabled,
           top: "calc(100% + 10px)",
           right: 0,
           background: "var(--bg-tooltip)",
-          border: "1px solid rgba(255,255,255,0.1)",
+          border: "1px solid var(--border-tooltip)",
           borderRadius: 12,
           padding: "12px 16px",
           fontSize: 12,
@@ -587,6 +724,14 @@ export default function LoglineAnalyzer() {
   const [scriptCoverageError, setScriptCoverageError] = useState("");
   const scriptCoverageRef = useRef(null);
 
+  // ── AI 전환 가이드 ──
+  const [charGuide, setCharGuide] = useState(null);
+  const [charGuideLoading, setCharGuideLoading] = useState(false);
+  const [charGuideError, setCharGuideError] = useState("");
+  const [rewriteGuide, setRewriteGuide] = useState(null);
+  const [rewriteGuideLoading, setRewriteGuideLoading] = useState(false);
+  const [rewriteGuideError, setRewriteGuideError] = useState("");
+
   // ── Comparable Works ──
   const [comparableResult, setComparableResult] = useState(null);
   const [comparableLoading, setComparableLoading] = useState(false);
@@ -679,6 +824,11 @@ export default function LoglineAnalyzer() {
   const [earlyCoverageLoading, setEarlyCoverageLoading] = useState(false);
   const [earlyCoverageError, setEarlyCoverageError] = useState("");
 
+  // ── 개선·방향 탭 결과 (StoryDevPanel / ImprovementPanel 에서 끌어올림) ──
+  const [storyFixes, setStoryFixes] = useState([]);
+  const [storyPivots, setStoryPivots] = useState([]);
+  const [aiImprovement, setAiImprovement] = useState(null);
+
   // ── Structure Twist (구조 비틀기 제안) ──
   const [structureTwistResult, setStructureTwistResult] = useState(null);
   const [structureTwistLoading, setStructureTwistLoading] = useState(false);
@@ -692,6 +842,11 @@ export default function LoglineAnalyzer() {
   const [synopsisEditDraft, setSynopsisEditDraft] = useState("");
   const [editingBeats, setEditingBeats] = useState({}); // { [beatId]: boolean }
   const [beatEditDrafts, setBeatEditDrafts] = useState({}); // { [beatId]: string }
+
+  // ── 종합 인사이트 ──
+  const [insightResult, setInsightResult] = useState(null);
+  const [insightLoading, setInsightLoading] = useState(false);
+  const [insightError, setInsightError] = useState("");
 
   // ── Project persistence ──
   const [showProjects, setShowProjects] = useState(false);
@@ -759,7 +914,7 @@ export default function LoglineAnalyzer() {
   const [showTreatmentPanel, setShowTreatmentPanel] = useState(false);
   const [treatmentChars, setTreatmentChars] = useState({
     protagonist: { name: "", role: "", want: "", need: "", flaw: "" },
-    supporting: [{ name: "", role: "", relation: "" }],
+    supporting: [{ name: "", role: "", relation: "", mbti: "", description: "" }],
   });
   const [showManualCharInput, setShowManualCharInput] = useState(false);
   const [treatmentStructure, setTreatmentStructure] = useState("3act");
@@ -776,9 +931,6 @@ export default function LoglineAnalyzer() {
 
   function advanceToStage(nextId) {
     setCurrentStage(nextId);
-    setTimeout(() => {
-      stageRefs.current[nextId]?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 80);
   }
 
   useEffect(() => {
@@ -797,7 +949,7 @@ export default function LoglineAnalyzer() {
       window.history.replaceState({}, "", window.location.pathname);
     }
     if (errorFromUrl) {
-      setAuthError(true);
+      setAuthError(errorFromUrl); // "csrf" | "google" | "kakao" | "naver"
       setAuthLoading(false);
       return;
     }
@@ -1166,9 +1318,400 @@ export default function LoglineAnalyzer() {
     const synopsisTitle = pipelineResult?.direction_title || synopsisResults?.synopses?.[0]?.direction_title || "";
     const keyScenes = pipelineResult?.key_scenes || synopsisResults?.synopses?.[0]?.key_scenes || [];
     const synopsisTheme = pipelineResult?.theme || synopsisResults?.synopses?.[0]?.theme || "";
+    const synopsisGenreTone = pipelineResult?.genre_tone || synopsisResults?.synopses?.[0]?.genre_tone || "";
+    const synopsisEndingType = pipelineResult?.ending_type || synopsisResults?.synopses?.[0]?.ending_type || "";
 
     const protagonist = charDevResult?.protagonist;
     const supporting = charDevResult?.supporting_characters || [];
+
+    // ── 시놉시스 PDF: A4 단일 페이지 전용 레이아웃 ──
+    if (docType === "synopsis") {
+      const qualBar = (label, score, max) => `
+        <div style="display:flex;align-items:center;gap:8pt;margin-bottom:5pt;">
+          <span style="font-size:7.5pt;color:#888;min-width:80pt;">${label}</span>
+          <div style="flex:1;height:5pt;background:#eee;border-radius:3pt;overflow:hidden;">
+            <div style="height:100%;width:${max ? Math.round(score/max*100) : 0}%;background:#1a1a2e;border-radius:3pt;"></div>
+          </div>
+          <span style="font-size:7.5pt;font-weight:700;min-width:30pt;text-align:right;">${score}/${max}</span>
+        </div>`;
+
+      // ── 분석 페이지용 헬퍼 ──
+      const sBar = (label, score, max) =>
+        `<div style="display:flex;align-items:center;gap:8pt;margin-bottom:4pt;"><span style="font-size:7.5pt;color:#777;min-width:100pt;">${label}</span><div style="flex:1;height:4pt;background:#eee;border-radius:2pt;overflow:hidden;"><div style="height:100%;width:${Math.round(((score)||0)/((max)||10)*100)}%;background:#1a1a2e;border-radius:2pt;"></div></div><span style="font-size:7.5pt;font-weight:700;min-width:28pt;text-align:right;">${score||0}/${max}</span></div>`;
+      const sHead = (title, color) =>
+        `<div style="font-size:7pt;font-weight:700;color:${color||'#1a1a2e'};text-transform:uppercase;letter-spacing:2px;border-bottom:1.5pt solid ${color||'#1a1a2e'};padding-bottom:4pt;margin-bottom:10pt;">${title}</div>`;
+      const kv2 = (label, value) => value ? `<div style="margin-bottom:3pt;font-size:8.5pt;line-height:1.65;"><span style="color:#999;font-size:7.5pt;">${label}&nbsp;&nbsp;</span>${value}</div>` : '';
+      const bul = (arr) => Array.isArray(arr) && arr.length ? `<ul style="padding-left:14pt;margin:3pt 0 0;">${arr.map(s => `<li style="font-size:8.5pt;color:#333;margin-bottom:2pt;line-height:1.55;">${s}</li>`).join('')}</ul>` : '';
+      const box = (title, content) => content ? `<div style="border:1pt solid #e0e0e0;border-radius:4pt;padding:8pt 10pt;background:#fafafa;margin-bottom:8pt;page-break-inside:avoid;">${title ? `<div style="font-size:7pt;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:5pt;">${title}</div>` : ''}<div style="font-size:8.5pt;color:#333;line-height:1.7;">${content}</div></div>` : '';
+      const flatKV = (obj, depth) => {
+        const d = depth||0;
+        if (!obj || typeof obj !== 'object') return String(obj||'');
+        if (Array.isArray(obj)) return obj.slice(0,6).map(item => typeof item === 'object' ? flatKV(item,d+1) : `<div style="padding-left:6pt;margin-bottom:2pt;">\u2022 ${item}</div>`).join('');
+        return Object.entries(obj).filter(([k,v]) => k!=='score'&&v!==null&&v!==undefined&&v!=='').slice(0,8).map(([k,v]) => {
+          const lbl = k.replace(/_/g,' ');
+          if (typeof v==='object'&&d<1) return `<div style="margin-bottom:4pt;"><span style="font-weight:700;color:#666;font-size:7.5pt;">${lbl}:</span><div style="padding-left:8pt;margin-top:2pt;">${flatKV(v,d+1)}</div></div>`;
+          const sv = typeof v==='object' ? '' : String(v);
+          return sv ? `<div style="margin-bottom:2pt;font-size:8.5pt;"><span style="color:#999;font-size:7.5pt;">${lbl}&nbsp;</span>${sv}</div>` : '';
+        }).join('');
+      };
+
+      // ── 분석 섹션 빌드 ──
+      let anaSections = '';
+
+      // ① 빠른 상업성 체크
+      if (earlyCoverageResult) {
+        const ec = earlyCoverageResult;
+        anaSections += sHead('빠른 상업성 체크', '#7c3aed');
+        anaSections += `<div style="display:grid;grid-template-columns:80pt 1fr;gap:12pt;align-items:start;margin-bottom:8pt;"><div style="border:2pt solid #7c3aed;border-radius:6pt;padding:8pt;text-align:center;"><div style="font-size:24pt;font-weight:800;color:#7c3aed;line-height:1;">${ec.marketability_score||0}</div><div style="font-size:7pt;color:#999;margin-top:3pt;">/ 10</div></div><div>${ec.one_line_verdict ? `<div style="font-size:9pt;font-weight:700;color:#333;margin-bottom:6pt;line-height:1.5;">${ec.one_line_verdict}</div>` : ''}${kv2('최적 플랫폼',ec.best_platform)}${kv2('핵심 타겟',ec.target_audience)}${kv2('유사 히트작',ec.comparable_hit)}</div></div>`;
+        anaSections += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8pt;">${ec.key_strengths?.length?box('강점',bul(ec.key_strengths)):''}${ec.key_risks?.length?box('위험 요소',bul(ec.key_risks)):''}</div>`;
+        if (ec.development_priority) anaSections += box('지금 당장 보완할 것', `<span style="color:#7c3aed;font-weight:700;">${ec.development_priority}</span>`);
+        anaSections += '<div style="margin-bottom:20pt;"></div>';
+      }
+
+      // ② 로그라인 상세 분석
+      if (result) {
+        const RL = { protagonist:"주인공 구체성", inciting_incident:"촉발 사건", goal:"목표 선명성", conflict:"갈등/장애물", stakes:"이해관계", irony:"아이러니/훅", mental_picture:"심상 유발력", emotional_hook:"감정적 공명", originality:"독창성", conciseness:"간결성", active_language:"능동적 언어", no_violations:"금기사항", genre_tone:"장르 톤", information_gap:"정보 격차", cognitive_dissonance:"인지적 부조화", narrative_transportation:"서사 몰입", universal_relatability:"보편적 공감", unpredictability:"예측 불가능성" };
+        const rSec = (data, keys) => (data ? keys.map(k => data[k]?.score!=null ? sBar(RL[k]||k, data[k].score, 10) : '').join('') : '');
+        anaSections += sHead('로그라인 분석', '#1a1a2e');
+        anaSections += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14pt;margin-bottom:8pt;"><div><div style="font-size:7pt;font-weight:700;color:#888;margin-bottom:5pt;text-transform:uppercase;letter-spacing:1px;">구조 (${calcSectionTotal(result,'structure')}/50)</div>${rSec(result.structure,['protagonist','inciting_incident','goal','conflict','stakes'])}<div style="font-size:7pt;font-weight:700;color:#888;margin-top:9pt;margin-bottom:5pt;text-transform:uppercase;letter-spacing:1px;">기술 (${calcSectionTotal(result,'technical')}/40)</div>${rSec(result.technical,['conciseness','active_language','no_violations','genre_tone'])}</div><div><div style="font-size:7pt;font-weight:700;color:#888;margin-bottom:5pt;text-transform:uppercase;letter-spacing:1px;">표현 (${calcSectionTotal(result,'expression')}/40)</div>${rSec(result.expression,['irony','mental_picture','emotional_hook','originality'])}<div style="font-size:7pt;font-weight:700;color:#888;margin-top:9pt;margin-bottom:5pt;text-transform:uppercase;letter-spacing:1px;">흥미도 (${calcSectionTotal(result,'interest')}/50)</div>${rSec(result.interest,['information_gap','cognitive_dissonance','narrative_transportation','universal_relatability','unpredictability'])}</div></div>`;
+        if (result.overall_feedback) anaSections += `<div style="font-size:8.5pt;color:#333;background:#f5f5f5;border-left:3pt solid #1a1a2e;padding:7pt 12pt;border-radius:2pt;line-height:1.7;margin-bottom:8pt;">${result.overall_feedback}</div>`;
+        anaSections += '<div style="margin-bottom:20pt;"></div>';
+      }
+
+      // ③ 인물 분석
+      if (charDevResult || shadowResult || authenticityResult) {
+        anaSections += sHead('인물 분석', '#0f766e');
+        if (charDevResult?.protagonist) {
+          const p = charDevResult.protagonist;
+          anaSections += box('주인공', (p.want?kv2('Want (외적 목표)',p.want):'')+(p.need?kv2('Need (내적 욕구)',p.need):'')+(p.arc_type?kv2('캐릭터 아크',p.arc_type):'')+(p.ghost?kv2('Ghost (상처)',p.ghost):'')+(p.egri_dimensions?`<div style="margin-top:6pt;"><div style="font-size:7pt;font-weight:700;color:#0f766e;text-transform:uppercase;letter-spacing:1px;margin-bottom:3pt;">Egri 3차원</div>${flatKV(p.egri_dimensions)}</div>`:''));
+        }
+        if (charDevResult?.supporting_characters?.length) {
+          const rows = charDevResult.supporting_characters.slice(0,5).map(s=>`<div style="padding:5pt 0;border-bottom:1pt solid #eee;font-size:8.5pt;"><strong>${s.name||s.character_name||'—'}</strong>${s.role||s.function?` \u00b7 ${s.role||s.function}`:''}${s.relationship?` \u2014 ${s.relationship}`:''}</div>`).join('');
+          anaSections += box('조연 인물', rows);
+        }
+        if (charDevResult?.moral_argument) anaSections += `<div style="margin-bottom:8pt;font-size:8.5pt;color:#444;background:#f0fdf4;border-left:3pt solid #0f766e;padding:7pt 12pt;border-radius:2pt;line-height:1.7;">${charDevResult.moral_argument}</div>`;
+        if (shadowResult) anaSections += box('Jung 그림자 분석', flatKV(shadowResult.hero_archetype)+(shadowResult.shadow?`<div style="margin-top:5pt;font-size:7.5pt;color:#999;text-transform:uppercase;margin-bottom:3pt;">그림자</div>${flatKV(shadowResult.shadow)}`:'')+(shadowResult.jung_verdict?`<div style="margin-top:7pt;padding-top:5pt;border-top:1pt solid #eee;font-style:italic;color:#555;font-size:8.5pt;">${shadowResult.jung_verdict}</div>`:''));
+        if (authenticityResult) anaSections += box('진정성 분석 (실존주의)', sBar('진정성 지수',authenticityResult.authenticity_score,10)+(authenticityResult.authenticity_label?`<div style="margin:4pt 0;font-weight:700;font-size:9pt;">${authenticityResult.authenticity_label}</div>`:'')+( authenticityResult.existential_verdict?`<div style="font-size:8.5pt;color:#444;margin-top:4pt;">${authenticityResult.existential_verdict}</div>`:''));
+        anaSections += '<div style="margin-bottom:20pt;"></div>';
+      }
+
+      // ④ 개념·이론 분석
+      if (academicResult || mythMapResult || barthesCodeResult || koreanMythResult || valueChargeResult) {
+        anaSections += sHead('개념 \u00b7 이론 분석', '#9a3412');
+        if (academicResult) {
+          const ia = academicResult.integrated_assessment;
+          anaSections += box('학문적 분석 (아리스토텔레스 외)', flatKV(academicResult.aristotle)+(ia?.dominant_theory_fit?kv2('지배 이론',ia.dominant_theory_fit):'')+(ia?.theoretical_verdict?`<div style="margin-top:6pt;padding-top:5pt;border-top:1pt solid #eee;font-style:italic;color:#555;">${ia.theoretical_verdict}</div>`:''));
+        }
+        if (mythMapResult) anaSections += box('신화 지도 (Campbell 영웅 여정)', kv2('현재 단계',mythMapResult.primary_stage)+(mythMapResult.journey_phases?`<div style="margin-top:5pt;">${flatKV(mythMapResult.journey_phases)}</div>`:'')+( mythMapResult.campbell_verdict?`<div style="margin-top:7pt;font-style:italic;color:#555;border-top:1pt solid #eee;padding-top:5pt;">${mythMapResult.campbell_verdict}</div>`:''));
+        if (barthesCodeResult) {
+          const bc = barthesCodeResult;
+          anaSections += box('바르트 서사 코드', sBar('해석 코드 (Hermeneutic)',bc.hermeneutic_code?.score,10)+sBar('행동 코드 (Proairetic)',bc.proairetic_code?.score,10)+sBar('의미 코드 (Semic)',bc.semic_code?.score,10)+sBar('상징 코드 (Symbolic)',bc.symbolic_code?.score,10)+sBar('문화 코드 (Cultural)',bc.cultural_code?.score,10)+kv2('지배 코드',bc.dominant_code)+(bc.barthes_verdict?`<div style="margin-top:6pt;font-style:italic;color:#555;border-top:1pt solid #eee;padding-top:5pt;">${bc.barthes_verdict}</div>`:''));
+        }
+        if (koreanMythResult) {
+          const km = koreanMythResult;
+          anaSections += box('한국 정서 분석', sBar('한(\u6068) 공명도',km.han_resonance?.score,10)+sBar('정(\u60c5) 공명도',km.jeong_resonance?.score,10)+sBar('신명(\u795e\u660e) 요소',km.sinmyeong_element?.score,10)+(km.korean_myth_verdict?`<div style="margin-top:6pt;font-style:italic;color:#555;border-top:1pt solid #eee;padding-top:5pt;">${km.korean_myth_verdict}</div>`:''));
+        }
+        if (valueChargeResult) {
+          const vc = valueChargeResult;
+          anaSections += box('McKee 가치 충전', flatKV(vc.primary_charge)+(vc.charge_intensity?.score!=null?sBar('충전 강도',vc.charge_intensity.score,10):'')+(vc.mckee_verdict?`<div style="margin-top:6pt;font-style:italic;color:#555;border-top:1pt solid #eee;padding-top:5pt;">${vc.mckee_verdict}</div>`:''));
+        }
+        anaSections += '<div style="margin-bottom:20pt;"></div>';
+      }
+
+      // ⑤ 전문가 패널
+      if (expertPanelResult) {
+        const ep = expertPanelResult;
+        anaSections += sHead(`전문가 패널${ep.panel_title?' \u2014 '+ep.panel_title:''}`, '#1d4ed8');
+        if (ep.round1?.length) {
+          ep.round1.slice(0,4).forEach(ex => {
+            const nm = ex.expert||ex.name||ex.role||ex.title||'전문가';
+            const op = ex.opinion||ex.analysis||ex.comment||ex.feedback||flatKV(ex);
+            anaSections += box(nm, `<div style="font-size:8.5pt;color:#333;line-height:1.7;">${op}</div>`);
+          });
+        }
+        if (ep.synthesis?.consensus||ep.synthesis?.strongest_element) {
+          anaSections += `<div style="background:#eff6ff;border-left:3pt solid #1d4ed8;padding:8pt 12pt;border-radius:2pt;margin-bottom:8pt;">${ep.synthesis.strongest_element?`<div style="font-size:7.5pt;font-weight:700;color:#1d4ed8;margin-bottom:3pt;">최강 요소</div><div style="font-size:8.5pt;margin-bottom:7pt;line-height:1.6;">${ep.synthesis.strongest_element}</div>`:''} ${ep.synthesis.consensus?`<div style="font-size:7.5pt;font-weight:700;color:#1d4ed8;margin-bottom:3pt;">종합 의견</div><div style="font-size:8.5pt;line-height:1.6;">${ep.synthesis.consensus}</div>`:''}</div>`;
+        }
+        anaSections += '<div style="margin-bottom:20pt;"></div>';
+      }
+
+      // ⑥ 구조·테마·서브텍스트
+      if (structureResult || themeResult || subtextResult) {
+        anaSections += sHead('구조 \u00b7 테마 \u00b7 서브텍스트', '#065f46');
+        if (structureResult) {
+          const sr = structureResult;
+          const actsH = sr.acts?.length ? sr.acts.slice(0,4).map(a=>`<div style="margin-bottom:6pt;padding-bottom:5pt;border-bottom:1pt solid #e5e5e5;"><span style="font-weight:700;color:#065f46;font-size:8pt;">${a.act||a.name||a.act_name||''}</span>${(a.description||a.content||a.summary)?`<div style="font-size:8pt;color:#444;margin-top:2pt;line-height:1.55;">${a.description||a.content||a.summary}</div>`:''}</div>`).join('') : '';
+          const ppH = sr.plot_points?.length ? bul(sr.plot_points.slice(0,5).map(p=>p.name||p.description||String(p))) : '';
+          anaSections += box(`구조 분석 \u2014 ${sr.structure_type||''}`, actsH+ppH);
+        }
+        if (themeResult) {
+          const tr = themeResult;
+          anaSections += box('테마 분석', kv2('컨트롤링 아이디어',tr.controlling_idea)+(tr.moral_premise?.statement?kv2('도덕적 전제',tr.moral_premise.statement):flatKV(tr.moral_premise||{}))+kv2('테마 질문',tr.thematic_question)+(tr.protagonist_inner_journey?`<div style="margin-top:6pt;"><div style="font-size:7pt;font-weight:700;color:#065f46;text-transform:uppercase;letter-spacing:1px;margin-bottom:3pt;">주인공 내면 여정</div>${flatKV(tr.protagonist_inner_journey)}</div>`:''));
+        }
+        if (subtextResult) {
+          const st = subtextResult;
+          anaSections += box('서브텍스트 (체호프)', sBar('서브텍스트 지수',st.subtext_score,10)+kv2('표면 이야기',st.surface_story)+kv2('이면 이야기',st.deeper_story)+(st.chekhov_verdict?`<div style="margin-top:6pt;font-style:italic;color:#444;border-top:1pt solid #eee;padding-top:5pt;">${st.chekhov_verdict}</div>`:''));
+        }
+        anaSections += '<div style="margin-bottom:20pt;"></div>';
+      }
+
+      // ⑦ 유사 작품 비교
+      if (comparableResult?.comparable_works?.length) {
+        const cr = comparableResult;
+        anaSections += sHead('유사 작품 비교', '#831843');
+        anaSections += `<table style="width:100%;border-collapse:collapse;font-size:8pt;margin-bottom:8pt;"><thead><tr style="background:#fdf2f8;"><th style="text-align:left;padding:5pt 7pt;border-bottom:1.5pt solid #d1d5db;font-size:7.5pt;color:#555;">작품</th><th style="text-align:center;padding:5pt 7pt;border-bottom:1.5pt solid #d1d5db;font-size:7.5pt;color:#555;white-space:nowrap;">유사도</th><th style="text-align:left;padding:5pt 7pt;border-bottom:1.5pt solid #d1d5db;font-size:7.5pt;color:#555;">유사 이유</th><th style="text-align:left;padding:5pt 7pt;border-bottom:1.5pt solid #d1d5db;font-size:7.5pt;color:#555;">배울 점</th></tr></thead><tbody>${cr.comparable_works.slice(0,6).map((w,i)=>`<tr style="background:${i%2===0?'#fff':'#fafafa'};"><td style="padding:5pt 7pt;border-bottom:1pt solid #f0f0f0;font-weight:700;">${w.title||''}${w.year?` (${w.year})`:''}</td><td style="padding:5pt 7pt;border-bottom:1pt solid #f0f0f0;text-align:center;color:#831843;font-weight:700;">${w.similarity_score||0}/10</td><td style="padding:5pt 7pt;border-bottom:1pt solid #f0f0f0;color:#444;line-height:1.5;">${w.why_comparable||''}</td><td style="padding:5pt 7pt;border-bottom:1pt solid #f0f0f0;color:#444;line-height:1.5;">${w.what_to_learn||''}</td></tr>`).join('')}</tbody></table>`;
+        if (cr.market_positioning) anaSections += kv2('시장 포지셔닝', String(cr.market_positioning));
+        if (cr.tone_reference) anaSections += kv2('톤 레퍼런스', String(cr.tone_reference));
+        anaSections += '<div style="margin-bottom:20pt;"></div>';
+      }
+
+      const synHtml = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>시놉시스 — ${logline.slice(0,20) || "문서"}</title>
+<style>
+  @page { size: A4 portrait; margin: 14mm 16mm 14mm 16mm; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: "Malgun Gothic","AppleGothic","NanumGothic",sans-serif;
+    font-size: 9.5pt;
+    color: #1a1a2e;
+    background: #fff;
+    line-height: 1.75;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10pt;
+  }
+  /* 헤더 */
+  .header {
+    border-bottom: 2.5pt solid #1a1a2e;
+    padding-bottom: 8pt;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .header-left .doc-label {
+    font-size: 7pt;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    color: #999;
+    text-transform: uppercase;
+    margin-bottom: 3pt;
+  }
+  .header-left .logline-text {
+    font-size: 11pt;
+    font-weight: 800;
+    line-height: 1.4;
+    max-width: 390pt;
+    word-break: keep-all;
+  }
+  .header-right {
+    text-align: right;
+    font-size: 7.5pt;
+    color: #888;
+    line-height: 1.8;
+    flex-shrink: 0;
+    padding-left: 12pt;
+  }
+  /* 메타 배지 행 */
+  .meta-row {
+    display: flex;
+    gap: 8pt;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .badge {
+    font-size: 7.5pt;
+    font-weight: 700;
+    padding: 2pt 8pt;
+    border-radius: 10pt;
+    border: 1pt solid #ddd;
+    color: #555;
+    background: #f7f7f7;
+    white-space: nowrap;
+  }
+  .badge.direction { border-color: #c8a84b; color: #9a7a20; background: #fdf8ee; }
+  .badge.genre-tone { border-color: #bbb; }
+  /* 시놉시스 본문 */
+  .synopsis-block {
+    border-left: 3pt solid #1a1a2e;
+    padding-left: 12pt;
+  }
+  .synopsis-body {
+    font-size: 9.5pt;
+    line-height: 1.85;
+    color: #222;
+    word-break: keep-all;
+    text-align: justify;
+  }
+  /* 핵심 장면 */
+  .scenes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 7pt;
+  }
+  .scene-card {
+    border: 1pt solid #e0e0e0;
+    border-radius: 4pt;
+    padding: 7pt 9pt;
+    background: #fafafa;
+  }
+  .scene-num {
+    font-size: 7pt;
+    font-weight: 800;
+    color: #999;
+    margin-bottom: 3pt;
+    font-family: "Courier New", monospace;
+  }
+  .scene-text { font-size: 8pt; color: #444; line-height: 1.6; }
+  /* 하단 2단 */
+  .bottom-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10pt;
+  }
+  .info-box {
+    border: 1pt solid #e0e0e0;
+    border-radius: 4pt;
+    padding: 8pt 10pt;
+  }
+  .info-box-title {
+    font-size: 7pt;
+    font-weight: 700;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5pt;
+  }
+  .info-box-body { font-size: 8.5pt; color: #333; line-height: 1.7; }
+  /* 주제 */
+  .theme-bar {
+    background: #f5f5f5;
+    border-radius: 4pt;
+    padding: 7pt 12pt;
+    font-size: 8.5pt;
+    color: #444;
+    border-left: 3pt solid #c8a84b;
+    word-break: keep-all;
+  }
+  /* 푸터 */
+  .footer {
+    border-top: 1pt solid #e0e0e0;
+    padding-top: 6pt;
+    display: flex;
+    justify-content: space-between;
+    font-size: 7pt;
+    color: #bbb;
+    font-family: "Courier New", monospace;
+  }
+  h3 { font-size: 8pt; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6pt; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 헤더 -->
+  <div class="header">
+    <div class="header-left">
+      <div class="doc-label">시놉시스 문서 &nbsp;·&nbsp; Hello Logline</div>
+      <div class="logline-text">${logline || "—"}</div>
+    </div>
+    <div class="header-right">
+      <div><strong>장르</strong> ${genreLabel}</div>
+      <div><strong>포맷</strong> ${durLabel}</div>
+      <div>${today}</div>
+    </div>
+  </div>
+
+  <!-- 메타 배지 -->
+  <div class="meta-row">
+    ${synopsisTitle ? `<span class="badge direction">${synopsisTitle}</span>` : ""}
+    ${synopsisGenreTone ? `<span class="badge genre-tone">${synopsisGenreTone}</span>` : ""}
+    ${synopsisEndingType ? `<span class="badge">${synopsisEndingType}</span>` : ""}
+    ${qualScore != null ? `<span class="badge">품질 ${qualScore}/100</span>` : ""}
+    ${intScore != null ? `<span class="badge">흥미 ${intScore}/100</span>` : ""}
+  </div>
+
+  <!-- 시놉시스 본문 -->
+  ${synopsisText ? `
+  <div class="synopsis-block">
+    <h3>시놉시스</h3>
+    <div class="synopsis-body">${synopsisText.replace(/\n\n/g, "</p><p style='margin-top:7pt;'>").replace(/\n/g, "<br>")}</div>
+  </div>` : ""}
+
+  <!-- 핵심 장면 -->
+  ${keyScenes.length > 0 ? `
+  <div>
+    <h3>핵심 장면</h3>
+    <div class="scenes-grid">
+      ${keyScenes.slice(0,3).map((s, i) => `
+        <div class="scene-card">
+          <div class="scene-num">SCENE ${i + 1}</div>
+          <div class="scene-text">${s}</div>
+        </div>`).join("")}
+    </div>
+  </div>` : ""}
+
+  <!-- 주제 -->
+  ${synopsisTheme ? `
+  <div class="theme-bar">
+    <strong>주제&nbsp;&nbsp;</strong>${synopsisTheme}
+  </div>` : ""}
+
+  <!-- 점수 + 캐릭터 (2단) -->
+  ${(qualScore != null || protagonist) ? `
+  <div class="bottom-row">
+    ${qualScore != null ? `
+    <div class="info-box">
+      <div class="info-box-title">로그라인 분석 점수</div>
+      <div class="info-box-body">
+        ${qualBar("품질 점수", qualScore, 100, "#1a1a2e")}
+        ${qualBar("흥미 유발 지수", intScore, 100, "#1a1a2e")}
+      </div>
+    </div>` : "<div></div>"}
+    ${protagonist ? `
+    <div class="info-box">
+      <div class="info-box-title">주인공</div>
+      <div class="info-box-body">
+        <strong>${protagonist.name_suggestion || protagonist.name || "—"}</strong>${protagonist.egri?.sociology || protagonist.role ? ` · ${protagonist.egri?.sociology || ""}` : ""}<br>
+        ${protagonist.want ? `Want: ${protagonist.want}<br>` : ""}
+        ${protagonist.need ? `Need: ${protagonist.need}` : ""}
+      </div>
+    </div>` : "<div></div>"}
+  </div>` : ""}
+
+  <!-- 푸터 -->
+  <div class="footer">
+    <span>HelloLogline × Claude AI — 시놉시스 문서</span>
+    <span>${today}</span>
+  </div>
+
+</div>
+<script>window.onload = () => { document.title = "시놉시스"; window.print(); };</script>
+</body>
+</html>`;
+
+      // 분석 섹션을 시놉시스 HTML에 삽입 (</body> 직전)
+      const anaBlock = anaSections
+        ? `<div style="padding-top:10pt;">${anaSections}<div style="border-top:1pt solid #e0e0e0;padding-top:6pt;display:flex;justify-content:space-between;font-size:7pt;color:#bbb;font-family:'Courier New',monospace;margin-top:4pt;"><span>HelloLogline \u00d7 Claude AI \u2014 시놉시스 기획서</span><span>${today}</span></div></div>`
+        : '';
+      const fullHtml = anaBlock
+        ? synHtml.replace(
+            '<script>window.onload = () => { document.title = "시놉시스"; window.print(); };</script>',
+            `${anaBlock}<script>window.onload = () => { document.title = "시놉시스 기획서"; window.print(); };</script>`
+          )
+        : synHtml;
+      const win = window.open("", "_blank", "width=794,height=1123");
+      if (win) { win.document.write(fullHtml); win.document.close(); }
+      return;
+    }
+
 
     const docMeta = {
       logline:   { title: "기초 기획서",     subtitle: "로그라인 기반 초기 기획", badge: "STEP 1" },
@@ -1218,12 +1761,136 @@ export default function LoglineAnalyzer() {
 
     // 3. 로그라인 분석 (logline 단계)
     if (docType === "logline" && result) {
-      body += sec("로그라인 분석 결과", `
-        ${qualScore !== null ? scoreBar("품질 점수", qualScore, 100) : ""}
-        ${intScore !== null ? scoreBar("흥미 유발 지수", intScore, 100) : ""}
-        ${result.overall_feedback ? `<p class="feedback">${result.overall_feedback}</p>` : ""}
-        ${themeResult?.controlling_idea ? `<p><strong>테마:</strong> ${themeResult.controlling_idea}</p>` : ""}
-      `);
+      const LABELS = {
+        protagonist: "주인공 구체성", inciting_incident: "촉발 사건",
+        goal: "목표 선명성", conflict: "갈등/장애물", stakes: "이해관계(Stakes)",
+        irony: "아이러니/훅", mental_picture: "심상 유발력",
+        emotional_hook: "감정적 공명", originality: "독창성",
+        conciseness: "간결성", active_language: "능동적 언어",
+        no_violations: "금기사항", genre_tone: "장르 톤",
+        information_gap: "정보 격차", cognitive_dissonance: "인지적 부조화",
+        narrative_transportation: "서사 몰입", universal_relatability: "보편적 공감",
+        unpredictability: "예측 불가능성",
+      };
+
+      const detailBlock = (key, val) => `
+        <div class="detail-item">
+          <div class="detail-header">
+            <span class="detail-label">${LABELS[key] || key}</span>
+            <span class="detail-score">${val.score ?? "-"}/${val.max ?? "-"}</span>
+          </div>
+          <div class="detail-track"><div class="detail-fill" style="width:${val.max ? Math.round((val.score / val.max) * 100) : 0}%"></div></div>
+          ${val.found ? `<div class="detail-found">감지: &ldquo;${val.found}&rdquo;</div>` : ""}
+          ${val.feedback ? `<div class="detail-feedback">${val.feedback}</div>` : ""}
+        </div>`;
+
+      const structureTotal = Object.values(result.structure || {}).reduce((s, v) => s + (v?.score || 0), 0);
+      const expressionTotal = Object.values(result.expression || {}).reduce((s, v) => s + (v?.score || 0), 0);
+      const technicalTotal = Object.values(result.technical || {}).reduce((s, v) => s + (v?.score || 0), 0);
+      const interestTotal = Object.values(result.interest || {}).reduce((s, v) => s + (v?.score || 0), 0);
+
+      body += `
+      <section class="allow-break">
+        <h2>종합 점수</h2>
+        <div class="section-body">
+          ${scoreBar("품질 점수 (구조+표현+기술)", qualScore, 100)}
+          ${scoreBar("흥미 유발 지수", intScore, 100)}
+          ${result.detected_genre ? `<p style="margin-top:8pt;font-size:9.5pt;color:#555;">감지된 장르: <strong>${result.detected_genre}</strong></p>` : ""}
+        </div>
+      </section>`;
+
+      if (result.structure) {
+        body += `
+      <section class="allow-break">
+        <h2>A. 구조적 완성도 &nbsp;<span style="font-weight:400;font-size:10pt;color:#666;">${structureTotal}/50</span></h2>
+        <div class="section-body detail-section">
+          ${Object.entries(result.structure).map(([k, v]) => detailBlock(k, v)).join("")}
+        </div>
+      </section>`;
+      }
+
+      if (result.expression) {
+        body += `
+      <section class="allow-break">
+        <h2>B. 표현적 매력도 &nbsp;<span style="font-weight:400;font-size:10pt;color:#666;">${expressionTotal}/30</span></h2>
+        <div class="section-body detail-section">
+          ${Object.entries(result.expression).map(([k, v]) => detailBlock(k, v)).join("")}
+        </div>
+      </section>`;
+      }
+
+      if (result.technical) {
+        body += `
+      <section class="allow-break">
+        <h2>C. 기술적 완성도 &nbsp;<span style="font-weight:400;font-size:10pt;color:#666;">${technicalTotal}/20</span></h2>
+        <div class="section-body detail-section">
+          ${Object.entries(result.technical).map(([k, v]) => detailBlock(k, v)).join("")}
+        </div>
+      </section>`;
+      }
+
+      if (result.interest) {
+        body += `
+      <section class="allow-break">
+        <h2>D. 흥미 유발 지수 &nbsp;<span style="font-weight:400;font-size:10pt;color:#666;">${interestTotal}/100</span></h2>
+        <div class="section-body detail-section">
+          ${Object.entries(result.interest).map(([k, v]) => detailBlock(k, v)).join("")}
+        </div>
+      </section>`;
+      }
+
+      body += `
+      <section class="allow-break">
+        <h2>개선 방향</h2>
+        <div class="section-body">
+          ${result.overall_feedback ? `<p class="feedback">${result.overall_feedback}</p>` : ""}
+          ${result.improvement_questions?.length > 0 ? `
+            <h3 style="margin-top:14pt;">스스로 점검해볼 질문</h3>
+            <ol class="improvement-list">
+              ${result.improvement_questions.map(q => `<li>${q}</li>`).join("")}
+            </ol>` : ""}
+          ${themeResult?.controlling_idea ? `<p style="margin-top:10pt;"><strong>테마:</strong> ${themeResult.controlling_idea}</p>` : ""}
+        </div>
+      </section>
+      ${storyFixes.length > 0 ? `
+      <section class="allow-break">
+        <h2>🔧 약점 집중 수정안</h2>
+        <div class="section-body">
+          ${storyFixes.map((fix, i) => `
+            <div class="improve-card" style="border-left-color:#F87171;">
+              <div class="improve-card-title" style="color:#c0392b;">${i + 1}. ${fix.weakness || ""}</div>
+              ${fix.score_issue ? `<div class="improve-card-sub">${fix.score_issue}</div>` : ""}
+              <div class="improve-card-logline">&ldquo;${fix.fixed_logline || ""}&rdquo;</div>
+              ${fix.key_change ? `<div class="improve-card-why">→ ${fix.key_change}</div>` : ""}
+            </div>`).join("")}
+        </div>
+      </section>` : ""}
+      ${storyPivots.length > 0 ? `
+      <section class="allow-break">
+        <h2>🔀 방향 전환안</h2>
+        <div class="section-body">
+          ${storyPivots.map((pivot, i) => `
+            <div class="improve-card" style="border-left-color:#8B5CF6;">
+              <div class="improve-card-title" style="color:#6d28d9;">${i + 1}. ${pivot.label || ""}</div>
+              <div class="improve-card-logline">&ldquo;${pivot.pivot_logline || ""}&rdquo;</div>
+              ${pivot.why_interesting ? `<div class="improve-card-why">${pivot.why_interesting}</div>` : ""}
+            </div>`).join("")}
+        </div>
+      </section>` : ""}
+      ${aiImprovement ? `
+      <section class="allow-break">
+        <h2>✨ AI 개선안</h2>
+        <div class="section-body">
+          <div class="improve-card" style="border-left-color:#45B7D1;">
+            <div class="improve-card-logline">&ldquo;${aiImprovement.improved || ""}&rdquo;</div>
+            ${aiImprovement.why ? `<div class="improve-card-why">${aiImprovement.why}</div>` : ""}
+            ${(aiImprovement.changes || []).length > 0 ? `
+              <ul class="improvement-list" style="margin-top:8pt;">
+                ${aiImprovement.changes.map(c => `<li>${c}</li>`).join("")}
+              </ul>` : ""}
+          </div>
+        </div>
+      </section>` : ""}`;
     }
 
     // 4. 등장인물 소개 (treatment+)
@@ -1283,6 +1950,69 @@ export default function LoglineAnalyzer() {
     // 7. 트리트먼트 (treatment+)
     if ((docType === "treatment" || docType === "final") && treatmentResult) {
       body += sec("트리트먼트", `<div class="treatment-text">${treatmentResult.replace(/\n/g, "<br>").replace(/#{1,3} (.+)/g, "<strong>$1</strong>")}</div>`);
+    }
+
+    // 7-1. 비트 시트 (treatment+)
+    if ((docType === "treatment" || docType === "final") && beatSheetResult?.beats?.length) {
+      const bs = beatSheetResult;
+      const beatsHtml = `
+        ${bs.format_name || bs.total_pages ? `<p style="margin-bottom:10pt;"><strong>포맷:</strong> ${bs.format_name || ""}${bs.total_pages ? ` · 총 ${bs.total_pages}페이지` : ""}</p>` : ""}
+        <table>
+          <thead><tr><th style="width:28pt;text-align:center;">#</th><th style="width:120pt;">비트 이름</th><th>내용 요약</th></tr></thead>
+          <tbody>
+            ${bs.beats.map((b, i) => `
+              <tr>
+                <td style="text-align:center;color:#888;font-size:9pt;">${b.id || (i + 1)}</td>
+                <td><strong>${b.name_kr || "—"}</strong></td>
+                <td>${b.summary || ""}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>`;
+      body += sec("비트 시트", beatsHtml);
+    }
+
+    // 7-2. 대사 디벨롭 (treatment+)
+    if ((docType === "treatment" || docType === "final") && dialogueDevResult) {
+      const dd = dialogueDevResult;
+      let ddHtml = "";
+      if (dd.character_voices?.length) {
+        ddHtml += `<h3>캐릭터 목소리 설계</h3>`;
+        dd.character_voices.slice(0, 5).forEach(v => {
+          const name = v.name || v.character || v.character_name || "—";
+          const style = v.voice_style || v.speaking_style || v.style || "";
+          const traits = v.linguistic_traits || v.traits || "";
+          const sample = v.sample_line || v.sample || v.example_line || v.example || "";
+          ddHtml += `<div class="character-block secondary">
+            <h3>${name}</h3>
+            ${style ? `<p><strong>말투:</strong> ${style}</p>` : ""}
+            ${traits ? `<p><strong>언어적 특징:</strong> ${traits}</p>` : ""}
+            ${sample ? `<p><em style="color:#555;">&ldquo;${sample}&rdquo;</em></p>` : ""}
+          </div>`;
+        });
+      }
+      if (dd.subtext_techniques?.length) {
+        const techItems = dd.subtext_techniques.slice(0, 4).map(t => {
+          const name = t.technique || t.name || t.title || "";
+          const desc = t.description || t.explanation || t.example || "";
+          return `<li><strong>${name}</strong>${desc ? `: ${desc}` : ""}</li>`;
+        }).join("");
+        ddHtml += `<h3 style="margin-top:12pt;">서브텍스트 기법</h3><ul>${techItems}</ul>`;
+      }
+      if (dd.key_scene_dialogue) {
+        const ks = dd.key_scene_dialogue;
+        const sceneName = ks.scene || ks.scene_name || ks.title || "";
+        const lines = ks.dialogue || ks.lines || ks.exchange || "";
+        if (sceneName || lines) {
+          ddHtml += `<h3 style="margin-top:12pt;">핵심 장면 대사</h3>`;
+          if (sceneName) ddHtml += `<p><strong>장면:</strong> ${sceneName}</p>`;
+          if (typeof lines === "string" && lines) {
+            ddHtml += `<div class="treatment-text" style="margin-top:6pt;">${lines.replace(/\n/g, "<br>")}</div>`;
+          } else if (Array.isArray(lines) && lines.length) {
+            ddHtml += `<div class="treatment-text" style="margin-top:6pt;">${lines.map(l => `<p>${typeof l === "object" ? (l.line || l.text || "") : l}</p>`).join("")}</div>`;
+          }
+        }
+      }
+      if (ddHtml) body += sec("대사 디벨롭", ddHtml);
     }
 
     // 8. Script Coverage 요약 (final)
@@ -1395,6 +2125,23 @@ export default function LoglineAnalyzer() {
   .score-num { font-size: 8.5pt; font-weight: 700; min-width: 35pt; text-align: right; }
 
   .feedback { font-style: italic; color: #444; background: #f8f8f8; padding: 10pt 14pt; border-left: 3pt solid #ccc; border-radius: 0 3pt 3pt 0; page-break-inside: avoid; }
+
+  .detail-section { display: flex; flex-direction: column; gap: 10pt; }
+  .detail-item { border: 1pt solid #e8e8ee; border-radius: 4pt; padding: 9pt 12pt; page-break-inside: avoid; }
+  .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5pt; }
+  .detail-label { font-size: 9.5pt; font-weight: 700; color: #1a1a2e; }
+  .detail-score { font-size: 9pt; font-weight: 700; color: #555; font-family: "Courier New", monospace; }
+  .detail-track { height: 5pt; background: #eee; border-radius: 3pt; overflow: hidden; margin-bottom: 6pt; }
+  .detail-fill { height: 100%; background: #1a1a2e; border-radius: 3pt; }
+  .detail-found { font-size: 8.5pt; color: #888; background: #f5f5f5; border-radius: 3pt; padding: 3pt 8pt; margin-bottom: 4pt; font-style: italic; }
+  .detail-feedback { font-size: 9pt; color: #444; line-height: 1.7; }
+  .improvement-list { padding-left: 18pt; }
+  .improvement-list li { font-size: 9.5pt; color: #444; margin-bottom: 6pt; line-height: 1.75; }
+  .improve-card { border-left: 3pt solid #ccc; padding: 10pt 14pt; margin-bottom: 10pt; background: #fafafa; border-radius: 0 4pt 4pt 0; page-break-inside: avoid; }
+  .improve-card-title { font-size: 9.5pt; font-weight: 700; margin-bottom: 4pt; }
+  .improve-card-sub { font-size: 8.5pt; color: #777; margin-bottom: 6pt; line-height: 1.6; }
+  .improve-card-logline { font-size: 11pt; font-weight: 600; color: #1a1a2e; line-height: 1.7; margin-bottom: 6pt; }
+  .improve-card-why { font-size: 9pt; color: #555; line-height: 1.65; }
 
   .synopsis-direction { color: #666; font-size: 9.5pt; margin-bottom: 7pt; }
   .synopsis-text { line-height: 2; text-indent: 1em; }
@@ -1556,6 +2303,66 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   };
 
   // ── Analyze ──
+  const generateInsight = async () => {
+    if (!apiKey || !result) return;
+    setInsightLoading(true);
+    setInsightError("");
+    setInsightResult(null);
+    try {
+      const genreLabel = genre === "auto" ? (result?.detected_genre || "미정") : GENRES.find(g => g.id === genre)?.label || "미정";
+      const lines = [
+        `로그라인: "${logline}"`,
+        `장르: ${genreLabel} / 포맷: ${getDurText()}`,
+        "",
+        "── 완료된 분석 결과 요약 ──",
+      ];
+      if (result) {
+        lines.push(`로그라인 품질: 구조 ${calcSectionTotal(result,"structure")}/50, 표현 ${calcSectionTotal(result,"expression")}/30, 기술 ${calcSectionTotal(result,"technical")}/20, 흥미도 ${calcSectionTotal(result,"interest")}/50`);
+        if (result.overall_feedback) lines.push(`종합 피드백: ${result.overall_feedback}`);
+      }
+      if (earlyCoverageResult) lines.push(`상업성: ${earlyCoverageResult.marketability_score}/10 — ${earlyCoverageResult.one_line_verdict || ""}`);
+      if (charDevResult?.protagonist) {
+        const p = charDevResult.protagonist;
+        lines.push(`주인공 Want: ${p.want||"미정"} / Need: ${p.need||"미정"} / Arc: ${p.arc_type||"미정"}`);
+      }
+      if (shadowResult?.jung_verdict) lines.push(`Jung 분석: ${shadowResult.jung_verdict}`);
+      if (authenticityResult) lines.push(`진정성: ${authenticityResult.authenticity_score}/10 — ${authenticityResult.authenticity_label||""}`);
+      if (mythMapResult) lines.push(`신화 단계: ${mythMapResult.primary_stage||""} — ${mythMapResult.campbell_verdict||""}`);
+      if (barthesCodeResult) lines.push(`바르트 지배 코드: ${barthesCodeResult.dominant_code||""} / ${barthesCodeResult.barthes_verdict||""}`);
+      if (koreanMythResult?.korean_myth_verdict) lines.push(`한국 정서: ${koreanMythResult.korean_myth_verdict}`);
+      if (expertPanelResult?.synthesis?.consensus) lines.push(`전문가 패널: ${expertPanelResult.synthesis.consensus}`);
+      if (themeResult) lines.push(`컨트롤링 아이디어: ${themeResult.controlling_idea||""} / 질문: ${themeResult.thematic_question||""}`);
+      if (subtextResult) lines.push(`서브텍스트: ${subtextResult.subtext_score}/10 — ${subtextResult.chekhov_verdict||""}`);
+      if (structureResult) lines.push(`구조 유형: ${structureResult.structure_type||""}`);
+      if (comparableResult?.market_positioning) lines.push(`시장 포지셔닝: ${comparableResult.market_positioning}`);
+      const synText = pipelineResult?.synopsis || synopsisResults?.synopses?.[0]?.synopsis || "";
+      if (synText) lines.push(`시놉시스 (앞부분): ${synText.slice(0,250)}…`);
+
+      const sysPrompt = `당신은 시나리오 전문 컨설턴트입니다. 제공된 여러 분석 결과를 종합하여 지금 이 작품의 발전을 위해 가장 중요한 개선점 3가지를 명확하고 실용적으로 제시하세요.
+
+반드시 아래 JSON 형식으로만 답하세요:
+{
+  "priority_issues": [
+    {
+      "title": "개선점 제목 (6-12자)",
+      "problem": "무엇이 문제인가 (1-2문장, 분석 데이터 기반)",
+      "why_matters": "왜 지금 중요한가 (1문장)",
+      "action": "구체적으로 어떻게 고칠 수 있는가 (2-3문장, 실용적 방법)"
+    }
+  ],
+  "overall_verdict": "현재 이 작품의 가장 핵심적인 한 줄 평가 (20-35자)",
+  "strongest_element": "현재 가장 잘 되어 있는 요소 (10-25자)"
+}`;
+
+      const parsed = await callClaude(apiKey, sysPrompt, lines.join("\n"), 3000, "claude-sonnet-4-6", undefined, InsightSchema, "insight");
+      setInsightResult(parsed);
+    } catch (e) {
+      setInsightError(e.message || "인사이트 생성 실패");
+    } finally {
+      setInsightLoading(false);
+    }
+  };
+
   const analyze = async (overrideLogline) => {
     const target = overrideLogline ?? logline;
     if (!target.trim() || !apiKey) return;
@@ -1566,6 +2373,11 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setError("");
     setResult(null);
     setResult2(null);
+    setStoryFixes([]);
+    setStoryPivots([]);
+    setAiImprovement(null);
+    setInsightResult(null);
+    setInsightError("");
     try {
       const parsed = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(target, genre), 4500, "claude-sonnet-4-6", ctrl.signal, LoglineAnalysisSchema, "logline");
       const sT = calcSectionTotal(parsed, "structure");
@@ -1675,6 +2487,27 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       if (cd.length > 0) contextParts.push(`[캐릭터 디벨롭 — 인물 심리를 시놉시스에 반영]\n${cd.join("\n")}`);
     }
 
+    // ── 인물 직접 설정 (treatmentChars) — 항상 최우선 반영 ──
+    {
+      const p = treatmentChars.protagonist;
+      const manualLines = [];
+      if (p.name) manualLines.push(`주인공 이름: ${p.name}${p.role ? ` (${p.role})` : ""}`);
+      if (p.want) manualLines.push(`외적 목표(Want): ${p.want}`);
+      if (p.need) manualLines.push(`내적 욕구(Need): ${p.need}`);
+      if (p.flaw) manualLines.push(`핵심 결함: ${p.flaw}`);
+      const activeSupporting = treatmentChars.supporting.filter(s => s.name.trim());
+      if (activeSupporting.length > 0) {
+        activeSupporting.forEach(s => {
+          let line = `조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}${s.mbti ? ` [MBTI: ${s.mbti}]` : ""}`;
+          if (s.description) line += `\n  설명: ${s.description}`;
+          manualLines.push(line);
+        });
+      }
+      if (manualLines.length > 0) {
+        contextParts.unshift(`[작가 직접 설정 — 반드시 이 인물 이름·설정·관계를 그대로 사용할 것]\n${manualLines.join("\n")}`);
+      }
+    }
+
     const contextBlock = contextParts.length > 0
       ? `\n\n━━━ 이전 분석 결과 (시놉시스에 적극 반영할 것) ━━━\n${contextParts.join("\n\n")}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
       : "";
@@ -1722,7 +2555,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const ctrl = makeController("shadow");
     setShadowLoading(true); setShadowError(""); setShadowResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const charHint = treatmentChars.protagonist.name ? `\n\n[작가 설정]\n주인공: ${treatmentChars.protagonist.name}${treatmentChars.protagonist.role ? ` (${treatmentChars.protagonist.role})` : ""}${treatmentChars.protagonist.want ? `\n외적 목표: ${treatmentChars.protagonist.want}` : ""}${treatmentChars.protagonist.need ? `\n내적 욕구: ${treatmentChars.protagonist.need}` : ""}${treatmentChars.protagonist.flaw ? `\n핵심 결함: ${treatmentChars.protagonist.flaw}` : ""}${treatmentChars.supporting.filter(s => s.name).map(s => `\n조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}`).join("")}` : "";
+    const charHint = treatmentChars.protagonist.name ? `\n\n[작가 설정]\n주인공: ${treatmentChars.protagonist.name}${treatmentChars.protagonist.role ? ` (${treatmentChars.protagonist.role})` : ""}${treatmentChars.protagonist.want ? `\n외적 목표: ${treatmentChars.protagonist.want}` : ""}${treatmentChars.protagonist.need ? `\n내적 욕구: ${treatmentChars.protagonist.need}` : ""}${treatmentChars.protagonist.flaw ? `\n핵심 결함: ${treatmentChars.protagonist.flaw}` : ""}${treatmentChars.supporting.filter(s => s.name).map(s => `\n조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}${s.mbti ? ` [MBTI: ${s.mbti}]` : ""}${s.description ? `\n  설명: ${s.description}` : ""}`).join("")}` : "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}${charHint}\n\n위 로그라인의 캐릭터 원형을 Jung의 분석심리학으로 분석하세요.`;
     try { const data = await callClaude(apiKey, SHADOW_ANALYSIS_SYSTEM_PROMPT, msg, 3000, "claude-haiku-4-5-20251001", ctrl.signal, ShadowAnalysisSchema, "character"); setShadowResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setShadowError(err.message || "그림자 분석 중 오류가 발생했습니다."); }
@@ -1735,7 +2568,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const ctrl = makeController("authenticity");
     setAuthenticityLoading(true); setAuthenticityError(""); setAuthenticityResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const charHint = treatmentChars.protagonist.name ? `\n\n[작가 설정]\n주인공: ${treatmentChars.protagonist.name}${treatmentChars.protagonist.role ? ` (${treatmentChars.protagonist.role})` : ""}${treatmentChars.protagonist.want ? `\n외적 목표: ${treatmentChars.protagonist.want}` : ""}${treatmentChars.protagonist.need ? `\n내적 욕구: ${treatmentChars.protagonist.need}` : ""}${treatmentChars.protagonist.flaw ? `\n핵심 결함: ${treatmentChars.protagonist.flaw}` : ""}${treatmentChars.supporting.filter(s => s.name).map(s => `\n조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}`).join("")}` : "";
+    const charHint = treatmentChars.protagonist.name ? `\n\n[작가 설정]\n주인공: ${treatmentChars.protagonist.name}${treatmentChars.protagonist.role ? ` (${treatmentChars.protagonist.role})` : ""}${treatmentChars.protagonist.want ? `\n외적 목표: ${treatmentChars.protagonist.want}` : ""}${treatmentChars.protagonist.need ? `\n내적 욕구: ${treatmentChars.protagonist.need}` : ""}${treatmentChars.protagonist.flaw ? `\n핵심 결함: ${treatmentChars.protagonist.flaw}` : ""}${treatmentChars.supporting.filter(s => s.name).map(s => `\n조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}${s.mbti ? ` [MBTI: ${s.mbti}]` : ""}${s.description ? `\n  설명: ${s.description}` : ""}`).join("")}` : "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}${charHint}\n\n위 로그라인의 진정성 지수를 실존주의 철학으로 분석하세요.`;
     try { const data = await callClaude(apiKey, AUTHENTICITY_SYSTEM_PROMPT, msg, 3000, "claude-haiku-4-5-20251001", ctrl.signal, AuthenticitySchema, "character"); setAuthenticityResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setAuthenticityError(err.message || "진정성 분석 중 오류가 발생했습니다."); }
@@ -1824,6 +2657,43 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try { const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, ScriptCoverageSchema, "coverage"); setScriptCoverageResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setScriptCoverageError(err.message || "Script Coverage 생성 중 오류가 발생했습니다."); }
     finally { setScriptCoverageLoading(false); clearController("scriptCoverage"); }
+  };
+
+  // ── AI 전환 가이드: 로그라인 → 캐릭터 ──
+  const generateCharGuide = async () => {
+    if (!result) return;
+    setCharGuideLoading(true); setCharGuideError(""); setCharGuide(null);
+    const items = [
+      ...Object.entries(result.structure || {}),
+      ...Object.entries(result.expression || {}),
+    ].map(([k, v]) => `${k}: ${v.score ?? "?"}점 — ${v.feedback || ""}`).join("\n");
+    const msg = `로그라인: "${logline}"\n\n항목별 분석:\n${items}\n\n종합 피드백: ${result.overall_feedback || ""}`;
+    try {
+      const data = await callClaude(apiKey, CHAR_HINT_PROMPT, msg, 800, "claude-haiku-4-5-20251001", null, null, "char_guide");
+      setCharGuide(data);
+    } catch (err) {
+      setCharGuideError(err.message || "가이드 생성 중 오류가 발생했습니다.");
+    } finally {
+      setCharGuideLoading(false);
+    }
+  };
+
+  // ── AI 전환 가이드: Coverage → 고쳐쓰기 ──
+  const generateRewriteGuide = async () => {
+    if (!scriptCoverageResult) return;
+    setRewriteGuideLoading(true); setRewriteGuideError(""); setRewriteGuide(null);
+    const scoresText = Object.entries(scriptCoverageResult.scores || {})
+      .map(([k, v]) => `${k}: ${v.score}/10 (${v.grade}) — ${v.comment}`)
+      .join("\n");
+    const msg = `Script Coverage 결과:\n${scoresText}\n\n종합 판정: ${scriptCoverageResult.recommendation || ""}\n약점: ${(scriptCoverageResult.weaknesses || []).join(", ")}\n총평: ${scriptCoverageResult.reader_comment || ""}`;
+    try {
+      const data = await callClaude(apiKey, REWRITE_HINT_PROMPT, msg, 800, "claude-haiku-4-5-20251001", null, null, "rewrite_guide");
+      setRewriteGuide(data);
+    } catch (err) {
+      setRewriteGuideError(err.message || "우선순위 생성 중 오류가 발생했습니다.");
+    } finally {
+      setRewriteGuideLoading(false);
+    }
   };
 
   // ── Comparable Works ──
@@ -2206,7 +3076,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     pushHistory(setCharDevHistory, charDevResult, "character");
     setCharDevResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const charHint = treatmentChars.protagonist.name ? `\n\n[작가 설정 — 이 정보를 우선하여 캐릭터를 분석하세요]\n주인공: ${treatmentChars.protagonist.name}${treatmentChars.protagonist.role ? ` (${treatmentChars.protagonist.role})` : ""}${treatmentChars.protagonist.want ? `\n외적 목표: ${treatmentChars.protagonist.want}` : ""}${treatmentChars.protagonist.need ? `\n내적 욕구: ${treatmentChars.protagonist.need}` : ""}${treatmentChars.protagonist.flaw ? `\n핵심 결함: ${treatmentChars.protagonist.flaw}` : ""}${treatmentChars.supporting.filter(s => s.name).map(s => `\n조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}`).join("")}` : "";
+    const charHint = treatmentChars.protagonist.name ? `\n\n[작가 설정 — 이 정보를 우선하여 캐릭터를 분석하세요]\n주인공: ${treatmentChars.protagonist.name}${treatmentChars.protagonist.role ? ` (${treatmentChars.protagonist.role})` : ""}${treatmentChars.protagonist.want ? `\n외적 목표: ${treatmentChars.protagonist.want}` : ""}${treatmentChars.protagonist.need ? `\n내적 욕구: ${treatmentChars.protagonist.need}` : ""}${treatmentChars.protagonist.flaw ? `\n핵심 결함: ${treatmentChars.protagonist.flaw}` : ""}${treatmentChars.supporting.filter(s => s.name).map(s => `\n조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}${s.mbti ? ` [MBTI: ${s.mbti}]` : ""}${s.description ? `\n  설명: ${s.description}` : ""}`).join("")}` : "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}${charHint}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요. 시놉시스가 있다면 그 방향의 인물 이름·설정을 따르세요.`;
     try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema, "character"); setCharDevResult(data); if (treatmentResult) setTreatmentStale(true); if (beatSheetResult) setBeatSheetStale(true); if (scenarioDraftResult) setScenarioDraftStale(true); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setCharDevError(err.message || "캐릭터 분석 중 오류가 발생했습니다."); }
@@ -2246,7 +3116,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       charBlock = lines.filter(Boolean).join("\n");
     } else {
       const proto = treatmentChars.protagonist;
-      charBlock = [`주인공: ${proto.name || "미정"} (${proto.role || "역할 미정"})`, proto.want ? `  - 외적 목표(Want): ${proto.want}` : "", proto.need ? `  - 내적 욕구(Need): ${proto.need}` : "", proto.flaw ? `  - 핵심 결함: ${proto.flaw}` : "", ...treatmentChars.supporting.filter((s) => s.name.trim()).map((s) => `조력/적대 인물: ${s.name} (${s.role}) — ${s.relation}`)].filter(Boolean).join("\n");
+      charBlock = [`주인공: ${proto.name || "미정"} (${proto.role || "역할 미정"})`, proto.want ? `  - 외적 목표(Want): ${proto.want}` : "", proto.need ? `  - 내적 욕구(Need): ${proto.need}` : "", proto.flaw ? `  - 핵심 결함: ${proto.flaw}` : "", ...treatmentChars.supporting.filter((s) => s.name.trim()).map((s) => `조력/적대 인물: ${s.name} (${s.role}) — ${s.relation}${s.mbti ? ` [MBTI: ${s.mbti}]` : ""}${s.description ? `\n  설명: ${s.description}` : ""}`)].filter(Boolean).join("\n");
     }
     const storyBible = getStoryBible();
     const genreContext = result?.detected_genre ? `\n로그라인 분석 감지 장르: ${result.detected_genre}` : "";
@@ -2589,6 +3459,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   const isBlocked = tier === "blocked";
   const hasOwnApiKey = !!(apiKey && apiKey !== "__server__");
   const canUseAllStages = isPro || hasOwnApiKey;
+  const cc = (cost) => (hasOwnApiKey || isDemoMode) ? 0 : cost;
 
   const TIER_LABEL = { admin: "관리자", pro: "프리미엄", basic: "기본", blocked: "차단" };
   const TIER_COLOR = { admin: "#C8A84B", pro: "#60A5FA", basic: "var(--c-tx-35)", blocked: "#E85D75" };
@@ -2617,7 +3488,44 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     );
   }
 
+  // 각 스테이지 완료 상태 요약 (사이드바 표시용)
+  const stageResultSummary = {
+    "1": result ? `${qualityScore}점` : null,
+    "7": scriptCoverageResult ? (scriptCoverageResult.recommendation || null) : null,
+  };
+
+  // 공유용 snapshot (logline + stage1 분석 + script coverage)
+  const shareSnapshot = {
+    result,
+    scriptCoverageResult,
+    charDevResult,
+  };
+
+  const loglineCtxValue = {
+    // 입력
+    logline, setLogline, genre, setGenre,
+    // 인증/API
+    apiKey, isDemoMode, hasOwnApiKey, canUseAllStages,
+    user, credits, cc,
+    // UI
+    isMobile, darkMode,
+    // 스테이지 네비게이션
+    currentStage, setCurrentStage, advanceToStage, stageRefs,
+    // 스테이지 상태 헬퍼
+    getStageStatus, getStageDoneCount, STAGE_TOTALS, statusDotColor,
+    // 액션
+    showToast, openApplicationDoc,
+    // 포맷 헬퍼
+    getDurText, getCustomContext,
+    // 스테이지 결과 요약 (사이드바 배지용)
+    stageResultSummary,
+    // 공유 snapshot
+    shareSnapshot,
+  };
+
   return (
+  <LoglineProvider value={loglineCtxValue}>
+    <WelcomeModal />
     <div style={{ minHeight: "100vh", background: "var(--bg-page)", color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif" }}>
 
       {/* ─── Toast notifications ─── */}
@@ -3057,9 +3965,9 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
         </div>
       </div>
 
-      {/* ─── Progress bar ─── */}
+      {/* ─── Progress bar (모바일 전용) ─── */}
       <div style={{
-        display: "flex", justifyContent: "center", alignItems: "center",
+        display: isMobile ? "flex" : "none", justifyContent: "center", alignItems: "center",
         padding: "14px 24px 20px",
         background: "var(--bg-nav)", backdropFilter: "blur(8px)",
         borderBottom: "1px solid var(--c-card-2)",
@@ -3078,7 +3986,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 }} />
               )}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                <button onClick={() => { if (s.id !== "1" && !isPro) { showToast("warn", "Stage 2–8은 프리미엄 이상 등급에서 사용 가능합니다."); return; } setCurrentStage(s.id); }} title={s.name} style={{
+                <button onClick={() => { setCurrentStage(s.id); }} title={s.name} style={{
                   width: isMobile ? 28 : 34, height: isMobile ? 28 : 34, borderRadius: "50%", flexShrink: 0,
                   border: `2px solid ${isActive ? "#C8A84B" : st === "done" ? "#4ECCA3" : "var(--c-bd-5)"}`,
                   background: isActive ? "rgba(200,168,75,0.18)" : st === "done" ? "rgba(78,204,163,0.12)" : "transparent",
@@ -3122,14 +4030,14 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-35)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 14, textAlign: "center" }}>8단계 파이프라인</div>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 8 }}>
                 {[
-                  { num: "01", name: "로그라인", desc: "18개 기준 분석", color: "#C8A84B" },
-                  { num: "02", name: "캐릭터", desc: "Jung · Maslow · Truby", color: "#FB923C" },
-                  { num: "03", name: "시놉시스", desc: "구조 · 시놉시스 생성", color: "#4ECCA3" },
-                  { num: "04", name: "개념 분석", desc: "캠벨 · 바르트 · 롤랑", color: "#45B7D1" },
-                  { num: "05", name: "트리트먼트", desc: "비트시트 · 대사", color: "#FFD166" },
-                  { num: "06", name: "시나리오", desc: "Field · McKee · Snyder", color: "#A78BFA" },
-                  { num: "07", name: "고쳐쓰기", desc: "진단 · 재작성 · 개고", color: "#FB923C" },
-                  { num: "08", name: "Coverage", desc: "Script Coverage 리포트", color: "#60A5FA" },
+                  { num: "01", name: "로그라인", desc: "18개 기준으로 점수 평가", color: "#C8A84B" },
+                  { num: "02", name: "개념 분석", desc: "이야기 방향·신화구조 설계", color: "#45B7D1" },
+                  { num: "03", name: "캐릭터", desc: "주인공 심리·욕구·상처 설계", color: "#FB923C" },
+                  { num: "04", name: "시놉시스", desc: "3막 구조·시놉시스 생성", color: "#4ECCA3" },
+                  { num: "05", name: "트리트먼트", desc: "씬 구성·비트시트·대사", color: "#FFD166" },
+                  { num: "06", name: "시나리오 초고", desc: "완성된 초고 자동 생성", color: "#A78BFA" },
+                  { num: "07", name: "Script Coverage", desc: "작품 심사 + 시장 가치", color: "#60A5FA" },
+                  { num: "08", name: "고쳐쓰기", desc: "진단 → 부분·전체 개고", color: "#FB923C" },
                 ].map(s => (
                   <div key={s.num} style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(var(--tw),0.03)", border: "1px solid var(--c-bd-1)", textAlign: "center" }}>
                     <div style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: s.color, fontWeight: 700, marginBottom: 4 }}>{s.num}</div>
@@ -3143,10 +4051,10 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
             {/* 주요 기능 포인트 */}
             <div style={{ marginBottom: 28, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
               {[
-                { icon: "🎯", text: "로그라인 품질 점수 + 개선 제안" },
-                { icon: "🧠", text: "학술 이론 기반 심층 분석" },
-                { icon: "📝", text: "트리트먼트·비트시트 자동 생성" },
-                { icon: "✍️", text: "시나리오 초고 → 고쳐쓰기까지" },
+                { icon: "🎯", text: "로그라인을 18개 기준으로 점수화 + AI 개선안" },
+                { icon: "🧠", text: "주인공 심리·욕구·내적 갈등 자동 설계" },
+                { icon: "📝", text: "트리트먼트·15비트·대사까지 한 번에" },
+                { icon: "✍️", text: "초고 생성 → Coverage 심사 → 고쳐쓰기 완결" },
               ].map((item, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)" }}>
                   <span style={{ fontSize: 16 }}>{item.icon}</span>
@@ -3190,1847 +4098,349 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
         </div>
       )}
 
-      {/* ─── Accordion stages ─── */}
-      <div ref={mainContentRef} style={{
-        maxWidth: 860, width: "100%", margin: "0 auto", boxSizing: "border-box",
-        padding: isMobile ? "16px 12px 80px" : "24px 28px 80px",
-      }}>
+      {/* ─── Sidebar + Stage Layout ─── */}
+      <div ref={mainContentRef} style={{ width: "100%", boxSizing: "border-box" }}>
 
           {/* ── 데모 모드 배너 ── */}
           {isDemoMode && (
-            <div style={{ marginBottom: 16, padding: "14px 18px", borderRadius: 12, background: "rgba(255,209,102,0.07)", border: "1px solid rgba(255,209,102,0.25)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 16 }}>🎬</span>
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#FFD166", marginBottom: 2 }}>데모 모드 — 샘플 분석 결과 체험 중</div>
-                  <div style={{ fontSize: 11, color: "var(--c-tx-45)", fontFamily: "'Noto Sans KR', sans-serif" }}>로그라인: "{DEMO_LOGLINE.slice(0, 40)}…" — 8단계 결과를 자유롭게 둘러보세요.</div>
+            <div style={{ maxWidth: isMobile ? "100%" : 990, margin: "0 auto", padding: isMobile ? "12px 12px 0" : "16px 28px 0" }}>
+              <div style={{ marginBottom: 16, padding: "14px 18px", borderRadius: 12, background: "rgba(255,209,102,0.07)", border: "1px solid rgba(255,209,102,0.25)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 16 }}>🎬</span>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#FFD166", marginBottom: 2 }}>데모 모드 — 샘플 분석 결과 체험 중</div>
+                    <div style={{ fontSize: 11, color: "var(--c-tx-45)", fontFamily: "'Noto Sans KR', sans-serif" }}>로그라인: "{DEMO_LOGLINE.slice(0, 40)}…" — 8단계 결과를 자유롭게 둘러보세요.</div>
+                  </div>
                 </div>
-              </div>
-              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                <button
-                  onClick={() => { deactivateDemo(); setShowApiKeyModal(true); }}
-                  style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: "#FFD166", color: "#0d0d1a", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}
-                >
-                  내 API 키로 시작
-                </button>
-                <button
-                  onClick={deactivateDemo}
-                  style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid rgba(255,209,102,0.3)", background: "transparent", color: "#FFD166", fontSize: 11, cursor: "pointer" }}
-                >
-                  데모 종료
-                </button>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  <button
+                    onClick={() => { deactivateDemo(); setShowApiKeyModal(true); }}
+                    style={{ padding: "7px 14px", borderRadius: 8, border: "none", background: "#FFD166", color: "#0d0d1a", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}
+                  >
+                    내 API 키로 시작
+                  </button>
+                  <button
+                    onClick={deactivateDemo}
+                    style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid rgba(255,209,102,0.3)", background: "transparent", color: "#FFD166", fontSize: 11, cursor: "pointer" }}
+                  >
+                    데모 종료
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
-          {/* ═══ STAGE 1: Logline ═══ */}
-          <div ref={(el) => { stageRefs.current["1"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "1" ? "rgba(200,168,75,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => setCurrentStage("1")} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "1" ? "rgba(200,168,75,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("1")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("1") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
-                {getStageStatus("1") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("1")] }}>01</span>}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "1" ? "var(--text-main)" : getStageStatus("1") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>로그라인</div>
-                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>입력 / 기본 분석 / AI 개선안</div>
-              </div>
-              {currentStage !== "1" && getStageDoneCount("1") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("1")}/{STAGE_TOTALS["1"]}</span>}
-              {getStageStatus("1") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "1" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
-            </div>
-            {currentStage === "1" && (
-              <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
-              <ErrorBoundary><div>
-
-              {/* Duration selector */}
-              <div style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600 }}>영상 길이</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 7 }}>
-                  {DURATION_OPTIONS.map((d) => (
-                    <button key={d.id} onClick={() => setSelectedDuration(d.id)} style={{
-                      padding: "9px 10px", borderRadius: 10, textAlign: "left", transition: "all 0.15s",
-                      border: selectedDuration === d.id ? "1px solid rgba(200,168,75,0.55)" : "1px solid var(--c-bd-2)",
-                      background: selectedDuration === d.id ? "rgba(200,168,75,0.08)" : "rgba(var(--tw),0.02)",
-                      color: selectedDuration === d.id ? "#C8A84B" : "var(--c-tx-45)",
-                      cursor: "pointer",
-                    }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 1 }}>{d.label}</div>
-                      <div style={{ fontSize: 10, color: selectedDuration === d.id ? "rgba(200,168,75,0.65)" : "var(--c-tx-28)", fontFamily: "'JetBrains Mono', monospace" }}>{d.duration}</div>
-                    </button>
-                  ))}
-                  {/* 커스텀 버튼 */}
-                  <button onClick={() => setSelectedDuration("custom")} style={{
-                    padding: "9px 10px", borderRadius: 10, textAlign: "left", transition: "all 0.15s",
-                    border: selectedDuration === "custom" ? "1px solid rgba(139,92,246,0.6)" : "1px solid var(--c-bd-2)",
-                    background: selectedDuration === "custom" ? "rgba(139,92,246,0.1)" : "rgba(var(--tw),0.02)",
-                    color: selectedDuration === "custom" ? "#A78BFA" : "var(--c-tx-45)",
-                    cursor: "pointer",
-                  }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 1 }}>커스텀</div>
-                    <div style={{ fontSize: 10, color: selectedDuration === "custom" ? "rgba(167,139,250,0.65)" : "var(--c-tx-28)", fontFamily: "'JetBrains Mono', monospace" }}>직접 설정</div>
-                  </button>
-                </div>
-
-                {/* 커스텀 입력 필드 */}
-                {selectedDuration === "custom" && (
-                  <div style={{ marginTop: 12, padding: "14px 16px", background: "rgba(139,92,246,0.06)", borderRadius: 10, border: "1px solid rgba(139,92,246,0.2)", display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#A78BFA", marginBottom: 2 }}>커스텀 포맷 설정</div>
-                    <div>
-                      <div style={{ fontSize: 10, color: "var(--c-tx-40)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>주제 / 컨셉</div>
-                      <input
-                        value={customTheme}
-                        onChange={(e) => setCustomTheme(e.target.value)}
-                        placeholder="예: 나의 이야기 — 내가 주인공인 실제/상상 경험"
-                        style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", borderRadius: 7, border: "1px solid rgba(139,92,246,0.25)", background: "var(--c-card-2)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none" }}
-                      />
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <div>
-                        <div style={{ fontSize: 10, color: "var(--c-tx-40)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>영상 길이</div>
-                        <input
-                          value={customDurationText}
-                          onChange={(e) => setCustomDurationText(e.target.value)}
-                          placeholder="예: 1~2분"
-                          style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", borderRadius: 7, border: "1px solid rgba(139,92,246,0.25)", background: "var(--c-card-2)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none" }}
-                        />
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 10, color: "var(--c-tx-40)", marginBottom: 4, fontFamily: "'Noto Sans KR', sans-serif" }}>형식 / 매체</div>
-                        <input
-                          value={customFormatLabel}
-                          onChange={(e) => setCustomFormatLabel(e.target.value)}
-                          placeholder="예: 2D 애니메이션 초단편"
-                          style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", borderRadius: 7, border: "1px solid rgba(139,92,246,0.25)", background: "var(--c-card-2)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none" }}
-                        />
-                      </div>
-                    </div>
-                    {(customFormatLabel || customDurationText || customTheme) && (
-                      <div style={{ fontSize: 11, color: "rgba(167,139,250,0.7)", padding: "6px 10px", background: "rgba(139,92,246,0.07)", borderRadius: 6, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>
-                        포맷: {customFormatLabel || "커스텀"} ({customDurationText || "?"}){customTheme ? ` · 주제: ${customTheme}` : ""}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Genre selector */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>장르</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {GENRES.map((g) => (
-                    <button key={g.id} onClick={() => setGenre(g.id)} style={{
-                      padding: "6px 12px", borderRadius: 20, cursor: "pointer", fontSize: 12, transition: "all 0.2s",
-                      border: genre === g.id ? "1px solid #C8A84B" : "1px solid var(--c-bd-3)",
-                      background: genre === g.id ? "rgba(200,168,75,0.1)" : "var(--c-card-1)",
-                      color: genre === g.id ? "#C8A84B" : "var(--c-tx-45)",
-                    }}>{g.label}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Compare toggle */}
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-                <button onClick={() => { setCompareMode(!compareMode); if (compareMode) { setLogline2(""); setResult2(null); } }} style={{
-                  padding: "5px 14px", borderRadius: 20, fontSize: 11, cursor: "pointer", transition: "all 0.2s",
-                  border: compareMode ? "1px solid rgba(69,183,209,0.5)" : "1px solid var(--c-bd-3)",
-                  background: compareMode ? "rgba(69,183,209,0.1)" : "var(--c-card-1)",
-                  color: compareMode ? "#45B7D1" : "var(--c-tx-40)",
-                }}>
-                  {compareMode ? "비교 모드 ON" : "비교 모드"}
-                </button>
-              </div>
-
-              {/* Textarea */}
-              <div style={{ display: "grid", gridTemplateColumns: compareMode && !isMobile ? "1fr 1fr" : "1fr", gap: 12, marginBottom: 12 }}>
-                <div>
-                  {compareMode && <div style={{ fontSize: 11, color: "#C8A84B", marginBottom: 6, fontWeight: 600 }}>로그라인 A</div>}
-                  <div style={{ position: "relative" }}>
-                    <textarea
-                      value={logline} onChange={(e) => setLogline(e.target.value)}
-                      onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); if (logline.trim() && apiKey && !loading) analyze(); } }}
-                      placeholder="로그라인을 입력하세요..."
-                      rows={compareMode ? 5 : 4}
-                      style={{
-                        width: "100%", padding: "16px 16px 32px", borderRadius: 12,
-                        border: "1px solid var(--c-bd-4)",
-                        background: "rgba(var(--tw),0.025)", color: "var(--text-main)",
-                        fontSize: 14, lineHeight: 1.75, resize: "vertical",
-                        fontFamily: "'Noto Sans KR', sans-serif", transition: "border-color 0.2s",
-                        minHeight: 120,
-                      }}
+          <SidebarLayout
+            isMobile={isMobile}
+            stageProps={{
+              renderStage: (stageId) => {
+                switch (stageId) {
+                  case "1": return (
+                    <Stage1Content
+                      result={result}
+                      setResult={setResult}
+                      loading={loading}
+                      error={error}
+                      analyze={analyze}
+                      compareMode={compareMode}
+                      setCompareMode={setCompareMode}
+                      logline2={logline2}
+                      setLogline2={setLogline2}
+                      result2={result2}
+                      loading2={loading2}
+                      selectedDuration={selectedDuration}
+                      setSelectedDuration={setSelectedDuration}
+                      customTheme={customTheme}
+                      setCustomTheme={setCustomTheme}
+                      customDurationText={customDurationText}
+                      setCustomDurationText={setCustomDurationText}
+                      customFormatLabel={customFormatLabel}
+                      setCustomFormatLabel={setCustomFormatLabel}
+                      activeTab={activeTab}
+                      setActiveTab={setActiveTab}
+                      insightResult={insightResult}
+                      insightLoading={insightLoading}
+                      insightError={insightError}
+                      generateInsight={generateInsight}
+                      earlyCoverageResult={earlyCoverageResult}
+                      setEarlyCoverageResult={setEarlyCoverageResult}
+                      earlyCoverageLoading={earlyCoverageLoading}
+                      earlyCoverageError={earlyCoverageError}
+                      analyzeEarlyCoverage={analyzeEarlyCoverage}
+                      setStoryFixes={setStoryFixes}
+                      setStoryPivots={setStoryPivots}
+                      setAiImprovement={setAiImprovement}
+                      academicResult={academicResult}
+                      apiKey={apiKey}
+                      serverHasKey={serverHasKey}
                     />
-                    <div style={{
-                      position: "absolute", bottom: 10, right: 12, fontSize: 11,
-                      color: (() => {
-                        const ranges = { ultrashort: [20, 40], shortform: [30, 50], shortfilm: [40, 70], webdrama: [50, 80], tvdrama: [60, 90], feature: [70, 110], miniseries: [90, 140], shortformseries: [60, 100] };
-                        const [lo, hi] = ranges[selectedDuration] || [70, 110];
-                        return charCount > hi ? "#E85D75" : charCount >= lo ? "#4ECCA3" : charCount > 0 ? "#F7A072" : "var(--c-tx-25)";
-                      })(),
-                    }}>
-                      {charCount}자{charCount > 0 && (() => {
-                        const ranges = { ultrashort: [20, 40], shortform: [30, 50], shortfilm: [40, 70], webdrama: [50, 80], tvdrama: [60, 90], feature: [70, 110], miniseries: [90, 140], shortformseries: [60, 100] };
-                        const [lo, hi] = ranges[selectedDuration] || [70, 110];
-                        return charCount < lo ? ` (목표 ${lo}~${hi}자)` : charCount <= hi ? " 적정" : ` (목표 ${lo}~${hi}자)`;
-                      })()}
-                    </div>
-                  </div>
-                </div>
-                {compareMode && (
-                  <div>
-                    <div style={{ fontSize: 11, color: "#45B7D1", marginBottom: 6, fontWeight: 600 }}>로그라인 B</div>
-                    <textarea value={logline2} onChange={(e) => setLogline2(e.target.value)} placeholder="비교할 로그라인..." rows={5} style={{
-                      width: "100%", padding: "16px 16px 32px", borderRadius: 12,
-                      border: "1px solid rgba(69,183,209,0.18)", background: "rgba(69,183,209,0.03)",
-                      color: "var(--text-main)", fontSize: 14, lineHeight: 1.75, resize: "vertical",
-                      fontFamily: "'Noto Sans KR', sans-serif", minHeight: 120,
-                    }} />
-                  </div>
-                )}
-              </div>
-
-              {/* Logline quality hint */}
-              {logline.trim().length > 0 && !compareMode && (() => {
-                const ranges = { ultrashort: [20, 40], shortform: [30, 50], shortfilm: [40, 70], webdrama: [50, 80], tvdrama: [60, 90], feature: [70, 110], miniseries: [90, 140], shortformseries: [60, 100] };
-                const [lo, hi] = ranges[selectedDuration] || [70, 110];
-                const n = logline.trim().length;
-                if (n < lo) return <div style={{ marginBottom: 10, fontSize: 11, color: "#F7A072", display: "flex", alignItems: "center", gap: 6 }}><span>⚠</span> 로그라인이 너무 짧습니다. 주인공·목표·장애·결과를 구체적으로 작성해보세요. (현재 {n}자 / 권장 {lo}자 이상)</div>;
-                if (n > hi) return <div style={{ marginBottom: 10, fontSize: 11, color: "#E85D75", display: "flex", alignItems: "center", gap: 6 }}><span>⚠</span> 로그라인이 너무 깁니다. 한 문장으로 압축해보세요. (현재 {n}자 / 권장 {hi}자 이하)</div>;
-                return <div style={{ marginBottom: 10, fontSize: 11, color: "#4ECCA3", display: "flex", alignItems: "center", gap: 6 }}><span>✓</span> 적절한 길이입니다. ({n}자)</div>;
-              })()}
-
-              {/* Example buttons */}
-              <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 11, color: "var(--c-tx-25)", lineHeight: "28px" }}>예시:</span>
-                {EXAMPLE_LOGLINES.map((ex, i) => (
-                  <button key={i} onClick={() => setLogline(ex)} style={{
-                    padding: "4px 12px", borderRadius: 14,
-                    border: "1px solid var(--c-bd-1)", background: "rgba(var(--tw),0.02)",
-                    color: "rgba(var(--tw),0.38)", cursor: "pointer", fontSize: 11,
-                  }}>예시 {i + 1}</button>
-                ))}
-              </div>
-
-              {/* Main analyze button */}
-              <Tooltip text={"로그라인을 입력하면 AI가 시나리오 전문가 관점에서 종합 분석을 시작합니다.\n\n분석 항목:\n• 구조적 완성도 — 이야기의 뼈대가 탄탄한지\n• 표현적 매력도 — 읽는 사람을 끌어당기는 힘\n• 기술적 완성도 — 장르·캐릭터·갈등의 명확성\n• 흥미 유발 지수 — 제작사가 관심을 가질 가능성\n\n분석 결과를 바탕으로 아래 심화 도구들이 활성화됩니다."} maxWidth={340}>
-              <button onClick={() => analyze()} disabled={loading || !logline.trim() || !apiKey} style={{
-                width: "100%", height: 48, borderRadius: 12, border: "1px solid rgba(200,168,75,0.4)",
-                cursor: loading || !logline.trim() || !apiKey ? "not-allowed" : "pointer",
-                background: loading || !logline.trim() || !apiKey ? "rgba(200,168,75,0.05)" : "linear-gradient(135deg, rgba(200,168,75,0.2), rgba(200,168,75,0.1))",
-                color: "#C8A84B", fontSize: 15, fontWeight: 700, transition: "all 0.3s",
-                opacity: !logline.trim() || !apiKey ? 0.5 : 1,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              }}>
-                {loading ? (<><Spinner size={15} color="#C8A84B" />{compareMode ? "두 로그라인 분석 중..." : "분석 중..."}</>) : (
-                  <>{compareMode && logline2.trim() ? "두 로그라인 비교 분석" : "로그라인 분석하기"}</>
-                )}
-              </button>
-              </Tooltip>
-
-              <div style={{ marginTop: 6, textAlign: "right", fontSize: 10, color: "var(--c-tx-25)", fontFamily: "'JetBrains Mono', monospace" }}>
-                {navigator.platform?.includes("Mac") ? "⌘" : "Ctrl"}+Enter
-              </div>
-              {!apiKey && !serverHasKey && <div style={{ marginTop: 8, fontSize: 11, textAlign: "center", color: "rgba(232,93,117,0.7)" }}>API 키를 먼저 설정해주세요</div>}
-              {serverHasKey && apiKey === "__server__" && <div style={{ marginTop: 8, fontSize: 11, textAlign: "center", color: "rgba(78,204,163,0.7)" }}>서버 API 키 사용 중</div>}
-              {error && (
-                <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 10, background: "rgba(232,93,117,0.1)", border: "1px solid rgba(232,93,117,0.25)", color: "#E85D75", fontSize: 12, lineHeight: 1.6 }}>
-                  ⚠️ {error}
-                </div>
-              )}
-
-              {/* ── Result display ── */}
-              {result && (
-                <div ref={resultRef} style={{ marginTop: 24 }}>
-                  {/* Score card */}
-                  <ResultCard color="var(--c-bd-1)">
-                    {compareMode && result2 ? (
-                      <div>
-                        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginBottom: 16 }}>
-                          <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 11, color: "#C8A84B", marginBottom: 14, fontWeight: 700 }}>로그라인 A</div>
-                            <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
-                              <CircleGauge score={qualityScore} label="품질 점수" size={isMobile ? 90 : 110} />
-                              <CircleGauge score={interestScore} label="흥미도" size={isMobile ? 90 : 110} />
-                            </div>
-                          </div>
-                          <div style={{ textAlign: "center" }}>
-                            <div style={{ fontSize: 11, color: "#45B7D1", marginBottom: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                              로그라인 B {loading2 && <Spinner size={10} color="#45B7D1" />}
-                            </div>
-                            <div style={{ display: "flex", justifyContent: "center", gap: 20 }}>
-                              <CircleGauge score={qualityScore2} label="품질 점수" size={isMobile ? 90 : 110} />
-                              <CircleGauge score={interestScore2} label="흥미도" size={isMobile ? 90 : 110} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 20 : 40, flexWrap: "wrap", marginBottom: 16 }}>
-                          <CircleGauge score={qualityScore} label="품질 점수" subLabel={`구조${structureTotal} + 표현${expressionTotal} + 기술${technicalTotal}`} size={isMobile ? 100 : 120} />
-                          <CircleGauge score={interestScore} label="흥미도" subLabel="정보격차 이론 기반" size={isMobile ? 100 : 120} />
-                        </div>
-                        {result.detected_genre && (
-                          <div style={{ textAlign: "center", fontSize: 12, color: "var(--c-tx-35)", marginBottom: 12 }}>
-                            감지된 장르: <span style={{ color: "#C8A84B" }}>{result.detected_genre}</span>
-                          </div>
-                        )}
-                        <div style={{ display: "flex", justifyContent: "center" }}>
-                          <ExportButton result={result} logline={logline} qualityScore={qualityScore} interestScore={interestScore} />
-                        </div>
-                      </div>
-                    )}
-                  </ResultCard>
-
-                  {/* Compare sections */}
-                  {compareMode && result2 && (
-                    <div style={{ marginTop: 16 }}>
-                      <CompareSection result1={result} result2={result2} section="structure" title="A. 구조적 완성도" maxTotal={50} color="#4ECCA3" />
-                      <CompareSection result1={result} result2={result2} section="expression" title="B. 표현적 매력도" maxTotal={30} color="#45B7D1" />
-                      <CompareSection result1={result} result2={result2} section="technical" title="C. 기술적 완성도" maxTotal={20} color="#F7A072" />
-                      <CompareSection result1={result} result2={result2} section="interest" title="D. 흥미 유발 지수" maxTotal={100} color="#FFD700" />
-                    </div>
-                  )}
-
-                  {/* ── 개선·방향 탭 유도 CTA ── */}
-                  <div
-                    onClick={() => setActiveTab("feedback")}
-                    style={{
-                      marginTop: 14, padding: "12px 16px", borderRadius: 10,
-                      background: activeTab === "feedback"
-                        ? "rgba(200,168,75,0.04)"
-                        : "linear-gradient(90deg, rgba(200,168,75,0.1) 0%, rgba(96,165,250,0.08) 100%)",
-                      border: activeTab === "feedback"
-                        ? "1px solid rgba(200,168,75,0.12)"
-                        : "1px solid rgba(200,168,75,0.22)",
-                      cursor: "pointer", display: "flex", alignItems: "center", gap: 12,
-                      transition: "all 0.2s",
-                    }}
-                  >
-                    <div style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>🔀</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#C8A84B", marginBottom: 2 }}>
-                        이 로그라인을 발전시키고 싶다면?
-                      </div>
-                      <div style={{ fontSize: 11, color: "var(--c-tx-45)", lineHeight: 1.6 }}>
-                        약점만 골라 수정 · 장르·관점·갈등 방향 전환 · AI 개선안 — <span style={{ color: "#C8A84B", fontWeight: 700 }}>개선·방향 탭</span>에서 확인하세요
-                      </div>
-                    </div>
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#C8A84B" strokeWidth={2} strokeLinecap="round" style={{ flexShrink: 0, opacity: 0.7 }}><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                  </div>
-
-                  {/* Tab nav */}
-                  <div style={{ overflowX: "auto", marginTop: 16, marginBottom: 12 }}>
-                    <div style={{ display: "flex", gap: 3, background: "rgba(var(--tw),0.02)", borderRadius: 10, padding: 4, minWidth: "max-content" }}>
-                      {tabs.map((tab) => (
-                        <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                          flex: "0 0 auto", padding: isMobile ? "7px 10px" : "8px 13px",
-                          borderRadius: 7, border: "none", cursor: "pointer",
-                          background: activeTab === tab.id ? "rgba(200,168,75,0.14)" : "transparent",
-                          color: activeTab === tab.id ? "#C8A84B" : "rgba(var(--tw),0.38)",
-                          fontSize: 11, fontWeight: activeTab === tab.id ? 700 : 400, transition: "all 0.2s", whiteSpace: "nowrap",
-                        }}>{tab.label}</button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Tab content */}
-                  <ResultCard>
-                    {activeTab === "overview" && (
-                      <div>
-                        <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-                          <RadarChart data={radarData} size={isMobile ? 220 : 280} />
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                          {[
-                            { label: "구조적 완성도", score: structureTotal, max: 50, color: "#4ECCA3" },
-                            { label: "표현적 매력도", score: expressionTotal, max: 30, color: "#45B7D1" },
-                            { label: "기술적 완성도", score: technicalTotal, max: 20, color: "#F7A072" },
-                            { label: "흥미 유발 지수", score: interestScore, max: 100, color: "#FFD700" },
-                          ].map((item, i) => (
-                            <div key={i} style={{ padding: isMobile ? 12 : 16, background: "rgba(var(--tw),0.02)", borderRadius: 12, border: `1px solid ${item.color}18` }}>
-                              <div style={{ fontSize: 11, color: "var(--c-tx-45)", marginBottom: 5 }}>{item.label}</div>
-                              <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: item.color, fontFamily: "'JetBrains Mono', monospace" }}>
-                                {item.score}<span style={{ fontSize: 12, fontWeight: 400, color: "var(--c-tx-25)" }}>/{item.max}</span>
-                              </div>
-                              <div style={{ marginTop: 8, height: 3, background: "var(--c-card-3)", borderRadius: 2, overflow: "hidden" }}>
-                                <div style={{ height: "100%", width: `${(item.score / item.max) * 100}%`, background: item.color, borderRadius: 2 }} />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {activeTab === "structure" && result.structure && (
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#4ECCA3", marginBottom: 18 }}>A. 구조적 완성도 -- {structureTotal}/50</div>
-                        {Object.entries(result.structure).map(([key, val], i) => (
-                          <ScoreBar key={key} score={val.score} max={val.max} label={LABELS_KR[key]} found={val.found} feedback={val.feedback} delay={i * 100} criterionKey={key} />
-                        ))}
-                      </div>
-                    )}
-                    {activeTab === "expression" && result.expression && (
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#45B7D1", marginBottom: 18 }}>B. 표현적 매력도 -- {expressionTotal}/30</div>
-                        {Object.entries(result.expression).map(([key, val], i) => (
-                          <ScoreBar key={key} score={val.score} max={val.max} label={LABELS_KR[key]} found={val.found} feedback={val.feedback} delay={i * 100} criterionKey={key} />
-                        ))}
-                      </div>
-                    )}
-                    {activeTab === "technical" && result.technical && (
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#F7A072", marginBottom: 18 }}>C. 기술적 완성도 -- {technicalTotal}/20</div>
-                        {Object.entries(result.technical).map(([key, val], i) => (
-                          <ScoreBar key={key} score={val.score} max={val.max} label={LABELS_KR[key]} feedback={val.feedback} delay={i * 100} criterionKey={key} />
-                        ))}
-                      </div>
-                    )}
-                    {activeTab === "interest" && result.interest && (
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: "#FFD700", marginBottom: 18 }}>D. 흥미 유발 지수 -- {interestScore}/100</div>
-                        {Object.entries(result.interest).map(([key, val], i) => (
-                          <ScoreBar key={key} score={val.score} max={val.max} label={LABELS_KR[key]} feedback={val.feedback} delay={i * 100} criterionKey={key} />
-                        ))}
-                      </div>
-                    )}
-                    {activeTab === "feedback" && (
-                      <div>
-                        {/* 탭 설명 헤더 */}
-                        <div style={{ marginBottom: 20, padding: "12px 14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)" }}>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-tx-60)", marginBottom: 8, letterSpacing: 0.5 }}>이 탭에서 할 수 있는 것</div>
-                          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
-                            {[
-                              { icon: "🔧", title: "약점 수정", desc: "낮은 점수 항목만 골라 직접 고친 버전 제안" },
-                              { icon: "🔀", title: "방향 전환", desc: "장르·관점·갈등을 완전히 다르게 바꾼 3가지 버전" },
-                              { icon: "✨", title: "AI 개선안", desc: "종합 피드백을 반영한 자유 형식 개선 로그라인" },
-                            ].map((item) => (
-                              <div key={item.title} style={{ display: "flex", gap: 8, padding: "8px 10px", borderRadius: 8, background: "rgba(var(--tw),0.02)" }}>
-                                <span style={{ fontSize: 16, flexShrink: 0 }}>{item.icon}</span>
-                                <div>
-                                  <div style={{ fontSize: 12, fontWeight: 700, color: "#C8A84B" }}>{item.title}</div>
-                                  <div style={{ fontSize: 10, color: "var(--c-tx-40)", marginTop: 2, lineHeight: 1.5 }}>{item.desc}</div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* 종합 피드백 */}
-                        {result.overall_feedback && (
-                          <div style={{ fontSize: 14, lineHeight: 1.85, color: "var(--c-tx-75)", marginBottom: 20, padding: "14px 16px", borderRadius: 10, background: "rgba(200,168,75,0.04)", borderLeft: "3px solid rgba(200,168,75,0.3)" }}>
-                            {result.overall_feedback}
-                          </div>
-                        )}
-
-                        {/* AI 유도 질문 */}
-                        {result.improvement_questions?.length > 0 && (
-                          <div style={{ marginBottom: 20 }}>
-                            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-40)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>스스로 점검해볼 질문</div>
-                            {result.improvement_questions.map((q, i) => (
-                              <div key={i} style={{ fontSize: 13, color: "var(--c-tx-60)", padding: "9px 14px", marginBottom: 6, background: "rgba(200,168,75,0.04)", borderRadius: 8, borderLeft: "2px solid rgba(200,168,75,0.25)", lineHeight: 1.7 }}>
-                                <span style={{ color: "rgba(200,168,75,0.6)", fontWeight: 700, marginRight: 6 }}>Q{i + 1}.</span>{q}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <StoryDevPanel
-                          logline={logline}
-                          genre={genre}
-                          result={result}
-                          apiKey={apiKey}
-                          onApply={(improved) => analyze(improved)}
-                        />
-                        <ImprovementPanel
-                          logline={logline}
-                          genre={genre}
-                          apiKey={apiKey}
-                          result={result}
-                          onReanalyze={(improved) => analyze(improved)}
-                        />
-                      </div>
-                    )}
-                    {activeTab === "academic" && academicResult && <AcademicPanel academic={academicResult} />}
-                  </ResultCard>
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
-                    <DocButton label="기초 기획서 PDF" sub="로그라인 분석 기반 초기 기획서" onClick={() => openApplicationDoc("logline")} disabled={!logline.trim()} />
-                  </div>
-                </div>
-              )}
-              {/* ── 얼리 커버리지 ── */}
-              {result && (
-                <div style={{ marginTop: 16 }}>
-                  <ToolButton
-                    icon={<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>}
-                    label="빠른 상업성 체크"
-                    sub="시장 잠재력 · 플랫폼 적합성 · 개발 우선순위"
-                    done={!!earlyCoverageResult}
-                    loading={earlyCoverageLoading}
-                    color="#45B7D1"
-                    onClick={analyzeEarlyCoverage}
-                    disabled={!logline.trim()}
-                    tooltip={"로그라인 단계에서 이 이야기의 상업적 가능성을 빠르게 진단합니다.\n\n• 시장성 점수 (1~10)\n• 최적 플랫폼 (OTT/극장/방송 등)\n• 유사 히트작 레퍼런스\n• 핵심 강점 및 리스크\n• 지금 당장 보완해야 할 것 1가지\n\n방향을 잡기 전에 먼저 시장의 냉정한 시각으로 체크해보세요."}
-                  />
-                  <ErrorMsg msg={earlyCoverageError} />
-                  {earlyCoverageResult && (
-                    <ResultCard title="빠른 상업성 체크" onClose={() => setEarlyCoverageResult(null)} color="rgba(69,183,209,0.15)">
-                      <div style={{ display: "flex", gap: 12, marginBottom: 14, alignItems: "center", flexWrap: "wrap" }}>
-                        {/* 점수 */}
-                        <div style={{ padding: "10px 16px", borderRadius: 10, background: "rgba(69,183,209,0.1)", border: "1px solid rgba(69,183,209,0.25)", textAlign: "center", flexShrink: 0 }}>
-                          <div style={{ fontSize: 28, fontWeight: 800, color: "#45B7D1", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{earlyCoverageResult.marketability_score}<span style={{ fontSize: 14, opacity: 0.6 }}>/10</span></div>
-                          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginTop: 3 }}>시장성</div>
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)", marginBottom: 4, lineHeight: 1.5 }}>{earlyCoverageResult.one_line_verdict}</div>
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 7, background: "rgba(69,183,209,0.1)", color: "#45B7D1", border: "1px solid rgba(69,183,209,0.2)" }}>{earlyCoverageResult.best_platform}</span>
-                            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 7, background: "rgba(var(--tw),0.05)", color: "var(--c-tx-50)", border: "1px solid var(--c-bd-2)" }}>{earlyCoverageResult.target_audience}</span>
-                          </div>
-                        </div>
-                      </div>
-                      {earlyCoverageResult.comparable_hit && (
-                        <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: 8, background: "rgba(var(--tw),0.03)", border: "1px solid var(--c-bd-1)" }}>
-                          <span style={{ fontSize: 10, color: "var(--c-tx-30)", fontFamily: "'JetBrains Mono', monospace", marginRight: 6 }}>유사 히트작</span>
-                          <span style={{ fontSize: 12, color: "var(--c-tx-65)" }}>{earlyCoverageResult.comparable_hit}</span>
-                        </div>
-                      )}
-                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8, marginBottom: 12 }}>
-                        <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(78,204,163,0.06)", border: "1px solid rgba(78,204,163,0.15)" }}>
-                          <div style={{ fontSize: 10, color: "rgba(78,204,163,0.7)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>강점</div>
-                          {(earlyCoverageResult.key_strengths || []).map((s, i) => <div key={i} style={{ fontSize: 12, color: "var(--c-tx-60)", marginBottom: 3, paddingLeft: 8, borderLeft: "2px solid rgba(78,204,163,0.3)" }}>· {s}</div>)}
-                        </div>
-                        <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(232,93,117,0.06)", border: "1px solid rgba(232,93,117,0.15)" }}>
-                          <div style={{ fontSize: 10, color: "rgba(232,93,117,0.7)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>리스크</div>
-                          {(earlyCoverageResult.key_risks || []).map((r, i) => <div key={i} style={{ fontSize: 12, color: "var(--c-tx-60)", marginBottom: 3, paddingLeft: 8, borderLeft: "2px solid rgba(232,93,117,0.3)" }}>· {r}</div>)}
-                        </div>
-                      </div>
-                      {earlyCoverageResult.development_priority && (
-                        <div style={{ padding: "10px 12px", borderRadius: 8, background: "rgba(247,160,114,0.07)", border: "1px solid rgba(247,160,114,0.25)" }}>
-                          <div style={{ fontSize: 10, color: "rgba(247,160,114,0.8)", fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>지금 당장 보완할 것</div>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "#F7A072", lineHeight: 1.5 }}>{earlyCoverageResult.development_priority}</div>
-                        </div>
-                      )}
-                    </ResultCard>
-                  )}
-                </div>
-              )}
-              {getStageStatus("1") === "done" && (
-                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={() => advanceToStage("3")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
-                    다음 단계: 캐릭터
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                  </button>
-                </div>
-              )}
-            </div></ErrorBoundary>
-              </div>
-            )}
-          </div>
-
-          {/* ═══ STAGE 3: 캐릭터 ═══ */}
-          <div ref={(el) => { stageRefs.current["3"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "3" ? "rgba(251,146,60,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("3"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "3" ? "rgba(251,146,60,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("3")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("3") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
-                {getStageStatus("3") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("3")] }}>03</span>}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "3" ? "var(--text-main)" : getStageStatus("3") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>캐릭터</div>
-                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>심리 원형 · 실존적 동기 · 3차원 인물 설계</div>
-              </div>
-              {currentStage !== "3" && getStageDoneCount("3") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("3")}/{STAGE_TOTALS["3"]}</span>}
-              {getStageStatus("3") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "3" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
-            </div>
-            {currentStage === "3" && (
-              <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
-              <ErrorBoundary><div>
-
-              {/* ── 인물 직접 설정 ── */}
-              <div style={{ marginBottom: 16, borderRadius: 12, border: "1px solid rgba(251,146,60,0.15)", background: "rgba(251,146,60,0.03)" }}>
-                <button
-                  onClick={() => setShowManualCharInput(v => !v)}
-                  style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
-                >
-                  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#FB923C" strokeWidth={2} strokeLinecap="round"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#FB923C" }}>인물 직접 설정</div>
-                    <div style={{ fontSize: 11, color: "var(--c-tx-35)", marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif" }}>
-                      주인공·조연 이름·성격을 직접 입력 — 캐릭터 종합 분석 및 트리트먼트·비트시트·시나리오에 자동 반영
-                      {(treatmentChars.protagonist.name || treatmentChars.supporting.some(s => s.name)) && (
-                        <span style={{ marginLeft: 8, fontSize: 10, padding: "1px 7px", borderRadius: 10, background: "rgba(78,204,163,0.15)", color: "#4ECCA3", border: "1px solid rgba(78,204,163,0.25)", fontWeight: 600 }}>입력됨</span>
-                      )}
-                    </div>
-                  </div>
-                  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-30)" strokeWidth={2} strokeLinecap="round" style={{ transform: showManualCharInput ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
-                </button>
-                {showManualCharInput && (
-                  <div style={{ borderTop: "1px solid rgba(251,146,60,0.1)", padding: "16px 16px 20px" }}>
-                    {/* 주인공 */}
-                    <div style={{ marginBottom: 18 }}>
-                      <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>주인공</div>
-                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8, marginBottom: 8 }}>
-                        <div>
-                          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>이름</div>
-                          <input
-                            value={treatmentChars.protagonist.name}
-                            onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, name: e.target.value } }))}
-                            placeholder="예: 피노키오"
-                            style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
-                          />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>역할 / 직업</div>
-                          <input
-                            value={treatmentChars.protagonist.role}
-                            onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, role: e.target.value } }))}
-                            placeholder="예: 200년 된 로봇수리공"
-                            style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
-                          />
-                        </div>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
-                        {[
-                          { key: "want", label: "외적 목표 (Want)", placeholder: "무엇을 원하는가?" },
-                          { key: "need", label: "내적 욕구 (Need)", placeholder: "진짜 필요한 것은?" },
-                          { key: "flaw", label: "핵심 결함", placeholder: "가장 큰 약점은?" },
-                        ].map(({ key, label, placeholder }) => (
-                          <div key={key}>
-                            <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>{label}</div>
-                            <input
-                              value={treatmentChars.protagonist[key]}
-                              onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, [key]: e.target.value } }))}
-                              placeholder={placeholder}
-                              style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    {/* 조연 */}
-                    <div>
-                      <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>조연 인물</div>
-                      {treatmentChars.supporting.map((s, idx) => (
-                        <div key={idx} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr auto", gap: 8, marginBottom: 8, alignItems: "end" }}>
-                          {[
-                            { key: "name", label: "이름", placeholder: "예: 제페토" },
-                            { key: "role", label: "역할", placeholder: "예: 조력자" },
-                            { key: "relation", label: "주인공과의 관계", placeholder: "예: 아버지" },
-                          ].map(({ key, label, placeholder }) => (
-                            <div key={key}>
-                              {idx === 0 && <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>{label}</div>}
-                              <input
-                                value={s[key]}
-                                onChange={e => {
-                                  const updated = treatmentChars.supporting.map((sup, i) => i === idx ? { ...sup, [key]: e.target.value } : sup);
-                                  setTreatmentChars(prev => ({ ...prev, supporting: updated }));
-                                }}
-                                placeholder={placeholder}
-                                style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
-                              />
-                            </div>
-                          ))}
-                          {treatmentChars.supporting.length > 1 && (
-                            <button
-                              onClick={() => setTreatmentChars(prev => ({ ...prev, supporting: prev.supporting.filter((_, i) => i !== idx) }))}
-                              style={{ padding: "9px 12px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.25)", background: "rgba(232,93,117,0.06)", color: "#E85D75", cursor: "pointer", fontSize: 13, lineHeight: 1, marginTop: idx === 0 ? 18 : 0 }}
-                            >✕</button>
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => setTreatmentChars(prev => ({ ...prev, supporting: [...prev.supporting, { name: "", role: "", relation: "" }] }))}
-                        style={{ marginTop: 4, padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(251,146,60,0.25)", background: "rgba(251,146,60,0.06)", color: "#FB923C", fontSize: 11, cursor: "pointer", fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif" }}
-                      >+ 인물 추가</button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="캐릭터 종합 분석" sub="Jung 그림자 · 진정성 · Want/Need/Ghost/Arc" done={!!(shadowResult || authenticityResult || charDevResult)} loading={shadowLoading || authenticityLoading || charDevLoading} color="#FB923C" onClick={async () => { await analyzeShadow(); await analyzeAuthenticity(); await analyzeCharacterDev(); }} disabled={!logline.trim()}
-                tooltip={"이 로그라인의 주인공이 얼마나 입체적인 캐릭터인지 다각도로 분석합니다.\n\n• Jung — 영웅·그림자·아니마·페르소나 원형과 개성화 여정\n• Sartre — 실존적 진정성과 자기기만 구조\n• Egri·Truby — 생리·사회·심리 3차원 인물 설계\n• Maslow — 욕구 위계(생존→안전→소속→존중→자아실현)\n• Vogler — 영웅의 여정 속 캐릭터 기능 역할"} />
-              <ErrorMsg msg={shadowError || authenticityError || charDevError} onRetry={shadowError ? analyzeShadow : authenticityError ? analyzeAuthenticity : charDevError ? analyzeCharacterDev : undefined} />
-              {(shadowLoading || authenticityLoading || charDevLoading) && (
-                <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
-                  {[
-                    { label: "Jung 그림자", loading: shadowLoading, done: !!shadowResult },
-                    { label: "실존 진정성", loading: authenticityLoading, done: !!authenticityResult },
-                    { label: "캐릭터 디벨롭", loading: charDevLoading, done: !!charDevResult },
-                  ].map((item, i) => (
-                    <span key={i} style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: item.done ? "#4ECCA3" : item.loading ? "#FB923C" : "var(--c-tx-25)", display: "flex", alignItems: "center", gap: 4 }}>
-                      {item.done ? "✓" : item.loading ? <Spinner size={9} color="#FB923C" /> : "○"} {item.label}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {charAllDone && (
-                <ResultCard
-                  title="캐릭터 심층 분석"
-                  onClose={() => { setShadowResult(null); setAuthenticityResult(null); setCharDevResult(null); setCharDevHistory([]); }}
-                  onUndo={() => undoHistory(setCharDevHistory, setCharDevResult, charDevHistory)}
-                  historyCount={charDevHistory.length}
-                  color="rgba(251,146,60,0.15)"
-                >
-                  {[
-                    charDevResult && { label: "3차원 인물 설계 (Egri · Truby · Hauge · Vogler · Maslow)", node: <ErrorBoundary><CharacterDevPanel data={charDevResult} isMobile={isMobile} /></ErrorBoundary> },
-                    shadowResult && { label: "심리 원형 & 그림자 (Jung)", node: <ErrorBoundary><ShadowAnalysisPanel data={shadowResult} isMobile={isMobile} /></ErrorBoundary> },
-                    authenticityResult && { label: "실존적 진정성 (Sartre)", node: <ErrorBoundary><AuthenticityPanel data={authenticityResult} isMobile={isMobile} /></ErrorBoundary> },
-                  ].filter(Boolean).map((item, i) => (
-                    <div key={i}>
-                      {i > 0 && <div style={{ margin: "20px 0", height: 1, background: "var(--c-bd-1)" }} />}
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(251,146,60,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>{item.label}</div>
-                      {item.node}
-                    </div>
-                  ))}
-
-                  {/* ── 핵심 설정 편집 ── */}
-                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--c-bd-1)" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: editingCharacter ? 14 : 0 }}>
-                      <button
-                        onClick={() => {
-                          if (!editingCharacter) {
-                            const p = charDevResult?.protagonist || {};
-                            const ov = writerEdits.character || {};
-                            setCharEditDraft({
-                              name: ov.name ?? p.name_suggestion ?? "",
-                              want: ov.want ?? p.want ?? "",
-                              need: ov.need ?? p.need ?? "",
-                              ghost: ov.ghost ?? p.ghost ?? "",
-                              lie: ov.lie ?? p.lie_they_believe ?? "",
-                              flaw: ov.flaw ?? p.flaw ?? "",
-                              arc: ov.arc ?? p.arc_type ?? "",
-                            });
-                          }
-                          setEditingCharacter(v => !v);
-                        }}
-                        style={{ fontSize: 12, color: editingCharacter ? "var(--c-tx-45)" : "#FB923C", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 6, fontWeight: 600 }}
-                      >
-                        {editingCharacter ? "▲ 편집 닫기" : "✏ 핵심 설정 편집"}
-                        {writerEdits.character && !editingCharacter && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, background: "rgba(78,204,163,0.15)", color: "#4ECCA3", fontWeight: 600, border: "1px solid rgba(78,204,163,0.25)", marginLeft: 4 }}>수정됨</span>}
-                      </button>
-                      {writerEdits.character && !editingCharacter && (
-                        <button onClick={() => clearWriterEdit("character")} style={{ fontSize: 10, color: "rgba(232,93,117,0.6)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>AI 원본으로</button>
-                      )}
-                    </div>
-
-                    {editingCharacter && (
-                      <div style={{ background: "rgba(251,146,60,0.04)", border: "1px solid rgba(251,146,60,0.15)", borderRadius: 10, padding: "14px 16px" }}>
-                        {[
-                          { key: "name", label: "이름/유형", placeholder: "예: 전직 형사 박민준" },
-                          { key: "want", label: "외적 목표 (Want)", placeholder: "무엇을 얻으려 하는가?" },
-                          { key: "need", label: "내적 욕구 (Need)", placeholder: "진짜로 필요한 것은?" },
-                          { key: "ghost", label: "심리적 상처 (Ghost)", placeholder: "과거의 어떤 사건이 현재를 지배하는가?" },
-                          { key: "lie", label: "믿는 거짓", placeholder: "스스로에 대해 어떤 거짓을 믿는가?" },
-                          { key: "flaw", label: "핵심 결함", placeholder: "가장 큰 약점은?" },
-                          { key: "arc", label: "변화 호 (Arc)", placeholder: "어떻게 변하는가?" },
-                        ].map(({ key, label, placeholder }) => (
-                          <div key={key} style={{ marginBottom: 12 }}>
-                            <div style={{ fontSize: 10, color: "rgba(251,146,60,0.7)", fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
-                            <textarea
-                              value={charEditDraft[key] || ""}
-                              onChange={e => setCharEditDraft(prev => ({ ...prev, [key]: e.target.value }))}
-                              placeholder={placeholder}
-                              rows={key === "want" || key === "need" || key === "ghost" ? 2 : 1}
-                              style={{
-                                width: "100%", padding: "8px 12px", background: "rgba(var(--tw),0.04)",
-                                border: "1px solid rgba(251,146,60,0.2)", borderRadius: 8,
-                                color: "var(--text-main)", fontSize: 12, lineHeight: 1.6,
-                                fontFamily: "'Noto Sans KR', sans-serif", resize: "vertical",
-                                boxSizing: "border-box", outline: "none",
-                              }}
-                            />
-                          </div>
-                        ))}
-                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
-                          {writerEdits.character && (
-                            <button onClick={() => { clearWriterEdit("character"); setEditingCharacter(false); }}
-                              style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.3)", background: "rgba(232,93,117,0.06)", color: "#E85D75", fontSize: 11, cursor: "pointer" }}>
-                              AI 원본으로
-                            </button>
-                          )}
-                          <button onClick={() => setEditingCharacter(false)}
-                            style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-45)", fontSize: 11, cursor: "pointer" }}>
-                            취소
-                          </button>
-                          <button
-                            onClick={() => { setWriterEdit("character", charEditDraft); setEditingCharacter(false); }}
-                            style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(78,204,163,0.4)", background: "rgba(78,204,163,0.1)", color: "#4ECCA3", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                            저장 — 시나리오에 반영
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <FeedbackBox
-                    value={charDevFeedback}
-                    onChange={setCharDevFeedback}
-                    onSubmit={refineCharDev}
-                    loading={charDevRefineLoading}
-                    placeholder="수정 요청을 입력하세요"
-                  />
-                </ResultCard>
-              )}
-              {getStageStatus("3") === "done" && (
-                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={() => advanceToStage("4")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
-                    다음 단계: 시놉시스
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                  </button>
-                </div>
-              )}
-            </div></ErrorBoundary>
-              </div>
-            )}
-          </div>
-
-          {/* ═══ STAGE 4: 시놉시스 ═══ */}
-          <div ref={(el) => { stageRefs.current["4"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "4" ? "rgba(78,204,163,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("4"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "4" ? "rgba(78,204,163,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("4")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("4") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
-                {getStageStatus("4") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("4")] }}>04</span>}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "4" ? "var(--text-main)" : getStageStatus("4") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>시놉시스</div>
-                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>구조 설계 · 감정 아크 · 하위텍스트 · 시놉시스</div>
-              </div>
-              {currentStage !== "4" && getStageDoneCount("4") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("4")}/{STAGE_TOTALS["4"]}</span>}
-              {getStageStatus("4") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "4" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
-            </div>
-            {currentStage === "4" && (
-              <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
-              <ErrorBoundary><div>
-
-              {/* ── 구조 & 감정 아크 (통합 버튼) ── */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>1순위 — 구조 & 감정 아크</div>
-                <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="구조 & 감정 아크" sub="Field · Snyder · McKee 3막 구조 + 가치 전하" done={structureAllDone} loading={structureAllLoading} color="#4ECCA3" onClick={analyzeStructureAll} disabled={!logline.trim()}
-                  tooltip={"이야기의 뼈대와 감정 흐름을 설계합니다.\n\n• 3막 구조 — Field·Snyder·McKee·Hauge·Truby의 핵심 플롯 포인트 배치\n  (1막 설정 → 촉발 사건 → 2막 대립 → 절정 → 3막 해소)\n\n• 가치 전하 (McKee) — 장면마다 긍정↔부정으로 뒤바뀌는 감정 가치를 추적합니다.\n  감정 기복이 없는 이야기는 관객을 잃습니다."} />
-                <ErrorMsg msg={structureError || valueChargeError} />
-                {(structureLoading || valueChargeLoading) && (
-                  <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
-                    {[
-                      { label: "3막 구조", loading: structureLoading, done: !!structureResult },
-                      { label: "가치 전하", loading: valueChargeLoading, done: !!valueChargeResult },
-                    ].map((item, i) => (
-                      <span key={i} style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: item.done ? "#4ECCA3" : item.loading ? "#4ECCA3" : "var(--c-tx-25)", display: "flex", alignItems: "center", gap: 4 }}>
-                        {item.done ? "✓" : item.loading ? <Spinner size={9} color="#4ECCA3" /> : "○"} {item.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {structureAllDone && (
-                  <ResultCard
-                    title="구조 & 감정 아크"
-                    onClose={() => { setStructureResult(null); setValueChargeResult(null); }}
-                    color="rgba(78,204,163,0.15)"
-                  >
-                    {structureResult && (
-                      <div>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(78,204,163,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>3막 구조 (Field · Snyder · McKee · Hauge · Truby)</div>
-                        <ErrorBoundary><StructureAnalysisPanel data={structureResult} isMobile={isMobile} /></ErrorBoundary>
-                      </div>
-                    )}
-                    {valueChargeResult && (
-                      <div>
-                        {structureResult && <div style={{ margin: "20px 0", height: 1, background: "var(--c-bd-1)" }} />}
-                        <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(78,204,163,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>가치 전하 & 감정 아크 (McKee)</div>
-                        <ValueChargePanel data={valueChargeResult} isMobile={isMobile} />
-                      </div>
-                    )}
-                  </ResultCard>
-                )}
-              </div>
-
-              {/* ── 유사 작품 비교 ── */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>시장 포지셔닝</div>
-                <ToolButton
-                  icon={<SvgIcon d={ICON.film} size={16} />}
-                  label="유사 작품 비교 분석"
-                  sub="한국·해외 참고 작품 + 시장 포지셔닝"
-                  done={!!comparableResult}
-                  loading={comparableLoading}
-                  color="#F472B6"
-                  onClick={analyzeComparableWorks}
-                  disabled={!logline.trim()}
-                  tooltip={"이 이야기와 유사한 국내외 레퍼런스 작품을 찾아 시장 맥락을 파악합니다.\n\n• 유사 작품 — 장르·톤·주제 기준 비교 분석\n• 배울 점 — 각 레퍼런스에서 참고할 전략\n• 시장 포지셔닝 — OTT·극장·방송 채널 적합성\n• 타깃 관객 — 연령·성별·취향 프로파일\n\n투자 제안서와 방송사 기획안에 필수로 포함되는 섹션입니다."}
-                />
-                <ErrorMsg msg={comparableError} />
-                {comparableResult && (
-                  <ResultCard title="유사 작품 비교" onClose={() => setComparableResult(null)} color="rgba(244,114,182,0.15)">
-                    <ErrorBoundary><ComparableWorksPanel data={comparableResult} isMobile={isMobile} /></ErrorBoundary>
-                  </ResultCard>
-                )}
-              </div>
-
-              {/* ── 이전 분석 반영 표시 ── */}
-              {(() => {
-                const badges = [
-                  academicResult && { label: "학술", color: "#45B7D1" },
-                  mythMapResult && { label: "신화매핑", color: "#a78bfa" },
-                  koreanMythResult && { label: "한국신화", color: "#E85D75" },
-                  expertPanelResult && { label: "전문가패널", color: "#FFD166" },
-                  barthesCodeResult && { label: "바르트코드", color: "#64DCC8" },
-                  shadowResult && { label: "Jung원형", color: "#E85D75" },
-                  authenticityResult && { label: "진정성", color: "#a78bfa" },
-                  charDevResult && { label: "캐릭터", color: "#FB923C" },
-                  valueChargeResult && { label: "가치전하", color: "#4ECCA3" },
-                  subtextResult && { label: "하위텍스트", color: "#95E1D3" },
-                  structureResult && { label: "구조분석", color: "#4ECCA3" },
-                  themeResult && { label: "테마", color: "#F472B6" },
-                ].filter(Boolean);
-                if (badges.length === 0) return (
-                  <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 8, border: "1px solid var(--c-card-3)", background: "rgba(var(--tw),0.02)", fontSize: 11, color: "var(--c-tx-30)" }}>
-                    개념 분석·캐릭터·가치전하·하위텍스트를 먼저 실행하면 그 결과가 시놉시스 생성에 자동으로 반영됩니다.
-                  </div>
-                );
-                return (
-                  <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(200,168,75,0.15)", background: "rgba(200,168,75,0.04)" }}>
-                    <div style={{ fontSize: 10, color: "rgba(200,168,75,0.7)", marginBottom: 7, fontWeight: 700, letterSpacing: 0.5 }}>시놉시스에 반영되는 분석</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                      {badges.map((b) => (
-                        <span key={b.label} style={{ padding: "3px 9px", borderRadius: 20, fontSize: 10, fontWeight: 600, border: `1px solid ${b.color}40`, background: `${b.color}0f`, color: b.color }}>
-                          {b.label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Synopsis mode toggle */}
-              <div style={{ display: "flex", gap: 6, marginBottom: 16, background: "var(--c-card-1)", padding: 4, borderRadius: 10, border: "1px solid var(--c-bd-1)" }}>
-                {[
-                  { id: "auto", label: "자동 생성", align: "left", tip: "로그라인과 이전 분석 결과를 바탕으로 원하는 서사 구조와 방향 수를 선택해 여러 시놉시스를 한 번에 생성합니다.\n\n생성된 시놉시스 중 마음에 드는 방향을 '확정'하면, 이후 트리트먼트·비트시트가 그 방향을 기반으로 작성됩니다." },
-                  { id: "pipeline", label: "파이프라인", align: "right", tip: "AI가 일련의 질문(주제·갈등·해결 등)을 순서대로 던지며 이야기를 함께 구체화하는 인터뷰 방식입니다.\n\n아직 이야기 방향이 불확실하거나, 처음부터 AI와 함께 발전시키고 싶을 때 유용합니다." },
-                ].map((m) => (
-                  <Tooltip key={m.id} text={m.tip} align={m.align}>
-                    <button onClick={() => setSynopsisMode(m.id)} style={{
-                      padding: "8px 12px", borderRadius: 7, border: "none", cursor: "pointer",
-                      fontSize: 12, fontWeight: synopsisMode === m.id ? 700 : 400,
-                      background: synopsisMode === m.id ? "rgba(200,168,75,0.15)" : "transparent",
-                      color: synopsisMode === m.id ? "#C8A84B" : "var(--c-tx-35)",
-                      transition: "all 0.15s", width: "100%",
-                    }}>{m.label}</button>
-                  </Tooltip>
-                ))}
-              </div>
-
-              {/* Auto mode */}
-              {synopsisMode === "auto" && (
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ marginBottom: 14 }}>
-                    <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>서사 구조</div>
-                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 6 }}>
-                      {NARRATIVE_FRAMEWORKS.map((f) => (
-                        <div key={f.id} style={{ position: "relative" }}>
-                          <button onClick={() => setSelectedFramework(f.id)} style={{
-                            width: "100%", padding: "8px 10px", borderRadius: 9, textAlign: "left", cursor: "pointer", transition: "all 0.15s",
-                            border: selectedFramework === f.id ? "1px solid rgba(200,168,75,0.5)" : "1px solid var(--c-bd-1)",
-                            background: selectedFramework === f.id ? "rgba(200,168,75,0.08)" : "rgba(var(--tw),0.02)",
-                            color: selectedFramework === f.id ? "#C8A84B" : "var(--c-tx-45)",
-                          }}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
-                              <div style={{ fontSize: 12, fontWeight: 600 }}>{f.label}</div>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setFrameworkInfoId(frameworkInfoId === f.id ? null : f.id); }}
-                                style={{ background: "none", border: "none", cursor: "pointer", padding: "0 0 0 4px", color: "var(--c-tx-25)", fontSize: 11, lineHeight: 1, flexShrink: 0 }}
-                                title="설명 보기"
-                              >ⓘ</button>
-                            </div>
-                            <div style={{ fontSize: 9, color: "var(--c-tx-25)", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.4 }}>{f.ref}</div>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    {/* 서사 구조 설명 팝업 */}
-                    {frameworkInfoId && (() => {
-                      const fi = NARRATIVE_FRAMEWORKS.find(f => f.id === frameworkInfoId);
-                      if (!fi) return null;
-                      return (
-                        <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 10, background: "rgba(200,168,75,0.06)", border: "1px solid rgba(200,168,75,0.2)" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: "#C8A84B" }}>{fi.icon} {fi.label}</span>
-                            <button onClick={() => setFrameworkInfoId(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-tx-30)", fontSize: 14, padding: 0 }}>✕</button>
-                          </div>
-                          <div style={{ fontSize: 12, color: "var(--c-tx-60)", marginBottom: 6, fontWeight: 500 }}>{fi.desc}</div>
-                          <div style={{ fontSize: 11, color: "rgba(var(--tw),0.38)", lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "keep-all" }}>{fi.instruction}</div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
-                    <span style={{ fontSize: 11, color: "var(--c-tx-40)" }}>방향 수:</span>
-                    {[2, 3, 4, 5].map((n) => (
-                      <button key={n} onClick={() => setDirectionCount(n)} style={{
-                        padding: "5px 14px", borderRadius: 20, fontSize: 12, cursor: "pointer",
-                        border: directionCount === n ? "1px solid rgba(200,168,75,0.5)" : "1px solid var(--c-bd-3)",
-                        background: directionCount === n ? "rgba(200,168,75,0.1)" : "var(--c-card-1)",
-                        color: directionCount === n ? "#C8A84B" : "var(--c-tx-40)",
-                        fontWeight: directionCount === n ? 700 : 400,
-                      }}>{n}가지</button>
-                    ))}
-                  </div>
-                  <button onClick={generateSynopsis} disabled={synopsisLoading || !logline.trim() || !apiKey} style={{
-                    width: "100%", padding: 13, borderRadius: 10, border: "1px solid rgba(200,168,75,0.3)",
-                    background: synopsisLoading ? "rgba(200,168,75,0.05)" : "rgba(200,168,75,0.1)",
-                    color: "#C8A84B", cursor: synopsisLoading || !logline.trim() ? "not-allowed" : "pointer",
-                    fontSize: 14, fontWeight: 700, transition: "all 0.2s",
-                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                  }}>
-                    {synopsisLoading ? (<><Spinner size={14} color="#C8A84B" />{directionCount}가지 시놉시스 작성 중...</>) : `${directionCount}가지 방향으로 시놉시스 생성`}
-                  </button>
-                  <ErrorMsg msg={synopsisError} onRetry={synopsisError ? generateSynopsis : undefined} />
-                  {synopsisResults?.synopses && (
-                    <div style={{ marginTop: 16 }}>
-                      {selectedSynopsisIndex !== null && (
-                        <div style={{ marginBottom: 12, padding: "8px 14px", borderRadius: 8, background: "rgba(78,204,163,0.08)", border: "1px solid rgba(78,204,163,0.25)", fontSize: 12, color: "#4ECCA3", fontFamily: "'Noto Sans KR', sans-serif" }}>
-                          ✓ 방향 {selectedSynopsisIndex + 1} 확정 — 이후 모든 단계가 이 시놉시스를 기반으로 생성됩니다
-                        </div>
-                      )}
-                      {synopsisResults.synopses.map((s, i) => (
-                        <SynopsisCard
-                          key={i}
-                          synopsis={s}
-                          index={i}
-                          isSelected={selectedSynopsisIndex === i}
-                          onSelect={() => setSelectedSynopsisIndex(i === selectedSynopsisIndex ? null : i)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Pipeline mode */}
-              {synopsisMode === "pipeline" && (
-                <div style={{ marginBottom: 20 }}>
-                  <PipelinePanel selectedDuration={selectedDuration} logline={logline} apiKey={apiKey} isMobile={isMobile} onResult={(data) => setPipelineResult(data)} />
-                  {pipelineResult && (
-                    <ResultCard title={pipelineResult.direction_title} onClose={() => { setPipelineResult(null); setPipelineHistory([]); }} onUndo={() => undoHistory(setPipelineHistory, setPipelineResult, pipelineHistory)} historyCount={pipelineHistory.length} color="rgba(78,204,163,0.15)">
-                      <SynopsisCard synopsis={pipelineResult} index={0} />
-                      {/* 시놉시스 직접 편집 */}
-                      {editingSynopsis ? (
-                        <div style={{ marginTop: 12 }}>
-                          <textarea
-                            value={synopsisEditDraft}
-                            onChange={e => setSynopsisEditDraft(e.target.value)}
-                            rows={6}
-                            style={{
-                              width: "100%", padding: "12px 14px", borderRadius: 10,
-                              border: "1px solid rgba(78,204,163,0.3)",
-                              background: "rgba(var(--tw),0.03)",
-                              color: "var(--text-main)", fontSize: 13, lineHeight: 1.8,
-                              fontFamily: "'Noto Sans KR', sans-serif", resize: "vertical",
-                              boxSizing: "border-box",
-                            }}
-                          />
-                          <div style={{ display: "flex", gap: 8, marginTop: 8, justifyContent: "flex-end" }}>
-                            <button onClick={() => setEditingSynopsis(false)}
-                              style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-45)", fontSize: 11, cursor: "pointer" }}>취소</button>
-                            <button onClick={() => {
-                              setPipelineResult(prev => ({ ...prev, synopsis: synopsisEditDraft }));
-                              setWriterEdit("synopsis", synopsisEditDraft);
-                              setEditingSynopsis(false);
-                              if (treatmentResult) setTreatmentStale(true);
-                              if (beatSheetResult) setBeatSheetStale(true);
-                              if (scenarioDraftResult) setScenarioDraftStale(true);
-                            }}
-                              style={{ padding: "6px 16px", borderRadius: 7, border: "1px solid rgba(78,204,163,0.4)", background: "rgba(78,204,163,0.1)", color: "#4ECCA3", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>저장</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-                          <button
-                            onClick={() => { setSynopsisEditDraft(pipelineResult.synopsis || ""); setEditingSynopsis(true); }}
-                            style={{ padding: "4px 10px", borderRadius: 7, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.05)", color: "#4ECCA3", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
-                          >✏ 시놉시스 직접 편집</button>
-                        </div>
-                      )}
-                      <div style={{ marginTop: 14 }}>
-                        <textarea value={pipelineFeedback} onChange={(e) => setPipelineFeedback(e.target.value)} placeholder="피드백을 입력하여 시놉시스를 다듬으세요..." rows={3} style={{
-                          width: "100%", padding: 12, borderRadius: 10,
-                          border: "1px solid var(--c-bd-3)", background: "rgba(var(--tw),0.025)",
-                          color: "var(--text-main)", fontSize: 13, resize: "vertical", fontFamily: "'Noto Sans KR', sans-serif",
-                        }} />
-                        <button onClick={refinePipelineSynopsis} disabled={pipelineRefineLoading || !pipelineFeedback.trim()} style={{
-                          marginTop: 8, padding: "10px 20px", borderRadius: 9,
-                          border: "1px solid rgba(78,204,163,0.3)", background: "rgba(78,204,163,0.07)",
-                          color: "#4ECCA3", cursor: pipelineRefineLoading ? "not-allowed" : "pointer",
-                          fontSize: 12, fontWeight: 600,
-                        }}>
-                          {pipelineRefineLoading ? "다듬는 중..." : "피드백 반영하여 다듬기"}
-                        </button>
-                      </div>
-                    </ResultCard>
-                  )}
-                </div>
-              )}
-
-              {/* ── 기획서 PDF ── */}
-              {(synopsisResults || pipelineResult) && (
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-                  <DocButton label="기획서 PDF" sub="시놉시스 포함 지원·투자 기획서" onClick={() => openApplicationDoc("synopsis")} />
-                </div>
-              )}
-              {getStageStatus("4") === "done" && (() => {
-                const hasSynopsis = !!(synopsisResults?.synopses?.length || pipelineResult);
-                const isConfirmed = !!(pipelineResult || selectedSynopsisIndex !== null);
-                const confirmedTitle = pipelineResult?.direction_title
-                  || (selectedSynopsisIndex !== null ? synopsisResults?.synopses?.[selectedSynopsisIndex]?.direction_title : null);
-                return (
-                  <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)" }}>
-                    {hasSynopsis && !isConfirmed && (
-                      <div style={{ marginBottom: 14, padding: "12px 16px", borderRadius: 10, background: "rgba(247,160,114,0.08)", border: "1px solid rgba(247,160,114,0.3)", display: "flex", alignItems: "flex-start", gap: 10 }}>
-                        <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>⚠️</span>
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: "#F7A072", marginBottom: 3 }}>시놉시스 방향이 확정되지 않았습니다</div>
-                          <div style={{ fontSize: 11, color: "var(--c-tx-45)", lineHeight: 1.6 }}>
-                            위 시놉시스 중 하나를 선택해야 트리트먼트·비트 시트·시나리오가 그 방향으로 생성됩니다.<br />
-                            선택하지 않고 넘어가면 이후 단계가 시놉시스 없이 로그라인만 참고해서 진행됩니다.
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {isConfirmed && confirmedTitle && (
-                      <div style={{ marginBottom: 14, padding: "10px 16px", borderRadius: 10, background: "rgba(78,204,163,0.07)", border: "1px solid rgba(78,204,163,0.25)", display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 13 }}>✅</span>
-                        <div style={{ fontSize: 12, color: "#4ECCA3" }}>
-                          <span style={{ fontWeight: 700 }}>확정:</span> {confirmedTitle} — 이후 모든 단계가 이 시놉시스를 기반으로 생성됩니다
-                        </div>
-                      </div>
-                    )}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                      <button onClick={() => advanceToStage("2")} style={{ padding: "8px 16px", borderRadius: 9, border: "1px solid rgba(69,183,209,0.25)", background: "rgba(69,183,209,0.05)", color: "rgba(69,183,209,0.7)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s" }}>
-                        <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
-                        이론 심화 분석 (선택)
-                      </button>
-                      <button
-                        onClick={() => advanceToStage("5")}
-                        style={{
-                          padding: "11px 24px", borderRadius: 10, cursor: "pointer",
-                          border: isConfirmed ? "1px solid rgba(78,204,163,0.4)" : "1px solid rgba(200,168,75,0.4)",
-                          background: isConfirmed ? "rgba(78,204,163,0.1)" : "rgba(200,168,75,0.1)",
-                          color: isConfirmed ? "#4ECCA3" : "#C8A84B",
-                          fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s",
-                        }}
-                      >
-                        {isConfirmed ? "✓ 시놉시스 확정 — 다음 단계: 트리트먼트 & 비트" : "다음 단계: 트리트먼트 & 비트 (시놉시스 미확정)"}
-                        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div></ErrorBoundary>
-              </div>
-            )}
-          </div>
-
-          {/* ═══ STAGE 2: 개념 분석 (선택) ═══ */}
-          <div ref={(el) => { stageRefs.current["2"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "2" ? "rgba(69,183,209,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("2"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "2" ? "rgba(69,183,209,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("2")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("2") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
-                {getStageStatus("2") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("2")] }}>04</span>}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "2" ? "var(--text-main)" : getStageStatus("2") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)", display: "flex", alignItems: "center", gap: 8 }}>개념 분석 <span style={{ fontSize: 9, fontWeight: 600, padding: "1px 6px", borderRadius: 8, background: "rgba(69,183,209,0.1)", color: "rgba(69,183,209,0.65)", border: "1px solid rgba(69,183,209,0.2)", letterSpacing: 0.5 }}>선택</span></div>
-                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>학술 이론 · 신화 매핑 · 전문가 패널 — 시놉시스 후 심화 분석</div>
-              </div>
-              {currentStage !== "2" && getStageDoneCount("2") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("2")}/{STAGE_TOTALS["2"]}</span>}
-              {getStageStatus("2") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "2" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
-            </div>
-            {currentStage === "2" && (
-              <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
-              <ErrorBoundary><div>
-
-              {/* ── 선택 단계 안내 ── */}
-              <div style={{ marginBottom: 18, padding: "12px 16px", borderRadius: 10, background: "rgba(69,183,209,0.05)", border: "1px solid rgba(69,183,209,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
-                <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>💡</span>
-                <div style={{ fontSize: 12, color: "var(--c-tx-50)", lineHeight: 1.65 }}>
-                  <strong style={{ color: "rgba(69,183,209,0.85)" }}>선택 심화 분석 단계입니다.</strong> 시놉시스가 확정된 지금, 학술 이론으로 이야기의 구조적 깊이를 강화할 수 있습니다.<br />
-                  건너뛰어도 되고, 트리트먼트 작업 전·후 언제든 돌아올 수 있습니다.
-                </div>
-              </div>
-
-              {/* ── 전문가 패널 ── */}
-              <div style={{ marginTop: 8 }}>
-                <ToolButton icon={<SvgIcon d={ICON.users} size={16} />} label="전문가 패널" sub="현업 전문가 10인의 독립 시각" done={!!expertPanelResult} loading={expertPanelLoading} color="#FFD166" onClick={runExpertPanel} disabled={!logline.trim()}
-                  tooltip={"시나리오 작가, 제작사 PD, 문학평론가, 마케터 등 현업 전문가 10인이 이 로그라인을 독립적으로 평가합니다.\n\n라운드 1 — 각자 개별 의견 제시\n라운드 2 — 의견 교환 후 토론\n종합 — 합의점·핵심 강점 도출\n\n실제 방송사·제작사 심사 환경과 유사한 피드백을 얻을 수 있습니다."} />
-                <ErrorMsg msg={expertPanelError} />
-                {expertPanelResult && <ResultCard title="전문가 패널 토론" onClose={() => setExpertPanelResult(null)} color="rgba(255,209,102,0.15)"><ErrorBoundary><ExpertPanelSection data={expertPanelResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
-              </div>
-              {getStageStatus("2") === "done" && (
-                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={() => advanceToStage("5")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
-                    다음 단계: 트리트먼트 & 비트
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                  </button>
-                </div>
-              )}
-            </div></ErrorBoundary>
-              </div>
-            )}
-          </div>
-
-          {/* ═══ STAGE 5: Treatment / Beat Sheet ═══ */}
-          <div ref={(el) => { stageRefs.current["5"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "5" ? "rgba(255,209,102,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("5"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "5" ? "rgba(255,209,102,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("5")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("5") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
-                {getStageStatus("5") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("5")] }}>05</span>}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "5" ? "var(--text-main)" : getStageStatus("5") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>트리트먼트 & 비트</div>
-                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>트리트먼트 · 씬 리스트 · 비트시트 · 대사</div>
-              </div>
-              {currentStage !== "5" && getStageDoneCount("5") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("5")}/{STAGE_TOTALS["5"]}</span>}
-              {getStageStatus("5") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "5" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
-            </div>
-            {currentStage === "5" && (
-              <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
-              <ErrorBoundary><div>
-
-              {/* ── STEP 1: 트리트먼트 ── */}
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: treatmentResult ? "rgba(78,204,163,0.15)" : "rgba(200,168,75,0.12)", color: treatmentResult ? "#4ECCA3" : "#C8A84B", border: `1px solid ${treatmentResult ? "rgba(78,204,163,0.25)" : "rgba(200,168,75,0.25)"}`, fontFamily: "'JetBrains Mono', monospace" }}>{treatmentResult ? "✓ STEP 1" : "STEP 1"}</div>
-                  <span style={{ fontSize: 12, color: "var(--c-tx-45)", fontWeight: 500 }}>트리트먼트 — 스토리 전체 흐름 서술</span>
-                </div>
-                <button onClick={() => {
-                  if (!showTreatmentPanel) {
-                    // 포맷에 따라 서사 구조 기본값 자동 설정
-                    const autoStructure = { tvdrama: "tvdrama", webdrama: "webdrama", shortformseries: "webdrama", miniseries: "miniseries", ultrashort: "3act", shortform: "3act", shortfilm: "3act", feature: "3act" }[selectedDuration] || "3act";
-                    if (!treatmentResult) setTreatmentStructure(autoStructure);
-                  }
-                  setShowTreatmentPanel(!showTreatmentPanel);
-                }} style={{
-                  width: "100%", padding: "12px 16px", borderRadius: 12,
-                  border: showTreatmentPanel ? "1px solid rgba(200,168,75,0.4)" : "1px solid var(--c-bd-3)",
-                  background: showTreatmentPanel ? "rgba(200,168,75,0.07)" : "rgba(var(--tw),0.02)",
-                  color: showTreatmentPanel ? "#C8A84B" : "var(--c-tx-45)",
-                  cursor: "pointer", fontSize: 14, fontWeight: 600,
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8, transition: "all 0.2s",
-                }}>
-                  <SvgIcon d={ICON.doc} size={16} />
-                  트리트먼트로 발전시키기
-                  <span style={{ fontSize: 11, opacity: 0.6 }}>{showTreatmentPanel ? "^" : "v"}</span>
-                </button>
-                {showTreatmentPanel && (
-                  <div style={{ marginTop: 8 }}>
-                    <TreatmentInputPanel chars={treatmentChars} onCharsChange={setTreatmentChars} structure={treatmentStructure} onStructureChange={setTreatmentStructure} onGenerate={generateTreatment} loading={treatmentLoading} isMobile={isMobile} charDevResult={charDevResult} />
-                    <ErrorMsg msg={treatmentError} onRetry={treatmentError ? generateTreatment : undefined} />
-                  </div>
-                )}
-                {treatmentStale && treatmentResult && (
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    padding: "10px 14px", borderRadius: 10, marginTop: 8,
-                    background: "rgba(247,160,114,0.07)",
-                    border: "1px solid rgba(247,160,114,0.25)",
-                  }}>
-                    <span style={{ fontSize: 14, flexShrink: 0 }}>⚠</span>
-                    <div style={{ flex: 1, fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.5 }}>
-                      캐릭터 또는 시놉시스가 변경됐습니다. 트리트먼트를 재생성하면 최신 내용이 반영됩니다.
-                    </div>
-                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      <button onClick={() => setTreatmentStale(false)}
-                        style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-35)", fontSize: 10, cursor: "pointer" }}>무시</button>
-                      <button onClick={generateTreatment}
-                        style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(247,160,114,0.4)", background: "rgba(247,160,114,0.1)", color: "#F7A072", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>재생성</button>
-                    </div>
-                  </div>
-                )}
-                {treatmentResult && (
-                  <ResultCard
-                    title={<span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      트리트먼트
-                      {writerEdits.treatment && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, background: "rgba(78,204,163,0.15)", color: "#4ECCA3", fontWeight: 600, border: "1px solid rgba(78,204,163,0.25)" }}>✏ 수정됨</span>}
-                    </span>}
-                    onClose={() => { setTreatmentResult(""); clearWriterEdit("treatment"); setEditingTreatment(false); setTreatmentHistory([]); setTreatmentStale(false); }}
-                    onUndo={() => undoHistory(setTreatmentHistory, setTreatmentResult, treatmentHistory)}
-                    historyCount={treatmentHistory.length}
-                    color="rgba(200,168,75,0.15)"
-                  >
-                    {editingTreatment ? (
-                      <div>
-                        <textarea
-                          value={treatmentEditDraft}
-                          onChange={e => setTreatmentEditDraft(e.target.value)}
-                          style={{
-                            width: "100%", minHeight: 400, padding: "14px 16px",
-                            background: "rgba(var(--tw),0.03)", border: "1px solid rgba(200,168,75,0.3)",
-                            borderRadius: 10, color: "var(--text-main)", fontSize: 13, lineHeight: 1.8,
-                            fontFamily: "'Noto Sans KR', sans-serif", resize: "vertical", boxSizing: "border-box",
-                            outline: "none",
-                          }}
-                        />
-                        <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "flex-end" }}>
-                          {writerEdits.treatment && (
-                            <button
-                              onClick={() => { clearWriterEdit("treatment"); setEditingTreatment(false); }}
-                              style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.3)", background: "rgba(232,93,117,0.06)", color: "#E85D75", fontSize: 11, cursor: "pointer" }}
-                            >AI 원본으로</button>
-                          )}
-                          <button
-                            onClick={() => setEditingTreatment(false)}
-                            style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-45)", fontSize: 11, cursor: "pointer" }}
-                          >취소</button>
-                          <button
-                            onClick={() => { setWriterEdit("treatment", treatmentEditDraft); setEditingTreatment(false); }}
-                            style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(78,204,163,0.4)", background: "rgba(78,204,163,0.1)", color: "#4ECCA3", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                          >저장 — 시나리오에 반영</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {treatmentCtx && (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
-                            {treatmentCtx.genre && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(200,168,75,0.1)", color: "#C8A84B", border: "1px solid rgba(200,168,75,0.2)" }}>{treatmentCtx.genre}</span>}
-                            {treatmentCtx.char && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(251,146,60,0.1)", color: "#FB923C", border: "1px solid rgba(251,146,60,0.2)" }}>캐릭터 분석 반영</span>}
-                            {treatmentCtx.synopsis && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(78,204,163,0.1)", color: "#4ECCA3", border: "1px solid rgba(78,204,163,0.2)" }}>시놉시스 반영</span>}
-                            {treatmentCtx.plotPoints && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(96,165,250,0.1)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.2)" }}>플롯 포인트 반영</span>}
-                            <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(var(--tw),0.05)", color: "var(--c-tx-40)", border: "1px solid var(--c-bd-2)" }}>{treatmentCtx.structure}</span>
-                          </div>
-                        )}
-                        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 10 }}>
-                          <button
-                            onClick={() => { setTreatmentEditDraft(writerEdits.treatment || treatmentResult); setEditingTreatment(true); }}
-                            style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(200,168,75,0.3)", background: "rgba(200,168,75,0.06)", color: "#C8A84B", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 5 }}
-                          >✏ 편집</button>
-                          <button
-                            onClick={() => {
-                              const blob = new Blob([writerEdits.treatment || treatmentResult], { type: "text/markdown;charset=utf-8" });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement("a"); a.href = url;
-                              a.download = `treatment_${new Date().toISOString().slice(0,10)}.md`;
-                              a.click(); URL.revokeObjectURL(url);
-                            }}
-                            style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(200,168,75,0.3)", background: "rgba(200,168,75,0.06)", color: "#C8A84B", cursor: "pointer", fontSize: 11 }}
-                          >MD 내보내기</button>
-                        </div>
-                        <div style={{ fontFamily: "'Noto Sans KR', sans-serif", fontSize: isMobile ? 13 : 14, lineHeight: 1.9, color: "rgba(var(--tw),0.82)" }}>
-                          <ReactMarkdown
-                            components={{
-                              h1: ({ children }) => <h1 style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: "#C8A84B", marginBottom: 8, marginTop: 0 }}>{children}</h1>,
-                              h2: ({ children }) => <h2 style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: "rgba(var(--tw),0.9)", marginTop: 28, marginBottom: 10, paddingBottom: 6, borderBottom: "1px solid var(--c-bd-2)" }}>{children}</h2>,
-                              h3: ({ children }) => <h3 style={{ fontSize: isMobile ? 13 : 14, fontWeight: 700, color: "#C8A84B", marginTop: 18, marginBottom: 6 }}>{children}</h3>,
-                              p: ({ children }) => <p style={{ marginBottom: 12, marginTop: 0 }}>{children}</p>,
-                              strong: ({ children }) => <strong style={{ color: "rgba(var(--tw),0.95)", fontWeight: 700 }}>{children}</strong>,
-                              em: ({ children }) => <em style={{ color: "rgba(200,168,75,0.8)", fontStyle: "italic" }}>{children}</em>,
-                              ul: ({ children }) => <ul style={{ paddingLeft: 20, marginBottom: 12 }}>{children}</ul>,
-                              li: ({ children }) => <li style={{ marginBottom: 5 }}>{children}</li>,
-                              hr: () => <hr style={{ border: "none", borderTop: "1px solid var(--c-bd-1)", margin: "20px 0" }} />,
-                              table: ({ children }) => <div style={{ overflowX: "auto", marginBottom: 16 }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>{children}</table></div>,
-                              th: ({ children }) => <th style={{ padding: "7px 10px", background: "rgba(200,168,75,0.08)", color: "var(--c-tx-70)", fontWeight: 600, textAlign: "left", borderBottom: "1px solid var(--c-bd-3)" }}>{children}</th>,
-                              td: ({ children }) => <td style={{ padding: "7px 10px", color: "var(--c-tx-60)", borderBottom: "1px solid var(--c-card-2)" }}>{children}</td>,
-                            }}
-                          >{writerEdits.treatment || treatmentResult}</ReactMarkdown>
-                        </div>
-                        <FeedbackBox
-                          value={treatmentFeedback}
-                          onChange={setTreatmentFeedback}
-                          onSubmit={refineTreatment}
-                          loading={treatmentRefineLoading}
-                          placeholder="수정 요청을 입력하세요"
-                        />
-                        {treatmentBefore && !editingTreatment && (
-                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed var(--c-bd-2)" }}>
-                            <button
-                              onClick={() => setShowTreatmentBefore(!showTreatmentBefore)}
-                              style={{ fontSize: 10, padding: "3px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-35)", cursor: "pointer" }}
-                            >
-                              {showTreatmentBefore ? "▲ 이전 버전 숨기기" : "▼ 이전 버전 보기"}
-                            </button>
-                            {showTreatmentBefore && (
-                              <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 9, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)", opacity: 0.65 }}>
-                                <div style={{ fontSize: 10, color: "var(--c-tx-30)", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>BEFORE — 피드백 반영 전</div>
-                                <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 200, overflowY: "auto" }}>
-                                  {treatmentBefore.slice(0, 800)}{treatmentBefore.length > 800 ? "..." : ""}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </ResultCard>
-                )}
-                {treatmentResult && (
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
-                    <DocButton label="상세 기획서 PDF" sub="트리트먼트 포함 제작 기획서" onClick={() => openApplicationDoc("treatment")} />
-                  </div>
-                )}
-              </div>
-
-              {/* ── STEP 2: 비트 시트 ── */}
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: beatSheetResult ? "rgba(78,204,163,0.15)" : "rgba(255,209,102,0.12)", color: beatSheetResult ? "#4ECCA3" : "#FFD166", border: `1px solid ${beatSheetResult ? "rgba(78,204,163,0.25)" : "rgba(255,209,102,0.25)"}`, fontFamily: "'JetBrains Mono', monospace" }}>{beatSheetResult ? "✓ STEP 2" : "STEP 2"}</div>
-                  <span style={{ fontSize: 12, color: "var(--c-tx-45)", fontWeight: 500 }}>비트 시트 — Snyder 15비트 구조 설계</span>
-                  {genre !== "auto" && GENRE_BEAT_HINTS[genre] && (
-                    <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 8, background: "rgba(255,209,102,0.1)", color: "#FFD166", border: "1px solid rgba(255,209,102,0.2)", fontWeight: 600 }}>
-                      {GENRES.find(g => g.id === genre)?.label} 맞춤 구조
-                    </span>
-                  )}
-                  {!treatmentResult && <span style={{ marginLeft: "auto", fontSize: 10, color: "rgba(255,209,102,0.55)", fontStyle: "italic" }}>Step 1 완료 후 추천</span>}
-                </div>
-                <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="비트 시트" sub="Snyder 15비트" done={!!beatSheetResult} loading={beatSheetLoading} color="#FFD166" onClick={generateBeatSheet} disabled={!logline.trim()}
-                  tooltip={"Blake Snyder의 'Save the Cat' 15비트 구조를 적용합니다.\n\n할리우드 표준 이정표 15개를 정확한 페이지 위치에 배치합니다:\n오프닝 이미지 → 테마 제시 → 설정 → 촉발사건 → 고민 → 2막 진입 → B스토리 → 재미와 게임 → 중간점 → 적의 위협 → 전부 잃다 → 영혼의 밤 → 3막 진입 → 피날레 → 클로징 이미지\n\n각 비트마다 AI가 직접 씬을 집필할 수 있습니다."} />
-                <ErrorMsg msg={beatSheetError} />
-                {beatSheetStale && beatSheetResult && (
-                  <div style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    padding: "10px 14px", borderRadius: 10, marginTop: 8,
-                    background: "rgba(247,160,114,0.07)",
-                    border: "1px solid rgba(247,160,114,0.25)",
-                  }}>
-                    <span style={{ fontSize: 14, flexShrink: 0 }}>⚠</span>
-                    <div style={{ flex: 1, fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.5 }}>
-                      트리트먼트 또는 캐릭터가 변경됐습니다. 비트 시트를 재생성하면 최신 내용이 반영됩니다.
-                    </div>
-                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      <button onClick={() => setBeatSheetStale(false)}
-                        style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-35)", fontSize: 10, cursor: "pointer" }}>무시</button>
-                      <button onClick={generateBeatSheet}
-                        style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(247,160,114,0.4)", background: "rgba(247,160,114,0.1)", color: "#F7A072", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>재생성</button>
-                    </div>
-                  </div>
-                )}
-                {beatSheetResult && (
-                  <ResultCard title="비트 시트" onClose={() => { setBeatSheetResult(null); setBeatSheetHistory([]); setBeatSheetStale(false); }} onUndo={() => undoHistory(setBeatSheetHistory, setBeatSheetResult, beatSheetHistory)} historyCount={beatSheetHistory.length} color="rgba(255,209,102,0.15)">
-                    {beatSheetCtx && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
-                        {beatSheetCtx.genre && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(255,209,102,0.1)", color: "#FFD166", border: "1px solid rgba(255,209,102,0.2)" }}>{beatSheetCtx.genre} 맞춤</span>}
-                        {beatSheetCtx.char && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(251,146,60,0.1)", color: "#FB923C", border: "1px solid rgba(251,146,60,0.2)" }}>캐릭터 반영</span>}
-                        {beatSheetCtx.treatment && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(200,168,75,0.1)", color: "#C8A84B", border: "1px solid rgba(200,168,75,0.2)" }}>트리트먼트 반영</span>}
-                        {beatSheetCtx.synopsis && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(78,204,163,0.1)", color: "#4ECCA3", border: "1px solid rgba(78,204,163,0.2)" }}>시놉시스 반영</span>}
-                        {beatSheetCtx.plotPoints && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(96,165,250,0.1)", color: "#60A5FA", border: "1px solid rgba(96,165,250,0.2)" }}>플롯 포인트 반영</span>}
-                      </div>
-                    )}
-                    <BeatSheetPanel
-                      data={beatSheetResult}
+                  );
+                  case "2": return (
+                    <Stage2Content
+                      expertPanelResult={expertPanelResult}
+                      setExpertPanelResult={setExpertPanelResult}
+                      expertPanelLoading={expertPanelLoading}
+                      expertPanelError={expertPanelError}
+                      runExpertPanel={runExpertPanel}
+                    />
+                  );
+                  case "3": return (
+                    <Stage3Content
+                      result={result}
+                      charGuide={charGuide}
+                      setCharGuide={setCharGuide}
+                      charGuideLoading={charGuideLoading}
+                      charGuideError={charGuideError}
+                      generateCharGuide={generateCharGuide}
+                      showManualCharInput={showManualCharInput}
+                      setShowManualCharInput={setShowManualCharInput}
+                      treatmentChars={treatmentChars}
+                      setTreatmentChars={setTreatmentChars}
+                      shadowResult={shadowResult}
+                      setShadowResult={setShadowResult}
+                      shadowLoading={shadowLoading}
+                      shadowError={shadowError}
+                      analyzeShadow={analyzeShadow}
+                      authenticityResult={authenticityResult}
+                      setAuthenticityResult={setAuthenticityResult}
+                      authenticityLoading={authenticityLoading}
+                      authenticityError={authenticityError}
+                      analyzeAuthenticity={analyzeAuthenticity}
+                      charDevResult={charDevResult}
+                      setCharDevResult={setCharDevResult}
+                      charDevLoading={charDevLoading}
+                      charDevError={charDevError}
+                      charDevFeedback={charDevFeedback}
+                      setCharDevFeedback={setCharDevFeedback}
+                      charDevRefineLoading={charDevRefineLoading}
+                      charDevHistory={charDevHistory}
+                      setCharDevHistory={setCharDevHistory}
+                      analyzeCharacterDev={analyzeCharacterDev}
+                      charAllDone={charAllDone}
+                      editingCharacter={editingCharacter}
+                      setEditingCharacter={setEditingCharacter}
+                      charEditDraft={charEditDraft}
+                      setCharEditDraft={setCharEditDraft}
+                      writerEdits={writerEdits}
+                      clearWriterEdit={clearWriterEdit}
+                      setWriterEdit={setWriterEdit}
+                      refineCharDev={refineCharDev}
+                      undoHistory={undoHistory}
+                    />
+                  );
+                  case "4": return (
+                    <Stage4Content
+                      result={result}
+                      structureResult={structureResult}
+                      setStructureResult={setStructureResult}
+                      structureLoading={structureLoading}
+                      structureError={structureError}
+                      valueChargeResult={valueChargeResult}
+                      setValueChargeResult={setValueChargeResult}
+                      valueChargeLoading={valueChargeLoading}
+                      valueChargeError={valueChargeError}
+                      analyzeStructureAll={analyzeStructureAll}
+                      structureAllLoading={structureAllLoading}
+                      structureAllDone={structureAllDone}
+                      comparableResult={comparableResult}
+                      setComparableResult={setComparableResult}
+                      comparableLoading={comparableLoading}
+                      comparableError={comparableError}
+                      analyzeComparableWorks={analyzeComparableWorks}
+                      academicResult={academicResult}
+                      mythMapResult={mythMapResult}
+                      koreanMythResult={koreanMythResult}
+                      expertPanelResult={expertPanelResult}
+                      barthesCodeResult={barthesCodeResult}
+                      shadowResult={shadowResult}
+                      authenticityResult={authenticityResult}
+                      charDevResult={charDevResult}
+                      subtextResult={subtextResult}
+                      themeResult={themeResult}
+                      synopsisMode={synopsisMode}
+                      setSynopsisMode={setSynopsisMode}
+                      NARRATIVE_FRAMEWORKS={NARRATIVE_FRAMEWORKS}
+                      selectedFramework={selectedFramework}
+                      setSelectedFramework={setSelectedFramework}
+                      frameworkInfoId={frameworkInfoId}
+                      setFrameworkInfoId={setFrameworkInfoId}
+                      directionCount={directionCount}
+                      setDirectionCount={setDirectionCount}
+                      generateSynopsis={generateSynopsis}
+                      synopsisLoading={synopsisLoading}
+                      synopsisError={synopsisError}
+                      synopsisResults={synopsisResults}
+                      selectedSynopsisIndex={selectedSynopsisIndex}
+                      setSelectedSynopsisIndex={setSelectedSynopsisIndex}
+                      selectedDuration={selectedDuration}
+                      treatmentChars={treatmentChars}
+                      pipelineResult={pipelineResult}
+                      setPipelineResult={setPipelineResult}
+                      pipelineHistory={pipelineHistory}
+                      setPipelineHistory={setPipelineHistory}
+                      editingSynopsis={editingSynopsis}
+                      setEditingSynopsis={setEditingSynopsis}
+                      synopsisEditDraft={synopsisEditDraft}
+                      setSynopsisEditDraft={setSynopsisEditDraft}
+                      writerEdits={writerEdits}
+                      setWriterEdit={setWriterEdit}
+                      clearWriterEdit={clearWriterEdit}
+                      treatmentResult={treatmentResult}
+                      setTreatmentStale={setTreatmentStale}
+                      beatSheetResult={beatSheetResult}
+                      setBeatSheetStale={setBeatSheetStale}
+                      scenarioDraftResult={scenarioDraftResult}
+                      setScenarioDraftStale={setScenarioDraftStale}
+                      pipelineFeedback={pipelineFeedback}
+                      setPipelineFeedback={setPipelineFeedback}
+                      refinePipelineSynopsis={refinePipelineSynopsis}
+                      pipelineRefineLoading={pipelineRefineLoading}
+                      undoHistory={undoHistory}
+                    />
+                  );
+                  case "5": return (
+                    <Stage5Content
+                      showTreatmentPanel={showTreatmentPanel}
+                      setShowTreatmentPanel={setShowTreatmentPanel}
+                      treatmentChars={treatmentChars}
+                      setTreatmentChars={setTreatmentChars}
+                      treatmentStructure={treatmentStructure}
+                      setTreatmentStructure={setTreatmentStructure}
+                      selectedDuration={selectedDuration}
+                      charDevResult={charDevResult}
+                      treatmentResult={treatmentResult}
+                      setTreatmentResult={setTreatmentResult}
+                      treatmentLoading={treatmentLoading}
+                      treatmentError={treatmentError}
+                      treatmentStale={treatmentStale}
+                      setTreatmentStale={setTreatmentStale}
+                      treatmentHistory={treatmentHistory}
+                      setTreatmentHistory={setTreatmentHistory}
+                      generateTreatment={generateTreatment}
+                      treatmentFeedback={treatmentFeedback}
+                      setTreatmentFeedback={setTreatmentFeedback}
+                      refineTreatment={refineTreatment}
+                      treatmentRefineLoading={treatmentRefineLoading}
+                      treatmentBefore={treatmentBefore}
+                      showTreatmentBefore={showTreatmentBefore}
+                      setShowTreatmentBefore={setShowTreatmentBefore}
+                      editingTreatment={editingTreatment}
+                      setEditingTreatment={setEditingTreatment}
+                      treatmentEditDraft={treatmentEditDraft}
+                      setTreatmentEditDraft={setTreatmentEditDraft}
+                      writerEdits={writerEdits}
+                      setWriterEdit={setWriterEdit}
+                      setWriterEdits={setWriterEdits}
+                      clearWriterEdit={clearWriterEdit}
+                      treatmentCtx={treatmentCtx}
+                      beatSheetResult={beatSheetResult}
+                      setBeatSheetResult={setBeatSheetResult}
+                      beatSheetLoading={beatSheetLoading}
+                      beatSheetError={beatSheetError}
+                      beatSheetStale={beatSheetStale}
+                      setBeatSheetStale={setBeatSheetStale}
+                      beatSheetHistory={beatSheetHistory}
+                      setBeatSheetHistory={setBeatSheetHistory}
+                      generateBeatSheet={generateBeatSheet}
+                      beatSheetCtx={beatSheetCtx}
                       beatScenes={beatScenes}
                       expandedBeats={expandedBeats}
-                      onToggle={(id) => setExpandedBeats((prev) => ({ ...prev, [id]: !prev[id] }))}
-                      isMobile={isMobile}
+                      setExpandedBeats={setExpandedBeats}
                       editingBeats={editingBeats}
-                      beatEditDrafts={writerEdits.beats || {}}
-                      onEditBeat={(id, val) => {
-                        if (val === null) {
-                          // 편집 시작
-                          setEditingBeats(prev => ({ ...prev, [id]: true }));
-                          setBeatEditDrafts(prev => ({ ...prev, [id]: (writerEdits.beats?.[id] || beatSheetResult.beats?.find(b => b.id === id)?.summary || "") }));
-                        } else {
-                          setBeatEditDrafts(prev => ({ ...prev, [id]: val }));
-                        }
-                      }}
-                      onSaveBeat={(id) => {
-                        setWriterEdits(prev => ({ ...prev, beats: { ...(prev.beats || {}), [id]: beatEditDrafts[id] } }));
-                        setEditingBeats(prev => ({ ...prev, [id]: false }));
-                      }}
-                      onCancelBeat={(id) => {
-                        setEditingBeats(prev => ({ ...prev, [id]: false }));
-                      }}
+                      setEditingBeats={setEditingBeats}
+                      beatEditDrafts={beatEditDrafts}
+                      setBeatEditDrafts={setBeatEditDrafts}
+                      structureTwistLoading={structureTwistLoading}
+                      structureTwistError={structureTwistError}
+                      structureTwistResult={structureTwistResult}
+                      analyzeStructureTwist={analyzeStructureTwist}
+                      GENRE_BEAT_HINTS={GENRE_BEAT_HINTS}
+                      undoHistory={undoHistory}
+                      beatSheetFeedback={beatSheetFeedback}
+                      setBeatSheetFeedback={setBeatSheetFeedback}
+                      refineBeatSheet={refineBeatSheet}
+                      beatSheetRefineLoading={beatSheetRefineLoading}
+                      beatSheetBefore={beatSheetBefore}
+                      showBeatSheetBefore={showBeatSheetBefore}
+                      setShowBeatSheetBefore={setShowBeatSheetBefore}
+                      dialogueDevResult={dialogueDevResult}
+                      setDialogueDevResult={setDialogueDevResult}
+                      dialogueDevLoading={dialogueDevLoading}
+                      dialogueDevError={dialogueDevError}
+                      analyzeDialogueDev={analyzeDialogueDev}
                     />
-
-                    {/* ── 구조 비틀기 제안 ── */}
-                    <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(255,209,102,0.12)" }}>
-                      <button
-                        onClick={analyzeStructureTwist}
-                        disabled={structureTwistLoading}
-                        style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px", borderRadius: 8, border: "1px dashed rgba(255,209,102,0.35)", background: structureTwistLoading ? "rgba(255,209,102,0.04)" : "rgba(255,209,102,0.06)", color: "#FFD166", fontSize: 11, fontWeight: 600, cursor: structureTwistLoading ? "not-allowed" : "pointer", transition: "all 0.18s", opacity: structureTwistLoading ? 0.7 : 1 }}
-                      >
-                        {structureTwistLoading ? <Spinner size={11} color="#FFD166" /> : <span style={{ fontSize: 13 }}>↩</span>}
-                        구조 비틀기 제안
-                        <span style={{ fontSize: 10, color: "rgba(255,209,102,0.5)", fontWeight: 400 }}>관습 역이용 포인트 찾기</span>
-                      </button>
-                      <ErrorMsg msg={structureTwistError} />
-                      {structureTwistResult?.twists?.length > 0 && (
-                        <div style={{ marginTop: 12 }}>
-                          {structureTwistResult.overall_note && (
-                            <div style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(255,209,102,0.06)", border: "1px solid rgba(255,209,102,0.15)", fontSize: 11, color: "var(--c-tx-65)", lineHeight: 1.6, fontStyle: "italic" }}>
-                              {structureTwistResult.overall_note}
-                            </div>
-                          )}
-                          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                            {structureTwistResult.twists.map((tw, i) => (
-                              <div key={i} style={{ borderRadius: 10, border: "1px solid rgba(255,209,102,0.18)", overflow: "hidden" }}>
-                                <div style={{ padding: "8px 12px", background: "rgba(255,209,102,0.07)", display: "flex", alignItems: "center", gap: 8 }}>
-                                  <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: "#FFD166", background: "rgba(255,209,102,0.12)", padding: "1px 6px", borderRadius: 4 }}>비트 {tw.beat_id}</span>
-                                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--c-tx-75)" }}>{tw.beat_name}</span>
-                                </div>
-                                <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
-                                  <div style={{ display: "flex", gap: 8 }}>
-                                    <span style={{ fontSize: 10, color: "rgba(160,160,160,0.6)", fontWeight: 600, flexShrink: 0, marginTop: 1 }}>관습</span>
-                                    <span style={{ fontSize: 11, color: "var(--c-tx-45)", lineHeight: 1.6, textDecoration: "line-through", textDecorationColor: "rgba(160,160,160,0.3)" }}>{tw.convention}</span>
-                                  </div>
-                                  <div style={{ display: "flex", gap: 8 }}>
-                                    <span style={{ fontSize: 10, color: "#FFD166", fontWeight: 700, flexShrink: 0, marginTop: 1 }}>비틀기</span>
-                                    <span style={{ fontSize: 12, color: "var(--c-tx-80)", lineHeight: 1.65, fontWeight: 500 }}>{tw.twist}</span>
-                                  </div>
-                                  <div style={{ display: "flex", gap: 8 }}>
-                                    <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 600, flexShrink: 0, marginTop: 1 }}>효과</span>
-                                    <span style={{ fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.6 }}>{tw.effect}</span>
-                                  </div>
-                                  <div style={{ display: "flex", gap: 8 }}>
-                                    <span style={{ fontSize: 10, color: "#F7A072", fontWeight: 600, flexShrink: 0, marginTop: 1 }}>위험</span>
-                                    <span style={{ fontSize: 11, color: "var(--c-tx-45)", lineHeight: 1.6 }}>{tw.risk}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </ResultCard>
-                )}
-              </div>
-
-              {/* ── STEP 3: 대사 디벨롭 ── */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 12, background: dialogueDevResult ? "rgba(78,204,163,0.15)" : "rgba(244,114,182,0.12)", color: dialogueDevResult ? "#4ECCA3" : "#F472B6", border: `1px solid ${dialogueDevResult ? "rgba(78,204,163,0.25)" : "rgba(244,114,182,0.25)"}`, fontFamily: "'JetBrains Mono', monospace" }}>{dialogueDevResult ? "✓ STEP 3" : "STEP 3"}</div>
-                  <span style={{ fontSize: 12, color: "var(--c-tx-45)", fontWeight: 500 }}>대사 디벨롭 — 캐릭터별 목소리 설계</span>
-                  {!beatSheetResult && <span style={{ marginLeft: "auto", fontSize: 10, color: "rgba(244,114,182,0.55)", fontStyle: "italic" }}>Step 2 완료 후 추천</span>}
-                </div>
-                <ToolButton icon={<SvgIcon d={ICON.doc} size={16} />} label="대사 디벨롭" sub="Mamet/Pinter" done={!!dialogueDevResult} loading={dialogueDevLoading} color="#F472B6" onClick={analyzeDialogueDev} disabled={!logline.trim()}
-                  tooltip={"캐릭터마다 고유한 목소리와 말하는 방식을 설계합니다.\n\n• Mamet — 캐릭터는 원하는 것을 직접 말하지 않는다. 행동이 대사를 대신한다.\n• Pinter — 침묵, 공백, 반복이 대사보다 강한 의미를 만든다.\n\n결과물:\n• 주인공·조력자·대립자의 개별 말투 프로필\n• 핵심 장면의 하위텍스트 대사 예시\n• 대화 속 권력 역학과 감정 변화 지도"} />
-                <ErrorMsg msg={dialogueDevError} />
-                {dialogueDevResult && <ResultCard title="대사 디벨롭" onClose={() => setDialogueDevResult(null)} color="rgba(244,114,182,0.15)"><ErrorBoundary><DialogueDevPanel data={dialogueDevResult} isMobile={isMobile} /></ErrorBoundary></ResultCard>}
-              </div>
-
-              {getStageStatus("5") === "done" && (
-                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={() => advanceToStage("6")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
-                    다음 단계: 시나리오 초고
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                  </button>
-                </div>
-              )}
-            </div></ErrorBoundary>
-              </div>
-            )}
-          </div>
-
-          {/* ═══ STAGE 6: 시나리오 초고 ═══ */}
-          <div ref={(el) => { stageRefs.current["6"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "6" ? "rgba(167,139,250,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("6"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "6" ? "rgba(167,139,250,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("6")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("6") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
-                {getStageStatus("6") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("6")] }}>06</span>}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "6" ? "var(--text-main)" : getStageStatus("6") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>시나리오 초고</div>
-                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>Field · McKee · Snyder</div>
-              </div>
-              {currentStage !== "6" && getStageDoneCount("6") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("6")}/{STAGE_TOTALS["6"]}</span>}
-              {getStageStatus("6") === "active" && <Spinner size={12} color="#A78BFA" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "6" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
-            </div>
-            {currentStage === "6" && (
-              <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
-              <ErrorBoundary><div>
-
-              {/* ── 솔직한 안내 배너 ── */}
-              <div style={{ marginBottom: 18, padding: "14px 16px", borderRadius: 12, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.2)" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#A78BFA", marginBottom: 6 }}>이 단계에 대해 솔직하게</div>
-                <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.7 }}>
-                  이 시나리오는 <strong style={{ color: "var(--c-tx-75)" }}>구조 스캐폴드</strong>입니다 — 완성본이 아닙니다.<br />
-                  AI가 비트 시트의 흐름을 따라 전체 초고를 작성하지만, <strong style={{ color: "var(--c-tx-75)" }}>씬별 세부 집필과 대사 수정은 반드시 직접 해야 합니다.</strong><br />
-                  <span style={{ color: "rgba(167,139,250,0.7)", fontSize: 11, marginTop: 4, display: "block" }}>Stage 5의 트리트먼트·비트 시트·대사 디벨롭을 모두 완료하면 훨씬 완성도 높은 초고가 나옵니다.</span>
-                </div>
-              </div>
-              <ToolButton
-                icon={<SvgIcon d={ICON.film} size={16} />}
-                label="시나리오 생성"
-                sub="Field · McKee · Snyder"
-                done={!!scenarioDraftResult}
-                loading={scenarioDraftLoading}
-                color="#A78BFA"
-                onClick={generateScenarioDraft}
-                disabled={!logline.trim()}
-                tooltip={"로그라인·캐릭터·트리트먼트·비트 시트를 바탕으로 시나리오 초고를 작성합니다.\n\n표준 시나리오 포맷 (씬 헤더 · 액션 라인 · 대사)으로 출력되며, 3막 구조 전체를 커버합니다.\n\n트리트먼트와 비트 시트를 먼저 생성하면 더 완성도 높은 초고가 나옵니다."}
-              />
-              <ErrorMsg msg={scenarioDraftError} onRetry={scenarioDraftError ? generateScenarioDraft : undefined} />
-              {scenarioDraftStale && scenarioDraftResult && (
-                <div style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "10px 14px", borderRadius: 10, marginTop: 8,
-                  background: "rgba(247,160,114,0.07)",
-                  border: "1px solid rgba(247,160,114,0.25)",
-                }}>
-                  <span style={{ fontSize: 14, flexShrink: 0 }}>⚠</span>
-                  <div style={{ flex: 1, fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.5 }}>
-                    트리트먼트 또는 비트 시트가 변경됐습니다. 시나리오 초고를 재생성하면 최신 내용이 반영됩니다.
-                  </div>
-                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    <button onClick={() => setScenarioDraftStale(false)}
-                      style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-35)", fontSize: 10, cursor: "pointer" }}>무시</button>
-                    <button onClick={generateScenarioDraft}
-                      style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(247,160,114,0.4)", background: "rgba(247,160,114,0.1)", color: "#F7A072", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>재생성</button>
-                  </div>
-                </div>
-              )}
-              {scenarioDraftResult && (
-                <ResultCard title="시나리오 초고" onClose={() => { setScenarioDraftResult(""); setScenarioDraftHistory([]); setScenarioDraftStale(false); }} onUndo={() => undoHistory(setScenarioDraftHistory, setScenarioDraftResult, scenarioDraftHistory)} historyCount={scenarioDraftHistory.length} color="rgba(167,139,250,0.15)">
-                  {scenarioDraftCtx && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 12 }}>
-                      {scenarioDraftCtx.genre && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(167,139,250,0.1)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}>{scenarioDraftCtx.genre}</span>}
-                      {scenarioDraftCtx.char && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(251,146,60,0.1)", color: "#FB923C", border: "1px solid rgba(251,146,60,0.2)" }}>캐릭터 반영</span>}
-                      {scenarioDraftCtx.synopsis && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(78,204,163,0.1)", color: "#4ECCA3", border: "1px solid rgba(78,204,163,0.2)" }}>시놉시스 반영</span>}
-                      {scenarioDraftCtx.treatment && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(200,168,75,0.1)", color: "#C8A84B", border: "1px solid rgba(200,168,75,0.2)" }}>트리트먼트 반영</span>}
-                      {scenarioDraftCtx.beats && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(255,209,102,0.1)", color: "#FFD166", border: "1px solid rgba(255,209,102,0.2)" }}>비트 시트 반영</span>}
-                      {scenarioDraftCtx.dialogue && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(244,114,182,0.1)", color: "#F472B6", border: "1px solid rgba(244,114,182,0.2)" }}>대사 목소리 반영</span>}
-                    </div>
-                  )}
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-                    <button
-                      onClick={() => navigator.clipboard.writeText(scenarioDraftResult).then(() => showToast("success", "시나리오 초고가 복사되었습니다."))}
-                      style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(167,139,250,0.3)", background: "rgba(167,139,250,0.08)", color: "#A78BFA", fontSize: 11, cursor: "pointer" }}
-                    >
-                      전체 복사
-                    </button>
-                  </div>
-                  <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 12 : 13, lineHeight: 1.8, color: "var(--c-tx-75)", margin: 0 }}>
-                    {scenarioDraftResult}
-                  </pre>
-                  <FeedbackBox
-                    value={scenarioDraftFeedback}
-                    onChange={setScenarioDraftFeedback}
-                    onSubmit={refineScenarioDraft}
-                    loading={scenarioDraftRefineLoading}
-                    placeholder="수정 요청을 입력하세요"
-                  />
-                  {scenarioDraftBefore && (
-                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed var(--c-bd-2)" }}>
-                      <button
-                        onClick={() => setShowScenarioDraftBefore(!showScenarioDraftBefore)}
-                        style={{ fontSize: 10, padding: "3px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-35)", cursor: "pointer" }}
-                      >
-                        {showScenarioDraftBefore ? "▲ 이전 버전 숨기기" : "▼ 이전 버전 보기"}
-                      </button>
-                      {showScenarioDraftBefore && (
-                        <div style={{ marginTop: 8, padding: "12px 14px", borderRadius: 9, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)", opacity: 0.65 }}>
-                          <div style={{ fontSize: 10, color: "var(--c-tx-30)", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>BEFORE — 피드백 반영 전</div>
-                          <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 200, overflowY: "auto" }}>
-                            {scenarioDraftBefore.slice(0, 800)}{scenarioDraftBefore.length > 800 ? "..." : ""}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </ResultCard>
-              )}
-
-              {getStageStatus("6") === "done" && (
-                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={() => advanceToStage("8")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
-                    다음 단계: 시나리오 고쳐쓰기
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                  </button>
-                </div>
-              )}
-            </div></ErrorBoundary>
-              </div>
-            )}
-          </div>
-
-          {/* ═══ STAGE 8: 시나리오 고쳐쓰기 ═══ */}
-          <div ref={(el) => { stageRefs.current["8"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "8" ? "rgba(251,146,60,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("8"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "8" ? "rgba(251,146,60,0.04)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("8")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("8") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
-                {getStageStatus("8") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("8")] }}>07</span>}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "8" ? "var(--text-main)" : getStageStatus("8") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>시나리오 고쳐쓰기</div>
-                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>초고 진단 / 부분 재작성 / 전체 개고</div>
-              </div>
-              {currentStage !== "8" && getStageDoneCount("8") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("8")}/{STAGE_TOTALS["8"]}</span>}
-              {getStageStatus("8") === "active" && <Spinner size={12} color="#FB923C" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "8" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
-            </div>
-            {currentStage === "8" && (
-              <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
-              <ErrorBoundary><div>
-
-              {/* 안내 배너 */}
-              <div style={{ marginBottom: 20, padding: "14px 16px", borderRadius: 12, background: "rgba(251,146,60,0.06)", border: "1px solid rgba(251,146,60,0.2)" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#FB923C", marginBottom: 5 }}>고쳐쓰기(Rewriting)란?</div>
-                <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.7 }}>
-                  초고를 쓴 뒤 냉정하게 다시 보는 단계입니다. 먼저 <strong style={{ color: "var(--c-tx-75)" }}>초고 진단</strong>으로 문제점을 파악하고,<br />
-                  <strong style={{ color: "var(--c-tx-75)" }}>부분 재작성</strong>으로 특정 씬을 집중 수정하거나 <strong style={{ color: "var(--c-tx-75)" }}>전체 개고</strong>로 완성도를 높이세요.
-                </div>
-              </div>
-
-              {/* ── 1. 초고 진단 ── */}
-              <div style={{ marginBottom: 20 }}>
-                <ToolButton
-                  icon={<SvgIcon d={ICON.clipboard} size={16} />}
-                  label="초고 진단"
-                  sub="고쳐쓰기 우선순위 분석"
-                  done={!!rewriteDiagResult}
-                  loading={rewriteDiagLoading}
-                  color="#FB923C"
-                  onClick={generateRewriteDiag}
-                  disabled={!scenarioDraftResult || !logline.trim()}
-                  tooltip={"시나리오 초고를 분석해 고쳐야 할 부분을 우선순위별로 제시합니다.\n\n• 구조 문제, 캐릭터 일관성, 씬 단위 약점\n• 대사 및 페이스 문제\n• 구체적인 수정 방향 제안\n\n6단계 시나리오 초고가 필요합니다."}
-                />
-                {!scenarioDraftResult && <div style={{ marginTop: 6, fontSize: 11, color: "var(--c-tx-35)", fontFamily: "'Noto Sans KR', sans-serif" }}>6단계에서 시나리오 초고를 먼저 생성하세요.</div>}
-                <ErrorMsg msg={rewriteDiagError} />
-                {rewriteDiagResult && (
-                  <ResultCard title="초고 진단 결과" onClose={() => setRewriteDiagResult(null)} color="rgba(251,146,60,0.12)">
-                    <div style={{ marginBottom: 12, padding: "12px 14px", borderRadius: 9, background: "rgba(251,146,60,0.06)", border: "1px solid rgba(251,146,60,0.15)" }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#FB923C", marginBottom: 5 }}>종합 평가</div>
-                      <div style={{ fontSize: 13, color: "var(--c-tx-65)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{rewriteDiagResult.overall_assessment}</div>
-                    </div>
-                    {(rewriteDiagResult.priority_fixes || []).map((fix, i) => (
-                      <div key={i} style={{ marginBottom: 10, padding: "12px 14px", borderRadius: 9, background: "var(--c-card-1)", border: "1px solid var(--c-bd-2)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                          <span style={{ fontSize: 10, fontWeight: 800, color: "#FB923C", padding: "2px 7px", borderRadius: 6, background: "rgba(251,146,60,0.12)", border: "1px solid rgba(251,146,60,0.2)" }}>우선순위 {fix.priority}</span>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-65)" }}>{fix.category}</span>
-                          <span style={{ fontSize: 10, color: "var(--c-tx-35)", fontFamily: "'Noto Sans KR', sans-serif" }}>{fix.location}</span>
-                        </div>
-                        <div style={{ fontSize: 12, color: "var(--c-tx-60)", marginBottom: 6, lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>{fix.issue}</div>
-                        <div style={{ fontSize: 12, color: "#FB923C", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>→ {fix.fix_direction}</div>
-                      </div>
-                    ))}
-                    {rewriteDiagResult.strengths?.length > 0 && (
-                      <div style={{ marginBottom: 10, padding: "10px 14px", borderRadius: 9, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.12)" }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#4ECCA3", marginBottom: 6 }}>강점</div>
-                        {rewriteDiagResult.strengths.map((s, i) => <div key={i} style={{ fontSize: 12, color: "var(--c-tx-55)", marginBottom: 3, fontFamily: "'Noto Sans KR', sans-serif" }}>✓ {s}</div>)}
-                      </div>
-                    )}
-                    {rewriteDiagResult.rewrite_strategy && (
-                      <div style={{ padding: "10px 14px", borderRadius: 9, background: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.12)" }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#A78BFA", marginBottom: 5 }}>개고 전략</div>
-                        <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{rewriteDiagResult.rewrite_strategy}</div>
-                      </div>
-                    )}
-                  </ResultCard>
-                )}
-              </div>
-
-              {/* ── 2. 부분 재작성 ── */}
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)", marginBottom: 8 }}>✏️ 부분 재작성</div>
-                <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>
-                  특정 씬·섹션을 어떻게 고칠지 지시하면 AI가 해당 부분만 재작성합니다.
-                </div>
-                <textarea
-                  value={partialRewriteInstruction}
-                  onChange={(e) => setPartialRewriteInstruction(e.target.value)}
-                  placeholder={"예: 오프닝 씬을 더 강렬하게 시작하도록 수정해줘\n예: 2막 갈등 장면에서 주인공 대사가 너무 직접적이야. 하위텍스트를 넣어줘\n예: 결말 씬을 열린 결말로 바꿔줘"}
-                  style={{ width: "100%", minHeight: 90, padding: "10px 12px", borderRadius: 9, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6, resize: "vertical", boxSizing: "border-box" }}
-                />
-                <button
-                  onClick={generatePartialRewrite}
-                  disabled={!scenarioDraftResult || !partialRewriteInstruction.trim() || partialRewriteLoading}
-                  style={{ marginTop: 8, padding: "9px 20px", borderRadius: 9, border: "1px solid rgba(251,146,60,0.35)", background: partialRewriteLoading ? "rgba(251,146,60,0.05)" : "rgba(251,146,60,0.1)", color: "#FB923C", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif", opacity: (!scenarioDraftResult || !partialRewriteInstruction.trim()) ? 0.4 : 1 }}
-                >
-                  {partialRewriteLoading ? "재작성 중…" : "부분 재작성"}
-                </button>
-                <ErrorMsg msg={partialRewriteError} />
-                {partialRewriteResult && (
-                  <ResultCard title="부분 재작성 결과" onClose={() => setPartialRewriteResult("")} color="rgba(251,146,60,0.12)">
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-                      <button onClick={() => navigator.clipboard.writeText(partialRewriteResult).then(() => showToast("success", "복사되었습니다."))} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(251,146,60,0.3)", background: "rgba(251,146,60,0.08)", color: "#FB923C", fontSize: 11, cursor: "pointer" }}>복사</button>
-                    </div>
-                    <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 12 : 13, lineHeight: 1.8, color: "var(--c-tx-75)", margin: 0 }}>
-                      {partialRewriteResult}
-                    </pre>
-                  </ResultCard>
-                )}
-              </div>
-
-              {/* ── 3. 전체 개고 ── */}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)", marginBottom: 8 }}>📝 전체 개고</div>
-                <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>
-                  초고 진단 결과를 자동 반영하여 전체를 다시 씁니다. 추가 메모가 있으면 아래에 입력하세요.
-                </div>
-                <textarea
-                  value={fullRewriteNotes}
-                  onChange={(e) => setFullRewriteNotes(e.target.value)}
-                  placeholder={"(선택) 특별히 강조하거나 바꾸고 싶은 방향을 적어주세요\n예: 주인공을 더 능동적으로 만들어줘\n예: 결말을 비극으로 바꿔줘"}
-                  style={{ width: "100%", minHeight: 70, padding: "10px 12px", borderRadius: 9, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6, resize: "vertical", boxSizing: "border-box" }}
-                />
-                <button
-                  onClick={generateFullRewrite}
-                  disabled={!scenarioDraftResult || fullRewriteLoading}
-                  style={{ marginTop: 8, padding: "9px 20px", borderRadius: 9, border: "1px solid rgba(251,146,60,0.35)", background: fullRewriteLoading ? "rgba(251,146,60,0.05)" : "rgba(251,146,60,0.1)", color: "#FB923C", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif", opacity: !scenarioDraftResult ? 0.4 : 1 }}
-                >
-                  {fullRewriteLoading ? "개고 중… (시간이 걸릴 수 있습니다)" : "전체 개고 시작"}
-                </button>
-                <ErrorMsg msg={fullRewriteError} />
-                {fullRewriteResult && (
-                  <ResultCard title="개고된 시나리오" onClose={() => setFullRewriteResult("")} color="rgba(251,146,60,0.12)">
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8, gap: 6 }}>
-                      <button onClick={() => navigator.clipboard.writeText(fullRewriteResult).then(() => showToast("success", "전체 개고본이 복사되었습니다."))} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(251,146,60,0.3)", background: "rgba(251,146,60,0.08)", color: "#FB923C", fontSize: 11, cursor: "pointer" }}>전체 복사</button>
-                    </div>
-                    <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 12 : 13, lineHeight: 1.8, color: "var(--c-tx-75)", margin: 0 }}>
-                      {fullRewriteResult}
-                    </pre>
-                  </ResultCard>
-                )}
-              </div>
-
-              {getStageStatus("8") === "done" && (
-                <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
-                  <button onClick={() => advanceToStage("7")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
-                    다음 단계: Script Coverage
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                  </button>
-                </div>
-              )}
-
-            </div></ErrorBoundary>
-              </div>
-            )}
-          </div>
-
-          {/* ═══ STAGE 7: Script Coverage ═══ */}
-          <div ref={(el) => { stageRefs.current["7"] = el; }} style={{ borderRadius: 14, marginBottom: 10, overflow: "visible", border: `1px solid ${currentStage === "7" ? "rgba(96,165,250,0.25)" : "var(--c-bd-1)"}`, transition: "border-color 0.25s" }}>
-            <div onClick={() => { if (!canUseAllStages) { showToast("warn", "자신의 API 키를 입력하거나 프리미엄 등급으로 업그레이드하면 전체 기능을 사용할 수 있습니다. (우측 상단 API 버튼)"); return; } setCurrentStage("7"); }} style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", background: currentStage === "7" ? "rgba(96,165,250,0.05)" : "rgba(var(--tw),0.01)", transition: "background 0.2s" }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, border: `2px solid ${statusDotColor[getStageStatus("7")]}`, display: "flex", alignItems: "center", justifyContent: "center", background: getStageStatus("7") === "done" ? "rgba(78,204,163,0.1)" : "transparent", transition: "all 0.25s" }}>
-                {getStageStatus("7") === "done" ? <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg> : <span style={{ fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: statusDotColor[getStageStatus("7")] }}>08</span>}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: currentStage === "7" ? "var(--text-main)" : getStageStatus("7") === "done" ? "var(--c-tx-75)" : "var(--c-tx-45)" }}>Script Coverage</div>
-                <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginTop: 2 }}>최종 커버리지 · 시장 가치 평가</div>
-              </div>
-              {currentStage !== "7" && getStageDoneCount("7") > 0 && <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, padding: "3px 8px", borderRadius: 20, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)", fontFamily: "'JetBrains Mono', monospace" }}>{getStageDoneCount("7")}/{STAGE_TOTALS["7"]}</span>}
-              {getStageStatus("7") === "active" && <Spinner size={12} color="#C8A84B" />}
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-25)" strokeWidth={2} strokeLinecap="round" style={{ transform: currentStage === "7" ? "rotate(180deg)" : "none", transition: "transform 0.25s", flexShrink: 0 }}><path d="M6 9l6 6 6-6" /></svg>
-            </div>
-            {currentStage === "7" && (
-              <div style={{ borderTop: "1px solid var(--c-card-3)", padding: isMobile ? "20px 16px" : "24px 24px" }}>
-              <ErrorBoundary><div>
-
-              <ToolButton icon={<SvgIcon d={ICON.clipboard} size={16} />} label="최종 평가" sub="Script Coverage · 시장 가치" done={!!(scriptCoverageResult || valuationResult)} loading={scriptCoverageLoading || valuationLoading} color="#60A5FA" onClick={async () => { await analyzeScriptCoverage(); await analyzeValuation(); }} disabled={!logline.trim()}
-                tooltip={"할리우드 스튜디오와 한국 방송사 스타일의 공식 심사 보고서를 생성하고 시장 가치를 추정합니다.\n\n• Script Coverage — RECOMMEND / CONSIDER / PASS 3단계 판정\n• 시장 가치 — 한국·미국 시장 추정 판매가 · 신인/경력 기준"} />
-              <ErrorMsg msg={scriptCoverageError || valuationError} onRetry={scriptCoverageError ? generateScriptCoverage : valuationError ? generateValuation : undefined} />
-
-              {scriptCoverageResult && (
-                <>
-                  <ResultCard title="Script Coverage" onClose={() => setScriptCoverageResult(null)} color="rgba(96,165,250,0.15)">
-                    <ErrorBoundary><ScriptCoveragePanel data={scriptCoverageResult} isMobile={isMobile} /></ErrorBoundary>
-                  </ResultCard>
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
-                    <DocButton label="투자·지원 제안서 PDF" sub="커버리지 포함 완성 제안서" onClick={() => openApplicationDoc("final")} />
-                  </div>
-                </>
-              )}
-
-              {valuationResult && (
-                <ResultCard title="시장 가치 평가" onClose={() => setValuationResult(null)} color="rgba(255,209,102,0.15)">
-                  <ErrorBoundary><ValuationPanel data={valuationResult} isMobile={isMobile} /></ErrorBoundary>
-                </ResultCard>
-              )}
-            </div></ErrorBoundary>
-              </div>
-            )}
-          </div>
+                  );
+                  case "6": return (
+                    <Stage6Content
+                      scenarioDraftResult={scenarioDraftResult}
+                      setScenarioDraftResult={setScenarioDraftResult}
+                      scenarioDraftLoading={scenarioDraftLoading}
+                      scenarioDraftError={scenarioDraftError}
+                      generateScenarioDraft={generateScenarioDraft}
+                      scenarioDraftStale={scenarioDraftStale}
+                      setScenarioDraftStale={setScenarioDraftStale}
+                      scenarioDraftHistory={scenarioDraftHistory}
+                      setScenarioDraftHistory={setScenarioDraftHistory}
+                      refineScenarioDraft={refineScenarioDraft}
+                      scenarioDraftRefineLoading={scenarioDraftRefineLoading}
+                      scenarioDraftFeedback={scenarioDraftFeedback}
+                      setScenarioDraftFeedback={setScenarioDraftFeedback}
+                      scenarioDraftCtx={scenarioDraftCtx}
+                      scenarioDraftBefore={scenarioDraftBefore}
+                      showScenarioDraftBefore={showScenarioDraftBefore}
+                      setShowScenarioDraftBefore={setShowScenarioDraftBefore}
+                      undoHistory={undoHistory}
+                    />
+                  );
+                  case "7": return (
+                    <Stage7Content
+                      scriptCoverageResult={scriptCoverageResult}
+                      setScriptCoverageResult={setScriptCoverageResult}
+                      valuationResult={valuationResult}
+                      setValuationResult={setValuationResult}
+                      scriptCoverageLoading={scriptCoverageLoading}
+                      valuationLoading={valuationLoading}
+                      scriptCoverageError={scriptCoverageError}
+                      valuationError={valuationError}
+                      analyzeScriptCoverage={analyzeScriptCoverage}
+                      analyzeValuation={analyzeValuation}
+                    />
+                  );
+                  case "8": return (
+                    <Stage8Content
+                      scriptCoverageResult={scriptCoverageResult}
+                      rewriteGuide={rewriteGuide}
+                      setRewriteGuide={setRewriteGuide}
+                      rewriteGuideLoading={rewriteGuideLoading}
+                      rewriteGuideError={rewriteGuideError}
+                      generateRewriteGuide={generateRewriteGuide}
+                      rewriteDiagResult={rewriteDiagResult}
+                      setRewriteDiagResult={setRewriteDiagResult}
+                      rewriteDiagLoading={rewriteDiagLoading}
+                      rewriteDiagError={rewriteDiagError}
+                      generateRewriteDiag={generateRewriteDiag}
+                      scenarioDraftResult={scenarioDraftResult}
+                      partialRewriteInstruction={partialRewriteInstruction}
+                      setPartialRewriteInstruction={setPartialRewriteInstruction}
+                      generatePartialRewrite={generatePartialRewrite}
+                      partialRewriteLoading={partialRewriteLoading}
+                      partialRewriteError={partialRewriteError}
+                      partialRewriteResult={partialRewriteResult}
+                      setPartialRewriteResult={setPartialRewriteResult}
+                      fullRewriteNotes={fullRewriteNotes}
+                      setFullRewriteNotes={setFullRewriteNotes}
+                      generateFullRewrite={generateFullRewrite}
+                      fullRewriteLoading={fullRewriteLoading}
+                      fullRewriteError={fullRewriteError}
+                      fullRewriteResult={fullRewriteResult}
+                      setFullRewriteResult={setFullRewriteResult}
+                    />
+                  );
+                  default: return null;
+                }
+              }
+            }}
+          />
 
         </div>
 
@@ -5155,13 +4565,13 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                         1. <strong style={{ color: "var(--c-tx-70)" }}>supabase.com</strong>에서 프로젝트 생성<br/>
                         2. SQL Editor에서 실행:
                       </div>
-                      <div style={{ background: "rgba(0,0,0,0.35)", borderRadius: 7, padding: "8px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#4ECCA3", marginBottom: 6 }}>
+                      <div style={{ background: "var(--bg-code)", borderRadius: 7, padding: "8px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#4ECCA3", marginBottom: 6 }}>
                         {`CREATE TABLE hll_users (\n  email text PRIMARY KEY,\n  name text, provider text, avatar text,\n  last_seen bigint DEFAULT 0,\n  tier text DEFAULT 'basic'\n);`}
                       </div>
                       <div style={{ fontSize: 11, color: "var(--c-tx-50)", marginBottom: 4 }}>
                         3. Project Settings → API → 아래 값을 Vercel 환경변수에 추가:
                       </div>
-                      <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 7, padding: "8px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--c-tx-65)" }}>
+                      <div style={{ background: "var(--bg-code-alt)", borderRadius: 7, padding: "8px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--c-tx-65)" }}>
                         <div>SUPABASE_URL=https://xxxx.supabase.co</div>
                         <div>SUPABASE_SERVICE_KEY=eyJhbGci...</div>
                       </div>
@@ -5170,7 +4580,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                     {/* Upstash 안내 */}
                     <div>
                       <div style={{ fontSize: 11, fontWeight: 700, color: "#60A5FA", marginBottom: 6 }}>▸ Upstash Redis (대안)</div>
-                      <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 7, padding: "8px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--c-tx-65)" }}>
+                      <div style={{ background: "var(--bg-code-alt)", borderRadius: 7, padding: "8px 12px", fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "var(--c-tx-65)" }}>
                         <div>UPSTASH_REDIS_REST_URL=https://xxx.upstash.io</div>
                         <div>UPSTASH_REDIS_REST_TOKEN=your_token</div>
                       </div>
@@ -5200,7 +4610,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                       const uColor = TIER_COLOR[uTier] || "var(--c-tx-35)";
                       const isSelf = u.email === user?.email;
                       return (
-                        <div key={u.email} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: isSelf ? "rgba(200,168,75,0.05)" : "rgba(255,255,255,0.02)", border: `1px solid ${isSelf ? "rgba(200,168,75,0.2)" : "var(--c-bd-2)"}` }}>
+                        <div key={u.email} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: isSelf ? "rgba(200,168,75,0.05)" : "rgba(var(--tw),0.02)", border: `1px solid ${isSelf ? "rgba(200,168,75,0.2)" : "var(--c-bd-2)"}` }}>
                           {/* Avatar */}
                           {u.avatar ? (
                             <img src={u.avatar} alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
@@ -5264,7 +4674,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   { t: "basic", label: "기본", color: "var(--c-tx-35)", desc: "Stage 1만 또는 자기 API 키로 전체 이용" },
                   { t: "blocked", label: "차단", color: "#E85D75", desc: "API 접근 완전 차단" },
                 ].map(({ t, label, color, desc }) => (
-                  <div key={t} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 7, background: "rgba(255,255,255,0.02)", marginBottom: 4 }}>
+                  <div key={t} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 10px", borderRadius: 7, background: "rgba(var(--tw),0.02)", marginBottom: 4 }}>
                     <span style={{ fontSize: 10, fontWeight: 700, color, fontFamily: "'JetBrains Mono', monospace", minWidth: 44 }}>{label}</span>
                     <span style={{ fontSize: 11, color: "var(--c-tx-45)" }}>{desc}</span>
                   </div>
@@ -5299,5 +4709,6 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
         </div>
       </div>
     </div>
+  </LoglineProvider>
   );
 }

@@ -1,5 +1,5 @@
 import { createHmac } from "crypto";
-import { rcall, deductCredits } from "./_redis.js";
+import { rcall, deductCredits, checkRateLimit } from "./_redis.js";
 
 const CREDIT_COSTS = {
   logline: 0, improve: 0,
@@ -15,9 +15,13 @@ const CREDIT_COSTS = {
 
 export const config = { api: { bodyParser: { sizeLimit: "4mb" } } };
 
-const JWT_SECRET = (process.env.JWT_SECRET || "hll-jwt-fallback-secret").trim();
+const JWT_SECRET = (process.env.JWT_SECRET || "").trim();
+if (!JWT_SECRET) {
+  console.error("[FATAL] JWT_SECRET 환경변수가 설정되지 않았습니다.");
+}
 
 function verifyToken(token) {
+  if (!JWT_SECRET) throw new Error("서버 설정 오류: JWT_SECRET 미설정");
   const parts = (token || "").split(".");
   if (parts.length !== 3) throw new Error("Invalid token");
   const [header, body, sig] = parts;
@@ -71,6 +75,21 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: { message: "접근이 차단된 계정입니다. 관리자에게 문의하세요." } });
   }
 
+  // ── 레이트 리미팅 ──
+  const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || "unknown";
+  const userEmail = (() => { try { return JSON.parse(Buffer.from(authHeader.split(".")[1], "base64url").toString()).email || ""; } catch { return ""; } })();
+
+  // IP 기준: 분당 30회
+  const ipLimit = await checkRateLimit(`rl:ip:${ip}`, 30, 60);
+  // 사용자 기준: 분당 20회
+  const userLimit = userEmail ? await checkRateLimit(`rl:user:${userEmail}`, 20, 60) : { ok: true };
+
+  if (!ipLimit.ok || !userLimit.ok) {
+    return res.status(429).json({
+      error: { message: "요청이 너무 많습니다. 잠시 후 다시 시도해주세요." }
+    });
+  }
+
   // ── API 키 확인 ──
   const clientApiKey = req.headers["x-client-api-key"];
   const serverApiKey = process.env.ANTHROPIC_API_KEY;
@@ -94,7 +113,10 @@ export default async function handler(req, res) {
       } catch { payload_email = null; }
       if (payload_email) {
         const newBalance = await deductCredits(payload_email, cost);
-        if (newBalance !== null && newBalance === -1) {
+        if (newBalance === null) {
+          // Redis/DB 미설정 — 크레딧 차감 불가, 요청은 허용하되 경고 출력
+          console.warn(`[Credits] Redis 미설정으로 크레딧 미차감: ${payload_email}, feature: ${feature}, cost: ${cost}`);
+        } else if (newBalance === -1) {
           return res.status(402).json({ error: { message: "크레딧이 부족합니다. 크레딧을 충전해주세요." } });
         }
       }

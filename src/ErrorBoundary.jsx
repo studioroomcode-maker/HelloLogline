@@ -1,4 +1,5 @@
 import { Component } from "react";
+import { Sentry } from "./sentry.js";
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -12,6 +13,11 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error("[ErrorBoundary]", error, info.componentStack);
+    try {
+      Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
+    } catch (_) {
+      // Sentry 미초기화 시 무시
+    }
   }
 
   reset = () => this.setState({ hasError: false, error: null });

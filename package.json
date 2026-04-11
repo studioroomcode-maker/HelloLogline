@@ -10,9 +10,11 @@
     "client": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@sentry/react": "^10.48.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "html2pdf.js": "^0.14.0",

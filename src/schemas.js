@@ -155,15 +155,18 @@ export const KoreanMythSchema = z
 
 export const ExpertPanelSchema = z
   .object({
-    panel_title: z.string(),
-    round1: z.array(z.object({}).passthrough()),
-    round2: z.array(z.object({}).passthrough()),
+    panel_title: z.string().catch(""),
+    round1: z.array(z.object({}).passthrough()).catch([]),
+    round2: z.array(z.object({}).passthrough()).catch([]),
     synthesis: z
       .object({
-        consensus: z.string().optional(),
-        strongest_element: z.string().optional(),
+        consensus: z.string().optional().catch(undefined),
+        strongest_element: z.string().optional().catch(undefined),
       })
-      .passthrough(),
+      .passthrough()
+      .nullable()
+      .optional()
+      .catch({}),
   })
   .passthrough();
 
@@ -241,25 +244,26 @@ export const SubtextSchema = z
 
 export const BeatSheetSchema = z
   .object({
-    format_name: z.string().optional(),
-    total_pages: z.number().optional(),
+    format_name: z.string().optional().catch(undefined),
+    total_pages: z.number().optional().catch(undefined),
     beats: z.array(
       z
         .object({
-          id: z.string().optional(),
-          name_kr: z.string(),
-          summary: z.string(),
+          id: z.union([z.string(), z.number()]).optional().catch(undefined),
+          name_kr: z.string().catch(""),
+          summary: z.string().catch(""),
         })
         .passthrough()
-    ),
+    ).catch([]),
   })
   .passthrough();
 
 export const DialogueDevSchema = z
   .object({
-    character_voices: z.array(z.object({}).passthrough()),
-    subtext_techniques: z.array(z.object({}).passthrough()),
-    key_scene_dialogue: z.object({}).passthrough(),
+    character_voices: z.array(z.object({}).passthrough()).catch([]),
+    subtext_techniques: z.array(z.object({}).passthrough()).catch([]),
+    key_scene_dialogue: z.union([z.object({}).passthrough(), z.array(z.object({}).passthrough())])
+      .nullable().optional().catch(null),
   })
   .passthrough();
 
@@ -278,9 +282,9 @@ export const ComparableWorksSchema = z
         })
         .passthrough()
     ),
-    market_positioning: z.string(),
-    tone_reference: z.string(),
-    target_audience: z.object({}).passthrough(),
+    market_positioning: z.string().nullable().optional().default(""),
+    tone_reference: z.string().nullable().optional().default(""),
+    target_audience: z.union([z.object({}).passthrough(), z.string()]).nullable().optional(),
   })
   .passthrough();
 
@@ -314,6 +318,23 @@ export const ValuationSchema = z
     factors_reducing_value: z.array(z.string()),
     development_recommendation: z.string(),
     disclaimer: z.string(),
+  })
+  .passthrough();
+
+// ─── 종합 인사이트 ────────────────────────────────────────────────────────────
+
+export const InsightSchema = z
+  .object({
+    priority_issues: z.array(
+      z.object({
+        title: z.string().catch(""),
+        problem: z.string().catch(""),
+        why_matters: z.string().catch(""),
+        action: z.string().catch(""),
+      }).passthrough()
+    ).catch([]),
+    overall_verdict: z.string().catch(""),
+    strongest_element: z.string().catch(""),
   })
   .passthrough();
 

@@ -1,5 +1,6 @@
 import { createHmac } from "crypto";
 import { rcall } from "../../_redis.js";
+import { verifyState, clearStateCookieHeader } from "../_csrf.js";
 
 const SECRET = (process.env.JWT_SECRET || "hll-jwt-fallback-secret").trim();
 
@@ -19,13 +20,16 @@ function issueToken(payload) {
 }
 
 export default async function handler(req, res) {
-  const { code } = req.query;
+  const { code, state } = req.query;
   const proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0].trim();
   const host = (req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
   const frontendBase = (process.env.FRONTEND_URL || `${proto}://${host}`).trim();
   const errUrl = `${frontendBase}/?auth_error=kakao`;
 
+  res.setHeader("Set-Cookie", clearStateCookieHeader());
+
   if (!code) return res.redirect(errUrl);
+  if (!verifyState(state, req.headers.cookie || "")) return res.redirect(`${frontendBase}/?auth_error=csrf`);
 
   try {
     const redirectUri = `${proto}://${host}/auth/kakao/callback`;

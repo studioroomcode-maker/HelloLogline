@@ -5,7 +5,10 @@
 import { createHmac } from "crypto";
 import { getCredits, addCreditsDb } from "./_redis.js";
 
-const JWT_SECRET = (process.env.JWT_SECRET || "hll-jwt-fallback-secret").trim();
+const JWT_SECRET = (process.env.JWT_SECRET || "").trim();
+if (!JWT_SECRET) {
+  console.error("[FATAL] JWT_SECRET 환경변수가 설정되지 않았습니다.");
+}
 const TOSS_SECRET_KEY = (process.env.TOSS_SECRET_KEY || "").trim();
 
 const PACKAGES = {
@@ -16,6 +19,7 @@ const PACKAGES = {
 };
 
 function verifyToken(token) {
+  if (!JWT_SECRET) throw new Error("서버 설정 오류: JWT_SECRET 미설정");
   const parts = (token || "").split(".");
   if (parts.length !== 3) throw new Error("Invalid token");
   const [header, body, sig] = parts;

@@ -177,6 +177,8 @@ function koreanizeError(errData, httpStatus) {
     return "Anthropic 계정 크레딧이 부족합니다. anthropic.com에서 크레딧을 충전해주세요.";
   if (httpStatus === 529)
     return "Claude API가 현재 혼잡합니다. 잠시 후 재시도해주세요.";
+  if (httpStatus === 500 && (msg.includes("Redis") || msg.includes("크레딧") || msg.includes("credit")))
+    return "서버 설정 중입니다. 자신의 API 키를 사용하거나 잠시 후 다시 시도해주세요.";
   if (httpStatus === 500)
     return "Anthropic 서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
   return null; // 매핑 실패 시 원본 메시지 사용

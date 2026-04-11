@@ -85,7 +85,9 @@ export default function LoginScreen({ onDemo, authError }) {
             background: "rgba(232,93,117,0.08)", border: "1px solid rgba(232,93,117,0.2)",
             fontSize: 12, color: "#E85D75",
           }}>
-            로그인에 실패했습니다. 다시 시도해주세요.
+            {authError === "csrf"
+              ? "보안 검증에 실패했습니다. 다시 로그인해주세요. (CSRF)"
+              : "로그인에 실패했습니다. 다시 시도해주세요."}
           </div>
         )}
 

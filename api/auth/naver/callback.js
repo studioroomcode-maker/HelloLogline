@@ -1,5 +1,6 @@
 import { createHmac } from "crypto";
 import { rcall } from "../../_redis.js";
+import { verifyState, clearStateCookieHeader } from "../_csrf.js";
 
 const SECRET = (process.env.JWT_SECRET || "hll-jwt-fallback-secret").trim();
 
@@ -25,7 +26,10 @@ export default async function handler(req, res) {
   const frontendBase = (process.env.FRONTEND_URL || `${proto}://${host}`).trim();
   const errUrl = `${frontendBase}/?auth_error=naver`;
 
+  res.setHeader("Set-Cookie", clearStateCookieHeader());
+
   if (!code) return res.redirect(errUrl);
+  if (!verifyState(state, req.headers.cookie || "")) return res.redirect(`${frontendBase}/?auth_error=csrf`);
 
   try {
     const redirectUri = `${proto}://${host}/auth/naver/callback`;
