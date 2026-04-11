@@ -63,9 +63,11 @@ export function useStage3({
     return (
       `\n\n${heading}\n주인공: ${p.name}` +
       (p.role ? ` (${p.role})` : "") +
+      (p.mbti ? ` [MBTI: ${p.mbti}]` : "") +
       (p.want ? `\n외적 목표: ${p.want}` : "") +
       (p.need ? `\n내적 욕구: ${p.need}` : "") +
       (p.flaw ? `\n핵심 결함: ${p.flaw}` : "") +
+      (p.description ? `\n추가 설명: ${p.description}` : "") +
       (treatmentChars.supporting || [])
         .filter((s) => s.name)
         .map((s) => `\n조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}`)

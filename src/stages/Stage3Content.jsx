@@ -223,7 +223,7 @@ export default function Stage3Content({
                           />
                         </div>
                       </div>
-                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
                         {[
                           { key: "want", label: "외적 목표 (Want)", placeholder: "무엇을 원하는가?" },
                           { key: "need", label: "내적 욕구 (Need)", placeholder: "진짜 필요한 것은?" },
@@ -239,6 +239,25 @@ export default function Stage3Content({
                             />
                           </div>
                         ))}
+                      </div>
+                      {/* MBTI */}
+                      <div style={{ marginBottom: 8 }}>
+                        <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>MBTI</div>
+                        <MbtiInput
+                          value={treatmentChars.protagonist.mbti}
+                          onChange={val => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, mbti: val } }))}
+                        />
+                      </div>
+                      {/* 추가 설명 */}
+                      <div>
+                        <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>추가 설명</div>
+                        <textarea
+                          value={treatmentChars.protagonist.description}
+                          onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, description: e.target.value } }))}
+                          placeholder="외모, 말투, 성격, 배경 등 자유롭게 서술하세요"
+                          rows={3}
+                          style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box", resize: "vertical", lineHeight: 1.7 }}
+                        />
                       </div>
                     </div>
                     {/* 조연 */}

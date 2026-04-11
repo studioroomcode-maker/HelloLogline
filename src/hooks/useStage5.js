@@ -63,7 +63,7 @@ export function useStage5({
 }) {
   // ── 트리트먼트 ──
   const [treatmentChars, setTreatmentChars] = useState({
-    protagonist: { name: "", role: "", want: "", need: "", flaw: "" },
+    protagonist: { name: "", role: "", want: "", need: "", flaw: "", mbti: "", description: "" },
     supporting: [{ name: "", role: "", relation: "", mbti: "", description: "" }],
   });
   const [showManualCharInput, setShowManualCharInput] = useState(false);
