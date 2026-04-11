@@ -893,6 +893,8 @@ export default function LoglineAnalyzer() {
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [adminUsers, setAdminUsers] = useState([]);
   const [adminUsersLoading, setAdminUsersLoading] = useState(false);
   const [adminRedisOk, setAdminRedisOk] = useState(true);
@@ -4110,155 +4112,106 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           {/* Save status */}
-          {saveStatus && (
+          {saveStatus && !isMobile && (
             <span style={{ fontSize: 10, color: saveStatus === "saved" ? "#4ECCA3" : "var(--c-tx-35)", fontFamily: "'JetBrains Mono', monospace" }}>
               {saveStatus === "saving" ? "저장 중..." : "저장됨"}
             </span>
           )}
-          {/* Cancel button — visible when any operation is running */}
+          {/* 취소 — 로딩 중일 때만 */}
           {isAnyLoading && (
-            <button
-              onClick={() => {
-                Object.keys(abortControllersRef.current).forEach((key) => {
-                  abortControllersRef.current[key].abort();
-                });
-                abortControllersRef.current = {};
-              }}
-              style={{
-                padding: "5px 10px", borderRadius: 8, fontSize: 11, cursor: "pointer",
-                border: "1px solid rgba(232,93,117,0.35)", background: "rgba(232,93,117,0.08)",
-                color: "#E85D75", display: "flex", alignItems: "center", gap: 4,
-              }}
-            >
+            <button onClick={() => { Object.keys(abortControllersRef.current).forEach(k => abortControllersRef.current[k].abort()); abortControllersRef.current = {}; }}
+              style={{ padding: "5px 10px", borderRadius: 8, fontSize: 11, cursor: "pointer", border: "1px solid rgba(232,93,117,0.35)", background: "rgba(232,93,117,0.08)", color: "#E85D75", display: "flex", alignItems: "center", gap: 4 }}>
               취소
             </button>
           )}
+          {/* 내보내기 드롭다운 — result 있을 때만 */}
           {result && (
-            <button onClick={() => setShowStoryBible(true)} style={{
-              padding: "5px 12px", borderRadius: 8,
-              border: "1px solid rgba(78,204,163,0.3)", background: "rgba(78,204,163,0.07)",
-              color: "#4ECCA3", cursor: "pointer", fontSize: 11, fontWeight: 600,
-              display: "flex", alignItems: "center", gap: 5,
-            }}>
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-              스토리 바이블
-            </button>
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setShowExportMenu(v => !v)} style={{
+                padding: "5px 11px", borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)",
+                color: "var(--c-tx-55)", display: "flex", alignItems: "center", gap: 5,
+              }}>
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                내보내기 <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>
+              </button>
+              {showExportMenu && (
+                <>
+                  <div onClick={() => setShowExportMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
+                  <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 100, background: "var(--bg-nav)", border: "1px solid var(--c-bd-2)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", minWidth: 160, padding: "4px 0", overflow: "hidden" }}>
+                    <button onClick={() => { setShowStoryBible(true); setShowExportMenu(false); }} style={{ width: "100%", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#4ECCA3", display: "flex", alignItems: "center", gap: 8, fontFamily: "'Noto Sans KR', sans-serif", textAlign: "left" }}>
+                      <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                      스토리 바이블
+                    </button>
+                    <button onClick={() => { handleExportPdf(); setShowExportMenu(false); }} disabled={pdfLoading} style={{ width: "100%", padding: "9px 14px", background: "none", border: "none", cursor: pdfLoading ? "default" : "pointer", fontSize: 12, color: pdfLoading ? "var(--c-tx-25)" : "#60A5FA", display: "flex", alignItems: "center", gap: 8, fontFamily: "'Noto Sans KR', sans-serif", textAlign: "left" }}>
+                      <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                      {pdfLoading ? "PDF 생성 중..." : "PDF"}
+                    </button>
+                    <button onClick={() => { const s = logline.slice(0,20).replace(/\s+/g,"-").replace(/[^\w가-힣-]/g,""); exportToMarkdown({ logline, genre, result, charDevResult, synopsisResults, pipelineResult, treatmentResult, beatSheetResult, scenarioDraftResult, scriptCoverageResult, valuationResult }, `hellologline-${s||"report"}`); showToast("success","Markdown 파일이 다운로드되었습니다."); setShowExportMenu(false); }} style={{ width: "100%", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#A78BFA", display: "flex", alignItems: "center", gap: 8, fontFamily: "'Noto Sans KR', sans-serif", textAlign: "left" }}>
+                      <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      Markdown
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           )}
-          {result && (
-            <button
-              onClick={handleExportPdf}
-              disabled={pdfLoading}
-              title="분석 결과를 PDF로 내보내기"
-              style={{
-                padding: "5px 12px", borderRadius: 8,
-                border: "1px solid rgba(96,165,250,0.3)", background: "rgba(96,165,250,0.07)",
-                color: pdfLoading ? "var(--c-tx-25)" : "#60A5FA",
-                cursor: pdfLoading ? "default" : "pointer", fontSize: 11, fontWeight: 600,
-                display: "flex", alignItems: "center", gap: 5,
-              }}
-            >
-              {pdfLoading
-                ? <><Spinner size={10} color="#60A5FA" /> PDF 생성 중...</>
-                : <><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> PDF</>
-              }
-            </button>
-          )}
-          {result && (
-            <button
-              onClick={() => {
-                const safeLogline = logline.slice(0, 20).replace(/\s+/g, "-").replace(/[^\w가-힣-]/g, "");
-                exportToMarkdown({
-                  logline, genre, result, charDevResult, synopsisResults, pipelineResult,
-                  treatmentResult, beatSheetResult, scenarioDraftResult, scriptCoverageResult, valuationResult,
-                }, `hellologline-${safeLogline || "report"}`);
-                showToast("success", "Markdown 파일이 다운로드되었습니다.");
-              }}
-              title="분석 결과를 Markdown으로 내보내기"
-              style={{
-                padding: "5px 12px", borderRadius: 8,
-                border: "1px solid rgba(167,139,250,0.3)", background: "rgba(167,139,250,0.07)",
-                color: "#A78BFA", cursor: "pointer", fontSize: 11, fontWeight: 600,
-                display: "flex", alignItems: "center", gap: 5,
-              }}
-            >
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              MD
-            </button>
-          )}
-          <button onClick={openProjects} style={{
-            padding: "5px 12px", borderRadius: 8,
-            border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)",
-            color: "var(--c-tx-45)", cursor: "pointer", fontSize: 11,
-            display: "flex", alignItems: "center", gap: 5,
-          }}>
-            프로젝트
+          {/* 프로젝트 */}
+          <button onClick={openProjects} title="프로젝트" style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--c-tx-45)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            {!isMobile && "프로젝트"}
           </button>
-          <button onClick={() => setShowHistory(true)} style={{
-            padding: "5px 12px", borderRadius: 8,
-            border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)",
-            color: "var(--c-tx-45)", cursor: "pointer", fontSize: 11,
-            display: "flex", alignItems: "center", gap: 5,
-          }}>
-            <SvgIcon d={ICON.history} size={12} />
-            기록{history.length > 0 ? ` (${history.length})` : ""}
+          {/* 기록 */}
+          <button onClick={() => setShowHistory(true)} title="기록" style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--c-tx-45)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>
+            <SvgIcon d={ICON.history} size={13} />
+            {!isMobile && `기록${history.length > 0 ? ` (${history.length})` : ""}`}
+            {isMobile && history.length > 0 && <span style={{ fontSize: 9, fontWeight: 700, color: "#4ECCA3" }}>{history.length}</span>}
           </button>
+          {/* 크레딧 */}
           {user && tier === "basic" && credits !== null && (
-            <button onClick={() => setShowCreditModal(true)} title="크레딧 충전" style={{
-              padding: "5px 10px", borderRadius: 8,
-              border: "1px solid rgba(167,139,250,0.35)",
-              background: credits <= 5 ? "rgba(232,93,117,0.1)" : "rgba(167,139,250,0.08)",
-              color: credits <= 5 ? "#E85D75" : "#A78BFA",
-              cursor: "pointer", fontSize: 12, fontWeight: 700,
-              display: "flex", alignItems: "center", gap: 4,
-              fontFamily: "'JetBrains Mono', monospace",
-            }}>
+            <button onClick={() => setShowCreditModal(true)} title="크레딧 충전" style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid rgba(167,139,250,0.35)", background: credits <= 5 ? "rgba(232,93,117,0.1)" : "rgba(167,139,250,0.08)", color: credits <= 5 ? "#E85D75" : "#A78BFA", cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 4, fontFamily: "'JetBrains Mono', monospace" }}>
               ⚡ {creditPurchasing ? "..." : credits}
             </button>
           )}
-          <button onClick={() => setShowApiKeyModal(true)} title="API 키 설정" style={{
-            padding: "5px 10px", borderRadius: 8,
-            border: "1px solid var(--c-bd-3)",
-            background: apiKey ? "rgba(200,168,75,0.08)" : "rgba(232,93,117,0.1)",
-            color: apiKey ? "rgba(200,168,75,0.7)" : "#E85D75",
-            cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", gap: 4,
-          }}>
-            <SvgIcon d={ICON.key} size={13} />
-            API
+          {/* API 키 */}
+          <button onClick={() => setShowApiKeyModal(true)} title="API 키 설정" style={{ padding: "5px 8px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: apiKey ? "rgba(200,168,75,0.08)" : "rgba(232,93,117,0.1)", color: apiKey ? "rgba(200,168,75,0.7)" : "#E85D75", cursor: "pointer", display: "flex", alignItems: "center" }}>
+            <SvgIcon d={ICON.key} size={14} />
           </button>
-          {/* ── Theme toggle ── */}
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            title={darkMode ? "라이트 모드로 전환" : "다크 모드로 전환"}
-            style={{
-              padding: "5px 8px", borderRadius: 8, fontSize: 14, lineHeight: 1,
-              border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)",
-              color: "var(--c-tx-50)", cursor: "pointer",
-            }}
-          >{darkMode ? "☀️" : "🌙"}</button>
-          {/* ── User avatar & logout ── */}
+          {/* 다크모드 */}
+          <button onClick={() => setDarkMode(!darkMode)} title={darkMode ? "라이트 모드" : "다크 모드"} style={{ padding: "5px 8px", borderRadius: 8, fontSize: 14, lineHeight: 1, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--c-tx-50)", cursor: "pointer" }}>
+            {darkMode ? "☀️" : "🌙"}
+          </button>
+          {/* 유저 아바타 → 드롭다운 */}
           {user && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 2 }}>
-              {user.avatar ? (
-                <img src={user.avatar} alt="" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--c-bd-4)", flexShrink: 0 }} />
-              ) : (
-                <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(200,168,75,0.2)", border: "1px solid rgba(200,168,75,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#C8A84B", flexShrink: 0 }}>
-                  {user.name?.[0] || "?"}
-                </div>
-              )}
-              {!isMobile && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                  <span style={{ fontSize: 11, color: "var(--c-tx-50)", maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</span>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: TIER_COLOR[tier], letterSpacing: 0.5, fontFamily: "'JetBrains Mono', monospace" }}>{TIER_LABEL[tier]}</span>
-                </div>
-              )}
-              {isAdmin && (
-                <button onClick={() => setShowAdminPanel(true)} title="관리자 패널" style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, cursor: "pointer", border: "1px solid rgba(200,168,75,0.3)", background: "rgba(200,168,75,0.08)", color: "#C8A84B", fontFamily: "'Noto Sans KR', sans-serif", fontWeight: 700 }}>
-                  관리
-                </button>
-              )}
-              <button onClick={handleLogout} style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, cursor: "pointer", border: "1px solid var(--c-bd-3)", background: "transparent", color: "var(--c-tx-35)", fontFamily: "'Noto Sans KR', sans-serif" }}>
-                로그아웃
+            <div style={{ position: "relative" }}>
+              <button onClick={() => setShowUserMenu(v => !v)} style={{ padding: 0, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                {user.avatar ? (
+                  <img src={user.avatar} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--c-bd-4)" }} />
+                ) : (
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(200,168,75,0.2)", border: "1px solid rgba(200,168,75,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#C8A84B" }}>
+                    {user.name?.[0] || "?"}
+                  </div>
+                )}
               </button>
+              {showUserMenu && (
+                <>
+                  <div onClick={() => setShowUserMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
+                  <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 100, background: "var(--bg-nav)", border: "1px solid var(--c-bd-2)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", minWidth: 160, padding: "8px 0", overflow: "hidden" }}>
+                    <div style={{ padding: "8px 14px 10px", borderBottom: "1px solid var(--c-bd-1)" }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main)", marginBottom: 2 }}>{user.name}</div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: TIER_COLOR[tier], fontFamily: "'JetBrains Mono', monospace" }}>{TIER_LABEL[tier]}</div>
+                    </div>
+                    {isAdmin && (
+                      <button onClick={() => { setShowAdminPanel(true); setShowUserMenu(false); }} style={{ width: "100%", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#C8A84B", display: "flex", alignItems: "center", gap: 8, fontFamily: "'Noto Sans KR', sans-serif", textAlign: "left" }}>
+                        관리자 패널
+                      </button>
+                    )}
+                    <button onClick={() => { handleLogout(); setShowUserMenu(false); }} style={{ width: "100%", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--c-tx-45)", display: "flex", alignItems: "center", gap: 8, fontFamily: "'Noto Sans KR', sans-serif", textAlign: "left" }}>
+                      로그아웃
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
