@@ -209,7 +209,7 @@ export default function Stage3Content({
                           <input
                             value={treatmentChars.protagonist.name}
                             onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, name: e.target.value } }))}
-                            placeholder="예: 피노키오"
+                            placeholder="예: 이준호"
                             style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
                           />
                         </div>
@@ -218,7 +218,7 @@ export default function Stage3Content({
                           <input
                             value={treatmentChars.protagonist.role}
                             onChange={e => setTreatmentChars(prev => ({ ...prev, protagonist: { ...prev.protagonist, role: e.target.value } }))}
-                            placeholder="예: 200년 된 로봇수리공"
+                            placeholder="예: 30대 형사"
                             style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none", boxSizing: "border-box" }}
                           />
                         </div>
@@ -256,9 +256,9 @@ export default function Stage3Content({
                           {/* 1행: 이름 / 역할 / 주인공과의 관계 */}
                           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
                             {[
-                              { key: "name", label: "이름", placeholder: "예: 제페토" },
+                              { key: "name", label: "이름", placeholder: "예: 김민재" },
                               { key: "role", label: "역할", placeholder: "예: 조력자" },
-                              { key: "relation", label: "주인공과의 관계", placeholder: "예: 아버지" },
+                              { key: "relation", label: "주인공과의 관계", placeholder: "예: 파트너" },
                             ].map(({ key, label, placeholder }) => (
                               <div key={key}>
                                 <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>{label}</div>
