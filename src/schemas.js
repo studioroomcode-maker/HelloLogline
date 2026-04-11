@@ -160,13 +160,16 @@ export const ExpertPanelSchema = z
     round2: z.array(z.object({}).passthrough()).catch([]),
     synthesis: z
       .object({
-        consensus: z.string().optional().catch(undefined),
-        strongest_element: z.string().optional().catch(undefined),
+        consensus: z.string().optional().catch(""),
+        improvements: z.array(z.string()).optional().catch([]),
+        strongest_element: z.string().optional().catch(""),
+        critical_gap: z.string().optional().catch(""),
+        philosophical_core: z.string().optional().catch(""),
       })
       .passthrough()
       .nullable()
       .optional()
-      .catch({}),
+      .catch(null),
   })
   .passthrough();
 

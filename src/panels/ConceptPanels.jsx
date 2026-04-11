@@ -135,39 +135,58 @@ export function ExpertPanelSection({ data, isMobile }) {
       {/* ── 종합 ── */}
       <div>
         <SectionHeader num="종합" label="합의 — 핵심 개선 방향" isOpen={openRound === 3} onToggle={() => setOpenRound(openRound === 3 ? 0 : 3)} />
-        {openRound === 3 && data.synthesis && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {/* 합의점 */}
-            <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.15)" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>CONSENSUS</div>
-              <p style={{ fontSize: 12, color: "var(--c-tx-65)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.consensus}</p>
+        {openRound === 3 && (
+          !data.synthesis ? (
+            <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.12)", fontSize: 12, color: "var(--c-tx-35)", fontFamily: "'Noto Sans KR', sans-serif", textAlign: "center" }}>
+              합의 데이터를 불러올 수 없습니다. 다시 분석해보세요.
             </div>
-            {/* 개선 제안 */}
-            <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.15)" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>IMPROVEMENTS</div>
-              {(data.synthesis.improvements || []).map((imp, i) => (
-                <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", background: "rgba(78,204,163,0.15)", padding: "1px 6px", borderRadius: 4, flexShrink: 0, fontFamily: "'JetBrains Mono', monospace" }}>{i + 1}</span>
-                  <span style={{ fontSize: 12, color: "var(--c-tx-60)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{imp}</span>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {/* 합의점 */}
+              {data.synthesis.consensus && (
+                <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.15)" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>CONSENSUS</div>
+                  <p style={{ fontSize: 12, color: "var(--c-tx-65)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.consensus}</p>
                 </div>
-              ))}
+              )}
+              {/* 개선 제안 */}
+              {(data.synthesis.improvements || []).length > 0 && (
+                <div style={{ padding: "14px 16px", borderRadius: 10, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.15)" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", marginBottom: 8, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>IMPROVEMENTS</div>
+                  {(data.synthesis.improvements || []).map((imp, i) => (
+                    <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", background: "rgba(78,204,163,0.15)", padding: "1px 6px", borderRadius: 4, flexShrink: 0, fontFamily: "'JetBrains Mono', monospace" }}>{i + 1}</span>
+                      <span style={{ fontSize: 12, color: "var(--c-tx-60)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{imp}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* 강점 / 보완 */}
+              {(data.synthesis.strongest_element || data.synthesis.critical_gap) && (
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
+                  {data.synthesis.strongest_element && (
+                    <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(69,183,209,0.05)", border: "1px solid rgba(69,183,209,0.18)" }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#45B7D1", marginBottom: 5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>STRONGEST ELEMENT</div>
+                      <p style={{ fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.strongest_element}</p>
+                    </div>
+                  )}
+                  {data.synthesis.critical_gap && (
+                    <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(232,93,117,0.05)", border: "1px solid rgba(232,93,117,0.18)" }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: "#E85D75", marginBottom: 5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>CRITICAL GAP</div>
+                      <p style={{ fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.critical_gap}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              {/* 철학적 핵심 */}
+              {data.synthesis.philosophical_core && (
+                <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(247,160,114,0.05)", border: "1px solid rgba(247,160,114,0.18)" }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#F7A072", marginBottom: 5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>PHILOSOPHICAL CORE</div>
+                  <p style={{ fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.philosophical_core}</p>
+                </div>
+              )}
             </div>
-            {/* 강점 / 보완 / 철학적 핵심 */}
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8 }}>
-              <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(69,183,209,0.05)", border: "1px solid rgba(69,183,209,0.18)" }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#45B7D1", marginBottom: 5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>STRONGEST ELEMENT</div>
-                <p style={{ fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.strongest_element}</p>
-              </div>
-              <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(232,93,117,0.05)", border: "1px solid rgba(232,93,117,0.18)" }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: "#E85D75", marginBottom: 5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>CRITICAL GAP</div>
-                <p style={{ fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.critical_gap}</p>
-              </div>
-            </div>
-            <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(247,160,114,0.05)", border: "1px solid rgba(247,160,114,0.18)" }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: "#F7A072", marginBottom: 5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>PHILOSOPHICAL CORE</div>
-              <p style={{ fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{data.synthesis.philosophical_core}</p>
-            </div>
-          </div>
+          )
         )}
       </div>
     </div>
