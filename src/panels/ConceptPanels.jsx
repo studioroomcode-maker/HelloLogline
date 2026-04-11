@@ -24,7 +24,7 @@ export function ExpertPanelSection({ data, isMobile }) {
         <img
           src={expert.image}
           alt={expert.name}
-          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center" }}
+          style={{ width: "85%", height: "85%", objectFit: "contain" }}
           onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.nextSibling.style.display = "flex"; }}
         />
       ) : null}
