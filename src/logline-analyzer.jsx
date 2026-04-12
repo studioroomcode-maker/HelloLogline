@@ -2730,7 +2730,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       if (p.want) manualLines.push(`외적 목표(Want): ${p.want}`);
       if (p.need) manualLines.push(`내적 욕구(Need): ${p.need}`);
       if (p.flaw) manualLines.push(`핵심 결함: ${p.flaw}`);
-      const activeSupporting = treatmentChars.supporting.filter(s => s.name.trim());
+      const activeSupporting = treatmentChars.supporting.filter(s => s.name?.trim());
       if (activeSupporting.length > 0) {
         activeSupporting.forEach(s => {
           let line = `조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}${s.mbti ? ` [MBTI: ${s.mbti}]` : ""}`;
@@ -3409,7 +3409,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       charBlock = lines.filter(Boolean).join("\n");
     } else {
       const proto = treatmentChars.protagonist;
-      charBlock = [`주인공: ${proto.name || "미정"} (${proto.role || "역할 미정"})`, proto.want ? `  - 외적 목표(Want): ${proto.want}` : "", proto.need ? `  - 내적 욕구(Need): ${proto.need}` : "", proto.flaw ? `  - 핵심 결함: ${proto.flaw}` : "", ...treatmentChars.supporting.filter((s) => s.name.trim()).map((s) => `조력/적대 인물: ${s.name} (${s.role}) — ${s.relation}${s.mbti ? ` [MBTI: ${s.mbti}]` : ""}${s.description ? `\n  설명: ${s.description}` : ""}`)].filter(Boolean).join("\n");
+      charBlock = [`주인공: ${proto.name || "미정"} (${proto.role || "역할 미정"})`, proto.want ? `  - 외적 목표(Want): ${proto.want}` : "", proto.need ? `  - 내적 욕구(Need): ${proto.need}` : "", proto.flaw ? `  - 핵심 결함: ${proto.flaw}` : "", ...treatmentChars.supporting.filter((s) => s.name?.trim()).map((s) => `조력/적대 인물: ${s.name} (${s.role}) — ${s.relation}${s.mbti ? ` [MBTI: ${s.mbti}]` : ""}${s.description ? `\n  설명: ${s.description}` : ""}`)].filter(Boolean).join("\n");
     }
     const storyBible = getStoryBible();
     const genreContext = result?.detected_genre ? `\n로그라인 분석 감지 장르: ${result.detected_genre}` : "";

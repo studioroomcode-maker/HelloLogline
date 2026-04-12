@@ -359,7 +359,7 @@ export default function Stage4Content({
           if (p.want) lines.push(`외적 목표(Want): ${p.want}`);
           if (p.need) lines.push(`내적 욕구(Need): ${p.need}`);
           if (p.flaw) lines.push(`핵심 결함: ${p.flaw}`);
-          treatmentChars.supporting.filter(s => s.name.trim()).forEach(s => {
+          treatmentChars.supporting.filter(s => s.name?.trim()).forEach(s => {
             let line = `조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}${s.mbti ? ` [MBTI: ${s.mbti}]` : ""}`;
             if (s.description) line += `\n  설명: ${s.description}`;
             lines.push(line);

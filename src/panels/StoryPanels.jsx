@@ -605,7 +605,7 @@ export function SynopsisCard({ synopsis, index, isSelected = false, onSelect }) 
               >
                 핵심 장면
               </div>
-              {synopsis.key_scenes.map((scene, i) => (
+              {synopsis.key_scenes?.map((scene, i) => (
                 <div
                   key={i}
                   style={{

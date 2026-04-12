@@ -147,7 +147,7 @@ export function useStage5({
         proto.want ? `  - 외적 목표(Want): ${proto.want}` : "",
         proto.need ? `  - 내적 욕구(Need): ${proto.need}` : "",
         proto.flaw ? `  - 핵심 결함: ${proto.flaw}` : "",
-        ...treatmentChars.supporting.filter((s) => s.name.trim()).map((s) =>
+        ...treatmentChars.supporting.filter((s) => s.name?.trim()).map((s) =>
           `조력/적대 인물: ${s.name} (${s.role}) — ${s.relation}${s.mbti ? ` [MBTI: ${s.mbti}]` : ""}`)
       ].filter(Boolean).join("\n");
     }
