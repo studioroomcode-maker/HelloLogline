@@ -2,6 +2,62 @@
 // Script Coverage 패널 + Valuation 패널 (lazy-loaded)
 // ─────────────────────────────────────────────
 
+// ── Coverage 6차원 레이더 차트 ────────────────
+function CoverageRadar({ scores, isMobile }) {
+  const SIZE = isMobile ? 190 : 230;
+  const cx = SIZE / 2, cy = SIZE / 2;
+  const R = SIZE * 0.31;
+  const DIMS = [
+    { key: "premise",            label: "전제" },
+    { key: "story",              label: "스토리" },
+    { key: "character",          label: "캐릭터" },
+    { key: "dialogue_potential", label: "대사" },
+    { key: "setting",            label: "세계관" },
+    { key: "marketability",      label: "시장성" },
+  ];
+  const sc = (score) => score >= 8 ? "#4ECCA3" : score >= 6 ? "#60A5FA" : score >= 4 ? "#FFD166" : score >= 2 ? "#F7A072" : "#E85D75";
+  function pt(idx, frac) {
+    const a = (idx * 60 - 90) * Math.PI / 180;
+    return { x: cx + R * frac * Math.cos(a), y: cy + R * frac * Math.sin(a) };
+  }
+  const data = DIMS.map((d, i) => ({ ...d, score: scores?.[d.key]?.score ?? 0, i }));
+  const poly = data.map(d => { const p = pt(d.i, Math.max(0.05, d.score / 10)); return `${p.x},${p.y}`; }).join(" ");
+  const avg = data.length ? Math.round(data.reduce((s, d) => s + d.score, 0) / data.length * 10) / 10 : 0;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 18 }}>
+      <div style={{ fontSize: 10, color: "var(--c-tx-30)", letterSpacing: 1, marginBottom: 6, textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>Coverage Radar</div>
+      <svg viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ width: SIZE, height: SIZE }}>
+        {/* 그리드 링 */}
+        {[0.25, 0.5, 0.75, 1].map((lv, li) => (
+          <polygon key={li} fill="none" stroke="var(--c-bd-2)" strokeWidth={li === 3 ? 1 : 0.4}
+            points={DIMS.map((_, i) => { const p = pt(i, lv); return `${p.x},${p.y}`; }).join(" ")} />
+        ))}
+        {/* 축선 */}
+        {DIMS.map((_, i) => { const p = pt(i, 1); return <line key={i} x1={cx} y1={cy} x2={p.x} y2={p.y} stroke="var(--c-bd-2)" strokeWidth={0.5} />; })}
+        {/* 데이터 폴리곤 */}
+        <polygon points={poly} fill="rgba(96,165,250,0.12)" stroke="#60A5FA" strokeWidth={1.5} strokeOpacity={0.9} />
+        {/* 데이터 점 */}
+        {data.map(d => { const p = pt(d.i, Math.max(0.05, d.score / 10)); return <circle key={d.key} cx={p.x} cy={p.y} r={3.5} fill={sc(d.score)} stroke="var(--bg-page)" strokeWidth={1.2} />; })}
+        {/* 축 레이블 */}
+        {data.map((d, i) => {
+          const p = pt(i, 1.28);
+          const angle = i * 60;
+          const anchor = angle > 15 && angle < 165 ? "start" : angle > 195 && angle < 345 ? "end" : "middle";
+          return (
+            <g key={d.key}>
+              <text x={p.x} y={p.y - 5} textAnchor={anchor} dominantBaseline="middle" fill="var(--c-tx-55)" fontSize={9} fontFamily="'Noto Sans KR', sans-serif" style={{ userSelect: "none" }}>{d.label}</text>
+              <text x={p.x} y={p.y + 7} textAnchor={anchor} dominantBaseline="middle" fill={sc(d.score)} fontSize={8} fontFamily="'JetBrains Mono', monospace" fontWeight="700" style={{ userSelect: "none" }}>{d.score}/10</text>
+            </g>
+          );
+        })}
+        {/* 중앙 평균 */}
+        <text x={cx} y={cy - 7} textAnchor="middle" dominantBaseline="middle" fill="var(--c-tx-65)" fontSize={15} fontWeight="800" fontFamily="'JetBrains Mono', monospace">{avg}</text>
+        <text x={cx} y={cy + 9} textAnchor="middle" dominantBaseline="middle" fill="var(--c-tx-30)" fontSize={8} fontFamily="monospace">avg</text>
+      </svg>
+    </div>
+  );
+}
+
 export function ScriptCoveragePanel({ data, isMobile }) {
   const REC_COLOR = { "STRONG PASS": "#4ECCA3", "RECOMMEND": "#60A5FA", "CONSIDER": "#FFD166", "PASS": "#E85D75" };
   const recColor = REC_COLOR[data.recommendation] || "#aaa";
@@ -37,6 +93,9 @@ export function ScriptCoveragePanel({ data, isMobile }) {
           </div>
         </div>
       )}
+      {/* ── Coverage 레이더 차트 ── */}
+      {data.scores && <CoverageRadar scores={data.scores} isMobile={isMobile} />}
+
       {/* 항목별 점수 */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8, marginBottom: 16 }}>
         {scoreKeys.map(({ key, label }) => {

@@ -819,9 +819,32 @@ export default function Stage1Content({
         <ResultCard>
           {activeTab === "overview" && (
             <div>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
                 <RadarChart data={radarData} size={isMobile ? 220 : 280} />
               </div>
+
+              {/* ── 점수 히트맵 ── */}
+              {radarData.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 10, color: "var(--c-tx-30)", letterSpacing: 0.5, marginBottom: 8, textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>Score Snapshot</div>
+                  <div style={{ display: "grid", gridTemplateColumns: `repeat(${isMobile ? 4 : 7}, 1fr)`, gap: 5 }}>
+                    {radarData.map((d) => {
+                      const pct = d.value;
+                      const color = pct >= 0.8 ? "#4ECCA3" : pct >= 0.6 ? "#60A5FA" : pct >= 0.4 ? "#FFD166" : pct >= 0.2 ? "#F7A072" : "#E85D75";
+                      return (
+                        <div key={d.label} title={`${d.label}: ${d.rawScore}/${d.rawMax}`} style={{ padding: "6px 4px", borderRadius: 8, background: `${color}14`, border: `1px solid ${color}30`, textAlign: "center", cursor: "default" }}>
+                          <div style={{ fontSize: 8, color: "var(--c-tx-40)", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 3, lineHeight: 1.2 }}>{d.label}</div>
+                          <div style={{ fontSize: 12, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{d.rawScore}</div>
+                          <div style={{ height: 2, borderRadius: 1, background: "var(--c-bd-1)", marginTop: 4, overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${pct * 100}%`, background: color, borderRadius: 1 }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 {[
                   { label: "구조적 완성도", score: structureTotal, max: 50, color: "#4ECCA3" },

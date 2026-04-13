@@ -82,10 +82,55 @@ export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expan
         <div style={{ height: "100%", width: `${beats.length ? (completedCount / beats.length) * 100 : 0}%`, background: "linear-gradient(90deg, #4ECCA3, #45B7D1)", borderRadius: 2, transition: "width 0.5s ease" }} />
       </div>
 
-      {/* 감정 아크 그래프 */}
+      {/* ── 페이지 타임라인 ── */}
+      {beats.length >= 2 && data.total_pages > 0 && (() => {
+        const total = data.total_pages;
+        // 막 경계 계산
+        const actBoundaries = [];
+        let curAct = null;
+        beats.forEach((b, i) => {
+          if (b.act !== curAct) { actBoundaries.push({ act: b.act, beatIdx: i }); curAct = b.act; }
+        });
+        return (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 10, color: "var(--c-tx-30)", letterSpacing: 0.5, marginBottom: 6, textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>Page Timeline · {total}p</div>
+            <div style={{ position: "relative", height: 30, borderRadius: 7, background: "var(--c-bd-1)", overflow: "hidden" }}>
+              {beats.map((b) => {
+                const act = ACT_META[b.act] || ACT_META["1막"];
+                const left = ((b.page_start || 1) / total) * 100;
+                const end = b.page_end || b.page_start || 1;
+                const width = Math.max(0.5, ((end - (b.page_start || 1) + 1) / total) * 100);
+                return (
+                  <div key={b.id} title={`${b.name_kr} (p.${b.page_start}~${end})`}
+                    style={{ position: "absolute", left: `${left}%`, width: `${width}%`, height: "100%", background: act.color, opacity: 0.55, borderRight: "1px solid rgba(0,0,0,0.25)" }} />
+                );
+              })}
+              {/* 막 레이블 */}
+              {actBoundaries.map(({ act, beatIdx }) => {
+                const meta = ACT_META[act] || ACT_META["1막"];
+                const b = beats[beatIdx];
+                const left = ((b.page_start || 1) / total) * 100;
+                return (
+                  <div key={act} style={{ position: "absolute", left: `${left + 0.5}%`, top: "50%", transform: "translateY(-50%)", fontSize: 8, color: "rgba(0,0,0,0.65)", fontWeight: 800, fontFamily: "'Noto Sans KR', sans-serif", pointerEvents: "none", whiteSpace: "nowrap", letterSpacing: 0.3 }}>
+                    {meta.label}
+                  </div>
+                );
+              })}
+            </div>
+            {/* 페이지 눈금 */}
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
+              {[0, 0.25, 0.5, 0.75, 1].map(r => (
+                <span key={r} style={{ fontSize: 8, color: "var(--c-tx-25)", fontFamily: "'JetBrains Mono', monospace" }}>{Math.round(r * total)}p</span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── 감정 아크 그래프 ── */}
       {beats.length >= 3 && (() => {
-        const W = 560, H = 100, PX = 28, PY = 12;
-        const innerW = W - PX * 2, innerH = H - PY * 2;
+        const W = 560, H = 130, PX = 28, PY = 18;
+        const innerW = W - PX * 2, innerH = H - PY * 2 - 16; // 하단 레이블 공간 확보
         const points = beats.map((b, i) => {
           const emo = BEAT_EMOTION[b.name_en] ?? 0;
           const x = PX + (i / (beats.length - 1)) * innerW;
@@ -93,39 +138,38 @@ export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expan
           return { x, y, emo, beat: b };
         });
 
-        // 부드러운 bezier 경로 생성
+        // 부드러운 bezier 경로
         const pathD = points.reduce((acc, pt, i) => {
           if (i === 0) return `M ${pt.x} ${pt.y}`;
           const prev = points[i - 1];
           const cpX = (prev.x + pt.x) / 2;
           return `${acc} C ${cpX} ${prev.y}, ${cpX} ${pt.y}, ${pt.x} ${pt.y}`;
         }, "");
-
-        // 채우기용 닫힌 경로
-        const fillD = `${pathD} L ${points[points.length - 1].x} ${PY + innerH / 2} L ${points[0].x} ${PY + innerH / 2} Z`;
-
         const zeroY = PY + (5 / 10) * innerH;
+        const fillD = `${pathD} L ${points[points.length - 1].x} ${zeroY} L ${points[0].x} ${zeroY} Z`;
+
+        // 막별 배경 구역 계산
+        const actZones = [];
+        let curAct = null, zoneStart = PX;
+        beats.forEach((b, i) => {
+          const x = PX + (i / (beats.length - 1)) * innerW;
+          if (b.act !== curAct) {
+            if (curAct !== null) actZones.push({ act: curAct, x1: zoneStart, x2: x });
+            curAct = b.act; zoneStart = x;
+          }
+          if (i === beats.length - 1) actZones.push({ act: curAct, x1: zoneStart, x2: x });
+        });
 
         return (
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 10, color: "var(--c-tx-30)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, marginBottom: 6, textTransform: "uppercase" }}>Emotional Arc</div>
-            <div style={{ position: "relative", width: "100%", overflow: "hidden", borderRadius: 10, border: "1px solid var(--c-bd-1)", background: "rgba(var(--tw),0.01)", padding: "0 0 4px" }}>
+            <div style={{ position: "relative", width: "100%", overflow: "hidden", borderRadius: 10, border: "1px solid var(--c-bd-1)", background: "rgba(var(--tw),0.01)", padding: "0 0 2px" }}>
               <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", display: "block" }} preserveAspectRatio="none">
-                {/* 기준선 (감정 0) */}
-                <line x1={PX} y1={zeroY} x2={W - PX} y2={zeroY} stroke="rgba(255,255,255,0.07)" strokeWidth={1} strokeDasharray="4 3" />
-                {/* y축 레이블 */}
-                {[5, 0, -5].map(v => {
-                  const ly = PY + ((5 - v) / 10) * innerH;
-                  return (
-                    <text key={v} x={PX - 4} y={ly + 3.5} fontSize={7} textAnchor="end" fill="rgba(255,255,255,0.2)" fontFamily="monospace">{v > 0 ? `+${v}` : v}</text>
-                  );
-                })}
-                {/* 채우기 */}
                 <defs>
                   <linearGradient id="emo-fill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#4ECCA3" stopOpacity="0.15" />
+                    <stop offset="0%" stopColor="#4ECCA3" stopOpacity="0.18" />
                     <stop offset="50%" stopColor="#4ECCA3" stopOpacity="0.04" />
-                    <stop offset="100%" stopColor="#E85D75" stopOpacity="0.15" />
+                    <stop offset="100%" stopColor="#E85D75" stopOpacity="0.18" />
                   </linearGradient>
                   <linearGradient id="emo-line" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stopColor="#45B7D1" />
@@ -133,22 +177,61 @@ export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expan
                     <stop offset="100%" stopColor="#C8A84B" />
                   </linearGradient>
                 </defs>
+
+                {/* 막별 배경 구역 */}
+                {actZones.map((z, zi) => {
+                  const meta = ACT_META[z.act] || ACT_META["1막"];
+                  return (
+                    <g key={zi}>
+                      <rect x={z.x1} y={PY} width={z.x2 - z.x1} height={innerH} fill={meta.color} fillOpacity={0.05} />
+                      {zi > 0 && <line x1={z.x1} y1={PY} x2={z.x1} y2={PY + innerH} stroke="rgba(255,255,255,0.1)" strokeWidth={1} strokeDasharray="3 2" />}
+                      <text x={(z.x1 + z.x2) / 2} y={PY + 9} textAnchor="middle" fontSize={7} fill={meta.color} fillOpacity={0.7} fontFamily="monospace" style={{ userSelect: "none" }}>{meta.label}</text>
+                    </g>
+                  );
+                })}
+
+                {/* 기준선 (감정 0) */}
+                <line x1={PX} y1={zeroY} x2={W - PX} y2={zeroY} stroke="rgba(255,255,255,0.1)" strokeWidth={1} strokeDasharray="4 3" />
+
+                {/* y축 레이블 */}
+                {[5, 0, -5].map(v => {
+                  const ly = PY + ((5 - v) / 10) * innerH;
+                  return <text key={v} x={PX - 4} y={ly + 3.5} fontSize={7} textAnchor="end" fill="rgba(255,255,255,0.2)" fontFamily="monospace">{v > 0 ? `+${v}` : v}</text>;
+                })}
+
+                {/* 채우기 + 라인 */}
                 <path d={fillD} fill="url(#emo-fill)" />
-                {/* 메인 라인 */}
-                <path d={pathD} fill="none" stroke="url(#emo-line)" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
-                {/* 비트 점 */}
-                {points.map((pt, i) => (
-                  <g key={i}>
-                    <circle cx={pt.x} cy={pt.y} r={3.5} fill={pt.emo < 0 ? "#E85D75" : pt.emo > 0 ? "#4ECCA3" : "#666"} stroke="var(--bg-page)" strokeWidth={1.2} />
-                    {/* 비트 이름 (짝수만, 공간 확보) */}
-                    {i % 2 === 0 && (
-                      <text x={pt.x} y={H - 2} fontSize={6} textAnchor="middle" fill="rgba(255,255,255,0.25)" fontFamily="monospace" style={{ userSelect: "none" }}>
-                        {pt.beat.name_en?.split(" ").slice(-1)[0] || i + 1}
+                <path d={pathD} fill="none" stroke="url(#emo-line)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+
+                {/* 비트 점 + 레이블 */}
+                {points.map((pt, i) => {
+                  const labelY = i % 2 === 0 ? H - 5 : H - 13;
+                  const valText = pt.beat.value_start && pt.beat.value_end ? `${pt.beat.value_start}→${pt.beat.value_end}` : null;
+                  return (
+                    <g key={i}>
+                      {valText && <title>{`${pt.beat.name_kr}\n${valText}`}</title>}
+                      <circle cx={pt.x} cy={pt.y} r={4} fill={pt.emo < -2 ? "#E85D75" : pt.emo > 2 ? "#4ECCA3" : pt.emo > 0 ? "#45B7D1" : "#F7A072"} stroke="var(--bg-page)" strokeWidth={1.5} />
+                      <text x={pt.x} y={labelY} fontSize={5.5} textAnchor="middle" fill="rgba(255,255,255,0.22)" fontFamily="monospace" style={{ userSelect: "none" }}>
+                        {pt.beat.name_en?.split(" ").pop() || (i + 1)}
                       </text>
-                    )}
-                  </g>
-                ))}
+                    </g>
+                  );
+                })}
               </svg>
+            </div>
+            {/* 범례 */}
+            <div style={{ display: "flex", gap: 12, marginTop: 6, flexWrap: "wrap" }}>
+              {[
+                { color: "#E85D75", label: "극저 (All Is Lost)" },
+                { color: "#F7A072", label: "저" },
+                { color: "#45B7D1", label: "중" },
+                { color: "#4ECCA3", label: "고 (Finale)" },
+              ].map(({ color, label }) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: color }} />
+                  <span style={{ fontSize: 9, color: "var(--c-tx-30)", fontFamily: "'JetBrains Mono', monospace" }}>{label}</span>
+                </div>
+              ))}
             </div>
           </div>
         );
