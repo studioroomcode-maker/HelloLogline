@@ -45,10 +45,13 @@ export function DocButton({ label, sub, onClick, disabled }) {
       style={{
         display: "flex", alignItems: "center", gap: 8,
         padding: "9px 16px", borderRadius: 9, cursor: disabled ? "not-allowed" : "pointer",
-        border: "1px solid rgba(96,165,250,0.35)",
-        background: hovered && !disabled ? "rgba(96,165,250,0.12)" : "rgba(96,165,250,0.06)",
-        color: disabled ? "rgba(96,165,250,0.35)" : "#60A5FA",
-        opacity: disabled ? 0.5 : 1, transition: "all 0.2s",
+        border: hovered && !disabled ? "1px solid rgba(96,165,250,0.45)" : "1px solid rgba(96,165,250,0.28)",
+        background: hovered && !disabled ? "rgba(96,165,250,0.14)" : "rgba(96,165,250,0.07)",
+        boxShadow: hovered && !disabled ? "inset 0 1px 0 rgba(96,165,250,0.2), 0 3px 10px rgba(0,0,0,0.12)" : "inset 0 1px 0 rgba(96,165,250,0.08)",
+        color: disabled ? "rgba(96,165,250,0.35)" : "var(--accent-azure)",
+        opacity: disabled ? 0.5 : 1,
+        transition: "all 0.22s var(--ease-spring)",
+        transform: hovered && !disabled ? "translateY(-1px)" : "translateY(0)",
         fontFamily: "'Noto Sans KR', sans-serif",
       }}
     >
@@ -76,12 +79,27 @@ export function ToolButton({ icon, label, sub, done, loading, color, onClick, di
         onMouseLeave={() => { setHovered(false); setTipVisible(false); }}
         style={{
           width: "100%", padding: "12px 14px", borderRadius: 10,
-          border: done ? `1px solid ${color}40` : "1px solid var(--c-bd-2)",
-          background: done ? `${color}08` : hovered ? "var(--c-card-1)" : "rgba(var(--tw),0.02)",
+          border: done
+            ? `1px solid ${color}40`
+            : hovered
+            ? "1px solid var(--glass-bd-base)"
+            : "1px solid var(--glass-bd-micro)",
+          background: done
+            ? `linear-gradient(135deg, ${color}12 0%, var(--glass-micro) 60%)`
+            : hovered
+            ? "var(--glass-raised)"
+            : "var(--glass-micro)",
+          boxShadow: done
+            ? `inset 0 1px 0 ${color}20`
+            : hovered
+            ? "inset 0 1px 0 var(--glass-bd-top), 0 4px 12px rgba(0,0,0,0.15)"
+            : "inset 0 1px 0 var(--glass-bd-nano)",
           cursor: disabled || loading ? "not-allowed" : "pointer",
           opacity: disabled ? 0.45 : 1,
           display: "flex", alignItems: "center", gap: 10,
-          textAlign: "left", transition: "all 0.2s",
+          textAlign: "left",
+          transition: "background 0.22s var(--ease-spring), border-color 0.22s var(--ease-spring), box-shadow 0.22s var(--ease-spring), transform 0.18s var(--ease-spring)",
+          transform: hovered && !disabled ? "translateY(-1px)" : "translateY(0)",
           fontFamily: "'Noto Sans KR', sans-serif",
         }}
       >
@@ -120,7 +138,7 @@ export function ToolButton({ icon, label, sub, done, loading, color, onClick, di
           top: "calc(100% + 10px)",
           right: 0,
           background: "var(--bg-tooltip)",
-          border: "1px solid var(--border-tooltip)",
+          border: "1px solid var(--glass-bd-micro)",
           borderRadius: 12,
           padding: "12px 16px",
           fontSize: 12,
@@ -128,9 +146,9 @@ export function ToolButton({ icon, label, sub, done, loading, color, onClick, di
           lineHeight: 1.75,
           maxWidth: 320,
           width: "max-content",
-          zIndex: 400,
+          zIndex: "var(--z-dropdown)",
           pointerEvents: "none",
-          boxShadow: "0 10px 32px rgba(0,0,0,0.6)",
+          boxShadow: "0 10px 32px rgba(0,0,0,0.6), inset 0 1px 0 var(--glass-bd-top)",
           fontFamily: "'Noto Sans KR', sans-serif",
           fontWeight: 400,
           whiteSpace: "pre-wrap",
@@ -166,10 +184,11 @@ export function FeedbackBox({ value, onChange, onSubmit, loading, placeholder = 
         rows={2}
         style={{
           width: "100%", padding: "10px 12px", borderRadius: 9,
-          border: "1px solid var(--c-bd-3)", background: "rgba(var(--tw),0.025)",
+          border: "1px solid var(--glass-bd-micro)", background: "var(--glass-nano)",
           color: "var(--text-main)", fontSize: 12, resize: "vertical",
           fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6,
           boxSizing: "border-box",
+          transition: "border-color 0.18s var(--ease-spring), box-shadow 0.18s var(--ease-spring)",
         }}
       />
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 7 }}>
@@ -192,13 +211,13 @@ export function FeedbackBox({ value, onChange, onSubmit, loading, placeholder = 
   );
 }
 
-export function ResultCard({ children, onClose, title, color = "var(--c-bd-1)", onUndo, historyCount = 0 }) {
+export function ResultCard({ children, onClose, title, color = "var(--glass-bd-base)", onUndo, historyCount = 0 }) {
   return (
     <div style={{
       marginTop: 12, borderRadius: 14,
       border: `1px solid ${color}`,
-      background: "rgba(var(--tw),0.02)",
-      boxShadow: "inset 0 1px 0 var(--c-card-2)",
+      background: "var(--glass-micro)",
+      boxShadow: "inset 0 1px 0 var(--glass-bd-top), 0 2px 12px rgba(0,0,0,0.12)",
       position: "relative",
     }}>
       {(title || onClose || (onUndo && historyCount > 0)) && (
@@ -256,10 +275,12 @@ export function ToastContainer({ toasts, onDismiss }) {
           <div key={t.id} style={{
             display: "flex", alignItems: "flex-start", gap: 10,
             padding: "12px 16px", borderRadius: 12,
-            background: c.bg, border: `1px solid ${c.border}`,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
-            backdropFilter: "blur(8px)",
-            animation: "fadeSlideUp 0.25s ease",
+            background: `rgba(12,12,28,0.88)`,
+            border: `1px solid ${c.border}`,
+            boxShadow: `0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 var(--glass-bd-top)`,
+            backdropFilter: "var(--blur-micro)",
+            WebkitBackdropFilter: "var(--blur-micro)",
+            animation: "fadeSlideUp 0.28s var(--ease-out)",
             pointerEvents: "auto",
           }}>
             <span style={{ fontSize: 13, color: c.text, flexShrink: 0, marginTop: 1 }}>{c.icon}</span>
@@ -275,7 +296,7 @@ export function ToastContainer({ toasts, onDismiss }) {
 export function ErrorMsg({ msg, onRetry }) {
   if (!msg) return null;
   return (
-    <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 8, background: "rgba(232,93,117,0.08)", border: "1px solid rgba(232,93,117,0.2)", color: "#E85D75", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+    <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 8, background: "rgba(234,33,67,0.08)", border: "1px solid rgba(234,33,67,0.28)", boxShadow: "0 0 0 3px rgba(234,33,67,0.06), inset 0 1px 0 rgba(255,100,120,0.12)", color: "var(--accent-rose)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
       <span style={{ flex: 1, lineHeight: 1.6 }}>{msg}</span>
       {onRetry && (
         <button onClick={() => { markNextCallsAsRetry(2); onRetry(); }} style={{ flexShrink: 0, padding: "3px 10px", borderRadius: 6, border: "1px solid rgba(232,93,117,0.4)", background: "rgba(232,93,117,0.1)", color: "#E85D75", fontSize: 11, cursor: "pointer", fontWeight: 600, whiteSpace: "nowrap" }}>

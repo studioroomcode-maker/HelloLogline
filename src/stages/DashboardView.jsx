@@ -14,17 +14,36 @@ const STAGE_META = [
 ];
 
 function StageCard({ id, name, sub, color, icon, status, doneCount, total, summary, onClick }) {
+  const [hovered, setHovered] = useState(false);
   const isDone = status === "done";
   const isActive = status === "active";
   return (
     <button
       onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         display: "flex", flexDirection: "column", alignItems: "flex-start",
         gap: 6, padding: "14px 14px 12px",
-        borderRadius: 12, border: `1px solid ${isDone ? `${color}40` : "var(--c-bd-1)"}`,
-        background: isDone ? `${color}08` : isActive ? "rgba(255,255,255,0.02)" : "rgba(var(--tw),0.01)",
-        cursor: "pointer", textAlign: "left", transition: "all 0.18s",
+        borderRadius: 12,
+        border: isDone
+          ? `1px solid ${color}40`
+          : hovered
+          ? "1px solid var(--glass-bd-base)"
+          : "1px solid var(--glass-bd-micro)",
+        background: isDone
+          ? `linear-gradient(135deg, ${color}10 0%, var(--glass-micro) 70%)`
+          : hovered
+          ? "var(--glass-raised)"
+          : "var(--glass-micro)",
+        boxShadow: isDone
+          ? `inset 0 1px 0 ${color}22, 0 2px 8px ${color}0A`
+          : hovered
+          ? "inset 0 1px 0 var(--glass-bd-top), 0 6px 20px rgba(0,0,0,0.18)"
+          : "inset 0 1px 0 var(--glass-bd-nano)",
+        cursor: "pointer", textAlign: "left",
+        transition: "background 0.22s var(--ease-spring), border-color 0.22s var(--ease-spring), box-shadow 0.22s var(--ease-spring), transform 0.18s var(--ease-spring)",
+        transform: hovered ? "translateY(-2px)" : "translateY(0)",
         fontFamily: "'Noto Sans KR', sans-serif", width: "100%",
         position: "relative", overflow: "hidden",
       }}
@@ -32,7 +51,7 @@ function StageCard({ id, name, sub, color, icon, status, doneCount, total, summa
       {isDone && (
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, height: 2,
-          background: color, opacity: 0.6,
+          background: `linear-gradient(90deg, ${color}cc, ${color}44)`,
         }} />
       )}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
@@ -45,26 +64,27 @@ function StageCard({ id, name, sub, color, icon, status, doneCount, total, summa
         {isDone
           ? <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg>
           : isActive
-          ? <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#FFD166", boxShadow: "0 0 6px #FFD166" }} />
-          : <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--c-bd-3)" }} />
+          ? <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#FFD166", boxShadow: "0 0 8px #FFD166", animation: "glowPulse 2s ease infinite" }} />
+          : <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--glass-bd-raised)" }} />
         }
       </div>
-      <div style={{ fontSize: 10, color: "var(--c-tx-30)" }}>{sub}</div>
+      <div style={{ fontSize: 10, color: "var(--c-tx-35)" }}>{sub}</div>
       {summary && (
         <div style={{
           fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
           color: id === "7"
             ? (summary === "RECOMMEND" ? "#4ECCA3" : summary === "PASS" ? "#E85D75" : "#FFD166")
             : color,
-          padding: "2px 6px", borderRadius: 5,
-          background: `${color}12`, border: `1px solid ${color}25`,
+          padding: "2px 7px", borderRadius: 5,
+          background: `${color}12`, border: `1px solid ${color}28`,
+          boxShadow: `inset 0 1px 0 ${color}15`,
           maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
         }}>
           {summary}
         </div>
       )}
       {!summary && doneCount > 0 && total > 0 && (
-        <div style={{ fontSize: 9, color: "var(--c-tx-30)", fontFamily: "'JetBrains Mono', monospace" }}>
+        <div style={{ fontSize: 9, color: "var(--c-tx-35)", fontFamily: "'JetBrains Mono', monospace" }}>
           {doneCount}/{total}
         </div>
       )}
@@ -131,29 +151,45 @@ export default function DashboardView() {
       {/* ── 신규 사용자 CTA ── */}
       {!logline && (
         <div style={{
-          marginBottom: 28, padding: "24px 20px", borderRadius: 16,
-          border: "1px solid rgba(200,168,75,0.25)",
-          background: "linear-gradient(135deg, rgba(200,168,75,0.06) 0%, rgba(200,168,75,0.02) 100%)",
-          textAlign: "center",
+          marginBottom: 28, padding: 2, borderRadius: 18,
+          background: "var(--glass-nano)",
+          border: "1px solid var(--glass-bd-nano)",
         }}>
-          <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
-            새 시나리오를 시작해보세요
+          <div style={{
+            padding: "28px 24px", borderRadius: 16, textAlign: "center",
+            background: "linear-gradient(135deg, rgba(200,168,75,0.10) 0%, var(--glass-micro) 60%)",
+            border: "1px solid rgba(200,168,75,0.22)",
+            boxShadow: "inset 0 1px 0 rgba(200,168,75,0.15)",
+          }}>
+            <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
+              새 시나리오를 시작해보세요
+            </div>
+            <div style={{ fontSize: 13, color: "var(--c-tx-45)", marginBottom: 22, lineHeight: 1.6 }}>
+              로그라인 한 줄을 입력하면 AI가<br />8단계 시나리오 개발 파이프라인을 가동합니다.
+            </div>
+            <button
+              onClick={() => advanceToStage("1")}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 10,
+                padding: "12px 24px", borderRadius: 10,
+                border: "none", background: "var(--accent-gold)",
+                color: "#0c0c1c", fontSize: 14, fontWeight: 800,
+                cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
+                boxShadow: "0 4px 24px var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.2)",
+                transition: "transform 0.18s var(--ease-spring), box-shadow 0.18s var(--ease-spring)",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.25)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 24px var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.2)"; }}
+            >
+              Stage 1 — 로그라인 입력하기
+              <span style={{
+                width: 26, height: 26, borderRadius: "50%",
+                background: "rgba(0,0,0,0.15)",
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                fontSize: 13, transition: "transform 0.18s var(--ease-spring)",
+              }}>→</span>
+            </button>
           </div>
-          <div style={{ fontSize: 13, color: "var(--c-tx-45)", marginBottom: 20, lineHeight: 1.6 }}>
-            로그라인 한 줄을 입력하면 AI가<br />8단계 시나리오 개발 파이프라인을 가동합니다.
-          </div>
-          <button
-            onClick={() => advanceToStage("1")}
-            style={{
-              padding: "12px 28px", borderRadius: 10,
-              border: "none", background: "#C8A84B",
-              color: "#0c0c1c", fontSize: 14, fontWeight: 800,
-              cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
-              boxShadow: "0 4px 20px rgba(200,168,75,0.3)",
-            }}
-          >
-            Stage 1 — 로그라인 입력하기
-          </button>
         </div>
       )}
 

@@ -28,7 +28,7 @@
         --bg-page:    #0c0c1c;
         --bg-page-alt:#08080f;
         --bg-surface: #111120;
-        --bg-nav:     rgba(10,10,22,0.95);
+        --bg-nav:     rgba(10,10,22,0.92);
         --text-main:  #eeeef8;
         --bg-tooltip: rgba(8,8,20,0.98);
         --text-tooltip: rgba(255,255,255,0.90);
@@ -37,18 +37,18 @@
         --bg-code-alt: rgba(0,0,0,0.30);
         --c-overlay:  rgba(0,0,0,0.85);
         --border-tooltip: rgba(255,255,255,0.1);
-        /* 카드 배경 — 기존 3-5% → 7-13%로 강화 */
+        /* 카드 배경 */
         --c-card-1: rgba(255,255,255,0.07);
         --c-card-2: rgba(255,255,255,0.10);
         --c-card-3: rgba(255,255,255,0.13);
-        /* 테두리 — 기존 6-15% → 15-38%로 강화 */
+        /* 테두리 */
         --c-bd-1: rgba(255,255,255,0.15);
         --c-bd-2: rgba(255,255,255,0.19);
         --c-bd-3: rgba(255,255,255,0.23);
         --c-bd-4: rgba(255,255,255,0.28);
         --c-bd-5: rgba(255,255,255,0.33);
         --c-bd-6: rgba(255,255,255,0.38);
-        /* 텍스트 단계 — 기존보다 약 +8-10% 밝게 */
+        /* 텍스트 단계 */
         --c-tx-20: rgba(255,255,255,0.30);
         --c-tx-25: rgba(255,255,255,0.36);
         --c-tx-28: rgba(255,255,255,0.40);
@@ -62,14 +62,52 @@
         --c-tx-65: rgba(255,255,255,0.85);
         --c-tx-70: rgba(255,255,255,0.89);
         --c-tx-75: rgba(255,255,255,0.93);
+        /* ── Glassmorphism layer system ── */
+        --glass-nano:    rgba(255,255,255,0.04);
+        --glass-micro:   rgba(255,255,255,0.07);
+        --glass-base:    rgba(255,255,255,0.10);
+        --glass-raised:  rgba(255,255,255,0.14);
+        --glass-modal:   rgba(12,12,28,0.84);
+        /* Glass borders */
+        --glass-bd-nano:   rgba(255,255,255,0.08);
+        --glass-bd-micro:  rgba(255,255,255,0.13);
+        --glass-bd-base:   rgba(255,255,255,0.19);
+        --glass-bd-raised: rgba(255,255,255,0.28);
+        --glass-bd-top:    rgba(255,255,255,0.38);
+        /* Blur ladder — use on position:fixed/sticky ONLY */
+        --blur-nano:  blur(4px);
+        --blur-micro: blur(8px);
+        --blur-base:  blur(16px);
+        --blur-heavy: blur(24px);
+        --blur-modal: blur(32px);
+        /* Brand accents */
+        --accent-gold:   #C8A84B;
+        --accent-teal:   #4ECCA3;
+        --accent-violet: #A78BFA;
+        --accent-azure:  #60A5FA;
+        --accent-rose:   #E85D75;
+        --accent-orange: #FB923C;
+        /* Glow fills */
+        --glow-gold:   rgba(200,168,75,0.18);
+        --glow-teal:   rgba(78,204,163,0.16);
+        --glow-violet: rgba(167,139,250,0.16);
+        --glow-azure:  rgba(96,165,250,0.15);
+        /* Z-index system */
+        --z-nav:     100;
+        --z-dropdown:150;
+        --z-modal:   200;
+        --z-toast:   500;
+        /* Easing */
+        --ease-spring: cubic-bezier(0.32,0.72,0,1);
+        --ease-out:    cubic-bezier(0.16,1,0.3,1);
       }
       [data-theme="light"] {
-        /* ── Light mode — 회색 페이지 + 흰 카드 구조로 전환 ── */
+        /* ── Light mode ── */
         --tw: 0,0,0;
-        --bg-page:    #ffffff;
-        --bg-page-alt:#f4f6fb;
+        --bg-page:    #f2f4f8;
+        --bg-page-alt:#eaecf4;
         --bg-surface: #ffffff;
-        --bg-nav:     rgba(255,255,255,0.97);
+        --bg-nav:     rgba(255,255,255,0.92);
         --text-main:  #090920;
         --bg-tooltip: rgba(20,22,44,0.97);
         --text-tooltip: rgba(255,255,255,0.90);
@@ -78,18 +116,15 @@
         --bg-code-alt: rgba(0,0,0,0.05);
         --c-overlay:  rgba(0,0,0,0.85);
         --border-tooltip: rgba(0,0,0,0.15);
-        /* 카드 배경: 흰 카드가 회색 페이지 위에서 명확히 부각 */
         --c-card-1: #ffffff;
         --c-card-2: #f7f9ff;
         --c-card-3: rgba(0,0,0,0.06);
-        /* 테두리 — 기존 14-32% → 22-50%로 강화 */
         --c-bd-1: rgba(0,0,0,0.22);
         --c-bd-2: rgba(0,0,0,0.27);
         --c-bd-3: rgba(0,0,0,0.32);
         --c-bd-4: rgba(0,0,0,0.38);
         --c-bd-5: rgba(0,0,0,0.44);
         --c-bd-6: rgba(0,0,0,0.50);
-        /* 텍스트 — 대비 강화 */
         --c-tx-20: rgba(0,0,0,0.44);
         --c-tx-25: rgba(0,0,0,0.52);
         --c-tx-28: rgba(0,0,0,0.57);
@@ -103,6 +138,17 @@
         --c-tx-65: rgba(0,0,0,0.90);
         --c-tx-70: rgba(0,0,0,0.92);
         --c-tx-75: rgba(0,0,0,0.94);
+        /* Glass layer overrides for light */
+        --glass-nano:    rgba(0,0,0,0.02);
+        --glass-micro:   rgba(0,0,0,0.04);
+        --glass-base:    rgba(255,255,255,0.72);
+        --glass-raised:  rgba(255,255,255,0.90);
+        --glass-modal:   rgba(240,242,252,0.90);
+        --glass-bd-nano:   rgba(0,0,0,0.06);
+        --glass-bd-micro:  rgba(0,0,0,0.10);
+        --glass-bd-base:   rgba(0,0,0,0.15);
+        --glass-bd-raised: rgba(0,0,0,0.22);
+        --glass-bd-top:    rgba(255,255,255,0.80);
       }
 
       * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -110,6 +156,11 @@
       @keyframes spin { to { transform: rotate(360deg); } }
       @keyframes fadeIn { from { opacity:0; transform:translateY(4px);} to { opacity:1; transform:translateY(0);} }
       @keyframes fadeSlideUp { from { opacity:0; transform:translateY(12px);} to { opacity:1; transform:translateY(0);} }
+      @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      @keyframes glowPulse { 0%,100% { opacity:0.6; } 50% { opacity:1; } }
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      }
       ::-webkit-scrollbar { width: 4px; }
       ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 2px; }
       textarea { outline: none; }

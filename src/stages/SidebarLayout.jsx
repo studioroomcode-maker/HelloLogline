@@ -100,10 +100,11 @@ export default function SidebarLayout({ stageProps, isMobile }) {
           width: SIDEBAR_W,
           flexShrink: 0,
           position: "sticky",
-          top: 56, // 헤더 높이
+          top: 56,
           height: "calc(100vh - 56px)",
           overflowY: "auto",
-          borderRight: "1px solid var(--c-bd-1)",
+          borderRight: "1px solid var(--glass-bd-micro)",
+          background: "var(--glass-nano)",
           paddingTop: 16,
           paddingBottom: 24,
         }}>
@@ -118,8 +119,11 @@ export default function SidebarLayout({ stageProps, isMobile }) {
                   ? "1px solid rgba(200,168,75,0.35)"
                   : "1px solid transparent",
                 background: currentStage === "dashboard"
-                  ? "rgba(200,168,75,0.08)"
+                  ? "linear-gradient(135deg, rgba(200,168,75,0.12), rgba(200,168,75,0.04))"
                   : "transparent",
+                boxShadow: currentStage === "dashboard"
+                  ? "inset 0 1px 0 rgba(200,168,75,0.15)"
+                  : "none",
                 color: currentStage === "dashboard" ? "#C8A84B" : "var(--c-tx-40)",
                 fontSize: 11, fontWeight: 700, transition: "all 0.18s",
                 fontFamily: "'Noto Sans KR', sans-serif",
@@ -146,8 +150,11 @@ export default function SidebarLayout({ stageProps, isMobile }) {
               style={{
                 width: "100%", display: "flex", alignItems: "center", gap: 8,
                 padding: "8px 10px", borderRadius: 8, cursor: !logline || !apiKey ? "not-allowed" : "pointer",
-                border: showStoryDoctor ? "1px solid rgba(167,139,250,0.5)" : "1px solid rgba(167,139,250,0.2)",
-                background: showStoryDoctor ? "rgba(167,139,250,0.12)" : "rgba(167,139,250,0.05)",
+                border: showStoryDoctor ? "1px solid rgba(167,139,250,0.45)" : "1px solid rgba(167,139,250,0.18)",
+                background: showStoryDoctor
+                  ? "linear-gradient(135deg, rgba(167,139,250,0.14), rgba(167,139,250,0.06))"
+                  : "rgba(167,139,250,0.04)",
+                boxShadow: showStoryDoctor ? "inset 0 1px 0 rgba(167,139,250,0.15)" : "none",
                 color: !logline || !apiKey ? "rgba(167,139,250,0.3)" : "#A78BFA",
                 fontSize: 11, fontWeight: 700, transition: "all 0.18s",
                 fontFamily: "'Noto Sans KR', sans-serif",

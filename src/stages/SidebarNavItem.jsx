@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
 
 export default function SidebarNavItem({ id, title, sub, accentColor }) {
   const { currentStage, setCurrentStage, getStageStatus, getStageDoneCount, STAGE_TOTALS, stageResultSummary } = useLoglineCtx();
+  const [hovered, setHovered] = useState(false);
 
   const status = getStageStatus(id);
   const doneCount = getStageDoneCount(id);
@@ -11,6 +13,8 @@ export default function SidebarNavItem({ id, title, sub, accentColor }) {
   return (
     <div
       onClick={() => setCurrentStage(id)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         padding: "11px 16px",
         cursor: "pointer",
@@ -18,8 +22,13 @@ export default function SidebarNavItem({ id, title, sub, accentColor }) {
         alignItems: "center",
         gap: 10,
         borderLeft: isActive ? `3px solid ${accentColor}` : "3px solid transparent",
-        background: isActive ? `${accentColor}12` : "transparent",
-        transition: "all 0.15s",
+        background: isActive
+          ? `linear-gradient(90deg, ${accentColor}14, ${accentColor}06)`
+          : hovered
+          ? "var(--glass-nano)"
+          : "transparent",
+        boxShadow: isActive ? `inset 0 1px 0 ${accentColor}10` : "none",
+        transition: "background 0.2s var(--ease-spring), box-shadow 0.2s var(--ease-spring)",
         borderRadius: "0 8px 8px 0",
         marginBottom: 2,
       }}
@@ -27,9 +36,10 @@ export default function SidebarNavItem({ id, title, sub, accentColor }) {
       {/* 상태 원 */}
       <div style={{
         width: 26, height: 26, borderRadius: "50%", flexShrink: 0,
-        border: `2px solid ${status === "done" ? "#4ECCA3" : isActive ? accentColor : "var(--c-bd-3)"}`,
+        border: `2px solid ${status === "done" ? "#4ECCA3" : isActive ? accentColor : "var(--glass-bd-raised)"}`,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: status === "done" ? "rgba(78,204,163,0.1)" : "transparent",
+        background: status === "done" ? "rgba(78,204,163,0.1)" : isActive ? `${accentColor}10` : "transparent",
+        transition: "border-color 0.18s, background 0.18s",
       }}>
         {status === "done"
           ? <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg>
@@ -56,7 +66,8 @@ export default function SidebarNavItem({ id, title, sub, accentColor }) {
             <span style={{
               fontSize: 9, color: "#4ECCA3", fontWeight: 700,
               padding: "2px 6px", borderRadius: 10,
-              border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.06)",
+              border: "1px solid rgba(78,204,163,0.25)", background: "rgba(78,204,163,0.08)",
+              boxShadow: "inset 0 1px 0 rgba(78,204,163,0.12)",
               fontFamily: "'JetBrains Mono', monospace",
             }}>
               {doneCount}/{total}

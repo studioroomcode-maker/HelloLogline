@@ -585,10 +585,10 @@ function ToastContainer({ toasts, onDismiss }) {
           <div key={t.id} style={{
             display: "flex", alignItems: "flex-start", gap: 10,
             padding: "12px 16px", borderRadius: 12,
-            background: c.bg, border: `1px solid ${c.border}`,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
-            backdropFilter: "blur(8px)",
-            animation: "fadeSlideUp 0.25s ease",
+            background: "rgba(12,12,28,0.88)", border: `1px solid ${c.border}`,
+            boxShadow: `0 8px 24px rgba(0,0,0,0.35), inset 0 1px 0 var(--glass-bd-top)`,
+            backdropFilter: "var(--blur-micro)", WebkitBackdropFilter: "var(--blur-micro)",
+            animation: "fadeSlideUp 0.28s var(--ease-out)",
             pointerEvents: "auto",
           }}>
             <span style={{ fontSize: 13, color: c.text, flexShrink: 0, marginTop: 1 }}>{c.icon}</span>
@@ -4453,9 +4453,10 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
       {/* ─── Header ─── */}
       <div style={{
-        position: "sticky", top: 0, zIndex: 40,
-        background: "var(--bg-nav)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
-        borderBottom: "1px solid var(--c-card-3)",
+        position: "sticky", top: 0, zIndex: "var(--z-nav)",
+        background: "var(--glass-modal)", backdropFilter: "var(--blur-micro)", WebkitBackdropFilter: "var(--blur-micro)",
+        borderBottom: "1px solid var(--glass-bd-micro)",
+        boxShadow: "0 1px 0 var(--glass-bd-nano), 0 4px 20px rgba(0,0,0,0.15)",
         height: 56,
       }}>
         <div style={{ maxWidth: 860, margin: "0 auto", height: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: isMobile ? "0 12px" : "0 28px" }}>
@@ -4496,7 +4497,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               {showExportMenu && (
                 <>
                   <div onClick={() => setShowExportMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 99 }} />
-                  <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 100, background: "var(--bg-nav)", border: "1px solid var(--c-bd-2)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", minWidth: 160, padding: "4px 0", overflow: "hidden" }}>
+                  <div style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 100, background: "var(--glass-modal)", border: "1px solid var(--glass-bd-base)", borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.32), inset 0 1px 0 var(--glass-bd-top)", minWidth: 160, padding: "4px 0", overflow: "hidden" }}>
                     <button onClick={() => { setShowStoryBible(true); setShowExportMenu(false); }} style={{ width: "100%", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#4ECCA3", display: "flex", alignItems: "center", gap: 8, fontFamily: "'Noto Sans KR', sans-serif", textAlign: "left" }}>
                       <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                       스토리 바이블
@@ -4614,7 +4615,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       <div style={{
         display: isMobile ? "flex" : "none", justifyContent: "center", alignItems: "center",
         padding: "14px 24px 20px",
-        background: "var(--bg-nav)", backdropFilter: "blur(8px)",
+        background: "var(--glass-modal)", backdropFilter: "var(--blur-micro)", WebkitBackdropFilter: "var(--blur-micro)",
         borderBottom: "1px solid var(--c-card-2)",
         position: "sticky", top: 56, zIndex: 20,
       }}>

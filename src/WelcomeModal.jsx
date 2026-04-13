@@ -53,23 +53,33 @@ export default function WelcomeModal() {
     <div
       style={{
         position: "fixed", inset: 0, zIndex: 2000,
-        background: "rgba(0,0,0,0.8)", backdropFilter: "blur(6px)",
+        background: "rgba(0,0,0,0.75)",
+        backdropFilter: "var(--blur-base)",
+        WebkitBackdropFilter: "var(--blur-base)",
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: 20,
       }}
       onClick={dismiss}
     >
+      {/* Double-bezel outer shell */}
       <div
         onClick={e => e.stopPropagation()}
         style={{
           maxWidth: 400, width: "100%",
-          background: "var(--bg-surface)",
-          border: "1px solid var(--c-bd-2)",
-          borderRadius: 20, overflow: "hidden",
+          padding: 2, borderRadius: 22,
+          background: "var(--glass-nano)",
+          border: "1px solid var(--glass-bd-nano)",
+          boxShadow: "0 32px 96px rgba(0,0,0,0.55)",
           fontFamily: "'Noto Sans KR', sans-serif",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
         }}
       >
+      {/* Inner core */}
+      <div style={{
+        background: "var(--glass-modal)",
+        border: "1px solid var(--glass-bd-base)",
+        borderRadius: 20, overflow: "hidden",
+        boxShadow: "inset 0 1px 0 var(--glass-bd-top)",
+      }}>
         <div style={{ padding: "32px 28px 24px", textAlign: "center" }}>
           {/* 스텝 인디케이터 */}
           <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 28 }}>
@@ -102,9 +112,10 @@ export default function WelcomeModal() {
                 onClick={() => setStep(step - 1)}
                 style={{
                   padding: "11px 20px", borderRadius: 10,
-                  border: "1px solid var(--c-bd-2)", background: "transparent",
-                  color: "var(--c-tx-50)", fontSize: 13, cursor: "pointer",
+                  border: "1px solid var(--glass-bd-base)", background: "var(--glass-nano)",
+                  color: "var(--c-tx-55)", fontSize: 13, cursor: "pointer",
                   fontFamily: "'Noto Sans KR', sans-serif",
+                  transition: "all 0.18s var(--ease-spring)",
                 }}
               >
                 이전
@@ -117,7 +128,8 @@ export default function WelcomeModal() {
                 border: "none", background: s.color,
                 color: "#0c0c1c", fontSize: 14, fontWeight: 800,
                 cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
-                boxShadow: `0 4px 20px ${s.color}40`,
+                boxShadow: `0 4px 20px ${s.color}40, inset 0 1px 0 rgba(255,255,255,0.2)`,
+                transition: "transform 0.18s var(--ease-spring), box-shadow 0.18s var(--ease-spring)",
               }}
             >
               {isLast ? "Stage 1 시작하기 →" : "다음"}
@@ -137,6 +149,7 @@ export default function WelcomeModal() {
             </button>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
