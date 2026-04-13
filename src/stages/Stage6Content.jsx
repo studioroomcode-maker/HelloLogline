@@ -88,7 +88,7 @@ export default function Stage6Content({
                     logline={logline}
                     onCopy={() => navigator.clipboard.writeText(scenarioDraftResult).then(() => showToast("success", "시나리오 초고가 복사되었습니다."))}
                   />
-                  <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 12 : 13, lineHeight: 1.8, color: "var(--c-tx-75)", margin: 0 }}>
+                  <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 11 : 12, lineHeight: 1.75, color: "var(--c-tx-75)", margin: 0 }}>
                     {scenarioDraftResult}
                   </pre>
                   <FeedbackBox

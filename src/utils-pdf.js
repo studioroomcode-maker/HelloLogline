@@ -361,42 +361,34 @@ export async function exportToPdf(data, filename = "hellologline-report") {
  * @param {number[]} [margin]  - [상, 우, 하, 좌] mm 단위 여백, 기본 [20, 20, 20, 25]
  */
 export async function downloadHtmlAsPdf(htmlString, filename = "document", margin = [20, 20, 20, 25]) {
-  const html2pdf = (await import("html2pdf.js")).default;
+  // 새 창에서 문서를 열고 브라우저 인쇄(Ctrl+P)로 PDF 저장
+  // html2canvas 방식 대신 브라우저 네이티브 렌더링을 사용해 공백 PDF 문제를 해결
+  const titleJson = JSON.stringify(filename);
+  const printScript = `<script>
+    window.addEventListener('load', function() {
+      document.title = ${titleJson};
+      setTimeout(function() { window.print(); }, 400);
+    });
+  <\/script>`;
 
-  // DOMParser로 head/body 분리
-  const parser = new DOMParser();
-  const parsed = parser.parseFromString(htmlString, "text/html");
-  const bodyHtml = parsed.body.innerHTML;
+  const finalHtml = htmlString.includes('</head>')
+    ? htmlString.replace('</head>', printScript + '\n</head>')
+    : printScript + htmlString;
 
-  // <style> 태그를 실제 <head>에 주입 — html2canvas가 body 내부 <style>을 무시하는 문제 방지
-  const injectedStyles = Array.from(parsed.head.querySelectorAll("style")).map(s => {
-    const el = document.createElement("style");
-    el.textContent = s.textContent;
-    el.setAttribute("data-hll-pdf-temp", "1");
-    document.head.appendChild(el);
-    return el;
-  });
+  const blob = new Blob([finalHtml], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
 
-  // body 콘텐츠만 container에 삽입
-  const container = document.createElement("div");
-  container.style.cssText = "position:absolute;left:-9999px;top:0;width:170mm;background:#fff;";
-  container.innerHTML = bodyHtml;
-  document.body.appendChild(container);
-
-  const opt = {
-    margin,
-    filename: `${filename}.pdf`,
-    image: { type: "jpeg", quality: 0.95 },
-    html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    pagebreak: { mode: ["css", "legacy"] },
-  };
-
-  try {
-    await html2pdf().set(opt).from(container).save();
-  } finally {
-    document.body.removeChild(container);
-    // 임시 주입한 <style> 태그 정리
-    injectedStyles.forEach(el => el.parentNode?.removeChild(el));
+  // 팝업이 차단된 경우 HTML 파일로 폴백
+  if (!win || win.closed || typeof win.closed === 'undefined') {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
+
+  // 5분 후 blob URL 정리
+  setTimeout(() => URL.revokeObjectURL(url), 300000);
 }

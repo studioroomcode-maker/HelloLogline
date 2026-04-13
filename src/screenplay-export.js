@@ -381,35 +381,55 @@ ${rows.join('\n')}
  * @param {'screenplay'|'korean'} format
  */
 export async function exportScreenplayAsPDF(elements, meta, format = 'screenplay') {
-  const html2pdf = (await import('html2pdf.js')).default;
-  const html = format === 'korean'
+  const content = format === 'korean'
     ? buildKoreanScriptPDFHtml(elements, meta)
     : buildScreenplayPDFHtml(elements, meta);
 
   const safeTitle = (meta.title || '시나리오').replace(/[^\w가-힣\s]/g, '').trim() || '시나리오';
   const suffix = format === 'korean' ? '_방송대본' : '_시나리오';
+  const filename = `${safeTitle}${suffix}`;
+  const filenameJson = JSON.stringify(filename);
 
-  const container = document.createElement('div');
-  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;';
-  document.body.appendChild(container);
-  // innerHTML 설정 후 firstElementChild = hll-*-root wrapper div (style 포함)
-  container.innerHTML = html;
-  const rootEl = container.firstElementChild;
+  const pageStyle = format === 'korean'
+    ? '@page { size: A4 portrait; margin: 20mm 15mm 20mm 20mm; }'
+    : '@page { size: A4 portrait; margin: 15mm 15mm 15mm 20mm; }';
 
-  const opt = {
-    margin: [15, 15, 15, 20],
-    filename: `${safeTitle}${suffix}.pdf`,
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak: { mode: ['avoid-all', 'css'] },
-  };
+  const fullHtml = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>${filename}</title>
+<style>
+  ${pageStyle}
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @media print { body { margin: 0; } }
+</style>
+<script>
+  window.addEventListener('load', function() {
+    document.title = ${filenameJson};
+    setTimeout(function() { window.print(); }, 400);
+  });
+<\/script>
+</head>
+<body style="margin:0;padding:0;background:#fff;">
+${content}
+</body>
+</html>`;
 
-  try {
-    await html2pdf().set(opt).from(rootEl).save();
-  } finally {
-    document.body.removeChild(container);
+  const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+
+  if (!win || win.closed || typeof win.closed === 'undefined') {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
+
+  setTimeout(() => URL.revokeObjectURL(url), 300000);
 }
 
 // ────────────────────────────────────────────────────
