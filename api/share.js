@@ -34,7 +34,8 @@ async function supaReq(path, { method = "GET", body, prefer } = {}) {
       headers,
       body: body ? JSON.stringify(body) : undefined,
     });
-    if (r.status === 204 || r.status === 404) return null;
+    if (r.status === 204) return {};   // POST return=minimal 성공 (No Content)
+    if (r.status === 404) return null;
     if (!r.ok) return null;
     return r.json().catch(() => null);
   } catch {
