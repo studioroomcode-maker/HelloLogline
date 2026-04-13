@@ -209,90 +209,41 @@ export function buildScreenplayPDFHtml(elements, { title = '제목 미설정', a
     }
   }).join('\n');
 
-  return `<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
+  // style은 wrapper div 안에 포함 — innerHTML 파싱 시 head/style 유실 방지
+  return `<div class="hll-sp-root" style="background:#fff;color:#000;font-family:'Courier New',Courier,monospace;font-size:12pt;line-height:1.5;">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 12pt;
-    line-height: 1.5;
-    color: #000;
-    background: #fff;
+  .hll-sp-root * { margin: 0; padding: 0; box-sizing: border-box; }
+  .hll-title-page {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 297mm; padding: 2cm; text-align: center; page-break-after: always;
   }
-  .title-page {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 2cm;
-    text-align: center;
-    page-break-after: always;
-  }
-  .title-page h1 {
-    font-size: 18pt;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 24px;
-  }
-  .title-page .author { font-size: 14pt; margin-bottom: 12px; }
-  .title-page .logline {
-    font-size: 11pt;
-    font-style: italic;
-    max-width: 420px;
-    line-height: 1.6;
-    margin: 24px auto 0;
-    border-top: 1px solid #000;
-    padding-top: 16px;
-  }
-  .title-page .date { font-size: 10pt; margin-top: 48px; color: #555; }
-
-  .screenplay {
-    padding: 2.54cm 2.54cm 2.54cm 3.81cm; /* top right bottom left */
-    max-width: 21.6cm;
-    margin: 0 auto;
-  }
-  .blank  { height: 12pt; }
-  .scene-heading {
-    font-weight: bold;
-    text-transform: uppercase;
-    text-decoration: underline;
-    margin-top: 12pt;
-  }
-  .act-marker {
-    text-align: center;
-    font-weight: bold;
-    margin: 18pt 0;
-    padding: 4pt 0;
-    border-top: 1pt solid #000;
-    border-bottom: 1pt solid #000;
-  }
-  .transition { text-align: right; }
-  .character  { margin-left: 5.56cm; font-weight: bold; margin-top: 6pt; }
-  .parenthetical { margin-left: 4.05cm; margin-right: 6.35cm; }
-  .dialogue   { margin-left: 2.54cm; margin-right: 3.81cm; }
-  .action     { margin-top: 0; }
+  .hll-title-page h1 { font-size: 18pt; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 24px; }
+  .hll-title-page .author { font-size: 14pt; margin-bottom: 12px; }
+  .hll-title-page .logline { font-size: 11pt; font-style: italic; max-width: 420px; line-height: 1.6; margin: 24px auto 0; border-top: 1px solid #000; padding-top: 16px; }
+  .hll-title-page .date { font-size: 10pt; margin-top: 48px; color: #555; }
+  .hll-screenplay { padding: 2.54cm 2.54cm 2.54cm 3.81cm; max-width: 21.6cm; margin: 0 auto; }
+  .hll-sp-root .blank  { height: 12pt; }
+  .hll-sp-root .scene-heading { font-weight: bold; text-transform: uppercase; text-decoration: underline; margin-top: 12pt; }
+  .hll-sp-root .act-marker { text-align: center; font-weight: bold; margin: 18pt 0; padding: 4pt 0; border-top: 1pt solid #000; border-bottom: 1pt solid #000; }
+  .hll-sp-root .transition { text-align: right; }
+  .hll-sp-root .character  { margin-left: 5.56cm; font-weight: bold; margin-top: 6pt; }
+  .hll-sp-root .parenthetical { margin-left: 4.05cm; margin-right: 6.35cm; }
+  .hll-sp-root .dialogue   { margin-left: 2.54cm; margin-right: 3.81cm; }
+  .hll-sp-root .action     { margin-top: 0; }
 </style>
-</head>
-<body>
 
-<div class="title-page">
+<div class="hll-title-page">
   <h1>${escHtml(title)}</h1>
   ${author ? `<div class="author">작: ${escHtml(author)}</div>` : ''}
   ${logline ? `<div class="logline">${escHtml(logline)}</div>` : ''}
   <div class="date">Generated: ${today} · HelloLogline</div>
 </div>
 
-<div class="screenplay">
+<div class="hll-screenplay">
 ${bodyLines}
 </div>
 
-</body>
-</html>`;
+</div>`;
 }
 
 // ────────────────────────────────────────────────────
@@ -380,131 +331,46 @@ export function buildKoreanScriptPDFHtml(elements, { title = '제목 미설정',
     i++;
   }
 
-  return `<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
+  // style은 wrapper div 안에 포함 — innerHTML 파싱 시 head/style 유실 방지
+  return `<div class="hll-kr-root" style="background:#fff;color:#111;font-family:'Malgun Gothic',sans-serif;font-size:11pt;line-height:1.8;">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-    font-size: 11pt;
-    line-height: 1.8;
-    color: #111;
-    background: #fff;
+  .hll-kr-root * { margin: 0; padding: 0; box-sizing: border-box; }
+  .hll-kr-title-page {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 297mm; padding: 2cm; text-align: center; page-break-after: always;
   }
-  .title-page {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    padding: 2cm;
-    text-align: center;
-    page-break-after: always;
-  }
-  .title-page h1 { font-size: 20pt; font-weight: 700; margin-bottom: 16px; }
-  .title-page .author { font-size: 13pt; margin-bottom: 8px; color: #333; }
-  .title-page .logline {
-    font-size: 11pt;
-    max-width: 420px;
-    line-height: 1.7;
-    margin: 24px auto 0;
-    border-top: 1px solid #333;
-    padding-top: 16px;
-    color: #555;
-  }
-  .title-page .date { font-size: 9pt; margin-top: 40px; color: #888; }
-
-  .script-body { padding: 2cm 2.5cm; max-width: 21cm; margin: 0 auto; }
-
-  .act-marker {
-    text-align: center;
-    font-weight: 700;
-    font-size: 13pt;
-    margin: 28pt 0 16pt;
-    padding: 6pt 0;
-    border-top: 2pt solid #000;
-    border-bottom: 2pt solid #000;
-    letter-spacing: 4px;
-  }
-
-  .scene-block {
-    margin-bottom: 28pt;
-    page-break-inside: avoid;
-  }
-  .scene-heading {
-    display: flex;
-    align-items: baseline;
-    gap: 12px;
-    background: #f0f0f0;
-    border-left: 4px solid #333;
-    padding: 5pt 10pt;
-    margin-bottom: 10pt;
-    border-radius: 0 4px 4px 0;
-  }
-  .scene-num { font-weight: 700; font-size: 11pt; color: #555; min-width: 28px; }
-  .scene-loc { font-weight: 700; font-size: 11pt; letter-spacing: 0.5px; }
-
-  .direction {
-    display: flex;
-    gap: 10px;
-    margin: 6pt 0;
-    align-items: flex-start;
-  }
-  .dir-label {
-    font-size: 9pt;
-    color: #888;
-    font-weight: 700;
-    min-width: 28px;
-    padding-top: 2px;
-    letter-spacing: 0.5px;
-  }
-  .dir-text {
-    font-size: 10.5pt;
-    color: #444;
-    flex: 1;
-    line-height: 1.7;
-  }
-
-  .char-block {
-    margin: 10pt 0;
-    padding-left: 20pt;
-    border-left: 2px solid #ddd;
-  }
-  .char-name {
-    font-weight: 700;
-    font-size: 11pt;
-    color: #000;
-    margin-bottom: 2pt;
-  }
-  .paren { font-weight: 400; font-size: 10pt; color: #666; }
-  .char-dialogue {
-    font-size: 11pt;
-    color: #111;
-    line-height: 1.8;
-    padding-left: 8pt;
-  }
-
-  .transition { text-align: right; color: #777; font-size: 10pt; margin: 6pt 0; }
+  .hll-kr-title-page h1 { font-size: 20pt; font-weight: 700; margin-bottom: 16px; }
+  .hll-kr-title-page .author { font-size: 13pt; margin-bottom: 8px; color: #333; }
+  .hll-kr-title-page .logline { font-size: 11pt; max-width: 420px; line-height: 1.7; margin: 24px auto 0; border-top: 1px solid #333; padding-top: 16px; color: #555; }
+  .hll-kr-title-page .date { font-size: 9pt; margin-top: 40px; color: #888; }
+  .hll-script-body { padding: 2cm 2.5cm; max-width: 21cm; margin: 0 auto; }
+  .hll-kr-root .act-marker { text-align: center; font-weight: 700; font-size: 13pt; margin: 28pt 0 16pt; padding: 6pt 0; border-top: 2pt solid #000; border-bottom: 2pt solid #000; letter-spacing: 4px; }
+  .hll-kr-root .scene-block { margin-bottom: 28pt; page-break-inside: avoid; }
+  .hll-kr-root .scene-heading { display: flex; align-items: baseline; gap: 12px; background: #f0f0f0; border-left: 4px solid #333; padding: 5pt 10pt; margin-bottom: 10pt; border-radius: 0 4px 4px 0; }
+  .hll-kr-root .scene-num { font-weight: 700; font-size: 11pt; color: #555; min-width: 28px; }
+  .hll-kr-root .scene-loc { font-weight: 700; font-size: 11pt; letter-spacing: 0.5px; }
+  .hll-kr-root .direction { display: flex; gap: 10px; margin: 6pt 0; align-items: flex-start; }
+  .hll-kr-root .dir-label { font-size: 9pt; color: #888; font-weight: 700; min-width: 28px; padding-top: 2px; letter-spacing: 0.5px; }
+  .hll-kr-root .dir-text { font-size: 10.5pt; color: #444; flex: 1; line-height: 1.7; }
+  .hll-kr-root .char-block { margin: 10pt 0; padding-left: 20pt; border-left: 2px solid #ddd; }
+  .hll-kr-root .char-name { font-weight: 700; font-size: 11pt; color: #000; margin-bottom: 2pt; }
+  .hll-kr-root .paren { font-weight: 400; font-size: 10pt; color: #666; }
+  .hll-kr-root .char-dialogue { font-size: 11pt; color: #111; line-height: 1.8; padding-left: 8pt; }
+  .hll-kr-root .transition { text-align: right; color: #777; font-size: 10pt; margin: 6pt 0; }
 </style>
-</head>
-<body>
 
-<div class="title-page">
+<div class="hll-kr-title-page">
   <h1>${escHtml(title)}</h1>
   ${author ? `<div class="author">작: ${escHtml(author)}</div>` : ''}
   ${logline ? `<div class="logline">${escHtml(logline)}</div>` : ''}
   <div class="date">생성: ${today} · HelloLogline</div>
 </div>
 
-<div class="script-body">
+<div class="hll-script-body">
 ${rows.join('\n')}
 </div>
 
-</body>
-</html>`;
+</div>`;
 }
 
 // ────────────────────────────────────────────────────
@@ -524,21 +390,23 @@ export async function exportScreenplayAsPDF(elements, meta, format = 'screenplay
   const suffix = format === 'korean' ? '_방송대본' : '_시나리오';
 
   const container = document.createElement('div');
-  container.innerHTML = html;
   container.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;';
   document.body.appendChild(container);
+  // innerHTML 설정 후 firstElementChild = hll-*-root wrapper div (style 포함)
+  container.innerHTML = html;
+  const rootEl = container.firstElementChild;
 
   const opt = {
     margin: 0,
     filename: `${safeTitle}${suffix}.pdf`,
     image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 2, useCORS: true, logging: false },
+    html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     pagebreak: { mode: ['avoid-all', 'css'] },
   };
 
   try {
-    await html2pdf().set(opt).from(container.firstElementChild).save();
+    await html2pdf().set(opt).from(rootEl).save();
   } finally {
     document.body.removeChild(container);
   }
