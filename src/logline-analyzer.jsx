@@ -1407,6 +1407,31 @@ export default function LoglineAnalyzer() {
     if (!apiKey && !serverHasKey) setShowApiKeyModal(true);
   };
 
+  // ── 새 프로젝트 ──
+  const startNewProject = () => {
+    if (logline.trim() && !window.confirm("현재 작업 내용이 초기화됩니다. 새 프로젝트를 시작할까요?")) return;
+    setIsDemoMode(false);
+    setLogline(""); setGenre("auto");
+    setSelectedDuration("feature"); setCustomTheme(""); setCustomDurationText(""); setCustomFormatLabel("");
+    setResult(null); setResult2(null); setEarlyCoverageResult(null); setInsightResult(null);
+    setAcademicResult(null); setMythMapResult(null); setKoreanMythResult(null);
+    setExpertPanelResult(null); setBarthesCodeResult(null);
+    setShadowResult(null); setAuthenticityResult(null); setCharDevResult(null);
+    setValueChargeResult(null); setSubtextResult(null);
+    setSynopsisResults(null); setSelectedSynopsisIndex(null); setPipelineResult(null);
+    setTreatmentResult(""); setBeatSheetResult(null); setBeatScenes({});
+    setDialogueDevResult(null); setSceneListResult(""); setScenarioDraftResult("");
+    setScriptCoverageResult(null); setStructureResult(null); setThemeResult(null);
+    setComparableResult(null); setRewriteDiagResult(null);
+    setPartialRewriteResult(""); setFullRewriteResult("");
+    setValuationResult(null); setEpisodeDesignResult(null); setMasterReportResult(null);
+    setWriterEdits({}); setTreatmentHistory([]); setBeatSheetHistory([]);
+    setScenarioDraftHistory([]); setCharDevHistory([]); setPipelineHistory([]);
+    setCurrentProjectId(null);
+    setCurrentStage("1");
+    showToast("success", "새 프로젝트가 시작되었습니다.");
+  };
+
   // ── Logout ──
   const handleLogout = async () => {
     try { await fetch("/api/auth/logout", { method: "POST" }); } catch {}
@@ -4530,6 +4555,27 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               {!isMobile && "공유"}
             </button>
           )}
+          {/* 새 프로젝트 */}
+          <button
+            onClick={startNewProject}
+            title="새 프로젝트 시작"
+            style={{
+              padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+              border: "1px solid rgba(200,168,75,0.35)",
+              background: "rgba(200,168,75,0.10)",
+              color: "var(--accent-gold)",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
+              fontFamily: "'Noto Sans KR', sans-serif",
+              transition: "all 0.18s var(--ease-spring)",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(200,168,75,0.18)"; e.currentTarget.style.borderColor = "rgba(200,168,75,0.55)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(200,168,75,0.10)"; e.currentTarget.style.borderColor = "rgba(200,168,75,0.35)"; }}
+          >
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            {!isMobile && "새 프로젝트"}
+          </button>
           {/* 프로젝트 */}
           <button onClick={openProjects} title="프로젝트" style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--c-tx-45)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>
             <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
