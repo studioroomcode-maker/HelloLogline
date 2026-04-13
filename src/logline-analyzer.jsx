@@ -936,6 +936,9 @@ export default function LoglineAnalyzer() {
   // ── Demo mode ──
   const [isDemoMode, setIsDemoMode] = useState(false);
 
+  // ── 새로고침 복구 배너 ──
+  const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
+
   // ── Auth ──
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -1098,6 +1101,16 @@ export default function LoglineAnalyzer() {
       .then(d => { if (d && d.credits != null) setCredits(d.credits); })
       .catch(() => {});
   }, [user]);
+
+  // ── 새로고침 후 이전 작업 복구 안내 ──
+  useEffect(() => {
+    // 첫 방문자나 현재 작업이 있는 경우엔 표시 안함
+    if (!localStorage.getItem("logline_visited")) return;
+    // IndexedDB에 저장된 프로젝트가 있으면 배너 표시
+    loadProjects().then(list => {
+      if (list && list.length > 0) setShowRecoveryBanner(true);
+    }).catch(() => {});
+  }, []);
 
   // ── Credits: listen for hll:credits-empty & Toss URL params ──
   useEffect(() => {
@@ -4726,6 +4739,45 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                     style={{ padding: "7px 12px", borderRadius: 8, border: "1px solid rgba(255,209,102,0.3)", background: "transparent", color: "#FFD166", fontSize: 11, cursor: "pointer" }}
                   >
                     데모 종료
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── 새로고침 복구 배너 ── */}
+          {showRecoveryBanner && !isDemoMode && (
+            <div style={{ maxWidth: isMobile ? "100%" : 990, margin: "0 auto", padding: isMobile ? "12px 12px 0" : "16px 28px 0" }}>
+              <div style={{
+                marginBottom: 16, padding: "13px 16px 13px 18px",
+                borderRadius: 12, background: "rgba(78,204,163,0.07)",
+                border: "1px solid rgba(78,204,163,0.25)",
+                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#4ECCA3", marginBottom: 2 }}>이전 작업이 저장되어 있습니다</div>
+                    <div style={{ fontSize: 11, color: "var(--c-tx-50)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+                      새로고침 전 작업을 이어서 진행하려면 프로젝트를 불러오세요.
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0, alignItems: "center" }}>
+                  <button
+                    onClick={() => { setShowRecoveryBanner(false); openProjects(); }}
+                    style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#4ECCA3", color: "#0d0d1a", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "nowrap" }}
+                  >
+                    프로젝트 불러오기
+                  </button>
+                  <button
+                    onClick={() => setShowRecoveryBanner(false)}
+                    style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid rgba(78,204,163,0.25)", background: "transparent", color: "var(--c-tx-40)", fontSize: 11, cursor: "pointer", lineHeight: 1 }}
+                    title="닫기"
+                  >
+                    ×
                   </button>
                 </div>
               </div>
