@@ -614,23 +614,6 @@ export default function LoglineAnalyzer() {
     localStorage.setItem("hll_edu_mode", eduMode ? "1" : "0");
   }, [eduMode]);
 
-  // ── 기존 시나리오 localStorage 동기화 ──
-  useEffect(() => {
-    localStorage.setItem("hll_ref_scenario", referenceScenario);
-  }, [referenceScenario]);
-  useEffect(() => {
-    localStorage.setItem("hll_ref_scenario_enabled", referenceScenarioEnabled ? "1" : "0");
-  }, [referenceScenarioEnabled]);
-  useEffect(() => {
-    localStorage.setItem("hll_ref_summary", referenceScenarioSummary);
-  }, [referenceScenarioSummary]);
-  // 시나리오 내용이 바뀌면 요약 초기화 (최초 로드 제외)
-  const refScenarioFirstRender = useRef(true);
-  useEffect(() => {
-    if (refScenarioFirstRender.current) { refScenarioFirstRender.current = false; return; }
-    setReferenceScenarioSummary("");
-  }, [referenceScenario]);
-
   // ── API Key ── (sessionStorage 우선, localStorage 하위 호환)
   const [apiKey, setApiKey] = useState(
     () => sessionStorage.getItem("logline_api_key") || localStorage.getItem("logline_api_key") || ""
@@ -686,6 +669,23 @@ export default function LoglineAnalyzer() {
   const [extractLoglineError, setExtractLoglineError] = useState("");
   const [summarizeLoading, setSummarizeLoading] = useState(false);
   const [summarizeError, setSummarizeError] = useState("");
+
+  // ── 기존 시나리오 localStorage 동기화 ──
+  useEffect(() => {
+    localStorage.setItem("hll_ref_scenario", referenceScenario);
+  }, [referenceScenario]);
+  useEffect(() => {
+    localStorage.setItem("hll_ref_scenario_enabled", referenceScenarioEnabled ? "1" : "0");
+  }, [referenceScenarioEnabled]);
+  useEffect(() => {
+    localStorage.setItem("hll_ref_summary", referenceScenarioSummary);
+  }, [referenceScenarioSummary]);
+  // 시나리오 내용이 바뀌면 요약 초기화 (최초 로드 제외)
+  const refScenarioFirstRender = useRef(true);
+  useEffect(() => {
+    if (refScenarioFirstRender.current) { refScenarioFirstRender.current = false; return; }
+    setReferenceScenarioSummary("");
+  }, [referenceScenario]);
 
   // ── 스토리 닥터 ──
   const [showStoryDoctor, setShowStoryDoctor] = useState(false);
