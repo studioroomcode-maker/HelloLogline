@@ -4079,6 +4079,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     referenceScenario, setReferenceScenario,
     referenceScenarioEnabled, setReferenceScenarioEnabled,
     referenceScenarioSummary,
+    // 스토리 닥터
+    showStoryDoctor, setShowStoryDoctor,
   };
 
   return (
@@ -5282,49 +5284,6 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
         </div>
       )}
 
-      {/* ─── 스토리 닥터 플로팅 버튼 ─── */}
-      {logline && apiKey && (
-        <button
-          onClick={() => setShowStoryDoctor(true)}
-          title="스토리 닥터 — 막힌 곳, 어색한 곳을 AI에게 물어보세요"
-          style={{
-            position: "fixed",
-            bottom: isMobile ? 84 : 28,
-            right: 20,
-            zIndex: 490,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: isMobile ? "10px 14px" : "11px 18px",
-            borderRadius: 100,
-            border: "1px solid rgba(167,139,250,0.4)",
-            background: "linear-gradient(135deg, rgba(167,139,250,0.18), rgba(78,204,163,0.12))",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            color: "#A78BFA",
-            fontSize: isMobile ? 13 : 13,
-            fontWeight: 800,
-            fontFamily: "'Noto Sans KR', sans-serif",
-            cursor: "pointer",
-            boxShadow: "0 4px 20px rgba(167,139,250,0.25), 0 2px 8px rgba(0,0,0,0.3)",
-            transition: "all 0.2s",
-            letterSpacing: -0.3,
-          }}
-          onMouseEnter={e => {
-            e.currentTarget.style.background = "linear-gradient(135deg, rgba(167,139,250,0.28), rgba(78,204,163,0.2))";
-            e.currentTarget.style.boxShadow = "0 6px 28px rgba(167,139,250,0.4), 0 2px 8px rgba(0,0,0,0.3)";
-            e.currentTarget.style.transform = "translateY(-2px)";
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.background = "linear-gradient(135deg, rgba(167,139,250,0.18), rgba(78,204,163,0.12))";
-            e.currentTarget.style.boxShadow = "0 4px 20px rgba(167,139,250,0.25), 0 2px 8px rgba(0,0,0,0.3)";
-            e.currentTarget.style.transform = "translateY(0)";
-          }}
-        >
-          <span style={{ fontSize: 16, lineHeight: 1 }}>🩺</span>
-          {!isMobile && "스토리 닥터"}
-        </button>
-      )}
 
       {/* ─── 스토리 닥터 패널 ─── */}
       {showStoryDoctor && (

@@ -47,7 +47,7 @@ function MobileNavTab({ id, icon, label, active, color, status, onClick }) {
 }
 
 export default function SidebarLayout({ stageProps, isMobile }) {
-  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus, referenceScenarioEnabled, referenceScenarioSummary } = useLoglineCtx();
+  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus, referenceScenarioEnabled, referenceScenarioSummary, showStoryDoctor, setShowStoryDoctor, apiKey } = useLoglineCtx();
   const mainPanelRef = useRef(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState(null);
@@ -136,6 +136,28 @@ export default function SidebarLayout({ stageProps, isMobile }) {
           {STAGE_META.map(s => (
             <SidebarNavItem key={s.id} id={s.id} title={s.title} sub={s.sub} accentColor={s.color} />
           ))}
+
+          {/* 스토리 닥터 버튼 */}
+          <div style={{ paddingLeft: 10, paddingRight: 10, paddingTop: 8 }}>
+            <button
+              onClick={() => setShowStoryDoctor(true)}
+              disabled={!logline || !apiKey}
+              title="막힌 곳, 어색한 곳을 AI에게 물어보세요"
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 8,
+                padding: "8px 10px", borderRadius: 8, cursor: !logline || !apiKey ? "not-allowed" : "pointer",
+                border: showStoryDoctor ? "1px solid rgba(167,139,250,0.5)" : "1px solid rgba(167,139,250,0.2)",
+                background: showStoryDoctor ? "rgba(167,139,250,0.12)" : "rgba(167,139,250,0.05)",
+                color: !logline || !apiKey ? "rgba(167,139,250,0.3)" : "#A78BFA",
+                fontSize: 11, fontWeight: 700, transition: "all 0.18s",
+                fontFamily: "'Noto Sans KR', sans-serif",
+                opacity: !logline || !apiKey ? 0.5 : 1,
+              }}
+            >
+              <span style={{ fontSize: 13, lineHeight: 1 }}>🩺</span>
+              스토리 닥터
+            </button>
+          </div>
 
           {/* 공유 버튼 */}
           <div style={{ padding: "16px 12px 0", borderTop: "1px solid var(--c-bd-1)", marginTop: 12 }}>
