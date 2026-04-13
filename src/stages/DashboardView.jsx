@@ -128,6 +128,35 @@ export default function DashboardView() {
   return (
     <div style={{ maxWidth: 720, margin: "0 auto" }}>
 
+      {/* ── 신규 사용자 CTA ── */}
+      {!logline && (
+        <div style={{
+          marginBottom: 28, padding: "24px 20px", borderRadius: 16,
+          border: "1px solid rgba(200,168,75,0.25)",
+          background: "linear-gradient(135deg, rgba(200,168,75,0.06) 0%, rgba(200,168,75,0.02) 100%)",
+          textAlign: "center",
+        }}>
+          <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
+            새 시나리오를 시작해보세요
+          </div>
+          <div style={{ fontSize: 13, color: "var(--c-tx-45)", marginBottom: 20, lineHeight: 1.6 }}>
+            로그라인 한 줄을 입력하면 AI가<br />8단계 시나리오 개발 파이프라인을 가동합니다.
+          </div>
+          <button
+            onClick={() => advanceToStage("1")}
+            style={{
+              padding: "12px 28px", borderRadius: 10,
+              border: "none", background: "#C8A84B",
+              color: "#0c0c1c", fontSize: 14, fontWeight: 800,
+              cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
+              boxShadow: "0 4px 20px rgba(200,168,75,0.3)",
+            }}
+          >
+            Stage 1 — 로그라인 입력하기
+          </button>
+        </div>
+      )}
+
       {/* ── 헤더 ── */}
       <div style={{ marginBottom: 28 }}>
         <div style={{
@@ -140,7 +169,7 @@ export default function DashboardView() {
         <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "var(--text-main)", lineHeight: 1.3 }}>
           {logline ? logline : (
             <span style={{ color: "var(--c-tx-30)", fontStyle: "italic", fontWeight: 400, fontSize: 15 }}>
-              로그라인 없음 — Stage 1에서 입력하세요
+              로그라인 없음
             </span>
           )}
         </div>
@@ -238,7 +267,7 @@ export default function DashboardView() {
               label="크레딧 잔액"
               value={`${credits}cr`}
               color="#60A5FA"
-              sub="분석에 사용"
+              sub={`≈ ₩${(credits * 15).toLocaleString()} 상당`}
             />
           )}
         </div>

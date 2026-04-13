@@ -1,5 +1,5 @@
 import { createHmac } from "crypto";
-import { rcall } from "../../_redis.js";
+import { rcall, grantInitialCredits } from "../../_redis.js";
 import { verifyState, clearStateCookieHeader } from "../_csrf.js";
 
 const SECRET = (process.env.JWT_SECRET || "hll-jwt-fallback-secret").trim();
@@ -70,6 +70,7 @@ export default async function handler(req, res) {
         rcall("sadd", "hll:users", user.email.toLowerCase()),
         rcall("set", `hll:user:${user.email.toLowerCase()}`, info),
       ]);
+      await grantInitialCredits(user.email.toLowerCase());
     }
     res.redirect(`${frontendBase}/?auth_token=${token}`);
   } catch (err) {

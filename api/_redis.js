@@ -189,6 +189,23 @@ export async function addCreditsDb(email, amount) {
 }
 
 /**
+ * 신규 가입자에게 초기 크레딧 지급.
+ * credits 컬럼이 null(한 번도 충전/차감된 적 없음)인 경우에만 지급.
+ */
+export async function grantInitialCredits(email, amount = 10) {
+  if (!usingSupa()) return;
+  try {
+    const rows = await supaReq(`hll_users?email=eq.${encodeURIComponent(email)}&select=credits`);
+    if (!Array.isArray(rows) || rows.length === 0) return;
+    if (rows[0].credits !== null) return; // 이미 크레딧 이력 있음
+    await supaReq("rpc/add_credits", {
+      method: "POST",
+      body: { user_email: email, amount },
+    });
+  } catch { /* 무시 — 크레딧 지급 실패가 로그인을 막으면 안 됨 */ }
+}
+
+/**
  * 레이트 리미팅 체크
  * @param {string} key - 리미팅 키 (예: "rl:ip:1.2.3.4" 또는 "rl:user:email@a.com")
  * @param {number} limit - 허용 최대 요청 수

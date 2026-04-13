@@ -116,8 +116,9 @@ export default async function handler(req, res) {
       if (payload_email) {
         const newBalance = await deductCredits(payload_email, cost);
         if (newBalance === null) {
-          // Redis/DB 미설정 — 크레딧 차감 불가, 요청은 허용하되 경고 출력
-          console.warn(`[Credits] Redis 미설정으로 크레딧 미차감: ${payload_email}, feature: ${feature}, cost: ${cost}`);
+          // DB 미설정 또는 연결 실패 — 과금 사고 방지를 위해 요청 거부
+          console.error(`[Credits] DB 미연결로 크레딧 차감 불가: ${payload_email}, feature: ${feature}`);
+          return res.status(503).json({ error: { message: "결제 시스템에 일시적 문제가 발생했습니다. 잠시 후 다시 시도해주세요." } });
         } else if (newBalance === -1) {
           return res.status(402).json({ error: { message: "크레딧이 부족합니다. 크레딧을 충전해주세요." } });
         }

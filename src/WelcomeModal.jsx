@@ -1,77 +1,141 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useLoglineCtx } from "./context/LoglineContext.jsx";
 
-const STORAGE_KEY = "hll_welcomed_v1";
+const STORAGE_KEY = "hll_welcomed_v2";
+
+const STEPS = [
+  {
+    icon: "📝",
+    title: "로그라인 한 줄 입력",
+    desc: "시나리오 아이디어를 한 문장으로 적으세요.\nAI가 12가지 기준으로 즉시 점수와 개선안을 제공합니다.",
+    color: "#C8A84B",
+  },
+  {
+    icon: "🎬",
+    title: "8단계 AI 파이프라인",
+    desc: "캐릭터 심리 → 스토리 구조 → 트리트먼트 → 시나리오 초고까지\n전문 작가의 개발 과정을 AI와 함께 완성합니다.",
+    color: "#A78BFA",
+  },
+  {
+    icon: "🎁",
+    title: "10 크레딧 무료 지급",
+    desc: "가입 축하로 크레딧 10개가 지급됐습니다.\n시놉시스·구조 분석·트리트먼트 등 유료 기능을 지금 바로 체험해보세요.",
+    color: "#4ECCA3",
+  },
+];
 
 export default function WelcomeModal() {
   const [visible, setVisible] = useState(false);
+  const [step, setStep] = useState(0);
+  const { advanceToStage } = useLoglineCtx?.() ?? {};
 
   useEffect(() => {
-    const seen = localStorage.getItem(STORAGE_KEY);
-    if (!seen) setVisible(true);
+    if (!localStorage.getItem(STORAGE_KEY)) setVisible(true);
   }, []);
 
-  function close() {
+  function finish() {
+    localStorage.setItem(STORAGE_KEY, "1");
+    setVisible(false);
+    advanceToStage?.("1");
+  }
+
+  function dismiss() {
     localStorage.setItem(STORAGE_KEY, "1");
     setVisible(false);
   }
 
   if (!visible) return null;
 
+  const s = STEPS[step];
+  const isLast = step === STEPS.length - 1;
+
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 2000,
-      background: "rgba(0,0,0,0.75)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 20,
-    }} onClick={close}>
-      <div onClick={e => e.stopPropagation()} style={{
-        maxWidth: 480, width: "100%",
-        background: "var(--bg-surface)",
-        border: "1px solid rgba(200,168,75,0.3)",
-        borderRadius: 20, overflow: "hidden",
-        fontFamily: "'Noto Sans KR', sans-serif",
-      }}>
-        {/* 헤더 */}
-        <div style={{ padding: "24px 28px 0" }}>
-          <div style={{ fontSize: 11, letterSpacing: 1.5, color: "rgba(200,168,75,0.7)", fontWeight: 700, marginBottom: 8, textTransform: "uppercase" }}>AI 시나리오 워크스테이션</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text-main)", lineHeight: 1.3 }}>
-            로그라인 한 줄로<br />
-            <span style={{ color: "#C8A84B" }}>시나리오를 완성하세요</span>
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 2000,
+        background: "rgba(0,0,0,0.8)", backdropFilter: "blur(6px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 20,
+      }}
+      onClick={dismiss}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          maxWidth: 400, width: "100%",
+          background: "var(--bg-surface)",
+          border: "1px solid var(--c-bd-2)",
+          borderRadius: 20, overflow: "hidden",
+          fontFamily: "'Noto Sans KR', sans-serif",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
+        }}
+      >
+        <div style={{ padding: "32px 28px 24px", textAlign: "center" }}>
+          {/* 스텝 인디케이터 */}
+          <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 28 }}>
+            {STEPS.map((_, i) => (
+              <div key={i} style={{
+                width: i === step ? 22 : 6, height: 6, borderRadius: 3,
+                background: i === step ? s.color : "var(--c-bd-3)",
+                transition: "all 0.25s",
+              }} />
+            ))}
           </div>
-        </div>
 
-        {/* 3단계 설명 */}
-        <div style={{ padding: "20px 28px", display: "flex", flexDirection: "column", gap: 12 }}>
-          {[
-            { step: "01", icon: "✏️", title: "로그라인 입력", desc: "한 줄 아이디어만 있으면 됩니다. 18개 항목으로 즉시 점수를 매깁니다." },
-            { step: "02", icon: "🔬", title: "8단계 심층 개발", desc: "캐릭터·구조·트리트먼트·비트시트까지 학술 이론 기반으로 자동 설계합니다." },
-            { step: "03", icon: "📋", title: "Script Coverage 판정", desc: "실제 방송사·제작사 심사 방식으로 RECOMMEND / CONSIDER / PASS 판정을 받습니다." },
-          ].map(item => (
-            <div key={item.step} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-              <span style={{ fontSize: 18, flexShrink: 0, marginTop: 2 }}>{item.icon}</span>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)", marginBottom: 2 }}>{item.title}</div>
-                <div style={{ fontSize: 12, color: "var(--c-tx-45)", lineHeight: 1.6 }}>{item.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+          {/* 아이콘 */}
+          <div style={{ fontSize: 52, marginBottom: 18, lineHeight: 1 }}>{s.icon}</div>
 
-        {/* 무료 안내 */}
-        <div style={{ margin: "0 28px 20px", padding: "10px 14px", borderRadius: 10, background: "rgba(78,204,163,0.06)", border: "1px solid rgba(78,204,163,0.2)" }}>
-          <div style={{ fontSize: 12, color: "#4ECCA3" }}>✓ <strong>로그라인 기본 분석은 무료</strong>입니다. 지금 바로 시작해보세요.</div>
-        </div>
+          {/* 제목 */}
+          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--text-main)", marginBottom: 12, lineHeight: 1.3 }}>
+            {s.title}
+          </div>
 
-        {/* CTA */}
-        <div style={{ padding: "0 28px 24px" }}>
-          <button onClick={close} style={{
-            width: "100%", padding: "14px", borderRadius: 12,
-            border: "none", background: "linear-gradient(135deg, #C8A84B, #E8C86A)",
-            color: "#1a1a1a", fontSize: 14, fontWeight: 800,
-            cursor: "pointer", letterSpacing: 0.3,
-          }}>
-            시작하기 →
-          </button>
+          {/* 설명 */}
+          <div style={{ fontSize: 13, color: "var(--c-tx-50)", lineHeight: 1.7, marginBottom: 28, whiteSpace: "pre-line" }}>
+            {s.desc}
+          </div>
+
+          {/* 버튼 */}
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            {step > 0 && (
+              <button
+                onClick={() => setStep(step - 1)}
+                style={{
+                  padding: "11px 20px", borderRadius: 10,
+                  border: "1px solid var(--c-bd-2)", background: "transparent",
+                  color: "var(--c-tx-50)", fontSize: 13, cursor: "pointer",
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                }}
+              >
+                이전
+              </button>
+            )}
+            <button
+              onClick={isLast ? finish : () => setStep(step + 1)}
+              style={{
+                flex: 1, padding: "12px 20px", borderRadius: 10,
+                border: "none", background: s.color,
+                color: "#0c0c1c", fontSize: 14, fontWeight: 800,
+                cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
+                boxShadow: `0 4px 20px ${s.color}40`,
+              }}
+            >
+              {isLast ? "Stage 1 시작하기 →" : "다음"}
+            </button>
+          </div>
+
+          {!isLast && (
+            <button
+              onClick={dismiss}
+              style={{
+                marginTop: 14, background: "none", border: "none",
+                color: "var(--c-tx-30)", fontSize: 11, cursor: "pointer",
+                fontFamily: "'Noto Sans KR', sans-serif",
+              }}
+            >
+              건너뛰기
+            </button>
+          )}
         </div>
       </div>
     </div>
