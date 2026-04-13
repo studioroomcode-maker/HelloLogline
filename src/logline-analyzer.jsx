@@ -645,7 +645,7 @@ export default function LoglineAnalyzer() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 
   // ── Stage ──
-  const [currentStage, setCurrentStage] = useState("1");
+  const [currentStage, setCurrentStage] = useState("dashboard");
 
   // ── Synopsis ──
   const [showSynopsisPanel, setShowSynopsisPanel] = useState(false);
