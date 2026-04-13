@@ -397,7 +397,7 @@ export async function exportScreenplayAsPDF(elements, meta, format = 'screenplay
   const rootEl = container.firstElementChild;
 
   const opt = {
-    margin: 0,
+    margin: [15, 15, 15, 20],
     filename: `${safeTitle}${suffix}.pdf`,
     image: { type: 'jpeg', quality: 0.95 },
     html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },

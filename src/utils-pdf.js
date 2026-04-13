@@ -366,14 +366,21 @@ export async function downloadHtmlAsPdf(htmlString, filename = "document", margi
   // DOMParser로 head/body 분리
   const parser = new DOMParser();
   const parsed = parser.parseFromString(htmlString, "text/html");
-  const styleHtml = Array.from(parsed.head.querySelectorAll("style"))
-    .map(s => s.outerHTML).join("");
   const bodyHtml = parsed.body.innerHTML;
 
-  // wrapper div: style 태그 + body 내용을 모두 포함
+  // <style> 태그를 실제 <head>에 주입 — html2canvas가 body 내부 <style>을 무시하는 문제 방지
+  const injectedStyles = Array.from(parsed.head.querySelectorAll("style")).map(s => {
+    const el = document.createElement("style");
+    el.textContent = s.textContent;
+    el.setAttribute("data-hll-pdf-temp", "1");
+    document.head.appendChild(el);
+    return el;
+  });
+
+  // body 콘텐츠만 container에 삽입
   const container = document.createElement("div");
-  container.style.cssText = "position:fixed;left:-9999px;top:0;width:170mm;background:#fff;";
-  container.innerHTML = styleHtml + bodyHtml;
+  container.style.cssText = "position:absolute;left:-9999px;top:0;width:170mm;background:#fff;";
+  container.innerHTML = bodyHtml;
   document.body.appendChild(container);
 
   const opt = {
@@ -389,5 +396,7 @@ export async function downloadHtmlAsPdf(htmlString, filename = "document", margi
     await html2pdf().set(opt).from(container).save();
   } finally {
     document.body.removeChild(container);
+    // 임시 주입한 <style> 태그 정리
+    injectedStyles.forEach(el => el.parentNode?.removeChild(el));
   }
 }
