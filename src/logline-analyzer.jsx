@@ -17,7 +17,7 @@ import {
   MASTER_REPORT_SYSTEM_PROMPT,
 } from "./constants.js";
 import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText } from "./utils.js";
-import { exportToPdf, exportToMarkdown } from "./utils-pdf.js";
+import { exportToPdf, exportToMarkdown, downloadHtmlAsPdf } from "./utils-pdf.js";
 import {
   DEMO_LOGLINE, DEMO_GENRE, DEMO_RESULT, DEMO_CHAR_DEV_RESULT,
   DEMO_SHADOW_RESULT, DEMO_AUTHENTICITY_RESULT, DEMO_SYNOPSIS_RESULTS,
@@ -1421,7 +1421,7 @@ export default function LoglineAnalyzer() {
   };
 
   // ── Application Document PDF Generator ──
-  const openApplicationDoc = (docType) => {
+  const openApplicationDoc = async (docType) => {
     const genreLabel = genre === "auto"
       ? (result?.detected_genre || "미정")
       : GENRES.find(g => g.id === genre)?.label || "미정";
@@ -1809,22 +1809,18 @@ export default function LoglineAnalyzer() {
   </div>
 
 </div>
-<script>window.onload = () => { document.title = "시놉시스"; window.print(); };</script>
 </body>
 </html>`;
 
-      // 분석 섹션을 시놉시스 HTML에 삽입 (</body> 직전)
+      // 분석 섹션을 시놉시스 HTML에 삽입
       const anaBlock = anaSections
         ? `<div style="padding-top:10pt;">${anaSections}<div style="border-top:1pt solid #e0e0e0;padding-top:6pt;display:flex;justify-content:space-between;font-size:7pt;color:#bbb;font-family:'Courier New',monospace;margin-top:4pt;"><span>HelloLogline \u00d7 Claude AI \u2014 시놉시스 기획서</span><span>${today}</span></div></div>`
         : '';
       const fullHtml = anaBlock
-        ? synHtml.replace(
-            '<script>window.onload = () => { document.title = "시놉시스"; window.print(); };</script>',
-            `${anaBlock}<script>window.onload = () => { document.title = "시놉시스 기획서"; window.print(); };</script>`
-          )
+        ? synHtml.replace('</body>', `${anaBlock}</body>`)
         : synHtml;
-      const win = window.open("", "_blank", "width=794,height=1123");
-      if (win) { win.document.write(fullHtml); win.document.close(); }
+      const synTitle = anaBlock ? "시놉시스 기획서" : "시놉시스";
+      await downloadHtmlAsPdf(fullHtml, synTitle, [14, 16, 14, 16]);
       return;
     }
 
@@ -2307,15 +2303,10 @@ export default function LoglineAnalyzer() {
   <div class="content">
     ${body}
   </div>
-  <script>window.onload = () => { document.title = "${docMeta.title}"; window.print(); };</script>
 </body>
 </html>`;
 
-    const win = window.open("", "_blank", "width=794,height=1123");
-    if (win) {
-      win.document.write(html);
-      win.document.close();
-    }
+    await downloadHtmlAsPdf(html, docMeta.title, [20, 20, 20, 25]);
   };
 
   // ── 피치 덱 생성 (10슬라이드) ──────────────────────────────────

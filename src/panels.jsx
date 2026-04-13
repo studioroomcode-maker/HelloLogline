@@ -1530,7 +1530,6 @@ export function ExportButton({ result, logline, qualityScore, interestScore }) {
     const win = window.open("", "_blank");
     win.document.write(html);
     win.document.close();
-    setTimeout(() => { win.focus(); win.print(); }, 400);
   };
 
   return (

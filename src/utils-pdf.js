@@ -329,7 +329,7 @@ export async function exportToPdf(data, filename = "hellologline-report") {
   document.body.appendChild(container);
 
   const opt = {
-    margin: 0,
+    margin: [15, 15, 15, 15],
     filename: `${filename}.pdf`,
     image: { type: "jpeg", quality: 0.95 },
     html2canvas: {
@@ -343,6 +343,46 @@ export async function exportToPdf(data, filename = "hellologline-report") {
       orientation: "portrait",
     },
     pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+  };
+
+  try {
+    await html2pdf().set(opt).from(container).save();
+  } finally {
+    document.body.removeChild(container);
+  }
+}
+
+/**
+ * 전체 HTML 문서 문자열을 A4 PDF로 다운로드합니다.
+ * <head><style>을 DOMParser로 추출해 wrapper div에 포함시켜 html2pdf에 전달합니다.
+ *
+ * @param {string} htmlString  - 전체 HTML 문서 문자열 (<!DOCTYPE html>... 포함)
+ * @param {string} filename    - 저장 파일명 (확장자 제외)
+ * @param {number[]} [margin]  - [상, 우, 하, 좌] mm 단위 여백, 기본 [20, 20, 20, 25]
+ */
+export async function downloadHtmlAsPdf(htmlString, filename = "document", margin = [20, 20, 20, 25]) {
+  const html2pdf = (await import("html2pdf.js")).default;
+
+  // DOMParser로 head/body 분리
+  const parser = new DOMParser();
+  const parsed = parser.parseFromString(htmlString, "text/html");
+  const styleHtml = Array.from(parsed.head.querySelectorAll("style"))
+    .map(s => s.outerHTML).join("");
+  const bodyHtml = parsed.body.innerHTML;
+
+  // wrapper div: style 태그 + body 내용을 모두 포함
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed;left:-9999px;top:0;width:170mm;background:#fff;";
+  container.innerHTML = styleHtml + bodyHtml;
+  document.body.appendChild(container);
+
+  const opt = {
+    margin,
+    filename: `${filename}.pdf`,
+    image: { type: "jpeg", quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    pagebreak: { mode: ["css", "legacy"] },
   };
 
   try {
