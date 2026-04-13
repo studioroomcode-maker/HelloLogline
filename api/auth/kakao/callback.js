@@ -46,7 +46,10 @@ export default async function handler(req, res) {
       }),
     });
     const td = await tokenRes.json();
-    if (td.error) throw new Error(td.error_description || td.error);
+    if (td.error) {
+      console.error("[Kakao token error]", JSON.stringify(td), "| redirectUri:", redirectUri, "| clientId:", clientId ? clientId.slice(0, 6) + "…" : "(empty)");
+      throw new Error(td.error_description || td.error);
+    }
 
     const userRes = await fetch("https://kapi.kakao.com/v2/user/me", {
       headers: { Authorization: `Bearer ${td.access_token}` },
@@ -71,7 +74,7 @@ export default async function handler(req, res) {
     }
     res.redirect(`${frontendBase}/?auth_token=${token}`);
   } catch (err) {
-    console.error("[Kakao callback]", err.message);
+    console.error("[Kakao callback error]", err.message, "| proto:", proto, "| host:", host);
     res.redirect(errUrl);
   }
 }

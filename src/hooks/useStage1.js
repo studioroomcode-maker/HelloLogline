@@ -171,7 +171,7 @@ export function useStage1({
     const label = genreLabel();
     const msg = `분석할 로그라인: "${logline.trim()}"\n장르: ${label}\n글자수: ${logline.trim().length}자\n\n위 로그라인을 7명의 전문가 패널이 학술 이론을 바탕으로 토론하세요.`;
     try {
-      const data = await callClaude(apiKey, EXPERT_PANEL_SYSTEM_PROMPT, msg, 7000, "claude-sonnet-4-6", ctrl.signal, ExpertPanelSchema, "expertpanel");
+      const data = await callClaude(apiKey, EXPERT_PANEL_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, ExpertPanelSchema, "expertpanel");
       setExpertPanelResult(data);
       await autoSave();
     } catch (err) {

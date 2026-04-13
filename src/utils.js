@@ -204,20 +204,26 @@ async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, 
   const isRetry = _retryCredits > 0;
   if (isRetry) _retryCredits--;
 
-  const response = await fetch("/api/claude", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      // system as array enables prompt caching (90% discount on repeated system prompts)
-      system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: userMessage }],
-      _feature: feature,
-      ...(isRetry ? { _retry: true } : {}),
-    }),
-    signal,
-  });
+  let response;
+  try {
+    response = await fetch("/api/claude", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        // system as array enables prompt caching (90% discount on repeated system prompts)
+        system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+        messages: [{ role: "user", content: userMessage }],
+        _feature: feature,
+        ...(isRetry ? { _retry: true } : {}),
+      }),
+      signal,
+    });
+  } catch (netErr) {
+    if (netErr.name === "AbortError") throw netErr;
+    throw new Error("네트워크 오류 — 인터넷 연결을 확인하거나 잠시 후 다시 시도해주세요.");
+  }
 
   if (!response.ok) {
     if (response.status === 402) {
