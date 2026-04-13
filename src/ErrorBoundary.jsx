@@ -24,6 +24,8 @@ export default class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
+      const isChunkError = this.state.error?.message?.includes("dynamically imported module") ||
+        this.state.error?.message?.includes("Failed to fetch");
       return (
         <div
           style={{
@@ -53,25 +55,46 @@ export default class ErrorBoundary extends Component {
               paddingLeft: 24,
             }}
           >
-            {this.state.error?.message || "알 수 없는 오류가 발생했습니다."}
+            {isChunkError
+              ? "앱이 업데이트됐습니다. 페이지를 새로고침하면 정상적으로 열립니다."
+              : this.state.error?.message || "알 수 없는 오류가 발생했습니다."}
           </div>
           <div style={{ paddingLeft: 24 }}>
-            <button
-              onClick={this.reset}
-              style={{
-                padding: "7px 16px",
-                borderRadius: 8,
-                border: "1px solid rgba(232,93,117,0.5)",
-                background: "rgba(232,93,117,0.15)",
-                color: "#E85D75",
-                cursor: "pointer",
-                fontSize: 12,
-                fontWeight: 600,
-                fontFamily: "'Noto Sans KR', sans-serif",
-              }}
-            >
-              다시 시도
-            </button>
+            {isChunkError ? (
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  padding: "7px 16px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(232,93,117,0.5)",
+                  background: "rgba(232,93,117,0.15)",
+                  color: "#E85D75",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                }}
+              >
+                페이지 새로고침
+              </button>
+            ) : (
+              <button
+                onClick={this.reset}
+                style={{
+                  padding: "7px 16px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(232,93,117,0.5)",
+                  background: "rgba(232,93,117,0.15)",
+                  color: "#E85D75",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                }}
+              >
+                다시 시도
+              </button>
+            )}
           </div>
         </div>
       );
