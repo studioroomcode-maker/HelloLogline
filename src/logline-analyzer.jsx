@@ -59,6 +59,7 @@ const ScriptCoveragePanel = lazy(() =>
 const ValuationPanel = lazy(() =>
   import("./panels/EvaluationPanels.jsx").then((m) => ({ default: m.ValuationPanel }))
 );
+const StoryDoctorPanel = lazy(() => import("./stages/StoryDoctorPanel.jsx"));
 
 /* ─── 크레딧 사용 내역 트래킹 ─── */
 function trackCreditUsage(feature, amount = 1) {
@@ -685,6 +686,9 @@ export default function LoglineAnalyzer() {
   const [extractLoglineError, setExtractLoglineError] = useState("");
   const [summarizeLoading, setSummarizeLoading] = useState(false);
   const [summarizeError, setSummarizeError] = useState("");
+
+  // ── 스토리 닥터 ──
+  const [showStoryDoctor, setShowStoryDoctor] = useState(false);
 
   const [selectedFramework, setSelectedFramework] = useState("three_act");
   const [frameworkInfoId, setFrameworkInfoId] = useState(null);
@@ -2612,6 +2616,73 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
 ※ 위 시놉시스의 등장인물 이름·설정·배경·핵심 장면을 그대로 유지하세요. 새로운 이야기를 창작하지 말고, 위 시놉시스를 발전시키세요.`;
     return bible;
+  };
+
+  // ── 스토리 닥터 컨텍스트 빌더 ──
+  const buildStoryDoctorContext = () => {
+    const genreLabel = genre === "auto"
+      ? (result?.detected_genre || "미정")
+      : GENRES.find(g => g.id === genre)?.label || "미정";
+    const durLabel = getDurText();
+
+    let ctx = `【 작품 기본 정보 】\n`;
+    ctx += `로그라인: ${logline.trim()}\n`;
+    ctx += `장르: ${genreLabel} | 포맷: ${durLabel}\n`;
+
+    // 기존 시나리오 요약
+    if (referenceScenarioSummary.trim()) {
+      ctx += `\n【 참고 시나리오 요약 】\n${referenceScenarioSummary.slice(0, 500)}\n`;
+    }
+
+    // 캐릭터
+    if (charDevResult?.protagonist) {
+      const p = charDevResult.protagonist;
+      const name = p.name || "주인공";
+      const desire = p.psychological_depth?.desire || p.desire || "";
+      const wound = p.psychological_depth?.wound || p.wound || "";
+      ctx += `\n【 주인공 】\n이름: ${name}`;
+      if (desire) ctx += ` | 욕망: ${desire}`;
+      if (wound) ctx += ` | 상처: ${wound}`;
+      ctx += "\n";
+      const supporting = charDevResult.supporting_characters || [];
+      if (supporting.length > 0) {
+        ctx += `조연: ${supporting.slice(0, 3).map(c => c.name || "").filter(Boolean).join(", ")}\n`;
+      }
+    }
+
+    // 시놉시스
+    const synopsisText = pipelineResult?.synopsis
+      || (selectedSynopsisIndex !== null ? synopsisResults?.synopses?.[selectedSynopsisIndex]?.synopsis : null)
+      || "";
+    if (synopsisText.trim()) {
+      ctx += `\n【 시놉시스 】\n${synopsisText.trim().slice(0, 600)}\n`;
+    }
+
+    // 트리트먼트
+    const effectiveTreatment = (writerEdits?.treatment || treatmentResult || "").trim();
+    if (effectiveTreatment) {
+      ctx += `\n【 트리트먼트 요약 】\n${effectiveTreatment.slice(0, 600)}\n`;
+    }
+
+    // 비트 시트
+    if (beatSheetResult?.beats?.length) {
+      const keyBeats = beatSheetResult.beats.filter(b =>
+        ["opening_image", "midpoint", "all_is_lost", "finale"].includes(b.id)
+      );
+      if (keyBeats.length > 0) {
+        ctx += `\n【 주요 비트 】\n`;
+        keyBeats.forEach(b => {
+          ctx += `• ${b.name}: ${(b.description || "").slice(0, 120)}\n`;
+        });
+      }
+    }
+
+    // 초고
+    if (scenarioDraftResult.trim()) {
+      ctx += `\n【 시나리오 초고 (앞부분) 】\n${scenarioDraftResult.trim().slice(0, 800)}\n`;
+    }
+
+    return ctx;
   };
 
   // ── 기존 시나리오에서 로그라인 추출 ──
@@ -5204,6 +5275,70 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
             </div>
           </div>
         </div>
+      )}
+
+      {/* ─── 스토리 닥터 플로팅 버튼 ─── */}
+      {logline && apiKey && (
+        <button
+          onClick={() => setShowStoryDoctor(true)}
+          title="스토리 닥터 — 막힌 곳, 어색한 곳을 AI에게 물어보세요"
+          style={{
+            position: "fixed",
+            bottom: isMobile ? 84 : 28,
+            right: 20,
+            zIndex: 490,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: isMobile ? "10px 14px" : "11px 18px",
+            borderRadius: 100,
+            border: "1px solid rgba(167,139,250,0.4)",
+            background: "linear-gradient(135deg, rgba(167,139,250,0.18), rgba(78,204,163,0.12))",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            color: "#A78BFA",
+            fontSize: isMobile ? 13 : 13,
+            fontWeight: 800,
+            fontFamily: "'Noto Sans KR', sans-serif",
+            cursor: "pointer",
+            boxShadow: "0 4px 20px rgba(167,139,250,0.25), 0 2px 8px rgba(0,0,0,0.3)",
+            transition: "all 0.2s",
+            letterSpacing: -0.3,
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = "linear-gradient(135deg, rgba(167,139,250,0.28), rgba(78,204,163,0.2))";
+            e.currentTarget.style.boxShadow = "0 6px 28px rgba(167,139,250,0.4), 0 2px 8px rgba(0,0,0,0.3)";
+            e.currentTarget.style.transform = "translateY(-2px)";
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = "linear-gradient(135deg, rgba(167,139,250,0.18), rgba(78,204,163,0.12))";
+            e.currentTarget.style.boxShadow = "0 4px 20px rgba(167,139,250,0.25), 0 2px 8px rgba(0,0,0,0.3)";
+            e.currentTarget.style.transform = "translateY(0)";
+          }}
+        >
+          <span style={{ fontSize: 16, lineHeight: 1 }}>🩺</span>
+          {!isMobile && "스토리 닥터"}
+        </button>
+      )}
+
+      {/* ─── 스토리 닥터 패널 ─── */}
+      {showStoryDoctor && (
+        <Suspense fallback={null}>
+          <StoryDoctorPanel
+            apiKey={apiKey}
+            storyContext={buildStoryDoctorContext()}
+            hasStory={{
+              logline: !!logline,
+              char: !!charDevResult,
+              synopsis: !!(pipelineResult || synopsisResults),
+              treatment: !!treatmentResult.trim(),
+              beats: !!(beatSheetResult?.beats?.length),
+              draft: !!scenarioDraftResult.trim(),
+            }}
+            onClose={() => setShowStoryDoctor(false)}
+            isMobile={isMobile}
+          />
+        </Suspense>
       )}
 
       {/* ─── Footer ─── */}
