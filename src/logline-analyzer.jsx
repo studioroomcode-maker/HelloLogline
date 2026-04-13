@@ -4925,6 +4925,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                       dialogueDevLoading={dialogueDevLoading}
                       dialogueDevError={dialogueDevError}
                       analyzeDialogueDev={analyzeDialogueDev}
+                      generatingBeat={generatingBeat}
+                      generateScene={generateScene}
                     />
                   );
                   case "6": return (

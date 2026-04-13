@@ -47,6 +47,8 @@ export default function Stage5Content({
   dialogueDevResult, setDialogueDevResult,
   dialogueDevLoading, dialogueDevError,
   analyzeDialogueDev,
+  generatingBeat,
+  generateScene,
 }) {
   const { logline, genre, isMobile, cc, getStageStatus, advanceToStage, openApplicationDoc } = useLoglineCtx();
 
@@ -310,8 +312,23 @@ export default function Stage5Content({
                       <BeatSheetPanel
                         data={beatSheetResult}
                         beatScenes={beatScenes}
+                        generatingBeat={generatingBeat}
                         expandedBeats={expandedBeats}
                         onToggle={(id) => setExpandedBeats((prev) => ({ ...prev, [id]: !prev[id] }))}
+                        onGenerateScene={generateScene}
+                        onExportAll={() => {
+                          const lines = (beatSheetResult.beats || [])
+                            .filter(b => beatScenes[b.id])
+                            .map(b => `=== SCENE ${b.id}: ${b.name_kr || b.name_en} ===\n${beatScenes[b.id]}`)
+                            .join("\n\n");
+                          const blob = new Blob([lines], { type: "text/plain;charset=utf-8" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `beat_scenes_${new Date().toISOString().slice(0, 10)}.txt`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
                         isMobile={isMobile}
                         editingBeats={editingBeats}
                         beatEditDrafts={writerEdits.beats || {}}
