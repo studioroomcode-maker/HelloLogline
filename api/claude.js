@@ -91,7 +91,9 @@ export default async function handler(req, res) {
   }
 
   // ── API 키 확인 ──
-  const clientApiKey = req.headers["x-client-api-key"];
+  // "__server__"는 클라이언트 센티넬값 — 진짜 키가 아니므로 무시하고 서버 키 사용
+  const rawClientKey = req.headers["x-client-api-key"];
+  const clientApiKey = (rawClientKey && rawClientKey !== "__server__") ? rawClientKey : null;
   const serverApiKey = process.env.ANTHROPIC_API_KEY;
   const apiKey = clientApiKey || serverApiKey;
   if (!apiKey) {

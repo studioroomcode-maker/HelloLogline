@@ -2563,6 +2563,19 @@ export default function LoglineAnalyzer() {
     setWriterEdits(prev => { const n = { ...prev }; delete n[key]; return n; });
   }
 
+  // ── HTML 엔티티 디코더 (AI가 &nbsp; 등을 출력할 때 정리) ──
+  function decodeHtmlEntities(str) {
+    if (!str) return str;
+    return str
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&#x27;/g, "'");
+  }
+
   // ── Version History 헬퍼 ──
   // 현재 값을 히스토리에 쌓고 (최대 5), writerEdit도 함께 클리어
   function pushHistory(setHistoryFn, currentValue, editKey) {
@@ -2671,6 +2684,13 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     // 초고
     if (scenarioDraftResult.trim()) {
       ctx += `\n【 시나리오 초고 (앞부분) 】\n${scenarioDraftResult.trim().slice(0, 800)}\n`;
+    }
+
+    // 개고 결과
+    if (fullRewriteResult?.trim()) {
+      ctx += `\n【 개고 결과 (앞부분) 】\n${fullRewriteResult.trim().slice(0, 600)}\n`;
+    } else if (partialRewriteResult?.trim()) {
+      ctx += `\n【 부분 재작성 결과 (앞부분) 】\n${partialRewriteResult.trim().slice(0, 600)}\n`;
     }
 
     return ctx;
@@ -3422,7 +3442,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock}${getStoryBible()}${structureBlock}${dialogueBlock}${treatmentBlock}${beatBlock}\n\n위 모든 정보를 반드시 반영해서 시나리오 초고를 작성하세요.\n- 등장인물 이름·성격·관계를 그대로 유지하세요\n- 비트 시트가 있다면 그 순서와 구조를 따르세요\n- 대사 목소리 프로필이 있다면 각 인물의 말투를 그에 맞게 쓰세요\n- 트리트먼트가 있다면 그 방향의 이야기를 따르세요`;
     try {
       const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal, "scenario");
-      setScenarioDraftResult(text);
+      setScenarioDraftResult(decodeHtmlEntities(text));
       setScenarioDraftStale(false);
       setScenarioDraftCtx({
         char: !!(charDevResult?.protagonist || writerEdits.character),
@@ -3770,7 +3790,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal, "scenario");
       pushHistory(setScenarioDraftHistory, scenarioDraftResult, null);
-      setScenarioDraftResult(text);
+      setScenarioDraftResult(decodeHtmlEntities(text));
       setScenarioDraftFeedback("");
       await autoSave();
     } catch (err) {
@@ -5337,6 +5357,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               treatment: !!treatmentResult.trim(),
               beats: !!(beatSheetResult?.beats?.length),
               draft: !!scenarioDraftResult.trim(),
+              rewrite: !!(fullRewriteResult?.trim() || partialRewriteResult?.trim()),
             }}
             onClose={() => setShowStoryDoctor(false)}
             isMobile={isMobile}

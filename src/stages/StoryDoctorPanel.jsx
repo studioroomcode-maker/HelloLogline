@@ -221,6 +221,7 @@ export default function StoryDoctorPanel({ apiKey, storyContext, onClose, isMobi
             {hasStory.treatment && <CtxBadge label="트리트먼트" color="#60A5FA" />}
             {hasStory.beats && <CtxBadge label="비트시트" color="#FFD166" />}
             {hasStory.draft && <CtxBadge label="초고" color="#A78BFA" />}
+            {hasStory.rewrite && <CtxBadge label="개고" color="#F472B6" />}
             {!hasStory.logline && <span style={{ fontSize: 10, color: "var(--c-tx-30)" }}>아직 작업된 내용이 없습니다</span>}
           </div>
         </div>
@@ -369,7 +370,7 @@ export default function StoryDoctorPanel({ apiKey, storyContext, onClose, isMobi
                     전체 작업물 진단
                   </div>
                   <div style={{ fontSize: 12, color: "var(--c-tx-45)", lineHeight: 1.7, marginBottom: 20, maxWidth: 280, margin: "0 auto 20px" }}>
-                    지금까지 완성된 로그라인·캐릭터·시놉시스·트리트먼트·비트시트·초고를 한꺼번에 검토해서 치명 문제, 개선 포인트, 강점을 찾아냅니다.
+                    지금까지 완성된 로그라인·캐릭터·시놉시스·트리트먼트·비트시트·초고·개고를 한꺼번에 검토해서 치명 문제, 개선 포인트, 강점을 찾아냅니다.
                   </div>
                   {!hasStory.logline && (
                     <div style={{ fontSize: 11, color: "#F7A072", marginBottom: 16 }}>

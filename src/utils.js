@@ -196,7 +196,8 @@ export function markNextCallsAsRetry(n = 2) { _retryCredits = n; }
  */
 async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature = null) {
   const headers = { "Content-Type": "application/json" };
-  if (apiKey) headers["x-client-api-key"] = apiKey;
+  // "__server__"는 서버 키 사용 센티넬값 — 실제 키가 아니므로 헤더에 보내지 않음
+  if (apiKey && apiKey !== "__server__") headers["x-client-api-key"] = apiKey;
   const authToken = localStorage.getItem("hll_auth_token");
   if (authToken) headers["x-auth-token"] = authToken;
 
@@ -311,7 +312,8 @@ export async function callClaudeText(
   feature = null
 ) {
   const headers = { "Content-Type": "application/json" };
-  if (apiKey) headers["x-client-api-key"] = apiKey;
+  // "__server__"는 서버 키 사용 센티넬값 — 실제 키가 아니므로 헤더에 보내지 않음
+  if (apiKey && apiKey !== "__server__") headers["x-client-api-key"] = apiKey;
   const authToken = localStorage.getItem("hll_auth_token");
   if (authToken) headers["x-auth-token"] = authToken;
 
