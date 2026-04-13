@@ -2690,10 +2690,13 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     if (!referenceScenario.trim() || !apiKey) return;
     setExtractLoglineLoading(true);
     setExtractLoglineError("");
+    const loglineRanges = { ultrashort: [20, 40], shortform: [30, 50], shortfilm: [40, 70], webdrama: [50, 80], tvdrama: [60, 90], feature: [70, 110], miniseries: [90, 140], shortformseries: [60, 100] };
+    const [lo, hi] = loglineRanges[selectedDuration] || [70, 110];
+    const durLabel = DURATION_OPTIONS.find(d => d.id === selectedDuration)?.label || "장편영화";
     const sysPrompt = `당신은 시나리오 분석 전문가입니다. 주어진 시나리오나 시놉시스를 읽고 핵심을 한 문장의 로그라인으로 추출합니다.
 
 로그라인 작성 규칙:
-- 반드시 한 문장으로 작성 (70~110자 권장)
+- 반드시 한 문장으로 작성 (${lo}~${hi}자 — ${durLabel} 형식 기준, 반드시 준수)
 - 주인공 + 촉발 사건 + 목표/욕망 + 핵심 갈등/장애물 포함
 - 능동적인 언어 사용, 주인공이 주어
 - 장르 톤을 반영
