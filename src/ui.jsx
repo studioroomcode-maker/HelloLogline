@@ -285,3 +285,91 @@ export function ErrorMsg({ msg, onRetry }) {
     </div>
   );
 }
+
+/**
+ * 시나리오 텍스트 → 다양한 포맷(Fountain / FDX / PDF) 내보내기 패널
+ * Stage6, Stage8 공용
+ */
+export function ScriptExportPanel({ scriptText, logline, onCopy, copyLabel = "전체 복사" }) {
+  const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
+  const [exporting, setExporting] = useState(null);
+
+  const FORMATS = [
+    { id: "fountain",       label: "Fountain",      ext: ".fountain", desc: "Highland · Fade In 호환",      color: "#60A5FA", icon: "F"  },
+    { id: "fdx",            label: "Final Draft",   ext: ".fdx",      desc: "업계 표준 — Final Draft 11+",  color: "#4ECCA3", icon: "FD" },
+    { id: "pdf_screenplay", label: "PDF 시나리오",  ext: ".pdf",      desc: "서양 표준 포맷 (Courier)",    color: "#A78BFA", icon: "SC" },
+    { id: "pdf_korean",     label: "PDF 방송 대본", ext: ".pdf",      desc: "한국 드라마 대본 양식",        color: "#FB923C", icon: "방" },
+  ];
+
+  const handleExport = async (fmt) => {
+    if (exporting) return;
+    setExporting(fmt.id);
+    const meta = { title: title.trim() || "시나리오", author: author.trim(), logline: logline || "" };
+    const safeTitle = meta.title.replace(/[^\w가-힣\s]/g, "").trim() || "시나리오";
+    try {
+      const { parseScreenplay, toFountain, toFDX, exportScreenplayAsPDF, downloadText } =
+        await import("./screenplay-export.js");
+      const elements = parseScreenplay(scriptText);
+      if (fmt.id === "fountain") {
+        downloadText(toFountain(elements, meta), `${safeTitle}.fountain`);
+      } else if (fmt.id === "fdx") {
+        downloadText(toFDX(elements, meta), `${safeTitle}.fdx`);
+      } else if (fmt.id === "pdf_screenplay") {
+        await exportScreenplayAsPDF(elements, meta, "screenplay");
+      } else if (fmt.id === "pdf_korean") {
+        await exportScreenplayAsPDF(elements, meta, "korean");
+      }
+    } catch (err) {
+      alert("출력 중 오류가 발생했습니다: " + (err.message || "다시 시도해주세요."));
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      {/* 제목 / 작가 */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+        <div style={{ flex: 2, minWidth: 150 }}>
+          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontWeight: 600, letterSpacing: 0.5 }}>작품 제목</div>
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="제목 미설정"
+            style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", borderRadius: 7, border: "1px solid var(--c-bd-3)", background: "var(--c-card-2)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none" }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 110 }}>
+          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontWeight: 600, letterSpacing: 0.5 }}>작가</div>
+          <input value={author} onChange={e => setAuthor(e.target.value)} placeholder="이름 (선택)"
+            style={{ width: "100%", boxSizing: "border-box", padding: "7px 10px", borderRadius: 7, border: "1px solid var(--c-bd-3)", background: "var(--c-card-2)", color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none" }} />
+        </div>
+      </div>
+
+      {/* 포맷 버튼 그리드 */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+        {FORMATS.map(fmt => (
+          <button key={fmt.id} onClick={() => handleExport(fmt)} disabled={!!exporting}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 9, cursor: exporting ? "wait" : "pointer", border: `1px solid ${fmt.color}40`, background: exporting === fmt.id ? `${fmt.color}18` : `${fmt.color}0d`, opacity: exporting && exporting !== fmt.id ? 0.45 : 1, transition: "all 0.15s", textAlign: "left", fontFamily: "'Noto Sans KR', sans-serif" }}>
+            <div style={{ width: 32, height: 32, borderRadius: 7, flexShrink: 0, background: `${fmt.color}22`, border: `1px solid ${fmt.color}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: fmt.color, letterSpacing: -0.5 }}>
+              {exporting === fmt.id
+                ? <span style={{ display: "inline-block", width: 12, height: 12, border: `2px solid ${fmt.color}44`, borderTop: `2px solid ${fmt.color}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                : fmt.icon}
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: fmt.color, marginBottom: 1 }}>
+                {exporting === fmt.id ? "생성 중..." : fmt.label}
+                <span style={{ fontSize: 10, fontWeight: 400, color: `${fmt.color}99`, marginLeft: 4 }}>{fmt.ext}</span>
+              </div>
+              <div style={{ fontSize: 10, color: "var(--c-tx-35)" }}>{fmt.desc}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* 복사 버튼 */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+        <button onClick={onCopy} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(167,139,250,0.3)", background: "rgba(167,139,250,0.08)", color: "#A78BFA", fontSize: 11, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}>
+          {copyLabel}
+        </button>
+      </div>
+    </div>
+  );
+}

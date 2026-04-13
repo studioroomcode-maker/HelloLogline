@@ -1,5 +1,5 @@
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
-import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON, Spinner } from "../ui.jsx";
+import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON, Spinner, ScriptExportPanel } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 
 export default function Stage8Content({
@@ -135,9 +135,12 @@ export default function Stage8Content({
                 <ErrorMsg msg={partialRewriteError} />
                 {partialRewriteResult && (
                   <ResultCard title="부분 재작성 결과" onClose={() => setPartialRewriteResult("")} color="rgba(251,146,60,0.12)">
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-                      <button onClick={() => navigator.clipboard.writeText(partialRewriteResult).then(() => showToast("success", "복사되었습니다."))} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(251,146,60,0.3)", background: "rgba(251,146,60,0.08)", color: "#FB923C", fontSize: 11, cursor: "pointer" }}>복사</button>
-                    </div>
+                    <ScriptExportPanel
+                      scriptText={partialRewriteResult}
+                      logline={logline}
+                      onCopy={() => navigator.clipboard.writeText(partialRewriteResult).then(() => showToast("success", "복사되었습니다."))}
+                      copyLabel="복사"
+                    />
                     <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 12 : 13, lineHeight: 1.8, color: "var(--c-tx-75)", margin: 0 }}>
                       {partialRewriteResult}
                     </pre>
@@ -167,9 +170,12 @@ export default function Stage8Content({
                 <ErrorMsg msg={fullRewriteError} />
                 {fullRewriteResult && (
                   <ResultCard title="개고된 시나리오" onClose={() => setFullRewriteResult("")} color="rgba(251,146,60,0.12)">
-                    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8, gap: 6 }}>
-                      <button onClick={() => navigator.clipboard.writeText(fullRewriteResult).then(() => showToast("success", "전체 개고본이 복사되었습니다."))} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(251,146,60,0.3)", background: "rgba(251,146,60,0.08)", color: "#FB923C", fontSize: 11, cursor: "pointer" }}>전체 복사</button>
-                    </div>
+                    <ScriptExportPanel
+                      scriptText={fullRewriteResult}
+                      logline={logline}
+                      onCopy={() => navigator.clipboard.writeText(fullRewriteResult).then(() => showToast("success", "전체 개고본이 복사되었습니다."))}
+                      copyLabel="전체 복사"
+                    />
                     <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 12 : 13, lineHeight: 1.8, color: "var(--c-tx-75)", margin: 0 }}>
                       {fullRewriteResult}
                     </pre>
