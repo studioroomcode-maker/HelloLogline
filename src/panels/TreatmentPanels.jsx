@@ -74,7 +74,7 @@ export function DialogueDevPanel({ data, isMobile }) {
 // ─────────────────────────────────────────────
 // 캐릭터 디벨롭 결과 패널
 // ─────────────────────────────────────────────
-export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructureChange, onGenerate, loading, isMobile, charDevResult }) {
+export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructureChange, onGenerate, loading, isMobile, charDevResult, selectedFramework, NARRATIVE_FRAMEWORKS }) {
   const proto = chars.protagonist;
 
   const setProto = (field, val) =>
@@ -91,42 +91,24 @@ export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructu
   const removeSupporting = (idx) =>
     onCharsChange({ ...chars, supporting: chars.supporting.filter((_, i) => i !== idx) });
 
-  const structures = [
-    { id: "3act", label: "3막 구조", sub: "Field (1982)" },
-    { id: "hero", label: "영웅의 여정", sub: "Campbell (1949)" },
-    { id: "4act", label: "4막 구조", sub: "Parker (2005)" },
-    { id: "miniseries", label: "화별 구조", sub: "미니시리즈" },
-    { id: "tvdrama", label: "TV 드라마 감정곡선", sub: "한국식 감정 아크" },
-    { id: "webdrama", label: "웹드라마 훅 구조", sub: "화별 훅 + 클리프행어" },
-  ];
-
-  const inputStyle = {
-    width: "100%", padding: "9px 12px", borderRadius: 8,
-    border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)",
-    color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif",
-    outline: "none",
-  };
-  const labelStyle = { fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, display: "block", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase", letterSpacing: 0.5 };
+  const fw = NARRATIVE_FRAMEWORKS?.find(f => f.id === selectedFramework);
 
   return (
     <div style={{ padding: "20px", borderRadius: 12, border: "1px solid rgba(251,191,36,0.15)", background: "rgba(251,191,36,0.02)" }}>
 
-      {/* 서사 구조 선택 */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>서사 구조</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 7 }}>
-          {structures.map((s) => (
-            <button key={s.id} onClick={() => onStructureChange(s.id)} style={{
-              padding: "9px 12px", borderRadius: 9, textAlign: "left",
-              border: structure === s.id ? "1px solid rgba(251,191,36,0.5)" : "1px solid var(--c-bd-2)",
-              background: structure === s.id ? "rgba(251,191,36,0.1)" : "rgba(var(--tw),0.02)",
-              color: structure === s.id ? "#FBBf24" : "var(--c-tx-45)",
-              cursor: "pointer", transition: "all 0.15s",
-            }}>
-              <div style={{ fontSize: 12, fontWeight: 700, fontFamily: "'Noto Sans KR', sans-serif" }}>{s.label}</div>
-              <div style={{ fontSize: 10, color: structure === s.id ? "rgba(251,191,36,0.6)" : "var(--c-tx-25)", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>{s.sub}</div>
-            </button>
-          ))}
+      {/* 서사 구조 — 4단계에서 선택한 프레임워크 표시 */}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>서사 구조</div>
+        <div style={{ padding: "10px 14px", borderRadius: 9, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 14, flexShrink: 0 }}>📐</span>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#FBBf24", fontFamily: "'Noto Sans KR', sans-serif" }}>
+              {fw ? fw.label : "3막 구조"}
+            </div>
+            <div style={{ fontSize: 10, color: "rgba(251,191,36,0.55)", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>
+              {fw ? fw.ref : "Field (1982)"} · 4단계에서 설정됨
+            </div>
+          </div>
         </div>
       </div>
 

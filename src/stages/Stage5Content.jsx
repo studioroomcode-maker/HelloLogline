@@ -12,6 +12,7 @@ export default function Stage5Content({
   showTreatmentPanel, setShowTreatmentPanel,
   treatmentChars, setTreatmentChars,
   treatmentStructure, setTreatmentStructure,
+  selectedFramework, NARRATIVE_FRAMEWORKS,
   selectedDuration,
   pipelineResult,
   charDevResult,
@@ -117,7 +118,7 @@ export default function Stage5Content({
                 </button>
                 {showTreatmentPanel && (
                   <div style={{ marginTop: 8 }}>
-                    <TreatmentInputPanel chars={treatmentChars} onCharsChange={setTreatmentChars} structure={treatmentStructure} onStructureChange={setTreatmentStructure} onGenerate={generateTreatment} loading={treatmentLoading} isMobile={isMobile} charDevResult={charDevResult} />
+                    <TreatmentInputPanel chars={treatmentChars} onCharsChange={setTreatmentChars} structure={treatmentStructure} onStructureChange={setTreatmentStructure} onGenerate={generateTreatment} loading={treatmentLoading} isMobile={isMobile} charDevResult={charDevResult} selectedFramework={selectedFramework} NARRATIVE_FRAMEWORKS={NARRATIVE_FRAMEWORKS} />
                     <ErrorMsg msg={treatmentError} onRetry={treatmentError ? generateTreatment : undefined} />
                   </div>
                 )}

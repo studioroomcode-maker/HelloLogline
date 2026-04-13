@@ -2926,6 +2926,15 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       if (ep.length > 0) contextParts.push(`[전문가 패널 토론 결과 — 이야기 방향에 반영]\n${ep.join("\n")}`);
     }
 
+    if (themeResult) {
+      const tr = [];
+      if (themeResult.controlling_idea) tr.push(`컨트롤링 아이디어: ${themeResult.controlling_idea}`);
+      if (themeResult.thematic_question) tr.push(`테마 질문: ${themeResult.thematic_question}`);
+      if (themeResult.moral_premise?.statement) tr.push(`도덕적 전제: ${themeResult.moral_premise.statement}`);
+      if (themeResult.protagonist_inner_journey?.lesson) tr.push(`주인공이 배우는 것: ${themeResult.protagonist_inner_journey.lesson}`);
+      if (tr.length > 0) contextParts.push(`[테마 분석 결과 — 시놉시스 주제의식에 반영]\n${tr.join("\n")}`);
+    }
+
     if (subtextResult) {
       const st = [];
       if (subtextResult.deeper_story) st.push(`하위텍스트 이야기: ${subtextResult.deeper_story}`);
@@ -3117,7 +3126,31 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const ctrl = makeController("scriptCoverage");
     setScriptCoverageLoading(true); setScriptCoverageError(""); setScriptCoverageResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인에 대한 할리우드 + 한국 방송사 스타일 Script Coverage를 작성하세요.`;
+    // 이전 스테이지 결과 컨텍스트 수집
+    const coverageCtxParts = [];
+    if (themeResult?.controlling_idea) coverageCtxParts.push(`[테마] 컨트롤링 아이디어: ${themeResult.controlling_idea}${themeResult.thematic_question ? ` / 테마 질문: ${themeResult.thematic_question}` : ""}`);
+    if (expertPanelResult?.consensus) coverageCtxParts.push(`[전문가 패널] ${expertPanelResult.consensus}${expertPanelResult.key_concern ? ` / 우려: ${expertPanelResult.key_concern}` : ""}`);
+    if (charDevResult?.protagonist) {
+      const p = charDevResult.protagonist;
+      const cd = [`주인공: ${p.name_suggestion || "주인공"}`];
+      if (p.want) cd.push(`Want: ${p.want}`);
+      if (p.need) cd.push(`Need: ${p.need}`);
+      if (p.ghost) cd.push(`Ghost: ${p.ghost}`);
+      coverageCtxParts.push(`[캐릭터] ${cd.join(" / ")}`);
+    }
+    if (pipelineResult) {
+      const pp = [`시놉시스 방향: ${pipelineResult.direction_title || ""}`];
+      if (pipelineResult.theme) pp.push(`주제: ${pipelineResult.theme}`);
+      if (pipelineResult.ending_type) pp.push(`결말: ${pipelineResult.ending_type}`);
+      coverageCtxParts.push(`[스토리 설계] ${pp.join(" / ")}`);
+    }
+    if (treatmentResult) {
+      coverageCtxParts.push(`[트리트먼트 요약]\n${String(treatmentResult).slice(0, 800)}`);
+    }
+    const coverageCtxBlock = coverageCtxParts.length > 0
+      ? `\n\n━━━ 이전 단계 분석 결과 (Coverage 평가에 반영할 것) ━━━\n${coverageCtxParts.join("\n\n")}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+      : "";
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${coverageCtxBlock}\n\n위 로그라인(및 이전 단계 분석 결과)에 대한 할리우드 + 한국 방송사 스타일 Script Coverage를 작성하세요. 이전 단계에서 구축된 캐릭터·테마·시놉시스 정보가 있다면 그것을 기준으로 평가하세요.`;
     try { const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, ScriptCoverageSchema, "coverage"); setScriptCoverageResult(data); trackCreditUsage("Script Coverage", 2); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setScriptCoverageError(err.message || "Script Coverage 생성 중 오류가 발생했습니다."); }
     finally { setScriptCoverageLoading(false); clearController("scriptCoverage"); }
@@ -3612,14 +3645,11 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     pushHistory(setTreatmentHistory, treatmentResult, "treatment");
     setTreatmentResult("");
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const structureLabel = {
-      "3act": "3막 구조 (Field)",
-      hero: "영웅의 여정 12단계 (Campbell)",
-      "4act": "4막 구조",
-      miniseries: "미니시리즈 화별 구조",
-      tvdrama: "TV 드라마 감정곡선 구조 — 한국식. 각 화마다 도입부 감정 훅 → 갈등 고조 → 감정 절정 → 클리프행어. 인물 관계와 감정선이 사건보다 우선. 대사에서 감정을 직접 드러내는 한국 드라마 관습을 따를 것.",
-      webdrama: "웹드라마 훅 구조 — 화별 15초 내 훅 → 단일 사건 압축 → 다음 화 클리프행어. 스크롤 중단을 유도하는 오프닝 충격 필수.",
-    }[treatmentStructure] || "3막 구조 (Field)";
+    // Stage 4에서 선택한 서사 프레임워크를 트리트먼트에도 그대로 사용
+    const fw = NARRATIVE_FRAMEWORKS.find(f => f.id === selectedFramework);
+    const structureLabel = fw
+      ? `${fw.label} (${fw.ref}) — ${fw.instruction}`
+      : "3막 구조 (Field)";
     // Stage 3 캐릭터 분석 결과가 있으면 그것을 우선 사용, 없으면 treatmentChars 폼 값 사용
     let charBlock;
     if (charDevResult?.protagonist) {
@@ -3645,7 +3675,23 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       ? `\n\n확정된 플롯 포인트 (이 구조를 따를 것):\n${structureResult.plot_points.map(p => `  ${p.name}: ${p.description || ""}`).join("\n")}`
       : "";
     const genreHint = GENRE_BEAT_HINTS[genre] || "";
-    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${genreContext}\n서사 구조: ${structureLabel}\n\n등장인물 정보:\n${charBlock}${storyBible}${structurePlotPoints}${genreHint ? `\n\n${genreHint}` : ""}\n\n위 정보를 바탕으로 완성도 높은 트리트먼트를 한국어로 작성해주세요. 시놉시스와 플롯 포인트가 있다면 반드시 그 방향을 따르세요. 등장인물 이름·배경·핵심 장면을 시놉시스와 일치시키세요.`;
+    // Stage 2 전문가 패널 결과 반영
+    const expertCtx = expertPanelResult ? (() => {
+      const ep = [];
+      if (expertPanelResult.consensus) ep.push(`전문가 합의: ${expertPanelResult.consensus}`);
+      if (expertPanelResult.key_concern) ep.push(`핵심 우려: ${expertPanelResult.key_concern}`);
+      if (expertPanelResult.development_direction) ep.push(`발전 방향: ${expertPanelResult.development_direction}`);
+      return ep.length > 0 ? `\n\n[Stage 2 전문가 패널 분석 — 이 방향성을 트리트먼트에 반영할 것]\n${ep.join("\n")}` : "";
+    })() : "";
+    // Stage 2 테마 분석 반영
+    const themeCtx = themeResult ? (() => {
+      const th = [];
+      if (themeResult.controlling_idea) th.push(`컨트롤링 아이디어: ${themeResult.controlling_idea}`);
+      if (themeResult.thematic_question) th.push(`테마 질문: ${themeResult.thematic_question}`);
+      if (themeResult.moral_premise?.statement) th.push(`도덕적 전제: ${themeResult.moral_premise.statement}`);
+      return th.length > 0 ? `\n\n[테마 분석 결과 — 트리트먼트 주제의식에 반영]\n${th.join("\n")}` : "";
+    })() : "";
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${genreContext}\n서사 구조: ${structureLabel}\n\n등장인물 정보:\n${charBlock}${storyBible}${expertCtx}${themeCtx}${structurePlotPoints}${genreHint ? `\n\n${genreHint}` : ""}\n\n위 정보를 바탕으로 완성도 높은 트리트먼트를 한국어로 작성해주세요. 시놉시스와 플롯 포인트가 있다면 반드시 그 방향을 따르세요. 등장인물 이름·배경·핵심 장면을 시놉시스와 일치시키세요.`;
     try {
       const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal, "treatment");
       setTreatmentResult(text);
@@ -4867,6 +4913,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                       setTreatmentChars={setTreatmentChars}
                       treatmentStructure={treatmentStructure}
                       setTreatmentStructure={setTreatmentStructure}
+                      selectedFramework={selectedFramework}
+                      NARRATIVE_FRAMEWORKS={NARRATIVE_FRAMEWORKS}
                       selectedDuration={selectedDuration}
                       pipelineResult={pipelineResult}
                       charDevResult={charDevResult}
