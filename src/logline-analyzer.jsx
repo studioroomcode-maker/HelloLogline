@@ -23,6 +23,12 @@ import {
   DEMO_SHADOW_RESULT, DEMO_AUTHENTICITY_RESULT, DEMO_SYNOPSIS_RESULTS,
   DEMO_TREATMENT_RESULT, DEMO_BEAT_SHEET_RESULT, DEMO_SCRIPT_COVERAGE_RESULT,
   DEMO_VALUATION_RESULT, DEMO_STRUCTURE_RESULT, DEMO_REWRITE_DIAG_RESULT,
+  DEMO_EARLY_COVERAGE_RESULT, DEMO_INSIGHT_RESULT,
+  DEMO_EXPERT_PANEL_RESULT, DEMO_VALUE_CHARGE_RESULT, DEMO_ACADEMIC_RESULT,
+  DEMO_MYTH_MAP_RESULT, DEMO_BARTHES_CODE_RESULT, DEMO_KOREAN_MYTH_RESULT,
+  DEMO_SUBTEXT_RESULT, DEMO_THEME_RESULT, DEMO_COMPARABLE_RESULT,
+  DEMO_DIALOGUE_DEV_RESULT, DEMO_SCENE_LIST_RESULT,
+  DEMO_SCENARIO_DRAFT_RESULT, DEMO_PARTIAL_REWRITE_RESULT, DEMO_FULL_REWRITE_RESULT,
 } from "./demo-data.js";
 import {
   LoglineAnalysisSchema, SynopsisSchema, AcademicAnalysisSchema,
@@ -1343,19 +1349,43 @@ export default function LoglineAnalyzer() {
     setIsDemoMode(true);
     setLogline(DEMO_LOGLINE);
     setGenre(DEMO_GENRE);
+    // Stage 1
     setResult(DEMO_RESULT);
+    setEarlyCoverageResult(DEMO_EARLY_COVERAGE_RESULT);
+    setInsightResult(DEMO_INSIGHT_RESULT);
+    // Stage 2
+    setExpertPanelResult(DEMO_EXPERT_PANEL_RESULT);
+    setValueChargeResult(DEMO_VALUE_CHARGE_RESULT);
+    setAcademicResult(DEMO_ACADEMIC_RESULT);
+    setMythMapResult(DEMO_MYTH_MAP_RESULT);
+    setBarthesCodeResult(DEMO_BARTHES_CODE_RESULT);
+    setKoreanMythResult(DEMO_KOREAN_MYTH_RESULT);
+    // Stage 3
     setCharDevResult(DEMO_CHAR_DEV_RESULT);
     setShadowResult(DEMO_SHADOW_RESULT);
     setAuthenticityResult(DEMO_AUTHENTICITY_RESULT);
+    // Stage 4
     setSynopsisResults(DEMO_SYNOPSIS_RESULTS);
+    setStructureResult(DEMO_STRUCTURE_RESULT);
+    setThemeResult(DEMO_THEME_RESULT);
+    setSubtextResult(DEMO_SUBTEXT_RESULT);
+    setComparableResult(DEMO_COMPARABLE_RESULT);
+    // Stage 5
     setTreatmentResult(DEMO_TREATMENT_RESULT);
     setBeatSheetResult(DEMO_BEAT_SHEET_RESULT);
+    setDialogueDevResult(DEMO_DIALOGUE_DEV_RESULT);
+    setSceneListResult(DEMO_SCENE_LIST_RESULT);
+    // Stage 6
+    setScenarioDraftResult(DEMO_SCENARIO_DRAFT_RESULT);
+    // Stage 7
     setScriptCoverageResult(DEMO_SCRIPT_COVERAGE_RESULT);
     setValuationResult(DEMO_VALUATION_RESULT);
-    setStructureResult(DEMO_STRUCTURE_RESULT);
+    // Stage 8
     setRewriteDiagResult(DEMO_REWRITE_DIAG_RESULT);
-    setCurrentStage("1");
-    showToast("info", "데모 모드입니다. 샘플 로그라인의 분석 결과를 자유롭게 둘러보세요.");
+    setPartialRewriteResult(DEMO_PARTIAL_REWRITE_RESULT);
+    setFullRewriteResult(DEMO_FULL_REWRITE_RESULT);
+    setCurrentStage("dashboard");
+    showToast("info", "데모 모드입니다. 8단계 전체 분석 결과를 자유롭게 둘러보세요.");
   };
 
   // ── 데모 모드 해제 ──
