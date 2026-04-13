@@ -47,7 +47,7 @@ function MobileNavTab({ id, icon, label, active, color, status, onClick }) {
 }
 
 export default function SidebarLayout({ stageProps, isMobile }) {
-  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus } = useLoglineCtx();
+  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus, referenceScenarioEnabled, referenceScenarioSummary } = useLoglineCtx();
   const mainPanelRef = useRef(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState(null);
@@ -193,6 +193,28 @@ export default function SidebarLayout({ stageProps, isMobile }) {
                 {shareUrl}
               </div>
             )}
+
+            {/* 기존 시나리오 참고 중 배지 */}
+            {referenceScenarioEnabled && (
+              <div
+                onClick={() => { /* 클릭 시 1단계로 이동 */ setCurrentStage("1"); }}
+                title="기존 시나리오가 모든 단계 분석에 반영됩니다. 클릭하여 설정 변경"
+                style={{
+                  marginTop: 8, padding: "6px 10px", borderRadius: 7,
+                  border: "1px solid rgba(78,204,163,0.3)",
+                  background: "rgba(78,204,163,0.07)",
+                  cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 6,
+                }}
+              >
+                <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                  시나리오 참고 중{referenceScenarioSummary ? " · 요약" : ""}
+                </span>
+              </div>
+            )}
           </div>
         </aside>
       )}
@@ -223,7 +245,7 @@ export default function SidebarLayout({ stageProps, isMobile }) {
             maxWidth: isMobile ? "100%" : 780,
           }}
         >
-          <ErrorBoundary>
+          <ErrorBoundary key={currentStage}>
             <Suspense fallback={<div style={{ padding: 20, color: "var(--c-tx-30)", fontSize: 12 }}>로딩 중...</div>}>
               {/* stageProps에서 현재 스테이지 콘텐츠를 렌더링 */}
               {stageProps.renderStage(currentStage)}

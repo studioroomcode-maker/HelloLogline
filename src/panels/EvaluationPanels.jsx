@@ -17,7 +17,7 @@ export function ScriptCoveragePanel({ data, isMobile }) {
   return (
     <div>
       {/* 헤더 */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: data.verdict_rationale ? 10 : 16, flexWrap: "wrap", gap: 10 }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "rgba(var(--tw),0.85)", fontFamily: "'Noto Sans KR', sans-serif" }}>{data.title_suggestion || "제목 미정"}</div>
           <div style={{ fontSize: 11, color: "var(--c-tx-35)", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>{data.format} | {data.genre}</div>
@@ -27,6 +27,16 @@ export function ScriptCoveragePanel({ data, isMobile }) {
           <div style={{ fontSize: 20, fontWeight: 800, color: recColor, fontFamily: "'JetBrains Mono', monospace" }}>{data.overall_score}/10</div>
         </div>
       </div>
+      {/* 판정 근거 — RECOMMEND/PASS 이유 */}
+      {data.verdict_rationale && (
+        <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 9, border: `1px solid ${recColor}22`, background: `${recColor}08`, display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>💬</span>
+          <div style={{ fontSize: 12, color: "var(--c-tx-65)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: recColor, display: "block", marginBottom: 3, letterSpacing: 0.5, textTransform: "uppercase" }}>판정 근거</span>
+            {data.verdict_rationale}
+          </div>
+        </div>
+      )}
       {/* 항목별 점수 */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 8, marginBottom: 16 }}>
         {scoreKeys.map(({ key, label }) => {

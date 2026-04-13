@@ -607,6 +607,29 @@ export default function LoglineAnalyzer() {
     localStorage.setItem("theme", darkMode ? "dark" : "light");
   }, [darkMode]);
 
+  // ── Education Mode ──
+  const [eduMode, setEduMode] = useState(() => localStorage.getItem("hll_edu_mode") === "1");
+  useEffect(() => {
+    localStorage.setItem("hll_edu_mode", eduMode ? "1" : "0");
+  }, [eduMode]);
+
+  // ── 기존 시나리오 localStorage 동기화 ──
+  useEffect(() => {
+    localStorage.setItem("hll_ref_scenario", referenceScenario);
+  }, [referenceScenario]);
+  useEffect(() => {
+    localStorage.setItem("hll_ref_scenario_enabled", referenceScenarioEnabled ? "1" : "0");
+  }, [referenceScenarioEnabled]);
+  useEffect(() => {
+    localStorage.setItem("hll_ref_summary", referenceScenarioSummary);
+  }, [referenceScenarioSummary]);
+  // 시나리오 내용이 바뀌면 요약 초기화 (최초 로드 제외)
+  const refScenarioFirstRender = useRef(true);
+  useEffect(() => {
+    if (refScenarioFirstRender.current) { refScenarioFirstRender.current = false; return; }
+    setReferenceScenarioSummary("");
+  }, [referenceScenario]);
+
   // ── API Key ── (sessionStorage 우선, localStorage 하위 호환)
   const [apiKey, setApiKey] = useState(
     () => sessionStorage.getItem("logline_api_key") || localStorage.getItem("logline_api_key") || ""
@@ -647,6 +670,22 @@ export default function LoglineAnalyzer() {
   const [customTheme, setCustomTheme] = useState("");
   const [customDurationText, setCustomDurationText] = useState("");
   const [customFormatLabel, setCustomFormatLabel] = useState("");
+
+  // ── 기존 시나리오 참고 ──
+  const [referenceScenario, setReferenceScenario] = useState(() =>
+    localStorage.getItem("hll_ref_scenario") || ""
+  );
+  const [referenceScenarioEnabled, setReferenceScenarioEnabled] = useState(() =>
+    localStorage.getItem("hll_ref_scenario_enabled") === "1"
+  );
+  const [referenceScenarioSummary, setReferenceScenarioSummary] = useState(() =>
+    localStorage.getItem("hll_ref_summary") || ""
+  );
+  const [extractLoglineLoading, setExtractLoglineLoading] = useState(false);
+  const [extractLoglineError, setExtractLoglineError] = useState("");
+  const [summarizeLoading, setSummarizeLoading] = useState(false);
+  const [summarizeError, setSummarizeError] = useState("");
+
   const [selectedFramework, setSelectedFramework] = useState("three_act");
   const [frameworkInfoId, setFrameworkInfoId] = useState(null);
   const [directionCount, setDirectionCount] = useState(3);
@@ -815,6 +854,10 @@ export default function LoglineAnalyzer() {
   const [showTreatmentBefore, setShowTreatmentBefore] = useState(false);
   const [scenarioDraftBefore, setScenarioDraftBefore] = useState(null);
   const [showScenarioDraftBefore, setShowScenarioDraftBefore] = useState(false);
+  const [beatSheetFeedback, setBeatSheetFeedback] = useState("");
+  const [beatSheetRefineLoading, setBeatSheetRefineLoading] = useState(false);
+  const [beatSheetBefore, setBeatSheetBefore] = useState(null);
+  const [showBeatSheetBefore, setShowBeatSheetBefore] = useState(false);
   const [charDevFeedback, setCharDevFeedback] = useState("");
   const [charDevRefineLoading, setCharDevRefineLoading] = useState(false);
 
@@ -884,6 +927,7 @@ export default function LoglineAnalyzer() {
   const [isFirstVisit] = useState(() => !localStorage.getItem("logline_visited"));
   const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem("logline_visited"));
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [shareLinkLoading, setShareLinkLoading] = useState(false);
 
   // ── Demo mode ──
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -1340,6 +1384,35 @@ export default function LoglineAnalyzer() {
       console.error("PDF 생성 실패:", e);
     } finally {
       setPdfLoading(false);
+    }
+  };
+
+  // ── 공유 링크 생성 ──
+  const handleShare = async () => {
+    if (!logline.trim() || shareLinkLoading) return;
+    setShareLinkLoading(true);
+    try {
+      const token = localStorage.getItem("hll_token");
+      const res = await fetch("/api/share", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "x-auth-token": token } : {}),
+        },
+        body: JSON.stringify({ logline, genre, data: shareSnapshot }),
+      });
+      const json = await res.json();
+      if (json.id) {
+        const url = `${window.location.origin}/share/${json.id}`;
+        await navigator.clipboard.writeText(url);
+        showToast("success", "공유 링크가 클립보드에 복사되었습니다.");
+      } else {
+        showToast("error", "공유 링크 생성에 실패했습니다.");
+      }
+    } catch {
+      showToast("error", "공유 링크 생성 중 오류가 발생했습니다.");
+    } finally {
+      setShareLinkLoading(false);
     }
   };
 
@@ -2513,12 +2586,23 @@ export default function LoglineAnalyzer() {
   // ── Story Bible: 확정된 시놉시스를 다음 단계 프롬프트에 전달하는 컨텍스트 블록 ──
   // 파이프라인 결과 > 사용자가 선택한 시놉시스 방향 > 빈 문자열 순으로 우선순위 결정
   const getStoryBible = () => {
+    let bible = "";
+    // 기존 시나리오/시놉시스 참고 (체크 시 모든 단계에 주입)
+    if (referenceScenarioEnabled && referenceScenario.trim()) {
+      if (referenceScenarioSummary.trim()) {
+        // 요약본이 있으면 요약만 주입 (토큰 절약)
+        bible += `\n\n━━━ 기존 시나리오 요약 참고 — 이 방향으로 이야기를 발전시킬 것 ━━━\n${referenceScenarioSummary}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      } else {
+        // 요약 없으면 원문 앞부분 사용
+        bible += `\n\n━━━ 기존 시나리오/시놉시스 참고 — 이 내용을 바탕으로 분석하고 발전시킬 것 ━━━\n${referenceScenario.trim().slice(0, 12000)}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      }
+    }
     const s = pipelineResult
       || (selectedSynopsisIndex !== null ? synopsisResults?.synopses?.[selectedSynopsisIndex] : null);
-    if (!s) return "";
+    if (!s) return bible;
     const scenes = (s.key_scenes || []).map((sc, i) => `  ${i + 1}. ${sc}`).join("\n");
     const storyText = getEffective("synopsis", s.synopsis || "");
-    return `\n\n━━━ 확정된 시놉시스 — 반드시 이 방향으로 이야기를 발전시킬 것 ━━━
+    bible += `\n\n━━━ 확정된 시놉시스 — 반드시 이 방향으로 이야기를 발전시킬 것 ━━━
 제목/방향: ${s.direction_title || ""}
 장르/톤: ${s.genre_tone || ""}
 훅: ${s.hook || ""}
@@ -2527,6 +2611,76 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ※ 위 시놉시스의 등장인물 이름·설정·배경·핵심 장면을 그대로 유지하세요. 새로운 이야기를 창작하지 말고, 위 시놉시스를 발전시키세요.`;
+    return bible;
+  };
+
+  // ── 기존 시나리오에서 로그라인 추출 ──
+  const extractLoglineFromScenario = async () => {
+    if (!referenceScenario.trim() || !apiKey) return;
+    setExtractLoglineLoading(true);
+    setExtractLoglineError("");
+    const sysPrompt = `당신은 시나리오 분석 전문가입니다. 주어진 시나리오나 시놉시스를 읽고 핵심을 한 문장의 로그라인으로 추출합니다.
+
+로그라인 작성 규칙:
+- 반드시 한 문장으로 작성 (70~110자 권장)
+- 주인공 + 촉발 사건 + 목표/욕망 + 핵심 갈등/장애물 포함
+- 능동적인 언어 사용, 주인공이 주어
+- 장르 톤을 반영
+- 결말은 포함하지 않음
+
+출력 형식: 로그라인 문장만 출력하세요. 설명이나 부연 없이 로그라인 한 문장만 답하세요.`;
+    try {
+      const extracted = await callClaudeText(
+        apiKey,
+        sysPrompt,
+        `다음 시나리오/시놉시스에서 로그라인을 추출해주세요:\n\n${referenceScenario.trim().slice(0, 50000)}`,
+        300,
+        "claude-sonnet-4-6"
+      );
+      if (extracted?.trim()) {
+        setLogline(extracted.trim());
+      }
+    } catch (err) {
+      setExtractLoglineError("로그라인 추출 중 오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setExtractLoglineLoading(false);
+    }
+  };
+
+  // ── 기존 시나리오 요약 생성 (이후 단계에 요약본만 주입) ──
+  const summarizeReferenceScenario = async () => {
+    if (!referenceScenario.trim() || !apiKey) return;
+    setSummarizeLoading(true);
+    setSummarizeError("");
+    const sysPrompt = `당신은 시나리오 분석 전문가입니다. 주어진 시나리오/시놉시스의 핵심 정보를 구조화하여 요약합니다. 단편부터 장편까지 어떤 분량이든 처리합니다.
+
+다음 형식으로 800자 이내로 요약하세요:
+- 장르/톤: (2~4단어)
+- 배경: (시대, 장소)
+- 주요 인물: (이름 · 역할 · 핵심 특성, 최대 5명)
+- 핵심 갈등: (한 문장)
+- 3막 구조:
+  1막: (핵심 설정 사건)
+  2막: (주요 대결/전환점)
+  3막: (결말 방향)
+- 주제/메시지: (한 문장)
+- 고유 요소: (이 작품만의 특색 1~2가지)
+
+설명이나 부연 없이 위 형식만 답하세요.`;
+    try {
+      const summary = await callClaudeText(
+        apiKey,
+        sysPrompt,
+        referenceScenario.trim().slice(0, 80000),
+        900,
+        "claude-haiku-4-5-20251001"
+      );
+      if (summary?.trim()) setReferenceScenarioSummary(summary.trim());
+    } catch (err) {
+      setSummarizeError("요약 생성 중 오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setSummarizeLoading(false);
+    }
   };
 
   const buildUserMsg = (text, genreId) => {
@@ -3472,6 +3626,28 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     } finally { setTreatmentRefineLoading(false); clearController("treatmentRefine"); }
   };
 
+  // ── 비트 시트 피드백 다듬기 ──
+  const refineBeatSheet = async () => {
+    if (!beatSheetResult || !beatSheetFeedback.trim() || !apiKey) return;
+    const ctrl = makeController("beatSheetRefine");
+    setBeatSheetRefineLoading(true);
+    setBeatSheetBefore(JSON.stringify(beatSheetResult));
+    setShowBeatSheetBefore(false);
+    const beatsText = (beatSheetResult.beats || []).map((b) =>
+      `${b.name_en || b.id}. ${b.name_kr || ""} (p.${b.page}): ${b.summary || ""}`
+    ).join("\n");
+    const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n── 현재 비트 시트 ──\n${beatsText.slice(0, 3000)}\n\n── 작가 피드백 ──\n${beatSheetFeedback.trim()}\n\n위 피드백을 반영하여 비트 시트를 수정하세요. 15개 비트 구조를 유지하면서 피드백이 요청한 내용만 수정하세요.`;
+    try {
+      const result = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, "beat_sheet");
+      pushHistory(setBeatSheetHistory, beatSheetResult, null);
+      setBeatSheetResult(result);
+      setBeatSheetFeedback("");
+      await autoSave();
+    } catch (err) {
+      if (err.name !== "AbortError") alert("비트 시트 다듬기 중 오류: " + (err.message || "다시 시도해주세요."));
+    } finally { setBeatSheetRefineLoading(false); clearController("beatSheetRefine"); }
+  };
+
   // ── 시나리오 초고 피드백 다듬기 ──
   const refineScenarioDraft = async () => {
     if (!scenarioDraftResult || !scenarioDraftFeedback.trim() || !apiKey) return;
@@ -3810,6 +3986,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     user, credits, cc,
     // UI
     isMobile, darkMode,
+    // 교육 모드
+    eduMode, setEduMode,
     // 스테이지 네비게이션
     currentStage, setCurrentStage, advanceToStage, stageRefs,
     // 스테이지 상태 헬퍼
@@ -3823,6 +4001,10 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     stageResultSummary,
     // 공유 snapshot
     shareSnapshot,
+    // 기존 시나리오 참고
+    referenceScenario, setReferenceScenario,
+    referenceScenarioEnabled, setReferenceScenarioEnabled,
+    referenceScenarioSummary,
   };
 
   return (
@@ -4156,6 +4338,21 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               )}
             </div>
           )}
+          {/* 공유하기 */}
+          {logline.trim() && result && (
+            <button
+              onClick={handleShare}
+              disabled={shareLinkLoading}
+              title="공유 링크 복사"
+              style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid rgba(78,204,163,0.35)", background: "rgba(78,204,163,0.07)", color: "#4ECCA3", cursor: shareLinkLoading ? "wait" : "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4, fontFamily: "'Noto Sans KR', sans-serif" }}
+            >
+              {shareLinkLoading
+                ? <span style={{ display: "inline-block", width: 11, height: 11, border: "1.5px solid rgba(78,204,163,0.3)", borderTop: "1.5px solid #4ECCA3", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                : <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+              }
+              {!isMobile && "공유"}
+            </button>
+          )}
           {/* 프로젝트 */}
           <button onClick={openProjects} title="프로젝트" style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--c-tx-45)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>
             <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
@@ -4168,9 +4365,9 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
             {isMobile && history.length > 0 && <span style={{ fontSize: 9, fontWeight: 700, color: "#4ECCA3" }}>{history.length}</span>}
           </button>
           {/* 크레딧 */}
-          {user && tier === "basic" && credits !== null && (
-            <button onClick={() => setShowCreditModal(true)} title="크레딧 충전" style={{ padding: "5px 10px", borderRadius: 8, border: "1px solid rgba(167,139,250,0.35)", background: credits <= 5 ? "rgba(232,93,117,0.1)" : "rgba(167,139,250,0.08)", color: credits <= 5 ? "#E85D75" : "#A78BFA", cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 4, fontFamily: "'JetBrains Mono', monospace" }}>
-              ⚡ {creditPurchasing ? "..." : credits}
+          {user && credits !== null && (
+            <button onClick={() => setShowCreditModal(true)} title="크레딧 충전" style={{ padding: "5px 10px", borderRadius: 8, border: `1px solid ${credits <= 5 ? "rgba(232,93,117,0.5)" : "rgba(167,139,250,0.35)"}`, background: credits <= 5 ? "rgba(232,93,117,0.1)" : "rgba(167,139,250,0.08)", color: credits <= 5 ? "#E85D75" : "#A78BFA", cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 4, fontFamily: "'JetBrains Mono', monospace" }}>
+              ⚡ {creditPurchasing ? "..." : `${credits}cr`}
             </button>
           )}
           {/* API 키 */}
@@ -4178,6 +4375,25 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
             <SvgIcon d={ICON.key} size={14} />
           </button>
           {/* 다크모드 */}
+          {/* 교육 모드 토글 */}
+          <button
+            onClick={() => { setEduMode(v => !v); }}
+            title={eduMode ? "교육 모드 ON — 클릭하여 끄기" : "교육 모드 OFF — 클릭하여 켜기"}
+            style={{
+              padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+              border: eduMode ? "1px solid rgba(167,139,250,0.5)" : "1px solid var(--c-bd-3)",
+              background: eduMode ? "rgba(167,139,250,0.12)" : "var(--c-card-1)",
+              color: eduMode ? "#A78BFA" : "var(--c-tx-40)",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
+              fontFamily: "'Noto Sans KR', sans-serif", transition: "all 0.2s",
+            }}
+          >
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+              <path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+            </svg>
+            {!isMobile && (eduMode ? "교육 모드" : "교육 모드")}
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: eduMode ? "#A78BFA" : "var(--c-bd-5)", flexShrink: 0 }} />
+          </button>
           <button onClick={() => setDarkMode(!darkMode)} title={darkMode ? "라이트 모드" : "다크 모드"} style={{ padding: "5px 8px", borderRadius: 8, fontSize: 14, lineHeight: 1, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--c-tx-50)", cursor: "pointer" }}>
             {darkMode ? "☀️" : "🌙"}
           </button>
@@ -4427,6 +4643,17 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                       academicResult={academicResult}
                       apiKey={apiKey}
                       serverHasKey={serverHasKey}
+                      referenceScenario={referenceScenario}
+                      setReferenceScenario={setReferenceScenario}
+                      referenceScenarioEnabled={referenceScenarioEnabled}
+                      setReferenceScenarioEnabled={setReferenceScenarioEnabled}
+                      referenceScenarioSummary={referenceScenarioSummary}
+                      extractLoglineFromScenario={extractLoglineFromScenario}
+                      extractLoglineLoading={extractLoglineLoading}
+                      extractLoglineError={extractLoglineError}
+                      summarizeReferenceScenario={summarizeReferenceScenario}
+                      summarizeLoading={summarizeLoading}
+                      summarizeError={summarizeError}
                     />
                   );
                   case "2": return (
@@ -4721,6 +4948,37 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
             {/* 이벤트 배너 */}
             <div style={{ margin: "16px 24px 0", padding: "10px 14px", borderRadius: 10, background: "rgba(200,168,75,0.08)", border: "1px solid rgba(200,168,75,0.2)", fontSize: 12, color: "#C8A84B", lineHeight: 1.6 }}>
               🎉 <strong>이벤트 기간</strong> — 로그라인 분석 · 캐릭터 분석은 <strong>무료</strong>! 기타 기능 1~5cr 소모.
+            </div>
+
+            {/* 기능별 비용 안내 */}
+            <div style={{ margin: "12px 24px 0", padding: "12px 14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-2)" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--c-tx-35)", marginBottom: 8, letterSpacing: 0.5 }}>기능별 크레딧 비용</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+                {[
+                  { label: "로그라인 기본 분석", cost: "무료" },
+                  { label: "개선안 생성",        cost: "1cr" },
+                  { label: "상업성 체크",         cost: "1cr" },
+                  { label: "전문가 패널",         cost: "2cr" },
+                  { label: "학술/신화 분석",      cost: "2cr" },
+                  { label: "캐릭터 분석",         cost: "2cr" },
+                  { label: "시놉시스·구조",       cost: "2cr" },
+                  { label: "트리트먼트·비트",     cost: "3cr" },
+                  { label: "시나리오 초고",       cost: "3cr" },
+                  { label: "Script Coverage",     cost: "4cr" },
+                  { label: "에피소드 설계",       cost: "3cr" },
+                  { label: "마스터 리포트",       cost: "3cr" },
+                ].map(({ label, cost }) => (
+                  <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "1px solid var(--c-bd-1)" }}>
+                    <span style={{ fontSize: 10, color: "var(--c-tx-50)", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: cost === "무료" ? "#4ECCA3" : "#A78BFA", fontFamily: "'JetBrains Mono', monospace" }}>{cost}</span>
+                  </div>
+                ))}
+              </div>
+              {credits !== null && (
+                <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--c-bd-2)", fontSize: 11, color: "var(--c-tx-45)" }}>
+                  현재 <span style={{ color: "#A78BFA", fontWeight: 700 }}>{credits}cr</span>으로 Script Coverage <span style={{ color: "#A78BFA", fontWeight: 700 }}>{Math.floor(credits / 4)}회</span> · 트리트먼트 <span style={{ color: "#A78BFA", fontWeight: 700 }}>{Math.floor(credits / 3)}회</span> 가능
+                </div>
+              )}
             </div>
 
             {/* Packages */}

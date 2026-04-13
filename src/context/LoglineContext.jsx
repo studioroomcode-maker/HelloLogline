@@ -7,6 +7,7 @@ import { createContext, useContext } from "react";
  * - 입력: logline, setLogline, genre, setGenre
  * - 인증/API: apiKey, isDemoMode, hasOwnApiKey, canUseAllStages, user, credits, cc
  * - UI: isMobile, darkMode
+ * - 교육 모드: eduMode, setEduMode
  * - 네비게이션: currentStage, setCurrentStage, advanceToStage, stageRefs
  * - 스테이지 상태: getStageStatus, getStageDoneCount, STAGE_TOTALS, statusDotColor
  * - 액션: showToast, openApplicationDoc

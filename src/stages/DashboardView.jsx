@@ -522,6 +522,32 @@ function MasterReportPanel({ result }) {
         </div>
       )}
 
+      {/* 단계별 평가 (stage_assessments) */}
+      {result.stage_assessments && Object.keys(result.stage_assessments).length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 9, color: "var(--c-tx-30)", fontWeight: 700, marginBottom: 8, letterSpacing: 0.5, textTransform: "uppercase" }}>단계별 진단</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {[
+              { key: "logline",   label: "로그라인",    icon: "01" },
+              { key: "character", label: "캐릭터",      icon: "03" },
+              { key: "story",     label: "스토리 구조", icon: "04" },
+              { key: "treatment", label: "트리트먼트",  icon: "05" },
+              { key: "coverage",  label: "Coverage",    icon: "07" },
+            ].filter(s => result.stage_assessments[s.key]).map(({ key, label, icon }) => (
+              <div key={key} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 10px", borderRadius: 8, border: "1px solid var(--c-bd-1)", background: "rgba(var(--tw),0.01)" }}>
+                <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, background: `${meta.color}12`, border: `1px solid ${meta.color}25`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 8, fontWeight: 800, color: meta.color, fontFamily: "'JetBrains Mono', monospace" }}>{icon}</span>
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: "var(--c-tx-30)", fontWeight: 700, marginBottom: 2 }}>{label}</div>
+                  <div style={{ fontSize: 11, color: "var(--c-tx-60)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>{result.stage_assessments[key]}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 다음 우선순위 */}
       {result.next_priority && (
         <div style={{ fontSize: 11, color: meta.color, fontWeight: 700, padding: "8px 12px", borderRadius: 8, background: `${meta.color}08`, border: `1px solid ${meta.color}20` }}>

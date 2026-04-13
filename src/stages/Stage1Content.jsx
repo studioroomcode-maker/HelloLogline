@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import { ToolButton, ResultCard, ErrorMsg, Spinner, DocButton } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
@@ -10,6 +10,9 @@ import {
   RadarChart, CircleGauge, ScoreBar, CompareSection,
   ExportButton, ImprovementPanel, StoryDevPanel, AcademicPanel,
 } from "../panels.jsx";
+import {
+  EduHintChecklist, SelfAssessPanel, ComparePanel, ReflectionBox, ScoreCriteriaModal,
+} from "./EduModePanel.jsx";
 
 /* ─── Tooltip wrapper (simplified — no pop-up, just renders children) ─── */
 function Tooltip({ text, children, maxWidth = 300 }) {
@@ -49,6 +52,12 @@ export default function Stage1Content({
   academicResult,
   // api
   apiKey, serverHasKey,
+  // 기존 시나리오 참고
+  referenceScenario, setReferenceScenario,
+  referenceScenarioEnabled, setReferenceScenarioEnabled,
+  referenceScenarioSummary,
+  extractLoglineFromScenario, extractLoglineLoading, extractLoglineError,
+  summarizeReferenceScenario, summarizeLoading, summarizeError,
 }) {
   const {
     logline, setLogline,
@@ -57,7 +66,82 @@ export default function Stage1Content({
     getStageStatus, advanceToStage,
     openApplicationDoc,
     showToast,
+    eduMode,
   } = useLoglineCtx();
+
+  // ── 기존 시나리오 패널 ──
+  const [refPanelOpen, setRefPanelOpen] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleRefFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    const ext = file.name.split(".").pop()?.toLowerCase();
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("파일 크기는 5MB 이하만 지원합니다.");
+      return;
+    }
+
+    if (ext === "pdf") {
+      try {
+        const pdfjsLib = await import("pdfjs-dist");
+        const pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+        pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default;
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let text = "";
+        for (let i = 1; i <= Math.min(pdf.numPages, 100); i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          text += content.items.map((item) => item.str).join(" ") + "\n";
+        }
+        setReferenceScenario(text.trim());
+      } catch {
+        alert("PDF를 읽는 중 오류가 발생했습니다. 텍스트를 직접 붙여넣어 주세요.");
+      }
+      return;
+    }
+
+    if (ext === "fdx") {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(ev.target.result, "application/xml");
+          const paragraphs = doc.querySelectorAll("Paragraph");
+          const text = Array.from(paragraphs)
+            .map((p) => p.textContent.trim())
+            .filter(Boolean)
+            .join("\n");
+          setReferenceScenario(text);
+        } catch {
+          alert("FDX 파일을 읽는 중 오류가 발생했습니다. 텍스트를 직접 붙여넣어 주세요.");
+        }
+      };
+      reader.readAsText(file, "utf-8");
+      return;
+    }
+
+    // .txt, .md
+    const reader = new FileReader();
+    reader.onload = (ev) => setReferenceScenario(ev.target.result || "");
+    reader.readAsText(file, "utf-8");
+  };
+
+  // ── 교육 모드 로컬 상태 ──
+  const [eduPhase, setEduPhase] = useState("checklist"); // "checklist" | "selfAssess" | "result"
+  const [selfScores, setSelfScores] = useState(null);
+  const [criteriaKey, setCriteriaKey] = useState(null); // 기준 모달 열린 항목
+
+  // 교육 모드가 꺼지거나 새 분석이 시작되면 초기화
+  useEffect(() => {
+    if (!eduMode) { setEduPhase("checklist"); setSelfScores(null); }
+  }, [eduMode]);
+  useEffect(() => {
+    if (result && eduPhase === "checklist") setEduPhase("result");
+  }, [result]);
 
   const resultRef = useRef(null);
 
@@ -117,6 +201,22 @@ export default function Stage1Content({
 
   return (
     <ErrorBoundary><div>
+
+    {/* ── 교육 모드 배너 ── */}
+    {eduMode && (
+      <div style={{ marginBottom: 16, padding: "11px 14px", borderRadius: 10, background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.3)", display: "flex", gap: 10, alignItems: "flex-start" }}>
+        <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth={2} strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}>
+          <path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+        </svg>
+        <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.65 }}>
+          <strong style={{ color: "#A78BFA" }}>교육 모드 활성화</strong>
+          {" "}— AI 분석 전에 체크리스트로 자가 진단하고, 직접 채점한 뒤 AI 결과와 비교합니다. 분석 후 반성 일지를 작성해 학습을 심화할 수 있습니다.
+          <span style={{ fontSize: 10, color: "var(--c-tx-30)", display: "block", marginTop: 3 }}>
+            각 항목 옆 <strong style={{ color: "#A78BFA" }}>?</strong> 버튼으로 평가 기준과 학문적 근거를 확인할 수 있습니다.
+          </span>
+        </div>
+      </div>
+    )}
 
     {/* ── 단계 안내 ── */}
     {!result && (
@@ -213,6 +313,258 @@ export default function Stage1Content({
           }}>{g.label}</button>
         ))}
       </div>
+    </div>
+
+    {/* ── 기존 시나리오/시놉시스 참고 패널 ── */}
+    <div style={{ marginBottom: 16 }}>
+      {/* 헤더 토글 */}
+      <button
+        onClick={() => setRefPanelOpen(o => !o)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "9px 14px", borderRadius: refPanelOpen ? "10px 10px 0 0" : 10,
+          border: refPanelOpen
+            ? "1px solid rgba(78,204,163,0.4)"
+            : referenceScenario.trim()
+              ? "1px solid rgba(78,204,163,0.3)"
+              : "1px solid var(--c-bd-2)",
+          background: refPanelOpen
+            ? "rgba(78,204,163,0.07)"
+            : referenceScenario.trim()
+              ? "rgba(78,204,163,0.05)"
+              : "rgba(var(--tw),0.02)",
+          cursor: "pointer", transition: "all 0.15s",
+          fontFamily: "'Noto Sans KR', sans-serif",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={referenceScenario.trim() ? "#4ECCA3" : "var(--c-tx-35)"} strokeWidth={2} strokeLinecap="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+          </svg>
+          <span style={{ fontSize: 12, fontWeight: 600, color: referenceScenario.trim() ? "#4ECCA3" : "var(--c-tx-45)" }}>
+            기존 시나리오 / 시놉시스 참고
+          </span>
+          {referenceScenario.trim() && !refPanelOpen && (
+            <>
+              <span style={{ fontSize: 10, color: "rgba(78,204,163,0.7)", background: "rgba(78,204,163,0.1)", padding: "1px 7px", borderRadius: 10 }}>
+                {referenceScenario.trim().length.toLocaleString()}자
+              </span>
+              {referenceScenarioSummary && (
+                <span style={{ fontSize: 10, color: "rgba(78,204,163,0.85)", background: "rgba(78,204,163,0.15)", padding: "1px 7px", borderRadius: 10 }}>
+                  요약 완료
+                </span>
+              )}
+              {referenceScenarioEnabled && (
+                <span style={{ fontSize: 10, color: "#4ECCA3", background: "rgba(78,204,163,0.18)", padding: "1px 7px", borderRadius: 10, fontWeight: 700 }}>
+                  반영 중
+                </span>
+              )}
+            </>
+          )}
+        </div>
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-35)" strokeWidth={2.5} strokeLinecap="round"
+          style={{ transform: refPanelOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}>
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+
+      {/* 패널 본문 */}
+      {refPanelOpen && (
+        <div style={{
+          padding: "14px 16px 16px",
+          border: "1px solid rgba(78,204,163,0.4)", borderTop: "none",
+          borderRadius: "0 0 10px 10px",
+          background: "rgba(78,204,163,0.04)",
+        }}>
+          <div style={{ fontSize: 11, color: "var(--c-tx-40)", lineHeight: 1.65, marginBottom: 12 }}>
+            시나리오나 시놉시스를 붙여넣거나 파일로 첨부하세요.
+            <strong style={{ color: "rgba(78,204,163,0.9)" }}> 요약 생성</strong>을 누르면 핵심 내용만 압축해 이후 단계마다 크레딧을 아낄 수 있습니다.
+            <span style={{ display: "block", marginTop: 4, color: "var(--c-tx-30)", fontSize: 10 }}>
+              지원 형식: .txt · .md · .pdf · .fdx (Final Draft)
+            </span>
+          </div>
+
+          {/* 텍스트 입력 영역 */}
+          <div style={{ position: "relative", marginBottom: 10 }}>
+            <textarea
+              value={referenceScenario}
+              onChange={(e) => setReferenceScenario(e.target.value)}
+              placeholder="시나리오나 시놉시스 전문을 붙여넣으세요..."
+              rows={6}
+              style={{
+                width: "100%", boxSizing: "border-box",
+                padding: "12px 14px 28px", borderRadius: 8,
+                border: referenceScenario.length > 12000 && !referenceScenarioSummary
+                  ? "1px solid rgba(247,160,114,0.5)"
+                  : "1px solid rgba(78,204,163,0.2)",
+                background: "var(--c-card-2)", color: "var(--text-main)",
+                fontSize: 12, lineHeight: 1.7, resize: "vertical",
+                fontFamily: "'Noto Sans KR', sans-serif", outline: "none",
+              }}
+            />
+            {/* 글자수 표시 */}
+            <div style={{
+              position: "absolute", bottom: 8, right: 10, fontSize: 10,
+              color: referenceScenario.length > 12000 ? "#F7A072" : "var(--c-tx-25)",
+              fontFamily: "'JetBrains Mono', monospace",
+            }}>
+              {referenceScenario.length.toLocaleString()}자
+              {referenceScenario.length > 12000 && !referenceScenarioSummary && " · 12,000자 초과"}
+            </div>
+          </div>
+
+          {/* 12,000자 초과 & 요약 없음 경고 */}
+          {referenceScenario.length > 12000 && !referenceScenarioSummary && (
+            <div style={{
+              marginBottom: 10, padding: "8px 12px", borderRadius: 7,
+              background: "rgba(247,160,114,0.08)", border: "1px solid rgba(247,160,114,0.3)",
+              fontSize: 11, color: "#F7A072", lineHeight: 1.6,
+              display: "flex", alignItems: "flex-start", gap: 6,
+            }}>
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span>
+                현재 12,000자 이후 내용은 분석에서 잘립니다.{" "}
+                <strong style={{ color: "#F7A072" }}>요약 생성</strong>을 눌러 전체 내용을 반영하세요.
+              </span>
+            </div>
+          )}
+
+          {/* 요약 완료 상태 표시 */}
+          {referenceScenarioSummary && (
+            <div style={{
+              marginBottom: 10, padding: "8px 12px", borderRadius: 7,
+              background: "rgba(78,204,163,0.07)", border: "1px solid rgba(78,204,163,0.25)",
+              fontSize: 11, color: "rgba(78,204,163,0.9)", lineHeight: 1.6,
+            }}>
+              <div style={{ fontWeight: 700, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
+                <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                요약 완료 — 이후 단계 분석에 요약본이 주입됩니다 ({referenceScenarioSummary.length}자)
+              </div>
+              <div style={{ fontSize: 10, color: "rgba(78,204,163,0.65)", whiteSpace: "pre-wrap", lineHeight: 1.5, maxHeight: 80, overflow: "hidden" }}>
+                {referenceScenarioSummary.slice(0, 200)}…
+              </div>
+            </div>
+          )}
+
+          {/* 버튼 행 */}
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            {/* 파일 첨부 */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.md,.pdf,.fdx"
+              style={{ display: "none" }}
+              onChange={handleRefFileUpload}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                padding: "7px 13px", borderRadius: 7, fontSize: 11, fontWeight: 600,
+                border: "1px solid rgba(78,204,163,0.3)",
+                background: "rgba(78,204,163,0.06)", color: "#4ECCA3",
+                cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
+                display: "flex", alignItems: "center", gap: 5,
+              }}
+            >
+              <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              파일 첨부
+            </button>
+
+            {/* 요약 생성 버튼 */}
+            <button
+              onClick={summarizeReferenceScenario}
+              disabled={summarizeLoading || !referenceScenario.trim() || !apiKey}
+              style={{
+                padding: "7px 13px", borderRadius: 7, fontSize: 11, fontWeight: 600,
+                border: "1px solid rgba(78,204,163,0.4)",
+                background: summarizeLoading ? "rgba(78,204,163,0.04)" : "rgba(78,204,163,0.1)",
+                color: !referenceScenario.trim() || !apiKey ? "rgba(78,204,163,0.35)" : "#4ECCA3",
+                cursor: summarizeLoading || !referenceScenario.trim() || !apiKey ? "not-allowed" : "pointer",
+                fontFamily: "'Noto Sans KR', sans-serif",
+                display: "flex", alignItems: "center", gap: 5,
+              }}
+            >
+              {summarizeLoading ? (
+                <><span style={{ display: "inline-block", width: 9, height: 9, border: "2px solid rgba(78,204,163,0.3)", borderTop: "2px solid #4ECCA3", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />요약 중...</>
+              ) : (
+                <><svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>{referenceScenarioSummary ? "요약 다시 생성" : "요약 생성"}</>
+              )}
+            </button>
+
+            {/* 로그라인 추출 버튼 */}
+            <button
+              onClick={extractLoglineFromScenario}
+              disabled={extractLoglineLoading || !referenceScenario.trim() || !apiKey}
+              style={{
+                padding: "7px 13px", borderRadius: 7, fontSize: 11, fontWeight: 600,
+                border: "1px solid rgba(200,168,75,0.4)",
+                background: extractLoglineLoading ? "rgba(200,168,75,0.04)" : "rgba(200,168,75,0.1)",
+                color: !referenceScenario.trim() || !apiKey ? "rgba(200,168,75,0.4)" : "#C8A84B",
+                cursor: extractLoglineLoading || !referenceScenario.trim() || !apiKey ? "not-allowed" : "pointer",
+                fontFamily: "'Noto Sans KR', sans-serif",
+                display: "flex", alignItems: "center", gap: 5, opacity: !apiKey ? 0.6 : 1,
+              }}
+            >
+              {extractLoglineLoading ? (
+                <><span style={{ display: "inline-block", width: 9, height: 9, border: "2px solid rgba(200,168,75,0.3)", borderTop: "2px solid #C8A84B", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />추출 중...</>
+              ) : (
+                <><svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>로그라인 추출</>
+              )}
+            </button>
+
+            {/* 내용 지우기 */}
+            {referenceScenario.trim() && (
+              <button
+                onClick={() => { setReferenceScenario(""); setReferenceScenarioEnabled(false); }}
+                style={{
+                  padding: "7px 10px", borderRadius: 7, fontSize: 11,
+                  border: "1px solid rgba(232,93,117,0.25)",
+                  background: "rgba(232,93,117,0.05)", color: "rgba(232,93,117,0.7)",
+                  cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
+                }}
+              >
+                지우기
+              </button>
+            )}
+          </div>
+
+          {/* 에러 메시지 */}
+          {(extractLoglineError || summarizeError) && (
+            <div style={{ marginTop: 8, fontSize: 11, color: "#E85D75", padding: "6px 10px", background: "rgba(232,93,117,0.07)", borderRadius: 6 }}>
+              {extractLoglineError || summarizeError}
+            </div>
+          )}
+
+          {/* '분석에 반영' 체크박스 */}
+          <label style={{
+            display: "flex", alignItems: "center", gap: 8, marginTop: 12,
+            cursor: referenceScenario.trim() ? "pointer" : "not-allowed",
+            opacity: referenceScenario.trim() ? 1 : 0.4,
+          }}>
+            <input
+              type="checkbox"
+              checked={referenceScenarioEnabled}
+              disabled={!referenceScenario.trim()}
+              onChange={(e) => setReferenceScenarioEnabled(e.target.checked)}
+              style={{ accentColor: "#4ECCA3", width: 14, height: 14, cursor: "inherit" }}
+            />
+            <span style={{ fontSize: 12, color: referenceScenarioEnabled ? "#4ECCA3" : "var(--c-tx-45)", fontWeight: referenceScenarioEnabled ? 700 : 400, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              이후 모든 단계 분석에 이 내용 반영
+            </span>
+            {referenceScenarioEnabled && (
+              <span style={{ fontSize: 10, color: "rgba(78,204,163,0.85)", background: "rgba(78,204,163,0.15)", padding: "1px 7px", borderRadius: 10, fontWeight: 700 }}>
+                활성화됨 {referenceScenarioSummary ? "· 요약본 사용" : "· 원문 앞부분"}
+              </span>
+            )}
+          </label>
+        </div>
+      )}
     </div>
 
     {/* Compare toggle */}
@@ -320,9 +672,30 @@ export default function Stage1Content({
       );
     })()}
 
+    {/* ── 교육 모드: 힌트 체크리스트 (분석 전) ── */}
+    {eduMode && !result && logline.trim() && (
+      <>
+        {eduPhase === "checklist" && (
+          <EduHintChecklist
+            onStartAnalysis={() => { setEduPhase("selfAssess"); }}
+            loading={loading}
+          />
+        )}
+        {eduPhase === "selfAssess" && (
+          <SelfAssessPanel
+            onConfirm={(scores) => { setSelfScores(scores); analyze(); }}
+            onInfoClick={setCriteriaKey}
+          />
+        )}
+      </>
+    )}
+
+    {/* ── 교육 모드: 기준 모달 ── */}
+    <ScoreCriteriaModal itemKey={criteriaKey} onClose={() => setCriteriaKey(null)} />
+
     {/* Main analyze button */}
     <Tooltip text={"로그라인을 입력하면 AI가 시나리오 전문가 관점에서 종합 분석을 시작합니다.\n\n분석 항목:\n• 구조적 완성도 — 이야기의 뼈대가 탄탄한지\n• 표현적 매력도 — 읽는 사람을 끌어당기는 힘\n• 기술적 완성도 — 장르·캐릭터·갈등의 명확성\n• 흥미 유발 지수 — 제작사가 관심을 가질 가능성\n\n분석 결과를 바탕으로 아래 심화 도구들이 활성화됩니다."} maxWidth={340}>
-    <button onClick={() => analyze()} disabled={loading || !logline.trim() || !apiKey} style={{
+    <button onClick={() => { if (eduMode && !result) { setEduPhase("checklist"); } analyze(); }} disabled={loading || !logline.trim() || !apiKey} style={{
       width: "100%", height: 48, borderRadius: 12, border: "1px solid rgba(200,168,75,0.4)",
       cursor: loading || !logline.trim() || !apiKey ? "not-allowed" : "pointer",
       background: loading || !logline.trim() || !apiKey ? "rgba(200,168,75,0.05)" : "linear-gradient(135deg, rgba(200,168,75,0.2), rgba(200,168,75,0.1))",
@@ -707,6 +1080,14 @@ export default function Stage1Content({
         )}
       </div>
     )}
+    {/* ── 교육 모드: 예상 vs AI 비교 + 반성 일지 ── */}
+    {eduMode && result && selfScores && (
+      <ComparePanel selfScores={selfScores} aiResult={result} />
+    )}
+    {eduMode && result && (
+      <ReflectionBox />
+    )}
+
     {getStageStatus("1") === "done" && (
       <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
         <button onClick={() => advanceToStage("2")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>

@@ -1,6 +1,11 @@
+import { useState, useRef } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import { ToolButton, ResultCard, ErrorMsg, FeedbackBox, SvgIcon, ICON } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
+import {
+  parseScreenplay, toFountain, toFDX,
+  exportScreenplayAsPDF, downloadText,
+} from "../screenplay-export.js";
 
 export default function Stage6Content({
   scenarioDraftResult, setScenarioDraftResult,
@@ -80,14 +85,13 @@ export default function Stage6Content({
                       {scenarioDraftCtx.dialogue && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(244,114,182,0.1)", color: "#F472B6", border: "1px solid rgba(244,114,182,0.2)" }}>대사 목소리 반영</span>}
                     </div>
                   )}
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
-                    <button
-                      onClick={() => navigator.clipboard.writeText(scenarioDraftResult).then(() => showToast("success", "시나리오 초고가 복사되었습니다."))}
-                      style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(167,139,250,0.3)", background: "rgba(167,139,250,0.08)", color: "#A78BFA", fontSize: 11, cursor: "pointer" }}
-                    >
-                      전체 복사
-                    </button>
-                  </div>
+
+                  {/* ── 출력 패널 ── */}
+                  <ScriptExportPanel
+                    scriptText={scenarioDraftResult}
+                    logline={logline}
+                    onCopy={() => navigator.clipboard.writeText(scenarioDraftResult).then(() => showToast("success", "시나리오 초고가 복사되었습니다."))}
+                  />
                   <pre style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "'JetBrains Mono', 'Courier New', monospace", fontSize: isMobile ? 12 : 13, lineHeight: 1.8, color: "var(--c-tx-75)", margin: 0 }}>
                     {scenarioDraftResult}
                   </pre>
@@ -128,5 +132,162 @@ export default function Stage6Content({
                 </div>
               )}
     </div></ErrorBoundary>
+  );
+}
+
+// ────────────────────────────────────────────────────
+// 출력 패널 컴포넌트
+// ────────────────────────────────────────────────────
+function ScriptExportPanel({ scriptText, logline, onCopy }) {
+  const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
+  const [exporting, setExporting] = useState(null); // null | format string
+
+  const FORMATS = [
+    {
+      id: "fountain",
+      label: "Fountain",
+      ext: ".fountain",
+      desc: "Highland · Fade In 호환",
+      color: "#60A5FA",
+      icon: "F",
+    },
+    {
+      id: "fdx",
+      label: "Final Draft",
+      ext: ".fdx",
+      desc: "업계 표준 — Final Draft 11+",
+      color: "#4ECCA3",
+      icon: "FD",
+    },
+    {
+      id: "pdf_screenplay",
+      label: "PDF 시나리오",
+      ext: ".pdf",
+      desc: "서양 표준 포맷 (Courier)",
+      color: "#A78BFA",
+      icon: "SC",
+    },
+    {
+      id: "pdf_korean",
+      label: "PDF 방송 대본",
+      ext: ".pdf",
+      desc: "한국 드라마 대본 양식",
+      color: "#FB923C",
+      icon: "방",
+    },
+  ];
+
+  const handleExport = async (fmt) => {
+    if (exporting) return;
+    setExporting(fmt.id);
+    const meta = {
+      title: title.trim() || "시나리오",
+      author: author.trim(),
+      logline: logline || "",
+    };
+    const safeTitle = meta.title.replace(/[^\w가-힣\s]/g, "").trim() || "시나리오";
+
+    try {
+      const elements = parseScreenplay(scriptText);
+
+      if (fmt.id === "fountain") {
+        const text = toFountain(elements, meta);
+        downloadText(text, `${safeTitle}.fountain`);
+      } else if (fmt.id === "fdx") {
+        const xml = toFDX(elements, meta);
+        downloadText(xml, `${safeTitle}.fdx`);
+      } else if (fmt.id === "pdf_screenplay") {
+        await exportScreenplayAsPDF(elements, meta, "screenplay");
+      } else if (fmt.id === "pdf_korean") {
+        await exportScreenplayAsPDF(elements, meta, "korean");
+      }
+    } catch (err) {
+      alert("출력 중 오류가 발생했습니다: " + (err.message || "다시 시도해주세요."));
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      {/* 제목/작가 입력 */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        <div style={{ flex: 2, minWidth: 160 }}>
+          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontWeight: 600, letterSpacing: 0.5 }}>작품 제목</div>
+          <input
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="제목 미설정"
+            style={{
+              width: "100%", boxSizing: "border-box", padding: "7px 10px", borderRadius: 7,
+              border: "1px solid var(--c-bd-3)", background: "var(--c-card-2)",
+              color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none",
+            }}
+          />
+        </div>
+        <div style={{ flex: 1, minWidth: 120 }}>
+          <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 4, fontWeight: 600, letterSpacing: 0.5 }}>작가</div>
+          <input
+            value={author}
+            onChange={e => setAuthor(e.target.value)}
+            placeholder="이름 (선택)"
+            style={{
+              width: "100%", boxSizing: "border-box", padding: "7px 10px", borderRadius: 7,
+              border: "1px solid var(--c-bd-3)", background: "var(--c-card-2)",
+              color: "var(--text-main)", fontSize: 12, fontFamily: "'Noto Sans KR', sans-serif", outline: "none",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* 포맷 버튼 그리드 */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+        {FORMATS.map(fmt => (
+          <button
+            key={fmt.id}
+            onClick={() => handleExport(fmt)}
+            disabled={!!exporting}
+            style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "10px 14px", borderRadius: 9, cursor: exporting ? "wait" : "pointer",
+              border: `1px solid ${fmt.color}40`,
+              background: exporting === fmt.id ? `${fmt.color}18` : `${fmt.color}0d`,
+              opacity: exporting && exporting !== fmt.id ? 0.45 : 1,
+              transition: "all 0.15s", textAlign: "left",
+              fontFamily: "'Noto Sans KR', sans-serif",
+            }}
+          >
+            <div style={{
+              width: 32, height: 32, borderRadius: 7, flexShrink: 0,
+              background: `${fmt.color}22`, border: `1px solid ${fmt.color}40`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 9, fontWeight: 800, color: fmt.color, letterSpacing: -0.5,
+            }}>
+              {exporting === fmt.id ? (
+                <span style={{ display: "inline-block", width: 12, height: 12, border: `2px solid ${fmt.color}44`, borderTop: `2px solid ${fmt.color}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              ) : fmt.icon}
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: fmt.color, marginBottom: 1 }}>
+                {exporting === fmt.id ? "생성 중..." : fmt.label}
+                <span style={{ fontSize: 10, fontWeight: 400, color: `${fmt.color}99`, marginLeft: 4 }}>{fmt.ext}</span>
+              </div>
+              <div style={{ fontSize: 10, color: "var(--c-tx-35)" }}>{fmt.desc}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* 복사 버튼 */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+        <button
+          onClick={onCopy}
+          style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid rgba(167,139,250,0.3)", background: "rgba(167,139,250,0.08)", color: "#A78BFA", fontSize: 11, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}
+        >
+          전체 복사
+        </button>
+      </div>
+    </div>
   );
 }

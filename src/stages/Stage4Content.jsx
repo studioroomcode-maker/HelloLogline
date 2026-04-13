@@ -438,72 +438,104 @@ export default function Stage4Content({
     )}
 
     {/* ── 에피소드 시리즈 설계 ── */}
-    {(pipelineResult || synopsisResults) && (
+    {logline && (
       <div style={{ marginTop: 28, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text-main)" }}>에피소드 시리즈 설계</div>
             <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginTop: 2 }}>
-              시놉시스를 N부작 시리즈로 구성 — 각 에피소드 갈등·클리프행어 설계
+              로그라인 → N부작 시리즈 구조 · 회차별 클리프행어 · 시즌 아크 · 감정 곡선
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {[4, 6, 8, 12, 16].map(n => (
-              <button key={n} onClick={() => generateEpisodeDesign(n)} disabled={episodeDesignLoading}
-                style={{
-                  padding: "6px 12px", borderRadius: 8, cursor: episodeDesignLoading ? "wait" : "pointer",
-                  border: "1px solid rgba(78,204,163,0.3)", background: "rgba(78,204,163,0.07)",
-                  color: "#4ECCA3", fontSize: 11, fontWeight: 700,
-                  fontFamily: "'JetBrains Mono', monospace",
-                }}>
-                {episodeDesignLoading ? "생성 중..." : `${n}부작`}
-              </button>
-            ))}
-          </div>
+        </div>
+        {/* 회차 선택 버튼 */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+          {[4, 6, 8, 12, 16].map(n => (
+            <button key={n} onClick={() => generateEpisodeDesign(n)}
+              disabled={episodeDesignLoading || !apiKey}
+              style={{
+                padding: "7px 14px", borderRadius: 8,
+                cursor: (episodeDesignLoading || !apiKey) ? "not-allowed" : "pointer",
+                border: `1px solid rgba(78,204,163,${episodeDesignResult?.episode_count === n || episodeDesignResult?.episodes?.length === n ? "0.6" : "0.25"})`,
+                background: `rgba(78,204,163,${episodeDesignResult?.episode_count === n || episodeDesignResult?.episodes?.length === n ? "0.15" : "0.06"})`,
+                color: "#4ECCA3", fontSize: 11, fontWeight: 700,
+                fontFamily: "'JetBrains Mono', monospace",
+                opacity: !apiKey ? 0.45 : 1,
+                transition: "all 0.2s",
+              }}>
+              {episodeDesignLoading ? <span style={{ display: "inline-block", width: 10, height: 10, border: "1.5px solid rgba(78,204,163,0.3)", borderTop: "1.5px solid #4ECCA3", borderRadius: "50%", animation: "spin 0.8s linear infinite", verticalAlign: "middle", marginRight: 4 }} /> : null}
+              {n}부작
+            </button>
+          ))}
         </div>
         {episodeDesignError && <div style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(232,93,117,0.08)", border: "1px solid rgba(232,93,117,0.2)", fontSize: 11, color: "#E85D75" }}>{episodeDesignError}</div>}
         {episodeDesignResult && (
           <div>
-            {/* 헤더 */}
-            <div style={{ display: "flex", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+            {/* 헤더 뱃지 */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
               {[
                 { label: "포맷", value: episodeDesignResult.series_type || "—", color: "#4ECCA3" },
                 { label: "회차", value: `${episodeDesignResult.episode_count || episodeDesignResult.episodes?.length || "?"}부작`, color: "#45B7D1" },
               ].map(({ label, value, color }) => (
-                <div key={label} style={{ padding: "7px 14px", borderRadius: 8, border: `1px solid ${color}22`, background: `${color}0a` }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace" }}>{value}</div>
-                  <div style={{ fontSize: 9, color: "var(--c-tx-30)", marginTop: 2 }}>{label}</div>
+                <div key={label} style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${color}25`, background: `${color}0c` }}>
+                  <span style={{ fontSize: 9, color: "var(--c-tx-30)", marginRight: 6 }}>{label}</span>
+                  <span style={{ fontSize: 12, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace" }}>{value}</span>
                 </div>
               ))}
+              {/* 한국 드라마 감정 곡선 범례 */}
+              <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+                {[
+                  { label: "기", color: "#60A5FA" }, { label: "승", color: "#4ECCA3" },
+                  { label: "전", color: "#F7A072" }, { label: "결", color: "#A78BFA" },
+                ].map(({ label, color }) => (
+                  <span key={label} style={{ fontSize: 9, padding: "2px 7px", borderRadius: 4, background: `${color}12`, color, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{label}</span>
+                ))}
+              </div>
             </div>
+            {/* 시즌 로그라인 */}
             {episodeDesignResult.season_logline && (
               <div style={{ marginBottom: 14, padding: "10px 14px", borderRadius: 9, border: "1px solid rgba(78,204,163,0.2)", background: "rgba(78,204,163,0.04)", fontSize: 13, color: "var(--c-tx-65)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>
                 {episodeDesignResult.season_logline}
               </div>
             )}
             {/* 에피소드 카드 */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {(episodeDesignResult.episodes || []).map((ep, i) => (
-                <div key={i} style={{ padding: "12px 14px", borderRadius: 10, border: "1px solid var(--c-bd-1)", background: "rgba(var(--tw),0.01)" }}>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
-                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(78,204,163,0.15)", border: "1px solid rgba(78,204,163,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: "#4ECCA3", fontFamily: "'JetBrains Mono', monospace" }}>{ep.number || i + 1}</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {(episodeDesignResult.episodes || []).map((ep, i) => {
+                const total = episodeDesignResult.episodes?.length || 1;
+                const pos = i / total;
+                // 위치 기반 기·승·전·결 감정 온도
+                const arc = pos < 0.25 ? { label: "기", color: "#60A5FA" }
+                  : pos < 0.5  ? { label: "승", color: "#4ECCA3" }
+                  : pos < 0.75 ? { label: "전", color: "#F7A072" }
+                  :              { label: "결", color: "#A78BFA" };
+                const emotionTemp = ep.emotional_temperature || ep.emotion_temp;
+                return (
+                  <div key={i} style={{ padding: "11px 14px", borderRadius: 10, border: `1px solid ${arc.color}18`, background: `${arc.color}04`, position: "relative" }}>
+                    {/* 감정 아크 라벨 */}
+                    <div style={{ position: "absolute", top: 11, right: 12, fontSize: 9, padding: "2px 7px", borderRadius: 4, background: `${arc.color}14`, color: arc.color, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{arc.label}</div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 5 }}>
+                      <div style={{ width: 20, height: 20, borderRadius: "50%", background: `${arc.color}18`, border: `1px solid ${arc.color}40`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <span style={{ fontSize: 9, fontWeight: 800, color: arc.color, fontFamily: "'JetBrains Mono', monospace" }}>{ep.number || i + 1}</span>
+                      </div>
+                      {ep.title && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main)", paddingRight: 36 }}>{ep.title}</span>}
                     </div>
-                    {ep.title && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text-main)" }}>{ep.title}</span>}
+                    {ep.logline && <div style={{ fontSize: 12, color: "var(--c-tx-60)", lineHeight: 1.65, marginBottom: 4 }}>{ep.logline}</div>}
+                    {emotionTemp && (
+                      <div style={{ fontSize: 10, color: arc.color, marginBottom: 4, opacity: 0.8 }}>감정온도: {emotionTemp}</div>
+                    )}
+                    {ep.key_scene && <div style={{ fontSize: 10, color: "var(--c-tx-35)", fontStyle: "italic", marginBottom: 4 }}>핵심 씬: {ep.key_scene}</div>}
+                    {ep.cliffhanger && (
+                      <div style={{ marginTop: 5, fontSize: 11, color: "#F7A072", padding: "3px 8px", borderRadius: 5, background: "rgba(247,160,114,0.07)", border: "1px solid rgba(247,160,114,0.2)", display: "inline-block" }}>
+                        ↪ {ep.cliffhanger}
+                      </div>
+                    )}
                   </div>
-                  {ep.logline && <div style={{ fontSize: 12, color: "var(--c-tx-60)", lineHeight: 1.65, marginBottom: ep.cliffhanger ? 6 : 0 }}>{ep.logline}</div>}
-                  {ep.key_scene && <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginTop: 4, fontStyle: "italic" }}>씬: {ep.key_scene}</div>}
-                  {ep.cliffhanger && (
-                    <div style={{ marginTop: 6, fontSize: 11, color: "#F7A072", padding: "4px 8px", borderRadius: 5, background: "rgba(247,160,114,0.07)", border: "1px solid rgba(247,160,114,0.2)", display: "inline-block" }}>
-                      🔗 {ep.cliffhanger}
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
             {/* 시즌 아크 */}
             {episodeDesignResult.series_arc && (
-              <div style={{ marginTop: 14, padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(69,183,209,0.2)", background: "rgba(69,183,209,0.04)" }}>
+              <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 10, border: "1px solid rgba(69,183,209,0.2)", background: "rgba(69,183,209,0.04)" }}>
                 <div style={{ fontSize: 10, color: "rgba(69,183,209,0.7)", fontWeight: 700, marginBottom: 8, letterSpacing: 0.5, textTransform: "uppercase" }}>시즌 아크</div>
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
                   {[

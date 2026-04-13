@@ -27,44 +27,52 @@ export default class ErrorBoundary extends Component {
       return (
         <div
           style={{
-            margin: "12px 0",
-            padding: "16px 18px",
-            borderRadius: 10,
-            background: "rgba(232,93,117,0.06)",
-            border: "1px solid rgba(232,93,117,0.22)",
+            margin: "16px 0",
+            padding: "20px 22px",
+            borderRadius: 12,
+            background: "rgba(232,93,117,0.12)",
+            border: "1.5px solid rgba(232,93,117,0.45)",
             fontFamily: "'Noto Sans KR', sans-serif",
           }}
         >
-          <div
-            style={{ fontSize: 13, fontWeight: 700, color: "#E85D75", marginBottom: 4 }}
-          >
-            패널 렌더링 오류
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#E85D75" strokeWidth={2} strokeLinecap="round">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#E85D75" }}>
+              이 단계를 불러오는 중 오류가 발생했습니다
+            </div>
           </div>
           <div
             style={{
-              fontSize: 11,
-              color: "rgba(232,93,117,0.65)",
-              marginBottom: 12,
+              fontSize: 12,
+              color: "rgba(232,93,117,0.85)",
+              marginBottom: 14,
               wordBreak: "break-word",
+              lineHeight: 1.6,
+              paddingLeft: 24,
             }}
           >
             {this.state.error?.message || "알 수 없는 오류가 발생했습니다."}
           </div>
-          <button
-            onClick={this.reset}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 6,
-              border: "1px solid rgba(232,93,117,0.3)",
-              background: "rgba(232,93,117,0.1)",
-              color: "#E85D75",
-              cursor: "pointer",
-              fontSize: 11,
-              fontFamily: "'Noto Sans KR', sans-serif",
-            }}
-          >
-            다시 시도
-          </button>
+          <div style={{ paddingLeft: 24 }}>
+            <button
+              onClick={this.reset}
+              style={{
+                padding: "7px 16px",
+                borderRadius: 8,
+                border: "1px solid rgba(232,93,117,0.5)",
+                background: "rgba(232,93,117,0.15)",
+                color: "#E85D75",
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 600,
+                fontFamily: "'Noto Sans KR', sans-serif",
+              }}
+            >
+              다시 시도
+            </button>
+          </div>
         </div>
       );
     }

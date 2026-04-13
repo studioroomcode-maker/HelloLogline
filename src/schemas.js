@@ -319,6 +319,7 @@ export const ScriptCoverageSchema = z
   .object({
     overall_score: z.number(),
     recommendation: z.string(),
+    verdict_rationale: z.string().optional().catch(undefined),
     scores: z.object({}).passthrough(),
     strengths: z.array(z.string()),
     weaknesses: z.array(z.string()),
