@@ -4551,9 +4551,31 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           {/* Save status */}
-          {saveStatus && !isMobile && (
-            <span style={{ fontSize: 10, color: saveStatus === "saved" ? "#4ECCA3" : "var(--c-tx-35)", fontFamily: "'JetBrains Mono', monospace" }}>
-              {saveStatus === "saving" ? "저장 중..." : "저장됨"}
+          {saveStatus && (
+            <span style={{
+              fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
+              color: saveStatus === "saved" ? "#4ECCA3" : "var(--c-tx-35)",
+              display: "flex", alignItems: "center", gap: 4,
+              padding: "3px 8px", borderRadius: 6,
+              background: saveStatus === "saved" ? "rgba(78,204,163,0.08)" : "var(--glass-nano)",
+              border: `1px solid ${saveStatus === "saved" ? "rgba(78,204,163,0.2)" : "var(--glass-bd-nano)"}`,
+              transition: "all 0.2s var(--ease-spring)",
+            }}>
+              {saveStatus === "saving" ? (
+                <>
+                  <svg width={9} height={9} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" style={{ animation: "spin 1s linear infinite" }}>
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                  </svg>
+                  {!isMobile && "저장 중..."}
+                </>
+              ) : (
+                <>
+                  <svg width={9} height={9} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round">
+                    <path d="M20 6L9 17l-5-5"/>
+                  </svg>
+                  {!isMobile && "저장됨"}
+                </>
+              )}
             </span>
           )}
           {/* 취소 — 로딩 중일 때만 */}
@@ -4672,8 +4694,32 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
             {!isMobile && (eduMode ? "교육 모드" : "교육 모드")}
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: eduMode ? "#A78BFA" : "var(--c-bd-5)", flexShrink: 0 }} />
           </button>
-          <button onClick={() => setDarkMode(!darkMode)} title={darkMode ? "라이트 모드" : "다크 모드"} style={{ padding: "5px 8px", borderRadius: 8, fontSize: 14, lineHeight: 1, border: "1px solid var(--c-bd-3)", background: "var(--c-card-1)", color: "var(--c-tx-50)", cursor: "pointer" }}>
-            {darkMode ? "☀️" : "🌙"}
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            title={darkMode ? "라이트 모드로 전환" : "다크 모드로 전환"}
+            style={{
+              padding: "5px 8px", borderRadius: 8, fontSize: 14, lineHeight: 1,
+              border: "1px solid var(--glass-bd-base)", background: "var(--glass-nano)",
+              color: darkMode ? "#C8A84B" : "var(--c-tx-50)",
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              width: 30, height: 28,
+              transition: "all 0.2s var(--ease-spring)",
+              boxShadow: "inset 0 1px 0 var(--glass-bd-nano)",
+            }}
+          >
+            {darkMode ? (
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+            ) : (
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            )}
           </button>
           {/* 유저 아바타 → 드롭다운 */}
           {user && (

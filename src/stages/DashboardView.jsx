@@ -101,16 +101,32 @@ function loadCreditHistory() {
   }
 }
 
+// 스테이지 진입 전제 조건
+const STAGE_PREREQUISITES = {
+  "2": "1", "3": "1", "4": "2",
+  "5": "4", "6": "5", "7": "6", "8": "7",
+};
+
 export default function DashboardView() {
   const {
     logline, genre,
     getStageStatus, getStageDoneCount, STAGE_TOTALS,
-    stageResultSummary, advanceToStage,
+    stageResultSummary, advanceToStage, showToast,
     user, credits,
     isMobile,
     openPitchDeck, openStoryBibleDoc,
     generateMasterReport, masterReportResult, masterReportLoading, masterReportError,
   } = useLoglineCtx();
+
+  function handleStageClick(id) {
+    const prereqId = STAGE_PREREQUISITES[id];
+    if (prereqId && getStageStatus(prereqId) !== "done") {
+      showToast("info", `Stage ${prereqId}을 먼저 완료해야 진입할 수 있습니다.`);
+      advanceToStage(prereqId);
+      return;
+    }
+    advanceToStage(id);
+  }
 
   const [projects, setProjects] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -363,7 +379,7 @@ export default function DashboardView() {
               doneCount={getStageDoneCount(s.id)}
               total={STAGE_TOTALS?.[s.id]}
               summary={stageResultSummary?.[s.id]}
-              onClick={() => advanceToStage(s.id)}
+              onClick={() => handleStageClick(s.id)}
             />
           ))}
         </div>

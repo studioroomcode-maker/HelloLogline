@@ -1,8 +1,14 @@
 import { useState } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
 
+// 스테이지 진입 전제 조건: key 스테이지는 value 스테이지가 완료되어야 진입 가능
+const STAGE_PREREQUISITES = {
+  "2": "1", "3": "1", "4": "2",
+  "5": "4", "6": "5", "7": "6", "8": "7",
+};
+
 export default function SidebarNavItem({ id, title, sub, accentColor }) {
-  const { currentStage, setCurrentStage, getStageStatus, getStageDoneCount, STAGE_TOTALS, stageResultSummary } = useLoglineCtx();
+  const { currentStage, setCurrentStage, getStageStatus, getStageDoneCount, STAGE_TOTALS, stageResultSummary, showToast } = useLoglineCtx();
   const [hovered, setHovered] = useState(false);
 
   const status = getStageStatus(id);
@@ -10,9 +16,19 @@ export default function SidebarNavItem({ id, title, sub, accentColor }) {
   const total = STAGE_TOTALS[id];
   const isActive = currentStage === id;
 
+  function handleClick() {
+    const prereqId = STAGE_PREREQUISITES[id];
+    if (prereqId && getStageStatus(prereqId) !== "done") {
+      showToast("info", `Stage ${prereqId}을 먼저 완료해야 진입할 수 있습니다.`);
+      setCurrentStage(prereqId);
+      return;
+    }
+    setCurrentStage(id);
+  }
+
   return (
     <div
-      onClick={() => setCurrentStage(id)}
+      onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
