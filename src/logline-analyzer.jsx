@@ -41,6 +41,7 @@ import {
   MasterReportSchema,
 } from "./schemas.js";
 import ErrorBoundary from "./ErrorBoundary.jsx";
+import ConfirmModal from "./ConfirmModal.jsx";
 import LoginScreen from "./LoginScreen.jsx";
 import { LoglineProvider } from "./context/LoglineContext.jsx";
 import WelcomeModal from "./WelcomeModal.jsx";
@@ -50,22 +51,52 @@ import { ApiKeyModal, HistoryPanel } from "./panels.jsx";
 
 /* ─── Lazy-loaded heavy panels ─── */
 /* ─── Lazy-loaded stage content ─── */
-const Stage1Content = lazy(() => import("./stages/Stage1Content.jsx"));
-const Stage2Content = lazy(() => import("./stages/Stage2Content.jsx"));
-const Stage3Content = lazy(() => import("./stages/Stage3Content.jsx"));
-const Stage7Content = lazy(() => import("./stages/Stage7Content.jsx"));
-const Stage6Content = lazy(() => import("./stages/Stage6Content.jsx"));
-const Stage8Content = lazy(() => import("./stages/Stage8Content.jsx"));
-const Stage4Content = lazy(() => import("./stages/Stage4Content.jsx"));
-const Stage5Content = lazy(() => import("./stages/Stage5Content.jsx"));
-const DashboardView = lazy(() => import("./stages/DashboardView.jsx"));
-const ScriptCoveragePanel = lazy(() =>
+
+/**
+ * 청크 로드 실패 시 한 번 자동 새로고침하는 lazy 래퍼.
+ * 새 빌드 배포 후 서비스워커가 이전 해시 청크를 제거하면
+ * "Failed to fetch dynamically imported module" 에러가 발생한다.
+ * → 감지 즉시 페이지 새로고침으로 새 청크를 로드한다.
+ */
+function lazyWithRetry(importFn) {
+  return lazy(() =>
+    importFn().catch((err) => {
+      const isChunkError =
+        err?.message?.includes("dynamically imported module") ||
+        err?.message?.includes("Failed to fetch") ||
+        err?.message?.includes("Importing a module script failed") ||
+        err?.name === "ChunkLoadError";
+
+      if (isChunkError) {
+        const alreadyRetried = sessionStorage.getItem("hll-chunk-reload");
+        if (!alreadyRetried) {
+          sessionStorage.setItem("hll-chunk-reload", "1");
+          window.location.reload();
+          // 새로고침 중이므로 resolve하지 않는 Promise 반환
+          return new Promise(() => {});
+        }
+      }
+      throw err;
+    })
+  );
+}
+
+const Stage1Content = lazyWithRetry(() => import("./stages/Stage1Content.jsx"));
+const Stage2Content = lazyWithRetry(() => import("./stages/Stage2Content.jsx"));
+const Stage3Content = lazyWithRetry(() => import("./stages/Stage3Content.jsx"));
+const Stage7Content = lazyWithRetry(() => import("./stages/Stage7Content.jsx"));
+const Stage6Content = lazyWithRetry(() => import("./stages/Stage6Content.jsx"));
+const Stage8Content = lazyWithRetry(() => import("./stages/Stage8Content.jsx"));
+const Stage4Content = lazyWithRetry(() => import("./stages/Stage4Content.jsx"));
+const Stage5Content = lazyWithRetry(() => import("./stages/Stage5Content.jsx"));
+const DashboardView = lazyWithRetry(() => import("./stages/DashboardView.jsx"));
+const ScriptCoveragePanel = lazyWithRetry(() =>
   import("./panels/EvaluationPanels.jsx").then((m) => ({ default: m.ScriptCoveragePanel }))
 );
-const ValuationPanel = lazy(() =>
+const ValuationPanel = lazyWithRetry(() =>
   import("./panels/EvaluationPanels.jsx").then((m) => ({ default: m.ValuationPanel }))
 );
-const StoryDoctorPanel = lazy(() => import("./stages/StoryDoctorPanel.jsx"));
+const StoryDoctorPanel = lazyWithRetry(() => import("./stages/StoryDoctorPanel.jsx"));
 
 /* ─── 크레딧 사용 내역 트래킹 ─── */
 function trackCreditUsage(feature, amount = 1) {
@@ -931,6 +962,7 @@ export default function LoglineAnalyzer() {
   const [savedProjects, setSavedProjects] = useState([]);
   const [currentProjectId, setCurrentProjectId] = useState(null);
   const [saveStatus, setSaveStatus] = useState(""); // "saving" | "saved" | ""
+  const [confirmModal, setConfirmModal] = useState(null); // { title, message, onConfirm }
   const importFileRef = useRef(null);
 
   // ── First visit onboarding ──
@@ -1033,30 +1065,34 @@ export default function LoglineAnalyzer() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // ── Auth: check token on mount ──
+  // ── Auth: check session on mount ──
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const tokenFromUrl = params.get("auth_token");
-    const errorFromUrl = params.get("auth_error");
+    const loginParam  = params.get("login");       // "success" from OAuth callback
+    const errorParam  = params.get("auth_error");  // error code from OAuth callback
 
-    if (tokenFromUrl || errorFromUrl) {
+    // 항상 URL 파라미터 제거
+    if (loginParam || errorParam) {
       window.history.replaceState({}, "", window.location.pathname);
     }
-    if (errorFromUrl) {
-      setAuthError(errorFromUrl); // "csrf" | "google" | "kakao" | "naver"
+
+    if (errorParam) {
+      setAuthError(errorParam);
       setAuthLoading(false);
       return;
     }
 
-    const token = tokenFromUrl || localStorage.getItem("hll_auth_token");
-    if (tokenFromUrl) {
-      localStorage.setItem("hll_auth_token", tokenFromUrl);
+    if (loginParam === "success") {
       localStorage.setItem("logline_visited", "1");
     }
 
-    if (!token) { setAuthLoading(false); return; }
+    // httpOnly 쿠키 → credentials:include로 자동 전송
+    // 구형 localStorage 토큰도 x-auth-token으로 병행 지원 (하위 호환)
+    const legacyToken = localStorage.getItem("hll_auth_token");
+    const headers = {};
+    if (legacyToken) headers["x-auth-token"] = legacyToken;
 
-    fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } })
+    fetch("/api/auth/me", { credentials: "include", headers })
       .then(r => r.json())
       .then(data => {
         if (data.user) {
@@ -1409,7 +1445,18 @@ export default function LoglineAnalyzer() {
 
   // ── 새 프로젝트 ──
   const startNewProject = () => {
-    if (logline.trim() && !window.confirm("현재 작업 내용이 초기화됩니다. 새 프로젝트를 시작할까요?")) return;
+    if (logline.trim()) {
+      setConfirmModal({
+        title: "새 프로젝트 시작",
+        message: "현재 작업 내용이 초기화됩니다.\n진행하시겠습니까?",
+        onConfirm: () => { setConfirmModal(null); _doStartNewProject(); },
+      });
+      return;
+    }
+    _doStartNewProject();
+  };
+
+  const _doStartNewProject = () => {
     setIsDemoMode(false);
     setLogline(""); setGenre("auto");
     setSelectedDuration("feature"); setCustomTheme(""); setCustomDurationText(""); setCustomFormatLabel("");
@@ -4211,6 +4258,14 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   return (
   <LoglineProvider value={loglineCtxValue}>
     <WelcomeModal />
+    {confirmModal && (
+      <ConfirmModal
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(null)}
+      />
+    )}
     <div style={{ minHeight: "100vh", background: "var(--bg-page)", color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif" }}>
 
       {/* ─── Toast notifications ─── */}

@@ -1,18 +1,5 @@
-import { createHmac } from "crypto";
 import { rcall, redisConfigured } from "../_redis.js";
-
-const JWT_SECRET = (process.env.JWT_SECRET || "hll-jwt-fallback-secret").trim();
-
-function verifyToken(token) {
-  const parts = (token || "").split(".");
-  if (parts.length !== 3) throw new Error("Invalid token");
-  const [header, body, sig] = parts;
-  const expected = createHmac("sha256", JWT_SECRET).update(`${header}.${body}`).digest("base64url");
-  if (sig !== expected) throw new Error("Invalid signature");
-  const payload = JSON.parse(Buffer.from(body, "base64url").toString());
-  if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) throw new Error("Expired");
-  return payload;
-}
+import { verifyToken, getTokenFromRequest } from "../auth/_jwt.js";
 
 function adminEmails() {
   return (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
@@ -32,7 +19,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
   // Auth
-  const auth = req.headers["x-auth-token"] || (req.headers.authorization || "").replace("Bearer ", "");
+  const auth = getTokenFromRequest(req);
   if (!auth) return res.status(401).json({ error: "로그인이 필요합니다." });
 
   let payload;

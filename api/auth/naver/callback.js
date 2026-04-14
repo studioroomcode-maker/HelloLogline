@@ -1,35 +1,18 @@
-import { createHmac } from "crypto";
 import { rcall, grantInitialCredits } from "../../_redis.js";
 import { verifyState, clearStateCookieHeader } from "../_csrf.js";
-
-const SECRET = (process.env.JWT_SECRET || "hll-jwt-fallback-secret").trim();
-
-function b64url(obj) {
-  return Buffer.from(JSON.stringify(obj)).toString("base64url");
-}
-
-function issueToken(payload) {
-  const header = b64url({ alg: "HS256", typ: "JWT" });
-  const body = b64url({
-    ...payload,
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 30 * 24 * 3600,
-  });
-  const sig = createHmac("sha256", SECRET).update(`${header}.${body}`).digest("base64url");
-  return `${header}.${body}.${sig}`;
-}
+import { issueToken, setAuthCookie, frontendBase } from "../_jwt.js";
 
 export default async function handler(req, res) {
   const { code, state } = req.query;
   const proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0].trim();
   const host = (req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
-  const frontendBase = (process.env.FRONTEND_URL || `${proto}://${host}`).trim();
-  const errUrl = `${frontendBase}/?auth_error=naver`;
+  const base = frontendBase(req);
+  const errUrl = `${base}/?auth_error=naver`;
 
   res.setHeader("Set-Cookie", clearStateCookieHeader());
 
   if (!code) return res.redirect(errUrl);
-  if (!verifyState(state, req.headers.cookie || "")) return res.redirect(`${frontendBase}/?auth_error=csrf`);
+  if (!verifyState(state, req.headers.cookie || "")) return res.redirect(`${base}/?auth_error=csrf`);
 
   try {
     const redirectUri = `${proto}://${host}/auth/naver/callback`;
@@ -73,7 +56,8 @@ export default async function handler(req, res) {
       ]);
       await grantInitialCredits(user.email.toLowerCase());
     }
-    res.redirect(`${frontendBase}/?auth_token=${token}`);
+    setAuthCookie(res, token, proto);
+    res.redirect(`${base}/?login=success`);
   } catch (err) {
     console.error("[Naver callback]", err.message);
     res.redirect(errUrl);

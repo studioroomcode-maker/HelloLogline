@@ -208,6 +208,7 @@ async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, 
   try {
     response = await fetch("/api/claude", {
       method: "POST",
+      credentials: "include",
       headers,
       body: JSON.stringify({
         model,
@@ -325,6 +326,7 @@ export async function callClaudeText(
 
   const response = await fetch("/api/claude", {
     method: "POST",
+    credentials: "include",
     headers,
     body: JSON.stringify({
       model,

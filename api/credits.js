@@ -2,13 +2,9 @@
  * GET  /api/credits — 크레딧 잔액 조회
  * POST /api/credits — 토스페이먼츠 결제 확인 후 크레딧 적립
  */
-import { createHmac } from "crypto";
 import { getCredits, addCreditsDb } from "./_redis.js";
+import { verifyToken, getTokenFromRequest } from "./auth/_jwt.js";
 
-const JWT_SECRET = (process.env.JWT_SECRET || "").trim();
-if (!JWT_SECRET) {
-  console.error("[FATAL] JWT_SECRET 환경변수가 설정되지 않았습니다.");
-}
 const TOSS_SECRET_KEY = (process.env.TOSS_SECRET_KEY || "").trim();
 
 const PACKAGES = {
@@ -18,25 +14,13 @@ const PACKAGES = {
   c400: { credits: 400, amount: 35000 },
 };
 
-function verifyToken(token) {
-  if (!JWT_SECRET) throw new Error("서버 설정 오류: JWT_SECRET 미설정");
-  const parts = (token || "").split(".");
-  if (parts.length !== 3) throw new Error("Invalid token");
-  const [header, body, sig] = parts;
-  const expected = createHmac("sha256", JWT_SECRET).update(`${header}.${body}`).digest("base64url");
-  if (sig !== expected) throw new Error("Invalid signature");
-  const payload = JSON.parse(Buffer.from(body, "base64url").toString());
-  if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) throw new Error("Expired");
-  return payload;
-}
-
 export default async function handler(req, res) {
   // ── Health check (인증 불필요) ──
   if (req.query?.health === "1") {
     return res.json({ status: "ok", hasKey: !!process.env.ANTHROPIC_API_KEY });
   }
 
-  const authHeader = req.headers["x-auth-token"] || req.headers.authorization?.replace("Bearer ", "");
+  const authHeader = getTokenFromRequest(req);
   if (!authHeader) {
     return res.status(401).json({ error: "로그인이 필요합니다." });
   }

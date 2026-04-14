@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "crypto";
 
-const SECRET = (process.env.JWT_SECRET || "hll-jwt-fallback-secret").trim();
+if (!process.env.JWT_SECRET) throw new Error("[FATAL] JWT_SECRET not set");
+const SECRET = process.env.JWT_SECRET.trim();
 const COOKIE_NAME = "hll_oauth_state";
 const MAX_AGE_MS = 600_000; // 10분
 

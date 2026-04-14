@@ -1,5 +1,5 @@
-import { createHmac } from "crypto";
 import { rcall, deductCredits, checkRateLimit } from "./_redis.js";
+import { verifyToken, getTokenFromRequest } from "./auth/_jwt.js";
 
 const CREDIT_COSTS = {
   logline: 0, improve: 0,
@@ -15,22 +15,6 @@ const CREDIT_COSTS = {
 
 export const config = { api: { bodyParser: { sizeLimit: "4mb" } } };
 
-const JWT_SECRET = (process.env.JWT_SECRET || "").trim();
-if (!JWT_SECRET) {
-  console.error("[FATAL] JWT_SECRET 환경변수가 설정되지 않았습니다.");
-}
-
-function verifyToken(token) {
-  if (!JWT_SECRET) throw new Error("서버 설정 오류: JWT_SECRET 미설정");
-  const parts = (token || "").split(".");
-  if (parts.length !== 3) throw new Error("Invalid token");
-  const [header, body, sig] = parts;
-  const expected = createHmac("sha256", JWT_SECRET).update(`${header}.${body}`).digest("base64url");
-  if (sig !== expected) throw new Error("Invalid signature");
-  const payload = JSON.parse(Buffer.from(body, "base64url").toString());
-  if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) throw new Error("Expired");
-  return payload;
-}
 
 async function getUserTier(email, userId) {
   const adminEmails   = (process.env.ADMIN_EMAILS   || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
@@ -57,14 +41,14 @@ export default async function handler(req, res) {
   }
 
   // ── 인증 확인 ──
-  const authHeader = req.headers["x-auth-token"] || req.headers.authorization?.replace("Bearer ", "");
-  if (!authHeader) {
+  const rawToken = getTokenFromRequest(req);
+  if (!rawToken) {
     return res.status(401).json({ error: { message: "로그인이 필요합니다." } });
   }
 
   let tier = "basic";
   try {
-    const payload = verifyToken(authHeader);
+    const payload = verifyToken(rawToken);
     tier = await getUserTier(payload.email, payload.id);
   } catch {
     return res.status(401).json({ error: { message: "인증 토큰이 유효하지 않습니다. 다시 로그인해주세요." } });

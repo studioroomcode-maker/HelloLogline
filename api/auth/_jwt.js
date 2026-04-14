@@ -1,10 +1,24 @@
 import { createHmac } from "crypto";
 
-const SECRET = process.env.JWT_SECRET || "hll-jwt-fallback-secret";
+// ── JWT_SECRET must be set — no fallback allowed ──────────────────────────
+if (!process.env.JWT_SECRET) {
+  throw new Error("[FATAL] JWT_SECRET 환경변수가 설정되지 않았습니다. Vercel 환경변수를 확인하세요.");
+}
+const SECRET = process.env.JWT_SECRET.trim();
 const EXP_SEC = 30 * 24 * 3600; // 30일
+const COOKIE_NAME = "hll_auth";
 
 function b64url(obj) {
   return Buffer.from(JSON.stringify(obj)).toString("base64url");
+}
+
+function parseCookies(header = "") {
+  return Object.fromEntries(
+    header.split(";").map(c => {
+      const idx = c.indexOf("=");
+      return idx < 0 ? [c.trim(), ""] : [c.slice(0, idx).trim(), c.slice(idx + 1).trim()];
+    })
+  );
 }
 
 export function issueToken(payload) {
@@ -21,7 +35,7 @@ export function issueToken(payload) {
 }
 
 export function verifyToken(token) {
-  const parts = token.split(".");
+  const parts = (token || "").split(".");
   if (parts.length !== 3) throw new Error("Invalid token");
   const [header, body, sig] = parts;
   const expected = createHmac("sha256", SECRET)
@@ -35,17 +49,41 @@ export function verifyToken(token) {
   return payload;
 }
 
+/** 요청에서 토큰 추출: httpOnly 쿠키 → x-auth-token 헤더 → Authorization: Bearer */
+export function getTokenFromRequest(req) {
+  const cookies = parseCookies(req.headers.cookie || "");
+  if (cookies[COOKIE_NAME]) return cookies[COOKIE_NAME];
+  if (req.headers["x-auth-token"]) return req.headers["x-auth-token"];
+  const auth = req.headers.authorization;
+  if (auth?.startsWith("Bearer ")) return auth.slice(7);
+  return null;
+}
+
+/** 로그인 성공: httpOnly 쿠키 설정 (토큰을 URL에 노출하지 않음) */
+export function setAuthCookie(res, token, proto) {
+  const secure = (proto || "https") === "https" ? "; Secure" : "";
+  res.setHeader("Set-Cookie", [
+    res.getHeader("Set-Cookie"),
+    `${COOKIE_NAME}=${token}; HttpOnly; SameSite=Lax; Max-Age=${EXP_SEC}; Path=/${secure}`,
+  ].filter(Boolean).flat());
+}
+
+/** 로그아웃: 쿠키 삭제 */
+export function clearAuthCookie(res) {
+  res.setHeader("Set-Cookie", [
+    res.getHeader("Set-Cookie"),
+    `${COOKIE_NAME}=; HttpOnly; SameSite=Lax; Max-Age=0; Path=/`,
+  ].filter(Boolean).flat());
+}
+
 /** 콜백 URI: 요청 헤더에서 호스트 자동 감지 */
 export function callbackUri(req, provider) {
-  const proto = req.headers["x-forwarded-proto"] || "https";
-  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  const proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0].trim();
+  const host = (req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim();
   return `${proto}://${host}/auth/${provider}/callback`;
 }
 
-/** 로그인 성공 후 프론트엔드 리다이렉트 URL */
-export function frontendRedirect(token, req) {
-  // FRONTEND_URL 명시적 설정 시 사용 (로컬 dev: http://localhost:5173)
-  // 프로덕션: 같은 도메인이므로 상대 경로 사용
-  const base = process.env.FRONTEND_URL || "";
-  return `${base}/?auth_token=${token}`;
+/** 로그인 성공 후 프론트엔드 리다이렉트 URL (토큰 없음) */
+export function frontendBase(req) {
+  return (process.env.FRONTEND_URL || `${(req.headers["x-forwarded-proto"] || "https").split(",")[0].trim()}://${(req.headers["x-forwarded-host"] || req.headers.host || "").split(",")[0].trim()}`).trim();
 }
