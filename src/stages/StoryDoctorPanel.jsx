@@ -228,30 +228,32 @@ export default function StoryDoctorPanel({ apiKey, storyContext, onClose, isMobi
 
         {/* ── 탭 바 ── */}
         <div style={{
-          display: "flex", borderBottom: "1px solid var(--c-bd-2)",
           background: "var(--bg-page)", flexShrink: 0,
+          padding: "8px 14px 0", borderBottom: "1px solid var(--c-bd-1)",
         }}>
-          {[
-            { id: "chat", label: "자유 상담" },
-            { id: "diag", label: "전체 진단" },
-            { id: "clinic", label: "씬 클리닉" },
-          ].map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              style={{
-                flex: 1, padding: "10px 0", border: "none", cursor: "pointer",
-                background: "none",
-                borderBottom: tab === t.id ? "2px solid #A78BFA" : "2px solid transparent",
-                color: tab === t.id ? "#A78BFA" : "var(--c-tx-40)",
-                fontSize: 11, fontWeight: tab === t.id ? 700 : 400,
-                fontFamily: "'Noto Sans KR', sans-serif",
-                transition: "all 0.15s",
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
+          <div style={{ display: "flex", gap: 4, paddingBottom: 8 }}>
+            {[
+              { id: "chat", label: "자유 상담" },
+              { id: "diag", label: "전체 진단" },
+              { id: "clinic", label: "씬 클리닉" },
+            ].map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                style={{
+                  flex: "0 0 auto", padding: "7px 11px", borderRadius: 8,
+                  cursor: "pointer", transition: "all 0.18s",
+                  border: tab === t.id ? "1px solid rgba(167,139,250,0.55)" : "1px solid var(--c-bd-2)",
+                  background: tab === t.id ? "rgba(167,139,250,0.12)" : "var(--glass-micro)",
+                  color: tab === t.id ? "#A78BFA" : "var(--c-tx-50)",
+                  fontSize: 11, fontWeight: tab === t.id ? 700 : 500,
+                  whiteSpace: "nowrap", fontFamily: "'Noto Sans KR', sans-serif",
+                }}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* ── 컨텐츠 영역 ── */}

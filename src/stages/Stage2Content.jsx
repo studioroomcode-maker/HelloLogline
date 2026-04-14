@@ -8,17 +8,12 @@ function countNarrativeResults(academicResult, mythMapResult, barthesCodeResult,
   return [academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult].filter(Boolean).length;
 }
 
-function SectionHeader({ icon, title, badge, color = "#45B7D1" }) {
+function SectionHeader({ title, badge, color = "#45B7D1" }) {
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 8, marginBottom: 12, marginTop: 4,
     }}>
-      <div style={{
-        width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-        background: `${color}14`, border: `1px solid ${color}30`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 14,
-      }}>{icon}</div>
+      <div style={{ width: 3, height: 18, borderRadius: 2, background: color, flexShrink: 0 }} />
       <div style={{ flex: 1 }}>
         <span style={{ fontSize: 12, fontWeight: 800, color: "var(--text-main)" }}>{title}</span>
         {badge && (
@@ -52,8 +47,7 @@ export default function Stage2Content({
     <ErrorBoundary><div>
 
       {/* ── 단계 안내 ── */}
-      <div style={{ marginBottom: 22, padding: "12px 16px", borderRadius: 10, background: "rgba(69,183,209,0.05)", border: "1px solid rgba(69,183,209,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
-        <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>💡</span>
+      <div style={{ marginBottom: 22, padding: "12px 14px", borderRadius: 10, background: "rgba(69,183,209,0.05)", borderLeft: "2px solid rgba(69,183,209,0.4)" }}>
         <div style={{ fontSize: 12, color: "var(--c-tx-50)", lineHeight: 1.65 }}>
           <strong style={{ color: "rgba(69,183,209,0.85)" }}>선택 개념 분석 단계입니다.</strong> 학술 이론·신화구조·전문가 패널로 이야기의 테마와 방향을 설계하세요.
           건너뛰어도 되고, 언제든 돌아올 수 있습니다.
@@ -61,9 +55,8 @@ export default function Stage2Content({
       </div>
 
       {disabled && (
-        <div style={{ marginBottom: 14, padding: "8px 12px", borderRadius: 8, background: "rgba(200,168,75,0.06)", border: "1px solid rgba(200,168,75,0.15)", fontSize: 11, color: "var(--c-tx-40)", display: "flex", alignItems: "center", gap: 7 }}>
-          <span>💡</span>
-          <span>Stage 1에서 로그라인을 먼저 입력하세요.</span>
+        <div style={{ marginBottom: 14, padding: "8px 12px", borderRadius: 8, background: "rgba(200,168,75,0.06)", borderLeft: "2px solid rgba(200,168,75,0.4)", fontSize: 11, color: "var(--c-tx-40)" }}>
+          Stage 1에서 로그라인을 먼저 입력하세요.
         </div>
       )}
 
@@ -73,7 +66,7 @@ export default function Stage2Content({
         background: "var(--glass-micro)", border: "1px solid var(--glass-bd-nano)",
         boxShadow: "inset 0 1px 0 var(--glass-bd-nano)",
       }}>
-        <SectionHeader icon="📚" title="서사 이론 종합" badge={narrativeCount > 0 ? `${narrativeCount}/5 완료` : "추천"} color="#45B7D1" />
+        <SectionHeader title="서사 이론 종합" badge={narrativeCount > 0 ? `${narrativeCount}/5 완료` : "추천"} color="#45B7D1" />
 
         <ToolButton
           icon={<SvgIcon d={ICON.doc} size={16} />}
@@ -118,7 +111,7 @@ export default function Stage2Content({
         background: "var(--glass-micro)", border: "1px solid var(--glass-bd-nano)",
         boxShadow: "inset 0 1px 0 var(--glass-bd-nano)",
       }}>
-        <SectionHeader icon="🎙️" title="전문가 패널" badge={expertPanelResult ? "완료" : "심화"} color="#FFD166" />
+        <SectionHeader title="전문가 패널" badge={expertPanelResult ? "완료" : "심화"} color="#FFD166" />
 
         <ToolButton
           icon={<SvgIcon d={ICON.users} size={16} />}
