@@ -47,7 +47,7 @@ function MobileNavTab({ id, icon, label, active, color, status, onClick }) {
 }
 
 export default function SidebarLayout({ stageProps, isMobile }) {
-  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus, referenceScenarioEnabled, referenceScenarioSummary, showStoryDoctor, setShowStoryDoctor, apiKey } = useLoglineCtx();
+  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus, referenceScenarioEnabled, referenceScenarioSummary, showStoryDoctor, setShowStoryDoctor, apiKey, isDemoMode } = useLoglineCtx();
   const mainPanelRef = useRef(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState(null);
@@ -280,6 +280,59 @@ export default function SidebarLayout({ stageProps, isMobile }) {
               {stageProps.renderStage(currentStage)}
             </Suspense>
           </ErrorBoundary>
+
+          {/* ── 데모 게이팅 배너 (Stage 3+) ── */}
+          {isDemoMode && parseInt(currentStage) >= 3 && (
+            <div style={{
+              marginTop: 32, padding: 2, borderRadius: 16,
+              background: "var(--glass-nano)",
+              border: "1px solid rgba(200,168,75,0.22)",
+            }}>
+              <div style={{
+                padding: "20px 22px", borderRadius: 14,
+                background: "linear-gradient(135deg, rgba(200,168,75,0.08) 0%, var(--glass-micro) 70%)",
+                border: "1px solid rgba(200,168,75,0.15)",
+                boxShadow: "inset 0 1px 0 rgba(200,168,75,0.12)",
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                gap: 16, flexWrap: "wrap",
+                fontFamily: "'Noto Sans KR', sans-serif",
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "#C8A84B", marginBottom: 4 }}>
+                    지금 로그인하면 분석 결과가 저장됩니다
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--c-tx-45)", lineHeight: 1.5 }}>
+                    데모 세션이 종료되면 진행 내용이 사라집니다. 로그인 후 계속 작업하세요.
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                  <a href="/api/auth/kakao" style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    padding: "8px 16px", borderRadius: 8,
+                    background: "#FEE500", color: "#1a1a1a",
+                    fontSize: 11, fontWeight: 800, textDecoration: "none",
+                    boxShadow: "0 2px 10px rgba(254,229,0,0.3)",
+                    transition: "transform 0.18s var(--ease-spring)",
+                  }}>
+                    <svg width={13} height={13} viewBox="0 0 24 24" fill="#1a1a1a">
+                      <path d="M12 3C6.48 3 2 6.69 2 11.25c0 2.91 1.74 5.48 4.38 7.07L5.25 21l3.88-2.14A11.4 11.4 0 0 0 12 19.5c5.52 0 10-3.69 10-8.25S17.52 3 12 3z"/>
+                    </svg>
+                    카카오 로그인
+                  </a>
+                  <a href="/api/auth/google" style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    padding: "8px 16px", borderRadius: 8,
+                    border: "1px solid var(--glass-bd-base)", background: "var(--glass-nano)",
+                    color: "var(--text-main)", fontSize: 11, fontWeight: 700,
+                    textDecoration: "none",
+                    transition: "transform 0.18s var(--ease-spring)",
+                  }}>
+                    Google
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

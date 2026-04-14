@@ -3,43 +3,132 @@ import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import { ExpertPanelSection } from "../panels/ConceptPanels.jsx";
 
+// 서사 이론 분석 완료 개수 계산
+function countNarrativeResults(academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult) {
+  return [academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult].filter(Boolean).length;
+}
+
+function SectionHeader({ icon, title, badge, color = "#45B7D1" }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 8, marginBottom: 12, marginTop: 4,
+    }}>
+      <div style={{
+        width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+        background: `${color}14`, border: `1px solid ${color}30`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 14,
+      }}>{icon}</div>
+      <div style={{ flex: 1 }}>
+        <span style={{ fontSize: 12, fontWeight: 800, color: "var(--text-main)" }}>{title}</span>
+        {badge && (
+          <span style={{
+            marginLeft: 8, fontSize: 9, fontWeight: 700,
+            padding: "2px 7px", borderRadius: 10,
+            background: `${color}14`, border: `1px solid ${color}28`,
+            color, fontFamily: "'JetBrains Mono', monospace",
+          }}>{badge}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Stage2Content({
   expertPanelResult, setExpertPanelResult,
   expertPanelLoading, expertPanelError,
   runExpertPanel,
+  // 서사 이론
+  narrativeTheoryDone, narrativeTheoryLoading,
+  analyzeNarrativeTheory,
+  academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult,
 }) {
   const { logline, isMobile, cc, getStageStatus, advanceToStage } = useLoglineCtx();
+
+  const narrativeCount = countNarrativeResults(academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult);
+  const disabled = !logline.trim();
 
   return (
     <ErrorBoundary><div>
 
-      {/* ── 선택 단계 안내 ── */}
-      <div style={{ marginBottom: 18, padding: "12px 16px", borderRadius: 10, background: "rgba(69,183,209,0.05)", border: "1px solid rgba(69,183,209,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
+      {/* ── 단계 안내 ── */}
+      <div style={{ marginBottom: 22, padding: "12px 16px", borderRadius: 10, background: "rgba(69,183,209,0.05)", border: "1px solid rgba(69,183,209,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
         <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>💡</span>
         <div style={{ fontSize: 12, color: "var(--c-tx-50)", lineHeight: 1.65 }}>
-          <strong style={{ color: "rgba(69,183,209,0.85)" }}>선택 개념 분석 단계입니다.</strong> 로그라인이 확정된 지금, 학술 이론과 신화구조로 이야기의 방향과 테마를 설계하세요.<br />
+          <strong style={{ color: "rgba(69,183,209,0.85)" }}>선택 개념 분석 단계입니다.</strong> 학술 이론·신화구조·전문가 패널로 이야기의 테마와 방향을 설계하세요.
           건너뛰어도 되고, 언제든 돌아올 수 있습니다.
         </div>
       </div>
 
-      {!logline.trim() && (
+      {disabled && (
         <div style={{ marginBottom: 14, padding: "8px 12px", borderRadius: 8, background: "rgba(200,168,75,0.06)", border: "1px solid rgba(200,168,75,0.15)", fontSize: 11, color: "var(--c-tx-40)", display: "flex", alignItems: "center", gap: 7 }}>
           <span>💡</span>
-          <span>Stage 1에서 로그라인을 먼저 입력하세요. 더 정확한 분석 결과를 얻을 수 있습니다.</span>
+          <span>Stage 1에서 로그라인을 먼저 입력하세요.</span>
         </div>
       )}
 
-      {/* ── 전문가 패널 ── */}
-      <div style={{ marginTop: 8 }}>
+      {/* ─────────── GROUP 1: 서사 이론 종합 ─────────── */}
+      <div style={{
+        padding: "16px 16px 14px", borderRadius: 12, marginBottom: 14,
+        background: "var(--glass-micro)", border: "1px solid var(--glass-bd-nano)",
+        boxShadow: "inset 0 1px 0 var(--glass-bd-nano)",
+      }}>
+        <SectionHeader icon="📚" title="서사 이론 종합" badge={narrativeCount > 0 ? `${narrativeCount}/5 완료` : "추천"} color="#45B7D1" />
+
+        <ToolButton
+          icon={<SvgIcon d={ICON.doc} size={16} />}
+          label="서사 이론 종합 분석"
+          sub="Campbell · Barthes · 학술 이론 · 한국 미학 · 테마 (5가지 동시 실행)"
+          done={narrativeTheoryDone}
+          loading={narrativeTheoryLoading}
+          color="#45B7D1"
+          onClick={analyzeNarrativeTheory}
+          disabled={disabled}
+          tooltip={"5가지 서사 이론을 동시에 분석합니다:\n• 학술 서사 이론 (Aristotle, Freytag, Syd Field)\n• 신화 지도 (Campbell 영웅 여정)\n• 바르트 코드 (Roland Barthes S/Z)\n• 한국 신화·미학 공명\n• 핵심 테마 분석\n\n한 번 클릭으로 5가지 관점의 이론적 기반을 동시에 완성합니다."}
+          creditCost={cc(2)}
+        />
+
+        {/* 개별 결과 요약 배지 */}
+        {narrativeCount > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+            {[
+              { label: "학술 이론", done: !!academicResult },
+              { label: "신화 지도", done: !!mythMapResult },
+              { label: "바르트 코드", done: !!barthesCodeResult },
+              { label: "한국 미학", done: !!koreanMythResult },
+              { label: "핵심 테마", done: !!themeResult },
+            ].map(({ label, done }) => (
+              <span key={label} style={{
+                fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                padding: "3px 8px", borderRadius: 6,
+                background: done ? "rgba(78,204,163,0.10)" : "var(--glass-nano)",
+                border: `1px solid ${done ? "rgba(78,204,163,0.28)" : "var(--glass-bd-nano)"}`,
+                color: done ? "#4ECCA3" : "var(--c-tx-30)",
+              }}>
+                {done ? "✓ " : ""}{label}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ─────────── GROUP 2: 전문가 패널 ─────────── */}
+      <div style={{
+        padding: "16px 16px 14px", borderRadius: 12, marginBottom: 8,
+        background: "var(--glass-micro)", border: "1px solid var(--glass-bd-nano)",
+        boxShadow: "inset 0 1px 0 var(--glass-bd-nano)",
+      }}>
+        <SectionHeader icon="🎙️" title="전문가 패널" badge={expertPanelResult ? "완료" : "심화"} color="#FFD166" />
+
         <ToolButton
           icon={<SvgIcon d={ICON.users} size={16} />}
-          label="전문가 패널"
-          sub="현업 전문가 10인의 독립 시각"
+          label="전문가 패널 토론"
+          sub="현업 전문가 10인의 독립적 시각 — 방송사·제작사 실제 심사 환경 재현"
           done={!!expertPanelResult}
           loading={expertPanelLoading}
           color="#FFD166"
           onClick={runExpertPanel}
-          disabled={!logline.trim()}
+          disabled={disabled}
           tooltip={"시나리오 작가, 제작사 PD, 문학평론가, 마케터 등 현업 전문가 10인이 이 로그라인을 독립적으로 평가합니다.\n\n라운드 1 — 각자 개별 의견 제시\n라운드 2 — 의견 교환 후 토론\n종합 — 합의점·핵심 강점 도출\n\n실제 방송사·제작사 심사 환경과 유사한 피드백을 얻을 수 있습니다."}
           creditCost={cc(1)}
         />
@@ -51,11 +140,12 @@ export default function Stage2Content({
         )}
       </div>
 
+      {/* ── 다음 단계 버튼 ── */}
       {getStageStatus("2") === "done" && (
-        <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ marginTop: 28, paddingTop: 20, borderTop: "1px solid var(--glass-bd-nano)", display: "flex", justifyContent: "flex-end" }}>
           <button
             onClick={() => advanceToStage("3")}
-            style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}
+            style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s", fontFamily: "'Noto Sans KR', sans-serif" }}
           >
             다음 단계: 캐릭터
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>

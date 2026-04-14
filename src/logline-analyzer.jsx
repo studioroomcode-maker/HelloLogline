@@ -5026,6 +5026,14 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                       expertPanelLoading={expertPanelLoading}
                       expertPanelError={expertPanelError}
                       runExpertPanel={runExpertPanel}
+                      narrativeTheoryDone={narrativeTheoryDone}
+                      narrativeTheoryLoading={narrativeTheoryLoading}
+                      analyzeNarrativeTheory={analyzeNarrativeTheory}
+                      academicResult={academicResult}
+                      mythMapResult={mythMapResult}
+                      barthesCodeResult={barthesCodeResult}
+                      koreanMythResult={koreanMythResult}
+                      themeResult={themeResult}
                     />
                   );
                   case "3": return (
