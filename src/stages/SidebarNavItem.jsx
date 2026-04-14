@@ -7,7 +7,7 @@ const STAGE_PREREQUISITES = {
   "5": "4", "6": "5", "7": "6", "8": "7",
 };
 
-export default function SidebarNavItem({ id, title, sub, accentColor }) {
+export default function SidebarNavItem({ id, title, sub, accentColor, commentCount = 0 }) {
   const { currentStage, setCurrentStage, getStageStatus, getStageDoneCount, STAGE_TOTALS, stageResultSummary, showToast, reverseEntryStage } = useLoglineCtx();
   const [hovered, setHovered] = useState(false);
 
@@ -105,6 +105,20 @@ export default function SidebarNavItem({ id, title, sub, accentColor }) {
               whiteSpace: "nowrap",
             }}>
               {stageResultSummary[id]}
+            </span>
+          )}
+          {commentCount > 0 && (
+            <span style={{
+              fontSize: 8, color: "#A78BFA", fontWeight: 700,
+              padding: "1px 5px", borderRadius: 10,
+              border: "1px solid rgba(167,139,250,0.25)", background: "rgba(167,139,250,0.08)",
+              fontFamily: "'JetBrains Mono', monospace",
+              display: "flex", alignItems: "center", gap: 2,
+            }}>
+              <svg width={6} height={6} viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth={2.5} strokeLinecap="round">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+              </svg>
+              {commentCount}
             </span>
           )}
         </div>

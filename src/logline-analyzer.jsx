@@ -797,6 +797,7 @@ export default function LoglineAnalyzer() {
   // ── 팀 협업 ──
   const [teamMembers, setTeamMembers] = useState([]);
   const [sceneAssignments, setSceneAssignments] = useState({});
+  const [stageComments, setStageComments] = useState({});
 
   // ── Character Development ──
   const [charDevResult, setCharDevResult] = useState(null);
@@ -1251,7 +1252,7 @@ export default function LoglineAnalyzer() {
     valueChargeResult, subtextResult,
     synopsisResults, pipelineResult, selectedSynopsisIndex,
     treatmentResult, beatSheetResult, beatScenes,
-    teamMembers, sceneAssignments,
+    teamMembers, sceneAssignments, stageComments,
     dialogueDevResult, scriptCoverageResult,
     structureResult, themeResult, sceneListResult, scenarioDraftResult,
     comparableResult, valuationResult, episodeDesignResult, masterReportResult,
@@ -1311,6 +1312,7 @@ export default function LoglineAnalyzer() {
     setBeatScenes(proj.beatScenes || {});
     setTeamMembers(proj.teamMembers || []);
     setSceneAssignments(proj.sceneAssignments || {});
+    setStageComments(proj.stageComments || {});
     setDialogueDevResult(proj.dialogueDevResult || null);
     setScriptCoverageResult(proj.scriptCoverageResult || null);
     setStructureResult(proj.structureResult || null);
@@ -4317,6 +4319,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     reverseEntryStage,
     // 팀 협업
     teamMembers, setTeamMembers, sceneAssignments, setSceneAssignments,
+    stageComments, setStageComments,
   };
 
   return (

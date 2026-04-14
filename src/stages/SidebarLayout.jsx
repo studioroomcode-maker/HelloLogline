@@ -1,7 +1,9 @@
-import { useRef, useEffect, Suspense, useState } from "react";
+import { useRef, useEffect, Suspense, useState, lazy } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import SidebarNavItem from "./SidebarNavItem.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
+
+const StageCommentThread = lazy(() => import("./StageCommentThread.jsx"));
 
 function DashboardIcon() {
   return (
@@ -47,7 +49,7 @@ function MobileNavTab({ id, icon, label, active, color, status, onClick }) {
 }
 
 export default function SidebarLayout({ stageProps, isMobile }) {
-  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus, referenceScenarioEnabled, referenceScenarioSummary, showStoryDoctor, setShowStoryDoctor, apiKey, isDemoMode } = useLoglineCtx();
+  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus, referenceScenarioEnabled, referenceScenarioSummary, showStoryDoctor, setShowStoryDoctor, apiKey, isDemoMode, stageComments } = useLoglineCtx();
   const mainPanelRef = useRef(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState(null);
@@ -138,7 +140,14 @@ export default function SidebarLayout({ stageProps, isMobile }) {
             <div style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--c-tx-25)", fontWeight: 700, textTransform: "uppercase" }}>워크플로우</div>
           </div>
           {STAGE_META.map(s => (
-            <SidebarNavItem key={s.id} id={s.id} title={s.title} sub={s.sub} accentColor={s.color} />
+            <SidebarNavItem
+              key={s.id}
+              id={s.id}
+              title={s.title}
+              sub={s.sub}
+              accentColor={s.color}
+              commentCount={(stageComments?.[s.id] || []).length}
+            />
           ))}
 
           {/* 스토리 닥터 버튼 */}
@@ -278,6 +287,10 @@ export default function SidebarLayout({ stageProps, isMobile }) {
             <Suspense fallback={<div style={{ padding: 20, color: "var(--c-tx-30)", fontSize: 12 }}>로딩 중...</div>}>
               {/* stageProps에서 현재 스테이지 콘텐츠를 렌더링 */}
               {stageProps.renderStage(currentStage)}
+              {/* 스테이지별 피드백 쓰레드 */}
+              {currentStage !== "dashboard" && (
+                <StageCommentThread stageId={currentStage} />
+              )}
             </Suspense>
           </ErrorBoundary>
 
