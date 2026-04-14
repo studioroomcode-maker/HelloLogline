@@ -138,9 +138,31 @@ export default function SidebarLayout({ stageProps, isMobile }) {
             </button>
           </div>
 
-          <div style={{ paddingLeft: 16, paddingBottom: 8, paddingTop: 4 }}>
-            <div style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--c-tx-25)", fontWeight: 700, textTransform: "uppercase" }}>워크플로우</div>
-          </div>
+          {/* ── 진행률 바 ── */}
+          {(() => {
+            const doneCount = STAGE_META.filter(s => getStageStatus(s.id) === "done").length;
+            const pct = Math.round((doneCount / STAGE_META.length) * 100);
+            return (
+              <div style={{ padding: "4px 14px 10px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+                  <div style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--c-tx-25)", fontWeight: 700, textTransform: "uppercase" }}>워크플로우</div>
+                  <div style={{ fontSize: 9, color: doneCount > 0 ? "#4ECCA3" : "var(--c-tx-25)", fontWeight: 700 }}>
+                    {doneCount}/{STAGE_META.length}
+                  </div>
+                </div>
+                <div style={{ height: 3, borderRadius: 2, background: "var(--c-bd-2)", overflow: "hidden" }}>
+                  <div style={{
+                    height: "100%", borderRadius: 2,
+                    width: `${pct}%`,
+                    background: doneCount === STAGE_META.length
+                      ? "linear-gradient(90deg,#4ECCA3,#45B7D1)"
+                      : "#4ECCA3",
+                    transition: "width 0.4s ease",
+                  }} />
+                </div>
+              </div>
+            );
+          })()}
           {STAGE_META.map(s => (
             <SidebarNavItem
               key={s.id}

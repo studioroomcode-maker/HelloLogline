@@ -3,6 +3,12 @@ import { useLoglineCtx } from "./context/LoglineContext.jsx";
 
 const STORAGE_KEY = "hll_welcomed_v2";
 
+const EXAMPLE_LOGLINES = [
+  { genre: "스릴러", text: "두 형사가 연쇄 살인마를 추적하는 과정에서 서로의 어두운 과거와 마주한다." },
+  { genre: "드라마", text: "어머니의 치매가 심해지며 기억을 잃어가는 사이, 딸은 버려진 줄 알았던 가족의 비밀을 발견한다." },
+  { genre: "SF", text: "2045년 기억 이식 기술이 상용화된 세계에서, 죽은 아내의 기억을 이식받은 남자가 자신이 살인자임을 깨닫는다." },
+];
+
 const STEPS = [
   {
     icon: "📝",
@@ -18,8 +24,8 @@ const STEPS = [
   },
   {
     icon: "🎁",
-    title: "10 크레딧 무료 지급",
-    desc: "가입 축하로 크레딧 10개가 지급됐습니다.\n시놉시스·구조 분석·트리트먼트 등 유료 기능을 지금 바로 체험해보세요.",
+    title: "지금 바로 시작하기",
+    desc: "크레딧 10개가 지급됐습니다. 아래 예시를 선택하거나 직접 입력해보세요.",
     color: "#4ECCA3",
   },
 ];
@@ -27,13 +33,21 @@ const STEPS = [
 export default function WelcomeModal() {
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState(0);
-  const { advanceToStage } = useLoglineCtx?.() ?? {};
+  const { advanceToStage, setLogline: ctxSetLogline, setGenre: ctxSetGenre } = useLoglineCtx?.() ?? {};
 
   useEffect(() => {
     if (!localStorage.getItem(STORAGE_KEY)) setVisible(true);
   }, []);
 
   function finish() {
+    localStorage.setItem(STORAGE_KEY, "1");
+    setVisible(false);
+    advanceToStage?.("1");
+  }
+
+  function selectExample(example) {
+    ctxSetLogline?.(example.text);
+    ctxSetGenre?.(example.genre === "스릴러" ? "thriller" : example.genre === "드라마" ? "drama" : example.genre === "SF" ? "sf" : "auto");
     localStorage.setItem(STORAGE_KEY, "1");
     setVisible(false);
     advanceToStage?.("1");
@@ -101,9 +115,34 @@ export default function WelcomeModal() {
           </div>
 
           {/* 설명 */}
-          <div style={{ fontSize: 13, color: "var(--c-tx-50)", lineHeight: 1.7, marginBottom: 28, whiteSpace: "pre-line" }}>
+          <div style={{ fontSize: 13, color: "var(--c-tx-50)", lineHeight: 1.7, marginBottom: isLast ? 16 : 28, whiteSpace: "pre-line" }}>
             {s.desc}
           </div>
+
+          {/* 마지막 스텝: 예시 로그라인 선택 */}
+          {isLast && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+              {EXAMPLE_LOGLINES.map((ex, i) => (
+                <button
+                  key={i}
+                  onClick={() => selectExample(ex)}
+                  style={{
+                    textAlign: "left", padding: "10px 14px", borderRadius: 10,
+                    border: "1px solid rgba(78,204,163,0.25)",
+                    background: "rgba(78,204,163,0.06)",
+                    color: "var(--text-main)", cursor: "pointer",
+                    fontFamily: "'Noto Sans KR', sans-serif",
+                    transition: "background 0.15s, border-color 0.15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(78,204,163,0.13)"; e.currentTarget.style.borderColor = "rgba(78,204,163,0.5)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(78,204,163,0.06)"; e.currentTarget.style.borderColor = "rgba(78,204,163,0.25)"; }}
+                >
+                  <span style={{ fontSize: 10, color: "#4ECCA3", fontWeight: 700, marginBottom: 3, display: "block" }}>{ex.genre}</span>
+                  <span style={{ fontSize: 12, lineHeight: 1.6 }}>{ex.text}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* 버튼 */}
           <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
@@ -132,7 +171,7 @@ export default function WelcomeModal() {
                 transition: "transform 0.18s var(--ease-spring), box-shadow 0.18s var(--ease-spring)",
               }}
             >
-              {isLast ? "Stage 1 시작하기 →" : "다음"}
+              {isLast ? "직접 입력하기 →" : "다음"}
             </button>
           </div>
 

@@ -35,6 +35,11 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
+    env: {
+      JWT_SECRET: "test-secret-for-vitest-only",
+      TOSS_SECRET_KEY: "test_toss_sk_vitest",
+      ADMIN_EMAILS: "admin@hello.com",
+    },
   },
   server: {
     proxy: {

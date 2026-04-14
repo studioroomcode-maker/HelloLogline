@@ -16,7 +16,7 @@ import {
   EPISODE_SERIES_SYSTEM_PROMPT,
   MASTER_REPORT_SYSTEM_PROMPT,
 } from "./constants.js";
-import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText } from "./utils.js";
+import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText, buildProjectSnapshot } from "./utils.js";
 import { REVISION_COLORS } from "./editor/FountainParser.js";
 import { exportToPdf, exportToMarkdown, downloadHtmlAsPdf } from "./utils-pdf.js";
 import {
@@ -47,7 +47,12 @@ import LoginScreen from "./LoginScreen.jsx";
 import { LoglineProvider } from "./context/LoglineContext.jsx";
 import WelcomeModal from "./WelcomeModal.jsx";
 import SidebarLayout from "./stages/SidebarLayout.jsx";
-import { saveProject, loadProjects, deleteProject } from "./db.js";
+import {
+  saveProject, loadProject, loadProjects, deleteProject,
+  syncProjectToCloud, loadProjectsFromCloud,
+  loadProjectFromCloud, deleteProjectFromCloud,
+  uploadLocalProjectsToCloud,
+} from "./db.js";
 import { ApiKeyModal, HistoryPanel } from "./panels.jsx";
 import { useStage1State } from "./hooks/useStage1State.js";
 import { useNetworkStatus } from "./hooks/useNetworkStatus.js";
@@ -1133,6 +1138,9 @@ export default function LoglineAnalyzer() {
         if (data.user) {
           setUser(data.user);
           localStorage.setItem("logline_visited", "1");
+          // 로그인 직후 로컬 작업물을 클라우드에 일괄 업로드 (백그라운드)
+          const t = localStorage.getItem("hll_auth_token");
+          if (t) uploadLocalProjectsToCloud(t).catch(() => {});
         } else {
           localStorage.removeItem("hll_auth_token");
         }
@@ -1267,9 +1275,8 @@ export default function LoglineAnalyzer() {
   };
 
   // ── Auto-save helper ──
-  const collectProjectSnapshot = () => ({
-    id: currentProjectId || Date.now(),
-    title: logline.slice(0, 60) || "제목 없음",
+  const collectProjectSnapshot = () => buildProjectSnapshot({
+    currentProjectId,
     logline, genre, selectedDuration, customTheme, customDurationText, customFormatLabel,
     result, result2,
     academicResult, mythMapResult, koreanMythResult,
@@ -1296,6 +1303,9 @@ export default function LoglineAnalyzer() {
       await saveProject(snapshot);
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus(""), 2000);
+      // 백그라운드 클라우드 동기화 (실패해도 무시)
+      const token = localStorage.getItem("hll_auth_token");
+      if (token) syncProjectToCloud(snapshot, token).catch(() => {});
     } catch (e) {
       console.error("자동 저장 실패:", e);
       setSaveStatus("");
@@ -1304,7 +1314,20 @@ export default function LoglineAnalyzer() {
 
   const openProjects = async () => {
     try {
-      const list = await loadProjects();
+      const token = localStorage.getItem("hll_auth_token");
+      let list;
+      if (token) {
+        // 로그인 상태: 클라우드 목록 우선, 실패 시 로컬 폴백
+        const cloudList = await loadProjectsFromCloud(token);
+        if (cloudList) {
+          list = cloudList;
+          // 로컬에 없는 클라우드 항목은 메타데이터만이므로 그대로 표시
+        } else {
+          list = await loadProjects();
+        }
+      } else {
+        list = await loadProjects();
+      }
       setSavedProjects(list);
       setShowProjects(true);
     } catch (e) {
@@ -1370,7 +1393,21 @@ export default function LoglineAnalyzer() {
 
   const deleteProjectById = async (id) => {
     await deleteProject(id);
+    const token = localStorage.getItem("hll_auth_token");
+    if (token) deleteProjectFromCloud(id, token).catch(() => {});
     setSavedProjects((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // 클라우드에서 전체 프로젝트 데이터 로드 후 상태 복원
+  const loadProjectById = async (proj) => {
+    const token = localStorage.getItem("hll_auth_token");
+    if (token) {
+      const full = await loadProjectFromCloud(proj.id, token).catch(() => null);
+      if (full) { loadProjectState(full); return; }
+    }
+    // 로컬 IndexedDB 폴백
+    const local = await loadProject(proj.id).catch(() => null);
+    loadProjectState(local || proj);
   };
 
   // ── JSON 내보내기 ──
@@ -4670,7 +4707,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                     </div>
                   </div>
                   <button onClick={() => { exportProjectJson(); }} title="현재 작업 내보내기" style={{ padding: "6px 10px", borderRadius: 7, border: "1px solid rgba(200,168,75,0.3)", background: "rgba(200,168,75,0.07)", color: "#C8A84B", cursor: "pointer", fontSize: 11 }}>↓ JSON</button>
-                  <button onClick={() => loadProjectState(proj)} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid rgba(78,204,163,0.3)", background: "rgba(78,204,163,0.07)", color: "#4ECCA3", cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>불러오기</button>
+                  <button onClick={() => loadProjectById(proj)} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid rgba(78,204,163,0.3)", background: "rgba(78,204,163,0.07)", color: "#4ECCA3", cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>불러오기</button>
                   <button onClick={() => deleteProjectById(proj.id)} style={{ padding: "6px 10px", borderRadius: 7, border: "1px solid rgba(232,93,117,0.2)", background: "rgba(232,93,117,0.05)", color: "#E85D75", cursor: "pointer", fontSize: 11 }}>삭제</button>
                 </div>
                 );

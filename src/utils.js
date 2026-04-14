@@ -404,3 +404,67 @@ export async function callClaudeText(
   const data = await response.json();
   return data.content?.map((b) => b.text || "").join("") || "";
 }
+
+/**
+ * 프로젝트 스냅샷 객체를 생성하는 순수 함수.
+ * logline-analyzer.jsx의 collectProjectSnapshot()에서 실제 state를 주입받아 사용.
+ * 분리된 형태로 유지해 단위 테스트 가능.
+ */
+export function buildProjectSnapshot(state) {
+  const id = state.currentProjectId || Date.now();
+  const title = (state.logline || "").slice(0, 60) || "제목 없음";
+  return {
+    id,
+    title,
+    logline:               state.logline              ?? "",
+    genre:                 state.genre                ?? "auto",
+    selectedDuration:      state.selectedDuration     ?? "feature",
+    customTheme:           state.customTheme          ?? "",
+    customDurationText:    state.customDurationText   ?? "",
+    customFormatLabel:     state.customFormatLabel    ?? "",
+    result:                state.result               ?? null,
+    result2:               state.result2              ?? null,
+    academicResult:        state.academicResult       ?? null,
+    mythMapResult:         state.mythMapResult        ?? null,
+    koreanMythResult:      state.koreanMythResult     ?? null,
+    expertPanelResult:     state.expertPanelResult    ?? null,
+    barthesCodeResult:     state.barthesCodeResult    ?? null,
+    shadowResult:          state.shadowResult         ?? null,
+    authenticityResult:    state.authenticityResult   ?? null,
+    charDevResult:         state.charDevResult        ?? null,
+    valueChargeResult:     state.valueChargeResult    ?? null,
+    subtextResult:         state.subtextResult        ?? null,
+    synopsisResults:       state.synopsisResults      ?? null,
+    pipelineResult:        state.pipelineResult       ?? null,
+    selectedSynopsisIndex: state.selectedSynopsisIndex ?? null,
+    treatmentResult:       state.treatmentResult      ?? "",
+    beatSheetResult:       state.beatSheetResult      ?? null,
+    beatScenes:            state.beatScenes           ?? {},
+    teamMembers:           state.teamMembers          ?? [],
+    sceneAssignments:      state.sceneAssignments     ?? {},
+    stageComments:         state.stageComments        ?? {},
+    activityLog:           state.activityLog          ?? [],
+    revisions:             state.revisions            ?? [],
+    currentRevisionId:     state.currentRevisionId    ?? null,
+    sceneRevisionMap:      state.sceneRevisionMap     ?? {},
+    dialogueDevResult:     state.dialogueDevResult    ?? null,
+    scriptCoverageResult:  state.scriptCoverageResult ?? null,
+    structureResult:       state.structureResult      ?? null,
+    themeResult:           state.themeResult          ?? null,
+    sceneListResult:       state.sceneListResult      ?? "",
+    scenarioDraftResult:   state.scenarioDraftResult  ?? "",
+    comparableResult:      state.comparableResult     ?? null,
+    valuationResult:       state.valuationResult      ?? null,
+    episodeDesignResult:   state.episodeDesignResult  ?? null,
+    masterReportResult:    state.masterReportResult   ?? null,
+    rewriteDiagResult:     state.rewriteDiagResult    ?? null,
+    partialRewriteResult:  state.partialRewriteResult ?? "",
+    fullRewriteResult:     state.fullRewriteResult    ?? "",
+    writerEdits:           state.writerEdits          ?? {},
+    treatmentHistory:      state.treatmentHistory     ?? [],
+    beatSheetHistory:      state.beatSheetHistory     ?? [],
+    scenarioDraftHistory:  state.scenarioDraftHistory ?? [],
+    charDevHistory:        state.charDevHistory       ?? [],
+    pipelineHistory:       state.pipelineHistory      ?? [],
+  };
+}
