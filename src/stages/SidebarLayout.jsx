@@ -49,7 +49,7 @@ function MobileNavTab({ id, icon, label, active, color, status, onClick }) {
 }
 
 export default function SidebarLayout({ stageProps, isMobile }) {
-  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus, referenceScenarioEnabled, referenceScenarioSummary, showStoryDoctor, setShowStoryDoctor, apiKey, isDemoMode, stageComments } = useLoglineCtx();
+  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus, referenceScenarioEnabled, referenceScenarioSummary, showStoryDoctor, setShowStoryDoctor, apiKey, isDemoMode, stageComments, teamMembers, currentWorkingAs, setCurrentWorkingAs, currentWorkingMember, isReadOnly, isOwner } = useLoglineCtx();
   const mainPanelRef = useRef(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState(null);
@@ -149,6 +149,91 @@ export default function SidebarLayout({ stageProps, isMobile }) {
               commentCount={(stageComments?.[s.id] || []).length}
             />
           ))}
+
+          {/* ── 작업 모드 (팀원이 있을 때만) ── */}
+          {teamMembers.length > 0 && (
+            <div style={{ padding: "8px 12px 0", marginTop: 6, borderTop: "1px solid var(--c-bd-1)" }}>
+              <div style={{ fontSize: 9, color: "var(--c-tx-25)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>
+                작업 모드
+              </div>
+              <select
+                value={currentWorkingAs || ""}
+                onChange={e => setCurrentWorkingAs(e.target.value || null)}
+                style={{
+                  width: "100%", padding: "6px 8px", borderRadius: 7,
+                  border: currentWorkingAs
+                    ? `1px solid ${currentWorkingMember?.color || "#A78BFA"}44`
+                    : "1px solid var(--c-bd-3)",
+                  background: currentWorkingAs
+                    ? `${currentWorkingMember?.color || "#A78BFA"}0d`
+                    : "var(--glass-nano)",
+                  color: currentWorkingAs ? (currentWorkingMember?.color || "#A78BFA") : "var(--c-tx-50)",
+                  fontSize: 11, fontFamily: "'Noto Sans KR', sans-serif",
+                  cursor: "pointer", outline: "none", fontWeight: currentWorkingAs ? 700 : 400,
+                }}
+              >
+                <option value="">나 (전체 권한)</option>
+                {teamMembers.map(m => (
+                  <option key={m.id} value={m.id}>{m.name} · {m.role}</option>
+                ))}
+              </select>
+              {/* 권한 설명 배지 */}
+              {currentWorkingAs && (
+                <div style={{
+                  marginTop: 5, padding: "5px 8px", borderRadius: 6,
+                  background: isReadOnly
+                    ? "rgba(232,93,117,0.08)"
+                    : "rgba(78,204,163,0.06)",
+                  border: isReadOnly
+                    ? "1px solid rgba(232,93,117,0.2)"
+                    : "1px solid rgba(78,204,163,0.2)",
+                  fontSize: 9, lineHeight: 1.5,
+                  color: isReadOnly ? "#E85D75" : "#4ECCA3",
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                }}>
+                  {isReadOnly
+                    ? "읽기 전용 · 댓글만 가능"
+                    : currentWorkingMember?.role === "보조작가"
+                      ? "배정된 씬만 편집 가능"
+                      : "전체 편집 가능"}
+                </div>
+              )}
+              {/* 팀원 초대 링크 복사 */}
+              {isOwner && !currentWorkingAs && (
+                <div style={{ marginTop: 8 }}>
+                  <div style={{ fontSize: 9, color: "var(--c-tx-25)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace" }}>팀원 초대 링크</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    {teamMembers.map(m => (
+                      <button
+                        key={m.id}
+                        onClick={() => {
+                          const url = `${window.location.origin}${window.location.pathname}?as=${m.id}`;
+                          navigator.clipboard.writeText(url).then(() => {
+                            showToast?.("success", `${m.name}용 링크가 복사됐습니다.`);
+                          }).catch(() => {
+                            showToast?.("info", `링크: ?as=${m.id}`);
+                          });
+                        }}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 5,
+                          padding: "4px 7px", borderRadius: 6, textAlign: "left",
+                          border: `1px solid ${m.color}25`,
+                          background: `${m.color}08`,
+                          cursor: "pointer",
+                        }}
+                      >
+                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: m.color, flexShrink: 0 }} />
+                        <span style={{ fontSize: 9, color: m.color, fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif", flex: 1 }}>{m.name}</span>
+                        <svg width={8} height={8} viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth={2} strokeLinecap="round">
+                          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                        </svg>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 스토리 닥터 버튼 */}
           <div style={{ paddingLeft: 10, paddingRight: 10, paddingTop: 8 }}>

@@ -95,7 +95,7 @@ function TeamManager({ teamMembers, onUpdateTeam }) {
   );
 }
 
-export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats, onToggle, onGenerateScene, onExportAll, isMobile, editingBeats, beatEditDrafts, onEditBeat, onSaveBeat, onCancelBeat, teamMembers = [], sceneAssignments = {}, onAssignScene, onUpdateTeam }) {
+export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats, onToggle, onGenerateScene, onExportAll, isMobile, editingBeats, beatEditDrafts, onEditBeat, onSaveBeat, onCancelBeat, teamMembers = [], sceneAssignments = {}, onAssignScene, onUpdateTeam, getEditPermission, isOwner = true, isReadOnly = false }) {
   const [showTeamManager, setShowTeamManager] = useState(false);
   const beats = data.beats || [];
 
@@ -177,8 +177,8 @@ export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expan
         <div style={{ height: "100%", width: `${beats.length ? (completedCount / beats.length) * 100 : 0}%`, background: "linear-gradient(90deg, #4ECCA3, #45B7D1)", borderRadius: 2, transition: "width 0.5s ease" }} />
       </div>
 
-      {/* 팀 관리 토글 버튼 */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showTeamManager ? 6 : 14 }}>
+      {/* 팀 관리 토글 버튼 (owner만 표시) */}
+      {isOwner && <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showTeamManager ? 6 : 14 }}>
         <button
           onClick={() => setShowTeamManager(p => !p)}
           style={{
@@ -213,10 +213,10 @@ export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expan
             ))}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* 팀 관리 패널 */}
-      {showTeamManager && onUpdateTeam && (
+      {showTeamManager && onUpdateTeam && isOwner && (
         <TeamManager teamMembers={teamMembers} onUpdateTeam={onUpdateTeam} />
       )}
 
@@ -382,6 +382,7 @@ export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expan
           const isExpanded = expandedBeats[beat.id];
           const hasScene = !!beatScenes[beat.id];
           const isGenerating = generatingBeat === beat.id;
+          const canEdit = getEditPermission ? getEditPermission(beat.id) : true;
           const pageLen = (beat.page_end || beat.page_start) - beat.page_start + 1;
 
           return (
@@ -467,11 +468,11 @@ export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expan
                           <span style={{ fontSize: 9, color: "#4ECCA3", marginLeft: 6 }}>✏</span>
                         }
                       </div>
-                      <button
+                      {canEdit && <button
                         onClick={() => onEditBeat(beat.id, null)}
                         style={{ flexShrink: 0, background: "none", border: "none", cursor: "pointer", color: "var(--c-tx-25)", fontSize: 10, padding: "2px 4px", opacity: 0.6 }}
                         title="편집"
-                      >✏</button>
+                      >✏</button>}
                     </div>
                   )}
 
@@ -559,16 +560,22 @@ export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expan
                     </div>
                   )}
 
-                  {/* 씬 생성 버튼 */}
-                  <button
-                    onClick={() => onGenerateScene(beat)}
-                    disabled={isGenerating}
-                    style={{ width: "100%", padding: "10px", borderRadius: 9, border: `1px solid ${act.color}33`, background: hasScene ? `${act.color}12` : `${act.color}08`, color: act.color, cursor: isGenerating ? "wait" : "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'Noto Sans KR', sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: hasScene ? 12 : 0, transition: "all 0.2s" }}
-                  >
-                    {isGenerating
-                      ? <><span style={{ display: "inline-block", width: 11, height: 11, border: `1.5px solid ${act.color}44`, borderTop: `1.5px solid ${act.color}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />씬 생성 중...</>
-                      : hasScene ? "🔄 씬 재생성" : "🎬 이 씬 시나리오 생성"}
-                  </button>
+                  {/* 씬 생성 버튼 (권한 있을 때만) */}
+                  {canEdit ? (
+                    <button
+                      onClick={() => onGenerateScene(beat)}
+                      disabled={isGenerating}
+                      style={{ width: "100%", padding: "10px", borderRadius: 9, border: `1px solid ${act.color}33`, background: hasScene ? `${act.color}12` : `${act.color}08`, color: act.color, cursor: isGenerating ? "wait" : "pointer", fontSize: 12, fontWeight: 700, fontFamily: "'Noto Sans KR', sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: hasScene ? 12 : 0, transition: "all 0.2s" }}
+                    >
+                      {isGenerating
+                        ? <><span style={{ display: "inline-block", width: 11, height: 11, border: `1.5px solid ${act.color}44`, borderTop: `1.5px solid ${act.color}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />씬 생성 중...</>
+                        : hasScene ? "🔄 씬 재생성" : "🎬 이 씬 시나리오 생성"}
+                    </button>
+                  ) : (
+                    <div style={{ width: "100%", padding: "10px", borderRadius: 9, border: `1px solid var(--c-bd-1)`, background: "transparent", color: "var(--c-tx-25)", fontSize: 11, fontFamily: "'Noto Sans KR', sans-serif", textAlign: "center", marginBottom: hasScene ? 12 : 0 }}>
+                      🔒 {isReadOnly ? "읽기 전용" : "배정되지 않은 씬"}
+                    </div>
+                  )}
 
                   {/* 생성된 씬 텍스트 — 파이널 드래프트 스타일 */}
                   {hasScene && (

@@ -35,7 +35,7 @@ export default function Stage6Content({
   scenarioDraftBefore, showScenarioDraftBefore, setShowScenarioDraftBefore,
   undoHistory,
 }) {
-  const { logline, isMobile, cc, getStageStatus, advanceToStage, showToast, apiKey, sceneAssignments, teamMembers } = useLoglineCtx();
+  const { logline, isMobile, cc, getStageStatus, advanceToStage, showToast, apiKey, sceneAssignments, teamMembers, isReadOnly } = useLoglineCtx();
   const [editorMode, setEditorMode] = useState(true);   // true = 편집 모드 / false = 원본 텍스트
   const editorContainerRef = useRef(null);
 
@@ -207,6 +207,7 @@ export default function Stage6Content({
                   value={scenarioDraftResult}
                   onChange={(newText) => setScenarioDraftResult(newText)}
                   minHeight={460}
+                  readOnly={isReadOnly}
                 />
                 {/* 인라인 AI 툴바 */}
                 {apiKey && (

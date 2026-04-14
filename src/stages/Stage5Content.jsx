@@ -51,7 +51,7 @@ export default function Stage5Content({
   generatingBeat,
   generateScene,
 }) {
-  const { logline, genre, isMobile, cc, getStageStatus, advanceToStage, openApplicationDoc, teamMembers, setTeamMembers, sceneAssignments, setSceneAssignments } = useLoglineCtx();
+  const { logline, genre, isMobile, cc, getStageStatus, advanceToStage, openApplicationDoc, teamMembers, setTeamMembers, sceneAssignments, setSceneAssignments, getEditPermission, isOwner, isReadOnly } = useLoglineCtx();
 
   return (
     <ErrorBoundary><div>
@@ -359,6 +359,9 @@ export default function Stage5Content({
                           )
                         }
                         onUpdateTeam={setTeamMembers}
+                        getEditPermission={getEditPermission}
+                        isOwner={isOwner}
+                        isReadOnly={isReadOnly}
                       />
                     </Suspense>
 

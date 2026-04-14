@@ -798,6 +798,7 @@ export default function LoglineAnalyzer() {
   const [teamMembers, setTeamMembers] = useState([]);
   const [sceneAssignments, setSceneAssignments] = useState({});
   const [stageComments, setStageComments] = useState({});
+  const [currentWorkingAs, setCurrentWorkingAs] = useState(null); // null = "나" (owner)
 
   // ── Character Development ──
   const [charDevResult, setCharDevResult] = useState(null);
@@ -1079,6 +1080,10 @@ export default function LoglineAnalyzer() {
     const params = new URLSearchParams(window.location.search);
     const loginParam  = params.get("login");       // "success" from OAuth callback
     const errorParam  = params.get("auth_error");  // error code from OAuth callback
+    const asParam     = params.get("as");          // 팀원 역할 전환 (Feature 3)
+
+    // ?as= 파라미터: 팀원 역할 미리 설정 (URL 유지)
+    if (asParam) setCurrentWorkingAs(asParam);
 
     // 항상 URL 파라미터 제거
     if (loginParam || errorParam) {
@@ -4285,6 +4290,25 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     charDevResult,
   };
 
+  // ── 팀 권한 헬퍼 ──
+  const currentWorkingMember = currentWorkingAs
+    ? teamMembers.find(m => m.id === currentWorkingAs) || null
+    : null;
+  const isOwner = !currentWorkingAs || currentWorkingMember?.role === "메인작가";
+  const isReadOnly = currentWorkingMember?.role === "작가실장";
+  // beatId: null → 스테이지 전체 편집 가능 여부 / 있으면 해당 비트 편집 가능 여부
+  const getEditPermission = (beatId = null) => {
+    if (!currentWorkingAs) return true;
+    if (!currentWorkingMember) return true;
+    if (currentWorkingMember.role === "메인작가") return true;
+    if (currentWorkingMember.role === "작가실장") return false;
+    if (currentWorkingMember.role === "보조작가") {
+      if (beatId == null) return true; // 보조작가는 일부 편집 가능
+      return sceneAssignments[beatId] === currentWorkingAs;
+    }
+    return true;
+  };
+
   const loglineCtxValue = {
     // 입력
     logline, setLogline, genre, setGenre,
@@ -4320,6 +4344,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     // 팀 협업
     teamMembers, setTeamMembers, sceneAssignments, setSceneAssignments,
     stageComments, setStageComments,
+    currentWorkingAs, setCurrentWorkingAs,
+    currentWorkingMember, isOwner, isReadOnly, getEditPermission,
   };
 
   return (
