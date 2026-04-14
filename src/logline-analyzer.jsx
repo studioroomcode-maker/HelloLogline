@@ -48,6 +48,7 @@ import WelcomeModal from "./WelcomeModal.jsx";
 import SidebarLayout from "./stages/SidebarLayout.jsx";
 import { saveProject, loadProjects, deleteProject } from "./db.js";
 import { ApiKeyModal, HistoryPanel } from "./panels.jsx";
+import { useStage1State } from "./hooks/useStage1State.js";
 
 /* ─── Lazy-loaded heavy panels ─── */
 /* ─── Lazy-loaded stage content ─── */
@@ -661,16 +662,27 @@ export default function LoglineAnalyzer() {
   // ── Input ──
   const [logline, setLogline] = useState("");
   const [genre, setGenre] = useState("auto");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
 
-  // ── Compare mode ──
-  const [compareMode, setCompareMode] = useState(false);
-  const [logline2, setLogline2] = useState("");
-  const [result2, setResult2] = useState(null);
-  const [loading2, setLoading2] = useState(false);
+  // ── Stage 1 상태 (useStage1State 훅으로 분리) ──
+  const {
+    result, setResult,
+    loading, setLoading,
+    error, setError,
+    compareMode, setCompareMode,
+    logline2, setLogline2,
+    result2, setResult2,
+    loading2, setLoading2,
+    earlyCoverageResult, setEarlyCoverageResult,
+    earlyCoverageLoading, setEarlyCoverageLoading,
+    earlyCoverageError, setEarlyCoverageError,
+    storyFixes, setStoryFixes,
+    storyPivots, setStoryPivots,
+    aiImprovement, setAiImprovement,
+    insightResult, setInsightResult,
+    insightLoading, setInsightLoading,
+    insightError, setInsightError,
+  } = useStage1State();
 
   // ── History ──
   const [history, setHistory] = useState(
@@ -927,15 +939,7 @@ export default function LoglineAnalyzer() {
   const [fullRewriteLoading, setFullRewriteLoading] = useState(false);
   const [fullRewriteError, setFullRewriteError] = useState("");
 
-  // ── Early Coverage (Stage 1 빠른 상업성 체크) ──
-  const [earlyCoverageResult, setEarlyCoverageResult] = useState(null);
-  const [earlyCoverageLoading, setEarlyCoverageLoading] = useState(false);
-  const [earlyCoverageError, setEarlyCoverageError] = useState("");
-
-  // ── 개선·방향 탭 결과 (StoryDevPanel / ImprovementPanel 에서 끌어올림) ──
-  const [storyFixes, setStoryFixes] = useState([]);
-  const [storyPivots, setStoryPivots] = useState([]);
-  const [aiImprovement, setAiImprovement] = useState(null);
+  // ── Early Coverage / StoryFixes / AiImprovement → useStage1State로 이동 ──
 
   // ── Structure Twist (구조 비틀기 제안) ──
   const [structureTwistResult, setStructureTwistResult] = useState(null);
@@ -951,10 +955,7 @@ export default function LoglineAnalyzer() {
   const [editingBeats, setEditingBeats] = useState({}); // { [beatId]: boolean }
   const [beatEditDrafts, setBeatEditDrafts] = useState({}); // { [beatId]: string }
 
-  // ── 종합 인사이트 ──
-  const [insightResult, setInsightResult] = useState(null);
-  const [insightLoading, setInsightLoading] = useState(false);
-  const [insightError, setInsightError] = useState("");
+  // ── 종합 인사이트 → useStage1State로 이동 ──
 
   // ── Project persistence ──
   const [showProjects, setShowProjects] = useState(false);
