@@ -637,34 +637,39 @@ export default function Stage1Content({
       return <div style={{ marginBottom: 10, fontSize: 11, color: "#4ECCA3", display: "flex", alignItems: "center", gap: 6 }}><span>✓</span> 적절한 길이입니다. ({n}자)</div>;
     })()}
 
-    {/* Sample logline buttons — shown only when textarea is empty */}
+    {/* Empty state — 로그라인 미입력 시 예시 카드 표시 */}
     {!logline.trim() && !compareMode && (() => {
       const SAMPLE_LOGLINES = [
-        { genre: "drama", label: "드라마", text: "가난한 청년이 재벌 가문의 비밀을 알게 된 후, 자신이 바로 그 가문의 숨겨진 후계자임을 깨닫고 가족과 신념 사이에서 선택을 강요받는다." },
-        { genre: "thriller", label: "스릴러", text: "연쇄살인마를 추적하던 형사가 다음 피해자가 자신의 딸임을 알게 되고, 법을 어기지 않고는 구할 수 없는 상황에 몰린다." },
-        { genre: "romance", label: "로맨스", text: "이혼 전문 변호사인 여자와 결혼 상담사인 남자가 서로의 직업을 숨긴 채 사랑에 빠지고, 진실이 드러나는 순간 관계가 무너진다." },
-        { genre: "action", label: "액션", text: "은퇴한 전직 요원이 평범한 삶을 살던 중 과거 자신이 훈련시킨 제자가 테러 조직의 수장이 되었다는 사실을 알고 다시 임무에 복귀한다." },
+        { genre: "drama",   label: "드라마",  color: "#45B7D1", text: "가난한 청년이 재벌 가문의 비밀을 알게 된 후, 자신이 바로 그 가문의 숨겨진 후계자임을 깨닫고 가족과 신념 사이에서 선택을 강요받는다." },
+        { genre: "thriller", label: "스릴러", color: "#E85D75", text: "연쇄살인마를 추적하던 형사가 다음 피해자가 자신의 딸임을 알게 되고, 법을 어기지 않고는 구할 수 없는 상황에 몰린다." },
+        { genre: "romance", label: "로맨스",  color: "#A78BFA", text: "이혼 전문 변호사인 여자와 결혼 상담사인 남자가 서로의 직업을 숨긴 채 사랑에 빠지고, 진실이 드러나는 순간 관계가 무너진다." },
+        { genre: "action",  label: "액션",   color: "#F7A072", text: "은퇴한 전직 요원이 평범한 삶을 살던 중 과거 자신이 훈련시킨 제자가 테러 조직의 수장이 되었다는 사실을 알고 다시 임무에 복귀한다." },
       ];
       return (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, color: "var(--c-tx-25)", marginBottom: 8 }}>예시 로그라인으로 바로 시작해보세요</div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 11, color: "var(--c-tx-30)", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            예시로 바로 시작하거나 직접 입력하세요
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr", gap: 8 }}>
             {SAMPLE_LOGLINES.map((item) => (
               <button
                 key={item.genre}
                 onClick={() => { setLogline(item.text); setGenre(item.genre); }}
                 style={{
-                  padding: "5px 14px", borderRadius: 16,
-                  border: "1px solid var(--c-bd-3)",
-                  background: "rgba(var(--tw),0.03)",
-                  color: "var(--c-tx-40)", cursor: "pointer", fontSize: 11,
-                  fontFamily: "'Noto Sans KR', sans-serif",
+                  textAlign: "left", padding: "10px 12px", borderRadius: 10,
+                  border: `1px solid ${item.color}22`,
+                  background: `${item.color}08`,
+                  cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
                   transition: "all 0.15s",
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(200,168,75,0.45)"; e.currentTarget.style.color = "#C8A84B"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--c-bd-3)"; e.currentTarget.style.color = "var(--c-tx-40)"; }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${item.color}55`; e.currentTarget.style.background = `${item.color}14`; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = `${item.color}22`; e.currentTarget.style.background = `${item.color}08`; }}
               >
-                {item.label}
+                <div style={{ fontSize: 10, fontWeight: 700, color: item.color, marginBottom: 4 }}>{item.label}</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-50)", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  {item.text}
+                </div>
               </button>
             ))}
           </div>

@@ -1104,15 +1104,21 @@ export default function LoglineAnalyzer() {
   // ── Auth: check session on mount ──
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const loginParam  = params.get("login");       // "success" from OAuth callback
-    const errorParam  = params.get("auth_error");  // error code from OAuth callback
-    const asParam     = params.get("as");          // 팀원 역할 전환 (Feature 3)
+    const loginParam     = params.get("login");       // "success" from OAuth callback (production)
+    const authTokenParam = params.get("auth_token");  // JWT from local dev server
+    const errorParam     = params.get("auth_error");  // error code from OAuth callback
+    const asParam        = params.get("as");           // 팀원 역할 전환 (Feature 3)
 
     // ?as= 파라미터: 팀원 역할 미리 설정 (URL 유지)
     if (asParam) setCurrentWorkingAs(asParam);
 
+    // 로컬 dev 서버: ?auth_token=TOKEN → localStorage에 저장
+    if (authTokenParam) {
+      localStorage.setItem("hll_auth_token", authTokenParam);
+    }
+
     // 항상 URL 파라미터 제거
-    if (loginParam || errorParam) {
+    if (loginParam || errorParam || authTokenParam) {
       window.history.replaceState({}, "", window.location.pathname);
     }
 
@@ -1122,15 +1128,18 @@ export default function LoglineAnalyzer() {
       return;
     }
 
-    if (loginParam === "success") {
+    if (loginParam === "success" || authTokenParam) {
       localStorage.setItem("logline_visited", "1");
     }
 
-    // httpOnly 쿠키 → credentials:include로 자동 전송
-    // 구형 localStorage 토큰도 x-auth-token으로 병행 지원 (하위 호환)
+    // httpOnly 쿠키 → credentials:include로 자동 전송 (production)
+    // localStorage 토큰 → x-auth-token + Authorization: Bearer 병행 지원 (local dev / 하위 호환)
     const legacyToken = localStorage.getItem("hll_auth_token");
     const headers = {};
-    if (legacyToken) headers["x-auth-token"] = legacyToken;
+    if (legacyToken) {
+      headers["x-auth-token"] = legacyToken;       // Vercel production API
+      headers["Authorization"] = `Bearer ${legacyToken}`; // local dev server (server.js)
+    }
 
     fetch("/api/auth/me", { credentials: "include", headers })
       .then(r => r.json())
@@ -1183,7 +1192,13 @@ export default function LoglineAnalyzer() {
     if (!token) return;
     fetch("/api/credits", { headers: { "x-auth-token": token } })
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d && d.credits != null) setCredits(d.credits); })
+      .then(d => {
+        if (d && d.credits != null) {
+          setCredits(d.credits);
+          // 로그인 직후 크레딧이 0이면 5초 후 충전 모달 자동 표시
+          if (d.credits === 0) setTimeout(() => setShowCreditModal(true), 5000);
+        }
+      })
       .catch(() => {});
   }, [user]);
 
@@ -1466,6 +1481,9 @@ export default function LoglineAnalyzer() {
     setIsDemoMode(true);
     setLogline(DEMO_LOGLINE);
     setGenre(DEMO_GENRE);
+    // 이전 에러 전체 초기화 (데모 데이터가 에러 메시지에 가려지지 않도록)
+    setShadowError?.(""); setAuthenticityError?.(""); setCharDevError?.("");
+    setExpertPanelError?.(""); setValueChargeError?.(""); setAcademicError?.("");
     // Stage 1
     setResult(DEMO_RESULT);
     setEarlyCoverageResult(DEMO_EARLY_COVERAGE_RESULT);
@@ -5527,13 +5545,25 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
             {/* Header */}
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--c-bd-2)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div>
-                <div style={{ fontSize: 17, fontWeight: 800, color: "#A78BFA" }}>⚡ 크레딧 충전</div>
-                <div style={{ fontSize: 12, color: "var(--c-tx-40)", marginTop: 3 }}>현재 잔액: <span style={{ color: "#A78BFA", fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{credits ?? 0}cr</span></div>
+                <div style={{ fontSize: 17, fontWeight: 800, color: credits === 0 ? "#E85D75" : "#A78BFA" }}>
+                  {credits === 0 ? "⚠️ 크레딧 소진" : "⚡ 크레딧 충전"}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--c-tx-40)", marginTop: 3 }}>
+                  현재 잔액: <span style={{ color: credits === 0 ? "#E85D75" : "#A78BFA", fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{credits ?? 0}cr</span>
+                </div>
               </div>
               <button onClick={() => setShowCreditModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--c-tx-35)", padding: 4 }}>
                 <SvgIcon d={ICON.close} size={18} />
               </button>
             </div>
+
+            {/* 크레딧 소진 시 강조 배너 */}
+            {credits === 0 && (
+              <div style={{ margin: "16px 24px 0", padding: "12px 16px", borderRadius: 10, background: "rgba(232,93,117,0.1)", border: "1px solid rgba(232,93,117,0.35)", fontSize: 13, color: "#E85D75", lineHeight: 1.6, fontWeight: 600 }}>
+                크레딧이 모두 소진되었습니다.<br />
+                <span style={{ fontSize: 12, fontWeight: 400, color: "rgba(232,93,117,0.8)" }}>아래에서 충전하면 즉시 분석을 계속할 수 있습니다.</span>
+              </div>
+            )}
 
             {/* 이벤트 배너 */}
             <div style={{ margin: "16px 24px 0", padding: "10px 14px", borderRadius: 10, background: "rgba(200,168,75,0.08)", border: "1px solid rgba(200,168,75,0.2)", fontSize: 12, color: "#C8A84B", lineHeight: 1.6 }}>
@@ -5569,6 +5599,23 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   현재 <span style={{ color: "#A78BFA", fontWeight: 700 }}>{credits}cr</span>으로 Script Coverage <span style={{ color: "#A78BFA", fontWeight: 700 }}>{Math.floor(credits / 4)}회</span> · 트리트먼트 <span style={{ color: "#A78BFA", fontWeight: 700 }}>{Math.floor(credits / 3)}회</span> 가능
                 </div>
               )}
+            </div>
+
+            {/* 구독 플랜 배너 */}
+            <div style={{ margin: "14px 24px 0", padding: "12px 16px", borderRadius: 10, background: "linear-gradient(135deg, rgba(78,204,163,0.08), rgba(167,139,250,0.08))", border: "1px solid rgba(78,204,163,0.2)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: "#4ECCA3", marginBottom: 2 }}>월 구독 플랜 (준비 중)</div>
+                <div style={{ fontSize: 11, color: "var(--c-tx-40)", lineHeight: 1.5 }}>
+                  월 9,900원 → 100cr/월 자동 충전<br />
+                  <span style={{ fontSize: 10, color: "var(--c-tx-30)" }}>출시 알림 신청 시 첫 달 30% 할인</span>
+                </div>
+              </div>
+              <button
+                onClick={() => showToast("info", "구독 플랜 출시 시 이메일로 알려드리겠습니다.")}
+                style={{ flexShrink: 0, padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(78,204,163,0.35)", background: "rgba(78,204,163,0.1)", color: "#4ECCA3", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "nowrap" }}
+              >
+                알림 신청
+              </button>
             </div>
 
             {/* Packages */}

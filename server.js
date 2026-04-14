@@ -231,10 +231,13 @@ app.get("/auth/naver/callback", async (req, res) => {
 
 // JWT verification
 app.get("/api/auth/me", (req, res) => {
+  // 토큰 소스 우선순위: Authorization: Bearer → x-auth-token 헤더
   const auth = req.headers.authorization;
-  if (!auth?.startsWith("Bearer ")) return res.status(401).json({ error: "No token" });
+  const xToken = req.headers["x-auth-token"];
+  const raw = auth?.startsWith("Bearer ") ? auth.slice(7) : xToken;
+  if (!raw) return res.status(401).json({ error: "No token" });
   try {
-    const user = verifyJwt(auth.slice(7));
+    const user = verifyJwt(raw);
     res.json({ user: { id: user.id, provider: user.provider, name: user.name, email: user.email, avatar: user.avatar } });
   } catch {
     res.status(401).json({ error: "Invalid token" });
