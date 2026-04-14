@@ -8,7 +8,7 @@ const STAGE_PREREQUISITES = {
 };
 
 export default function SidebarNavItem({ id, title, sub, accentColor }) {
-  const { currentStage, setCurrentStage, getStageStatus, getStageDoneCount, STAGE_TOTALS, stageResultSummary, showToast } = useLoglineCtx();
+  const { currentStage, setCurrentStage, getStageStatus, getStageDoneCount, STAGE_TOTALS, stageResultSummary, showToast, reverseEntryStage } = useLoglineCtx();
   const [hovered, setHovered] = useState(false);
 
   const status = getStageStatus(id);
@@ -17,6 +17,11 @@ export default function SidebarNavItem({ id, title, sub, accentColor }) {
   const isActive = currentStage === id;
 
   function handleClick() {
+    // 역방향 진입 시 진입 스테이지 이하는 전제조건 우회
+    if (reverseEntryStage && parseInt(id) <= parseInt(reverseEntryStage)) {
+      setCurrentStage(id);
+      return;
+    }
     const prereqId = STAGE_PREREQUISITES[id];
     if (prereqId && getStageStatus(prereqId) !== "done") {
       showToast("info", `Stage ${prereqId}을 먼저 완료해야 진입할 수 있습니다.`);

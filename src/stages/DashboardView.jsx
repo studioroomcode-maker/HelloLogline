@@ -119,11 +119,17 @@ export default function DashboardView() {
     openPitchDeck, openStoryBibleDoc,
     generateMasterReport, masterReportResult, masterReportLoading, masterReportError,
     onReverseImport,
+    reverseEntryStage,
   } = useLoglineCtx();
 
   const [showReverseModal, setShowReverseModal] = useState(false);
 
   function handleStageClick(id) {
+    // 역방향 진입 시 진입 스테이지 이하는 전제조건 우회
+    if (reverseEntryStage && parseInt(id) <= parseInt(reverseEntryStage)) {
+      advanceToStage(id);
+      return;
+    }
     const prereqId = STAGE_PREREQUISITES[id];
     if (prereqId && getStageStatus(prereqId) !== "done") {
       showToast("info", `Stage ${prereqId}을 먼저 완료해야 진입할 수 있습니다.`);

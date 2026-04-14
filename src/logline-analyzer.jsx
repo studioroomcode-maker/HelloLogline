@@ -975,6 +975,9 @@ export default function LoglineAnalyzer() {
   // ── Demo mode ──
   const [isDemoMode, setIsDemoMode] = useState(false);
 
+  // ── 역방향 진입 스테이지 (이 번호 이하는 전제조건 우회) ──
+  const [reverseEntryStage, setReverseEntryStage] = useState(null); // e.g. "4", "5", "6"
+
   // ── 새로고침 복구 배너 ──
   const [showRecoveryBanner, setShowRecoveryBanner] = useState(false);
 
@@ -1459,6 +1462,7 @@ export default function LoglineAnalyzer() {
     switch (type) {
       case "logline":
         setLogline(text.trim());
+        setReverseEntryStage(null);
         advanceToStage("1");
         break;
       case "synopsis":
@@ -1471,14 +1475,17 @@ export default function LoglineAnalyzer() {
           key_scenes: [],
           ending_type: "",
         });
+        setReverseEntryStage("4"); // Stage 1~4 전제조건 우회
         advanceToStage("4");
         break;
       case "treatment":
         setTreatmentResult(text.trim());
+        setReverseEntryStage("5"); // Stage 1~5 전제조건 우회
         advanceToStage("5");
         break;
       case "draft":
         setScenarioDraftResult(text.trim());
+        setReverseEntryStage("6"); // Stage 1~6 전제조건 우회
         advanceToStage("6");
         break;
       default:
@@ -4300,6 +4307,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     showStoryDoctor, setShowStoryDoctor,
     // 역방향 임포트
     onReverseImport,
+    reverseEntryStage,
   };
 
   return (
