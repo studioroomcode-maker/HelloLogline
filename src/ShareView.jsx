@@ -154,8 +154,8 @@ export default function ShareView({ shareId }) {
               marginBottom: 20,
               padding: "16px 20px",
               borderRadius: 12,
-              background: "rgba(255,255,255,0.02)",
-              border: "1px solid rgba(255,255,255,0.06)",
+              background: "var(--glass-nano)",
+              border: "1px solid var(--glass-bd-nano)",
             }}
           >
             <div
@@ -210,7 +210,7 @@ export default function ShareView({ shareId }) {
                 style={{
                   marginTop: 12,
                   fontSize: 12,
-                  color: "rgba(255,255,255,0.5)",
+                  color: "var(--c-tx-35)",
                   lineHeight: 1.7,
                 }}
               >
@@ -280,7 +280,7 @@ export default function ShareView({ shareId }) {
               <div
                 style={{
                   fontSize: 12,
-                  color: "rgba(255,255,255,0.5)",
+                  color: "var(--c-tx-35)",
                   lineHeight: 1.7,
                 }}
               >
@@ -314,7 +314,7 @@ export default function ShareView({ shareId }) {
           <div
             style={{
               fontSize: 12,
-              color: "rgba(255,255,255,0.4)",
+              color: "var(--c-tx-30)",
               marginBottom: 16,
             }}
           >
