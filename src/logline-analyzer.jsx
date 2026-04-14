@@ -4272,6 +4272,36 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   const TIER_LABEL = { admin: "관리자", pro: "프리미엄", basic: "기본", blocked: "차단" };
   const TIER_COLOR = { admin: "#C8A84B", pro: "#60A5FA", basic: "var(--c-tx-35)", blocked: "#E85D75" };
 
+  // ── 변경 알림 헬퍼 (hooks: 조기 return 이전에 위치해야 함) ──
+  const addActivity = useCallback((type, actorName, actorColor, detail, stageId = null) => {
+    const entry = {
+      id: Date.now() + Math.random(),
+      type,        // "comment"|"assign"|"scene_gen"|"beat_edit"|"generate"|"import"
+      actorName: actorName || "나",
+      actorColor: actorColor || "#C8A84B",
+      detail,
+      stageId,
+      timestamp: Date.now(),
+    };
+    setActivityLog(prev => [entry, ...prev].slice(0, 100)); // 최대 100개 유지
+  }, []);
+
+  // ── 개정본 시작 (hooks: 조기 return 이전에 위치해야 함) ──
+  const startNewRevision = useCallback((name, snapshotText) => {
+    const nextId = revisions.length + 1;
+    const revColor = REVISION_COLORS[Math.min(nextId - 1, REVISION_COLORS.length - 1)];
+    const revision = {
+      id: nextId,
+      name: name || revColor.name,
+      shortName: revColor.shortName,
+      color: revColor.color,
+      snapshot: snapshotText || "",
+      createdAt: Date.now(),
+    };
+    setRevisions(prev => [...prev, revision]);
+    setCurrentRevisionId(nextId);
+  }, [revisions]);
+
   // ── Auth guard ──
   if (authLoading) {
     return (
@@ -4316,36 +4346,6 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     scriptCoverageResult,
     charDevResult,
   };
-
-  // ── 변경 알림 헬퍼 ──
-  const addActivity = useCallback((type, actorName, actorColor, detail, stageId = null) => {
-    const entry = {
-      id: Date.now() + Math.random(),
-      type,        // "comment"|"assign"|"scene_gen"|"beat_edit"|"generate"|"import"
-      actorName: actorName || "나",
-      actorColor: actorColor || "#C8A84B",
-      detail,
-      stageId,
-      timestamp: Date.now(),
-    };
-    setActivityLog(prev => [entry, ...prev].slice(0, 100)); // 최대 100개 유지
-  }, []);
-
-  // ── 개정본 시작 ──
-  const startNewRevision = useCallback((name, snapshotText) => {
-    const nextId = revisions.length + 1;
-    const revColor = REVISION_COLORS[Math.min(nextId - 1, REVISION_COLORS.length - 1)];
-    const revision = {
-      id: nextId,
-      name: name || revColor.name,
-      shortName: revColor.shortName,
-      color: revColor.color,
-      snapshot: snapshotText || "",
-      createdAt: Date.now(),
-    };
-    setRevisions(prev => [...prev, revision]);
-    setCurrentRevisionId(nextId);
-  }, [revisions]);
 
   // ── 팀 권한 헬퍼 ──
   const currentWorkingMember = currentWorkingAs
