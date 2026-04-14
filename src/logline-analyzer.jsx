@@ -3285,7 +3285,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setExpertPanelLoading(true); setExpertPanelError(""); setExpertPanelResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `분석할 로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n글자수: ${logline.trim().length}자\n\n위 로그라인을 7명의 전문가 패널이 학술 이론을 바탕으로 토론하세요.`;
-    try { const data = await callClaude(apiKey, EXPERT_PANEL_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, ExpertPanelSchema, "expertpanel"); setExpertPanelResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, EXPERT_PANEL_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal, ExpertPanelSchema, "expertpanel"); setExpertPanelResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setExpertPanelError(err.message || "전문가 패널 분석 중 오류가 발생했습니다."); }
     finally { setExpertPanelLoading(false); clearController("expertPanel"); }
   };
