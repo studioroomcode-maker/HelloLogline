@@ -120,6 +120,7 @@ export default function DashboardView() {
     generateMasterReport, masterReportResult, masterReportLoading, masterReportError,
     onReverseImport,
     reverseEntryStage,
+    isDemoMode, demoTourStep,
   } = useLoglineCtx();
 
   const [showReverseModal, setShowReverseModal] = useState(false);
@@ -420,14 +421,58 @@ export default function DashboardView() {
         <div style={{ fontSize: 11, color: "var(--c-tx-30)", fontWeight: 700, marginBottom: 12, letterSpacing: 0.5 }}>
           워크플로우 현황
         </div>
+
+        {/* ── 데모 투어 Step 0 안내 ── */}
+        {isDemoMode && demoTourStep === 0 && (
+          <div style={{
+            marginBottom: 14, padding: "16px 18px",
+            borderRadius: 14, animation: "fadeSlideUp 0.35s var(--ease-spring)",
+            background: "linear-gradient(135deg, rgba(200,168,75,0.13) 0%, rgba(200,168,75,0.06) 100%)",
+            border: "1px solid rgba(200,168,75,0.45)",
+            boxShadow: "0 4px 20px rgba(200,168,75,0.12)",
+            display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
+          }}>
+            <div style={{ fontSize: 28, flexShrink: 0, animation: "demoBounceArrow 1.4s ease-in-out infinite" }}>👇</div>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <div style={{
+                fontSize: 13, fontWeight: 800, color: "#C8A84B", marginBottom: 5,
+                fontFamily: "'Noto Sans KR', sans-serif",
+              }}>
+                여기서 시작해보세요! (1/3)
+              </div>
+              <div style={{ fontSize: 12, color: "var(--c-tx-50)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                샘플 시나리오의 분석 결과가 준비됐어요.
+                아래 <strong style={{ color: "#C8A84B" }}>로그라인</strong> 카드를 눌러보세요.
+              </div>
+            </div>
+            <button
+              onClick={() => advanceToStage("1")}
+              style={{
+                flexShrink: 0, padding: "10px 18px", borderRadius: 10,
+                border: "none", background: "#C8A84B", color: "#0c0c1c",
+                fontSize: 12, fontWeight: 800, cursor: "pointer",
+                fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "nowrap",
+                boxShadow: "0 4px 14px rgba(200,168,75,0.45)",
+                transition: "transform 0.15s, box-shadow 0.15s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(200,168,75,0.55)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 14px rgba(200,168,75,0.45)"; }}
+            >
+              로그라인 보기 →
+            </button>
+          </div>
+        )}
+
         <div style={{
           display: "grid",
           gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
           gap: 8,
         }}>
-          {STAGE_META.map(s => (
+          {STAGE_META.map(s => {
+            const isTourTarget = isDemoMode && demoTourStep === 0 && s.id === "1";
+            return (
+            <div key={s.id} style={isTourTarget ? { borderRadius: 12, animation: "demoPulseRing 1.8s ease-out infinite" } : undefined}>
             <StageCard
-              key={s.id}
               {...s}
               status={getStageStatus(s.id)}
               doneCount={getStageDoneCount(s.id)}
@@ -435,7 +480,9 @@ export default function DashboardView() {
               summary={stageResultSummary?.[s.id]}
               onClick={() => handleStageClick(s.id)}
             />
-          ))}
+            </div>
+            );
+          })}
         </div>
       </div>
 

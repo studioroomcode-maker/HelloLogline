@@ -106,6 +106,7 @@ const ValuationPanel = lazyWithRetry(() =>
   import("./panels/EvaluationPanels.jsx").then((m) => ({ default: m.ValuationPanel }))
 );
 const StoryDoctorPanel = lazyWithRetry(() => import("./stages/StoryDoctorPanel.jsx"));
+const DemoTour = lazyWithRetry(() => import("./stages/DemoTour.jsx"));
 
 /* ─── 크레딧 사용 내역 트래킹 ─── */
 function trackCreditUsage(feature, amount = 1) {
@@ -609,6 +610,7 @@ export default function LoglineAnalyzer() {
 
   // ── Demo mode ──
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [demoTourStep, setDemoTourStep] = useState(null); // 0=대시보드, 1=Stage1, 2=탐험, null=종료
 
   // ── 역방향 진입 스테이지 (이 번호 이하는 전제조건 우회) ──
   const [reverseEntryStage, setReverseEntryStage] = useState(null); // e.g. "4", "5", "6"
@@ -654,6 +656,17 @@ export default function LoglineAnalyzer() {
       showToast("success", "인터넷에 다시 연결되었습니다.");
     }
   }, [isOnline]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── 데모 투어 자동 진행 ──
+  useEffect(() => {
+    if (!isDemoMode || demoTourStep !== 0) return;
+    if (currentStage === "1") setDemoTourStep(1);
+  }, [isDemoMode, demoTourStep, currentStage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!isDemoMode || demoTourStep !== 1) return;
+    if (currentStage !== "1" && currentStage !== "dashboard") setDemoTourStep(2);
+  }, [isDemoMode, demoTourStep, currentStage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Abort controllers (per operation key) ──
   const abortControllersRef = useRef({});
@@ -1136,12 +1149,14 @@ export default function LoglineAnalyzer() {
     setPartialRewriteResult(DEMO_PARTIAL_REWRITE_RESULT);
     setFullRewriteResult(DEMO_FULL_REWRITE_RESULT);
     setCurrentStage("dashboard");
+    setDemoTourStep(0); // 온보딩 투어 시작
     showToast("info", "데모 모드입니다. 8단계 전체 분석 결과를 자유롭게 둘러보세요.");
   };
 
   // ── 데모 모드 해제 ──
   const deactivateDemo = () => {
     setIsDemoMode(false);
+    setDemoTourStep(null);
     setLogline("");
     setGenre("auto");
     setResult(null);
@@ -4041,7 +4056,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     // 입력
     logline, setLogline, genre, setGenre,
     // 인증/API
-    apiKey, isDemoMode, hasOwnApiKey, canUseAllStages,
+    apiKey, isDemoMode, demoTourStep, setDemoTourStep, hasOwnApiKey, canUseAllStages,
     user, credits, cc,
     // UI
     isMobile, darkMode,
@@ -4097,6 +4112,11 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
       {/* ─── Toast notifications ─── */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
+      {/* ─── Demo onboarding tour (steps 1-2) ─── */}
+      {isDemoMode && demoTourStep !== null && demoTourStep >= 1 && (
+        <Suspense fallback={null}><DemoTour /></Suspense>
+      )}
 
       {/* ─── Modals ─── */}
       {showApiKeyModal && (

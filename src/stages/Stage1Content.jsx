@@ -67,6 +67,7 @@ export default function Stage1Content({
     openApplicationDoc,
     showToast,
     eduMode,
+    isDemoMode, demoTourStep,
   } = useLoglineCtx();
 
   // ── 기존 시나리오 패널 ──
@@ -721,6 +722,22 @@ export default function Stage1Content({
     {error && (
       <div style={{ marginTop: 12, padding: "12px 16px", borderRadius: 10, background: "rgba(232,93,117,0.1)", border: "1px solid rgba(232,93,117,0.25)", color: "#E85D75", fontSize: 12, lineHeight: 1.6 }}>
         ⚠️ {error}
+      </div>
+    )}
+
+    {/* ── 데모 투어 Step 1 인라인 힌트 ── */}
+    {isDemoMode && demoTourStep === 1 && result && (
+      <div style={{
+        margin: "20px 0 0", padding: "10px 14px",
+        borderRadius: 10, animation: "fadeSlideUp 0.3s var(--ease-spring)",
+        background: "rgba(200,168,75,0.07)",
+        border: "1px solid rgba(200,168,75,0.3)",
+        display: "flex", alignItems: "center", gap: 10,
+      }}>
+        <span style={{ fontSize: 16 }}>👇</span>
+        <span style={{ fontSize: 12, color: "#C8A84B", fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif" }}>
+          분석 결과가 아래 있어요! 스크롤해서 점수·흥미도·개선안을 확인해보세요.
+        </span>
       </div>
     )}
 
