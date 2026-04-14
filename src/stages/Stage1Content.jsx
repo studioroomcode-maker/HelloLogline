@@ -802,14 +802,20 @@ export default function Stage1Content({
 
         {/* Tab nav */}
         <div style={{ overflowX: "auto", marginTop: 16, marginBottom: 12 }}>
-          <div style={{ display: "flex", gap: 3, background: "rgba(var(--tw),0.02)", borderRadius: 10, padding: 4, minWidth: "max-content" }}>
+          <div style={{ display: "flex", gap: 4, minWidth: "max-content" }}>
             {tabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                flex: "0 0 auto", padding: isMobile ? "7px 10px" : "8px 13px",
-                borderRadius: 7, border: "none", cursor: "pointer",
-                background: activeTab === tab.id ? "rgba(200,168,75,0.14)" : "transparent",
-                color: activeTab === tab.id ? "#C8A84B" : "rgba(var(--tw),0.38)",
-                fontSize: 11, fontWeight: activeTab === tab.id ? 700 : 400, transition: "all 0.2s", whiteSpace: "nowrap",
+                flex: "0 0 auto", padding: isMobile ? "7px 11px" : "8px 14px",
+                borderRadius: 8, cursor: "pointer", transition: "all 0.18s",
+                border: activeTab === tab.id
+                  ? "1px solid rgba(200,168,75,0.55)"
+                  : "1px solid var(--c-bd-2)",
+                background: activeTab === tab.id
+                  ? "rgba(200,168,75,0.12)"
+                  : "var(--glass-micro)",
+                color: activeTab === tab.id ? "#C8A84B" : "var(--c-tx-50)",
+                fontSize: 11, fontWeight: activeTab === tab.id ? 700 : 500,
+                whiteSpace: "nowrap", fontFamily: "'Noto Sans KR', sans-serif",
               }}>{tab.label}</button>
             ))}
           </div>
