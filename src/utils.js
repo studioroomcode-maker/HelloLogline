@@ -194,10 +194,51 @@ export function markNextCallsAsRetry(n = 2) { _retryCredits = n; }
 /**
  * Fetch one Claude response (raw text returned from API).
  */
+// ── Ollama 로컬 AI 호출 ────────────────────────────────────────────────────
+async function callOllamaText(baseUrl, model, systemPrompt, userMessage, maxTokens, signal) {
+  const url = `${baseUrl.replace(/\/$/, "")}/v1/chat/completions`;
+  let response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user",   content: userMessage },
+        ],
+        max_tokens: maxTokens,
+        stream: false,
+        temperature: 0.7,
+      }),
+      signal,
+    });
+  } catch (e) {
+    if (e.name === "AbortError") throw e;
+    const err = new Error(`Ollama 연결 실패 — ${baseUrl} 에서 Ollama가 실행 중인지 확인하세요.`);
+    err.name = "OllamaError";
+    throw err;
+  }
+  if (!response.ok) {
+    const err = new Error(`Ollama 오류 (${response.status}) — ollama run ${model} 로 모델을 먼저 실행하세요.`);
+    err.name = "OllamaError";
+    throw err;
+  }
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
 async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature = null) {
-  // 오프라인 즉시 차단 — fetch 시도 전에 명확한 에러 반환
+  // 오프라인: Ollama 설정 있으면 폴백, 없으면 차단
   if (!navigator.onLine) {
-    const err = new Error("오프라인 상태입니다 — 인터넷에 연결되면 다시 시도하세요.");
+    const ollamaEnabled = localStorage.getItem("hll_ollama_enabled") === "true";
+    const ollamaUrl     = localStorage.getItem("hll_ollama_url")     || "http://localhost:11434";
+    const ollamaModel   = localStorage.getItem("hll_ollama_model")   || "llama3.1";
+    if (ollamaEnabled) {
+      return callOllamaText(ollamaUrl, ollamaModel, systemPrompt, userMessage, maxTokens, signal);
+    }
+    const err = new Error("오프라인 상태입니다 — 인터넷에 연결하거나 로컬 AI(Ollama)를 설정하세요.");
     err.name = "OfflineError";
     throw err;
   }

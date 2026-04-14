@@ -3,6 +3,7 @@ import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import SidebarNavItem from "./SidebarNavItem.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import NotificationPanel from "./NotificationPanel.jsx";
+import OllamaSettings from "./OllamaSettings.jsx";
 
 const StageCommentThread = lazy(() => import("./StageCommentThread.jsx"));
 
@@ -265,6 +266,9 @@ export default function SidebarLayout({ stageProps, isMobile }) {
           <div style={{ padding: "6px 10px 0" }}>
             <NotificationPanel />
           </div>
+
+          {/* 로컬 AI (Ollama) 설정 */}
+          <OllamaSettings />
 
           {/* 공유 버튼 */}
           <div style={{ padding: "10px 12px 0", borderTop: "1px solid var(--c-bd-1)", marginTop: 8 }}>
