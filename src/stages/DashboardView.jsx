@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import { loadProjects } from "../db.js";
+
+const ReverseImportModal = lazy(() => import("./ReverseImportModal.jsx"));
 
 const STAGE_META = [
   { id: "1", name: "로그라인",      sub: "점수·분석",         color: "#C8A84B", icon: "📝" },
@@ -116,7 +118,10 @@ export default function DashboardView() {
     isMobile,
     openPitchDeck, openStoryBibleDoc,
     generateMasterReport, masterReportResult, masterReportLoading, masterReportError,
+    onReverseImport,
   } = useLoglineCtx();
+
+  const [showReverseModal, setShowReverseModal] = useState(false);
 
   function handleStageClick(id) {
     const prereqId = STAGE_PREREQUISITES[id];
@@ -164,6 +169,13 @@ export default function DashboardView() {
   return (
     <div style={{ maxWidth: 720, margin: "0 auto" }}>
 
+      {/* ── 역방향 임포트 모달 ── */}
+      {showReverseModal && (
+        <Suspense fallback={null}>
+          <ReverseImportModal onClose={() => setShowReverseModal(false)} />
+        </Suspense>
+      )}
+
       {/* ── 신규 사용자 CTA ── */}
       {!logline && (
         <div style={{
@@ -183,28 +195,49 @@ export default function DashboardView() {
             <div style={{ fontSize: 13, color: "var(--c-tx-45)", marginBottom: 22, lineHeight: 1.6 }}>
               로그라인 한 줄을 입력하면 AI가<br />8단계 시나리오 개발 파이프라인을 가동합니다.
             </div>
-            <button
-              onClick={() => advanceToStage("1")}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 10,
-                padding: "12px 24px", borderRadius: 10,
-                border: "none", background: "var(--accent-gold)",
-                color: "#0c0c1c", fontSize: 14, fontWeight: 800,
-                cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
-                boxShadow: "0 4px 24px var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.2)",
-                transition: "transform 0.18s var(--ease-spring), box-shadow 0.18s var(--ease-spring)",
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.25)"; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 24px var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.2)"; }}
-            >
-              Stage 1 — 로그라인 입력하기
-              <span style={{
-                width: 26, height: 26, borderRadius: "50%",
-                background: "rgba(0,0,0,0.15)",
-                display: "inline-flex", alignItems: "center", justifyContent: "center",
-                fontSize: 13, transition: "transform 0.18s var(--ease-spring)",
-              }}>→</span>
-            </button>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+              <button
+                onClick={() => advanceToStage("1")}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 10,
+                  padding: "12px 24px", borderRadius: 10,
+                  border: "none", background: "var(--accent-gold)",
+                  color: "#0c0c1c", fontSize: 14, fontWeight: 800,
+                  cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
+                  boxShadow: "0 4px 24px var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.2)",
+                  transition: "transform 0.18s var(--ease-spring), box-shadow 0.18s var(--ease-spring)",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.25)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 24px var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.2)"; }}
+              >
+                Stage 1 — 로그라인 입력하기
+                <span style={{
+                  width: 26, height: 26, borderRadius: "50%",
+                  background: "rgba(0,0,0,0.15)",
+                  display: "inline-flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 13, transition: "transform 0.18s var(--ease-spring)",
+                }}>→</span>
+              </button>
+              <button
+                onClick={() => setShowReverseModal(true)}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 8,
+                  padding: "12px 20px", borderRadius: 10,
+                  border: "1px solid rgba(96,165,250,0.35)",
+                  background: "rgba(96,165,250,0.08)",
+                  color: "#60A5FA", fontSize: 13, fontWeight: 700,
+                  cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
+                  transition: "all 0.18s var(--ease-spring)",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(96,165,250,0.14)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(96,165,250,0.08)"; e.currentTarget.style.transform = ""; }}
+              >
+                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                기존 글 가져오기
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -259,6 +292,21 @@ export default function DashboardView() {
                 <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
               </svg>
               스토리 바이블
+            </button>
+            <button
+              onClick={() => setShowReverseModal(true)}
+              style={{
+                display: "flex", alignItems: "center", gap: 5, padding: "7px 14px",
+                borderRadius: 8, border: "1px solid rgba(96,165,250,0.3)",
+                background: "rgba(96,165,250,0.07)", color: "#60A5FA",
+                fontSize: 11, fontWeight: 700, cursor: "pointer",
+                fontFamily: "'Noto Sans KR', sans-serif",
+              }}
+            >
+              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              기존 글 가져오기
             </button>
           </div>
         )}

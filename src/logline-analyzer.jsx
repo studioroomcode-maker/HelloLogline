@@ -1444,6 +1444,50 @@ export default function LoglineAnalyzer() {
     if (!apiKey && !serverHasKey) setShowApiKeyModal(true);
   };
 
+  // ── 역방향 임포트 ──────────────────────────────────────────
+  // type: "logline" | "synopsis" | "treatment" | "draft"
+  // text: 붙여넣은 원본 텍스트
+  // loglineText: AI 추출 로그라인 (없으면 빈 문자열)
+  // genreId: 장르 id
+  const onReverseImport = ({ type, text, loglineText, genreId }) => {
+    const labels = { logline: "로그라인", synopsis: "시놉시스", treatment: "트리트먼트", draft: "시나리오 초고" };
+    const stageMap = { logline: "1", synopsis: "4", treatment: "5", draft: "6" };
+
+    if (loglineText) setLogline(loglineText);
+    if (genreId && genreId !== "auto") setGenre(genreId);
+
+    switch (type) {
+      case "logline":
+        setLogline(text.trim());
+        advanceToStage("1");
+        break;
+      case "synopsis":
+        // 최소 pipelineResult 구조로 감싸 Stage 4가 표시되도록
+        setPipelineResult({
+          synopsis: text.trim(),
+          direction_title: "가져온 시놉시스",
+          theme: "",
+          genre_tone: genreId !== "auto" ? genreId : "",
+          key_scenes: [],
+          ending_type: "",
+        });
+        advanceToStage("4");
+        break;
+      case "treatment":
+        setTreatmentResult(text.trim());
+        advanceToStage("5");
+        break;
+      case "draft":
+        setScenarioDraftResult(text.trim());
+        advanceToStage("6");
+        break;
+      default:
+        advanceToStage(stageMap[type] || "1");
+    }
+
+    showToast("success", `${labels[type] || "텍스트"}를 가져왔습니다. Stage ${stageMap[type] || "1"}에서 시작합니다.`);
+  };
+
   // ── 새 프로젝트 ──
   const startNewProject = () => {
     if (logline.trim()) {
@@ -4254,6 +4298,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     referenceScenarioSummary,
     // 스토리 닥터
     showStoryDoctor, setShowStoryDoctor,
+    // 역방향 임포트
+    onReverseImport,
   };
 
   return (
