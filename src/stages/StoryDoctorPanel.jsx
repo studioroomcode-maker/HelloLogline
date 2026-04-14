@@ -7,14 +7,14 @@ import { callClaudeText } from "../utils.js";
 
 // ── 퀵 칩 목록 ────────────────────────────────────
 const QUICK_CHIPS = [
-  { emoji: "👤", label: "캐릭터 동기가 약한 것 같아요" },
-  { emoji: "⚡", label: "갈등이 너무 약해요" },
-  { emoji: "🎬", label: "특정 씬이 어색해요" },
-  { emoji: "🔚", label: "엔딩이 막혔어요" },
-  { emoji: "🎯", label: "주제가 불분명해요" },
-  { emoji: "💬", label: "대사가 어색해요" },
-  { emoji: "⏱️", label: "페이스가 이상해요" },
-  { emoji: "📐", label: "구조가 무너진 것 같아요" },
+  { label: "캐릭터 동기가 약한 것 같아요" },
+  { label: "갈등이 너무 약해요" },
+  { label: "특정 씬이 어색해요" },
+  { label: "엔딩이 막혔어요" },
+  { label: "주제가 불분명해요" },
+  { label: "대사가 어색해요" },
+  { label: "페이스가 이상해요" },
+  { label: "구조가 무너진 것 같아요" },
 ];
 
 // ── 시스템 프롬프트 ──────────────────────────────
@@ -232,9 +232,9 @@ export default function StoryDoctorPanel({ apiKey, storyContext, onClose, isMobi
           background: "var(--bg-page)", flexShrink: 0,
         }}>
           {[
-            { id: "chat", icon: "💬", label: "자유 상담" },
-            { id: "diag", icon: "🔍", label: "전체 진단" },
-            { id: "clinic", icon: "🎬", label: "씬 클리닉" },
+            { id: "chat", label: "자유 상담" },
+            { id: "diag", label: "전체 진단" },
+            { id: "clinic", label: "씬 클리닉" },
           ].map(t => (
             <button
               key={t.id}
@@ -249,7 +249,7 @@ export default function StoryDoctorPanel({ apiKey, storyContext, onClose, isMobi
                 transition: "all 0.15s",
               }}
             >
-              {t.icon} {t.label}
+              {t.label}
             </button>
           ))}
         </div>
@@ -289,7 +289,7 @@ export default function StoryDoctorPanel({ apiKey, storyContext, onClose, isMobi
                       onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(167,139,250,0.5)"; e.currentTarget.style.color = "#A78BFA"; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--c-bd-3)"; e.currentTarget.style.color = "var(--c-tx-50)"; }}
                     >
-                      {chip.emoji} {chip.label}
+                      {chip.label}
                     </button>
                   ))}
                 </div>
@@ -589,7 +589,13 @@ function ChatBubble({ role, content }) {
 function TypingIndicator() {
   return (
     <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-      <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg, #A78BFA, #4ECCA3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🩺</div>
+      <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg, #A78BFA, #4ECCA3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/>
+          <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/>
+          <circle cx="20" cy="10" r="2"/>
+        </svg>
+      </div>
       <div style={{ padding: "10px 16px", borderRadius: "4px 14px 14px 14px", background: "var(--c-card-2)", border: "1px solid var(--c-bd-2)", display: "flex", gap: 4, alignItems: "center" }}>
         {[0, 0.2, 0.4].map((delay, i) => (
           <div key={i} style={{ width: 7, height: 7, borderRadius: "50%", background: "#A78BFA", animation: `typing 1.2s ${delay}s ease-in-out infinite` }} />
@@ -623,8 +629,9 @@ function DiagnosticResult({ text }) {
             padding: "12px 14px", borderRadius: 10,
             background: sec.bg, border: `1px solid ${sec.border}`,
           }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: sec.color, marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}>
-              {sec.emoji} {sec.label}
+            <div style={{ fontSize: 12, fontWeight: 700, color: sec.color, marginBottom: 6, display: "flex", alignItems: "center", gap: 7 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: sec.color, flexShrink: 0 }} />
+              {sec.label}
             </div>
             <div style={{ fontSize: 12, color: "var(--c-tx-70)", lineHeight: 1.75, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
               {content.replace(new RegExp(`^${sec.label}`, ""), "").trim()}

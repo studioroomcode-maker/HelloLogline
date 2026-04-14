@@ -221,41 +221,52 @@ export default function Stage1Content({
 
     {/* ── 단계 안내 ── */}
     {!result && (
-      <div style={{ marginBottom: 20, padding: "12px 16px", borderRadius: 10, background: "rgba(200,168,75,0.05)", border: "1px solid rgba(200,168,75,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
-        <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>✏️</span>
+      <div style={{ marginBottom: 20, padding: "11px 14px", borderRadius: 10, background: "rgba(200,168,75,0.05)", borderLeft: "2px solid rgba(200,168,75,0.4)", display: "flex", gap: 10, alignItems: "flex-start" }}>
+        <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="rgba(200,168,75,0.75)" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }}>
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
         <div style={{ fontSize: 12, color: "var(--c-tx-50)", lineHeight: 1.65 }}>
           <strong style={{ color: "rgba(200,168,75,0.9)" }}>시나리오의 시작, 로그라인입니다.</strong>{" "}
-          한 문장으로 주인공·사건·목표·갈등을 담아야 합니다. 입력하면 18개 항목으로 점수를 매기고 어디가 약한지 짚어줍니다. 개선안과 상업성 진단도 즉시 받을 수 있습니다.
+          한 문장에 주인공·목표·갈등을 담아 입력하면 18개 항목으로 점수를 매기고 개선안·상업성 진단을 즉시 받을 수 있습니다.
         </div>
       </div>
     )}
 
     {/* Duration selector */}
     <div style={{ marginBottom: 18 }}>
-      <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600 }}>영상 길이</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 7 }}>
-        {DURATION_OPTIONS.map((d) => (
-          <button key={d.id} onClick={() => setSelectedDuration(d.id)} style={{
-            padding: "9px 10px", borderRadius: 10, textAlign: "left", transition: "all 0.15s",
-            border: selectedDuration === d.id ? "1px solid rgba(200,168,75,0.55)" : "1px solid var(--c-bd-2)",
-            background: selectedDuration === d.id ? "rgba(200,168,75,0.08)" : "rgba(var(--tw),0.02)",
-            color: selectedDuration === d.id ? "#C8A84B" : "var(--c-tx-45)",
-            cursor: "pointer",
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 1 }}>{d.label}</div>
-            <div style={{ fontSize: 10, color: selectedDuration === d.id ? "rgba(200,168,75,0.65)" : "var(--c-tx-28)", fontFamily: "'JetBrains Mono', monospace" }}>{d.duration}</div>
-          </button>
-        ))}
-        {/* 커스텀 버튼 */}
+      <div style={{ fontSize: 10, color: "var(--c-tx-25)", marginBottom: 9, textTransform: "uppercase", letterSpacing: 1, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>형식 / 길이</div>
+      {/* 가로 스크롤 필 — 4열 그리드 대신 */}
+      <div style={{
+        display: "flex", gap: 6,
+        overflowX: "auto", WebkitOverflowScrolling: "touch",
+        scrollbarWidth: "none", msOverflowStyle: "none",
+        paddingBottom: 2,
+      }}>
+        {DURATION_OPTIONS.map((d) => {
+          const isSelected = selectedDuration === d.id;
+          return (
+            <button key={d.id} onClick={() => setSelectedDuration(d.id)} style={{
+              flexShrink: 0, padding: "7px 11px", borderRadius: 20, cursor: "pointer",
+              border: isSelected ? "1px solid rgba(200,168,75,0.5)" : "1px solid var(--c-bd-2)",
+              background: isSelected ? "rgba(200,168,75,0.1)" : "rgba(var(--tw),0.02)",
+              transition: "all 0.15s",
+              display: "flex", flexDirection: "column", gap: 2, textAlign: "left",
+            }}>
+              <span style={{ fontSize: 11, fontWeight: isSelected ? 700 : 500, color: isSelected ? "#C8A84B" : "var(--c-tx-45)", whiteSpace: "nowrap" }}>{d.label}</span>
+              <span style={{ fontSize: 9, color: isSelected ? "rgba(200,168,75,0.6)" : "var(--c-tx-25)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "nowrap" }}>{d.duration}</span>
+            </button>
+          );
+        })}
+        {/* 커스텀 */}
         <button onClick={() => setSelectedDuration("custom")} style={{
-          padding: "9px 10px", borderRadius: 10, textAlign: "left", transition: "all 0.15s",
-          border: selectedDuration === "custom" ? "1px solid rgba(139,92,246,0.6)" : "1px solid var(--c-bd-2)",
-          background: selectedDuration === "custom" ? "rgba(139,92,246,0.1)" : "rgba(var(--tw),0.02)",
-          color: selectedDuration === "custom" ? "#A78BFA" : "var(--c-tx-45)",
-          cursor: "pointer",
+          flexShrink: 0, padding: "7px 11px", borderRadius: 20, cursor: "pointer",
+          border: selectedDuration === "custom" ? "1px solid rgba(139,92,246,0.5)" : "1px solid var(--c-bd-2)",
+          background: selectedDuration === "custom" ? "rgba(139,92,246,0.09)" : "rgba(var(--tw),0.02)",
+          transition: "all 0.15s",
+          display: "flex", flexDirection: "column", gap: 2, textAlign: "left",
         }}>
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 1 }}>커스텀</div>
-          <div style={{ fontSize: 10, color: selectedDuration === "custom" ? "rgba(167,139,250,0.65)" : "var(--c-tx-28)", fontFamily: "'JetBrains Mono', monospace" }}>직접 설정</div>
+          <span style={{ fontSize: 11, fontWeight: selectedDuration === "custom" ? 700 : 500, color: selectedDuration === "custom" ? "#A78BFA" : "var(--c-tx-45)", whiteSpace: "nowrap" }}>커스텀</span>
+          <span style={{ fontSize: 9, color: "var(--c-tx-25)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "nowrap" }}>직접 설정</span>
         </button>
       </div>
 
@@ -954,7 +965,7 @@ export default function Stage1Content({
                   <ScoreBar score={val.score} max={val.max} label={LABELS_KR[key]} found={val.found} feedback={val.feedback} delay={i * 100} criterionKey={key} />
                   {val.score != null && val.max != null && val.score / val.max <= 0.5 && CRITERIA_GUIDE[key] && (
                     <div style={{ margin: "-6px 0 14px 0", padding: "8px 12px", borderRadius: "0 0 8px 8px", background: "rgba(200,168,75,0.07)", borderLeft: "3px solid rgba(200,168,75,0.5)", fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.65 }}>
-                      <span style={{ fontWeight: 700, color: "#C8A84B", marginRight: 5 }}>💡 개선 팁</span>{CRITERIA_GUIDE[key]}
+                      <span style={{ fontWeight: 700, color: "#C8A84B", marginRight: 5 }}>개선 팁</span>{CRITERIA_GUIDE[key]}
                     </div>
                   )}
                 </div>
@@ -969,7 +980,7 @@ export default function Stage1Content({
                   <ScoreBar score={val.score} max={val.max} label={LABELS_KR[key]} found={val.found} feedback={val.feedback} delay={i * 100} criterionKey={key} />
                   {val.score != null && val.max != null && val.score / val.max <= 0.5 && CRITERIA_GUIDE[key] && (
                     <div style={{ margin: "-6px 0 14px 0", padding: "8px 12px", borderRadius: "0 0 8px 8px", background: "rgba(200,168,75,0.07)", borderLeft: "3px solid rgba(200,168,75,0.5)", fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.65 }}>
-                      <span style={{ fontWeight: 700, color: "#C8A84B", marginRight: 5 }}>💡 개선 팁</span>{CRITERIA_GUIDE[key]}
+                      <span style={{ fontWeight: 700, color: "#C8A84B", marginRight: 5 }}>개선 팁</span>{CRITERIA_GUIDE[key]}
                     </div>
                   )}
                 </div>
@@ -984,7 +995,7 @@ export default function Stage1Content({
                   <ScoreBar score={val.score} max={val.max} label={LABELS_KR[key]} feedback={val.feedback} delay={i * 100} criterionKey={key} />
                   {val.score != null && val.max != null && val.score / val.max <= 0.5 && CRITERIA_GUIDE[key] && (
                     <div style={{ margin: "-6px 0 14px 0", padding: "8px 12px", borderRadius: "0 0 8px 8px", background: "rgba(200,168,75,0.07)", borderLeft: "3px solid rgba(200,168,75,0.5)", fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.65 }}>
-                      <span style={{ fontWeight: 700, color: "#C8A84B", marginRight: 5 }}>💡 개선 팁</span>{CRITERIA_GUIDE[key]}
+                      <span style={{ fontWeight: 700, color: "#C8A84B", marginRight: 5 }}>개선 팁</span>{CRITERIA_GUIDE[key]}
                     </div>
                   )}
                 </div>
@@ -999,7 +1010,7 @@ export default function Stage1Content({
                   <ScoreBar score={val.score} max={val.max} label={LABELS_KR[key]} feedback={val.feedback} delay={i * 100} criterionKey={key} />
                   {val.score != null && val.max != null && val.score / val.max <= 0.5 && CRITERIA_GUIDE[key] && (
                     <div style={{ margin: "-6px 0 14px 0", padding: "8px 12px", borderRadius: "0 0 8px 8px", background: "rgba(200,168,75,0.07)", borderLeft: "3px solid rgba(200,168,75,0.5)", fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.65 }}>
-                      <span style={{ fontWeight: 700, color: "#C8A84B", marginRight: 5 }}>💡 개선 팁</span>{CRITERIA_GUIDE[key]}
+                      <span style={{ fontWeight: 700, color: "#C8A84B", marginRight: 5 }}>개선 팁</span>{CRITERIA_GUIDE[key]}
                     </div>
                   )}
                 </div>
@@ -1013,14 +1024,14 @@ export default function Stage1Content({
                 <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-tx-60)", marginBottom: 8, letterSpacing: 0.5 }}>이 탭에서 할 수 있는 것</div>
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
                   {[
-                    { icon: "🔧", title: "약점 수정", desc: "낮은 점수 항목만 골라 직접 고친 버전 제안" },
-                    { icon: "🔀", title: "방향 전환", desc: "장르·관점·갈등을 완전히 다르게 바꾼 3가지 버전" },
-                    { icon: "✨", title: "AI 개선안", desc: "종합 피드백을 반영한 자유 형식 개선 로그라인" },
+                    { color: "#C8A84B", title: "약점 수정", desc: "낮은 점수 항목만 골라 직접 고친 버전 제안" },
+                    { color: "#60A5FA", title: "방향 전환", desc: "장르·관점·갈등을 완전히 다르게 바꾼 3가지 버전" },
+                    { color: "#4ECCA3", title: "AI 개선안", desc: "종합 피드백을 반영한 자유 형식 개선 로그라인" },
                   ].map((item) => (
                     <div key={item.title} style={{ display: "flex", gap: 8, padding: "8px 10px", borderRadius: 8, background: "rgba(var(--tw),0.02)" }}>
-                      <span style={{ fontSize: 16, flexShrink: 0 }}>{item.icon}</span>
+                      <div style={{ width: 4, flexShrink: 0, borderRadius: 2, background: item.color, alignSelf: "stretch", minHeight: 32 }} />
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#C8A84B" }}>{item.title}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: item.color }}>{item.title}</div>
                         <div style={{ fontSize: 10, color: "var(--c-tx-40)", marginTop: 2, lineHeight: 1.5 }}>{item.desc}</div>
                       </div>
                     </div>

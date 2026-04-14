@@ -5,17 +5,17 @@ import { loadProjects } from "../db.js";
 const ReverseImportModal = lazy(() => import("./ReverseImportModal.jsx"));
 
 const STAGE_META = [
-  { id: "1", name: "로그라인",      sub: "점수·분석",         color: "#C8A84B", icon: "📝" },
-  { id: "2", name: "개념 분석",     sub: "신화·전문가",        color: "#45B7D1", icon: "🎭" },
-  { id: "3", name: "캐릭터",        sub: "심리·아크",         color: "#FB923C", icon: "👤" },
-  { id: "4", name: "스토리 설계",   sub: "구조·시놉시스",      color: "#4ECCA3", icon: "📖" },
-  { id: "5", name: "트리트먼트",    sub: "씬·비트시트",        color: "#C8A84B", icon: "📋" },
-  { id: "6", name: "시나리오 초고", sub: "자동 생성",          color: "#A78BFA", icon: "✍️" },
-  { id: "7", name: "Coverage",      sub: "심사·시장가치",      color: "#60A5FA", icon: "📊" },
-  { id: "8", name: "고쳐쓰기",     sub: "진단·수정·개고",     color: "#FB923C", icon: "🔧" },
+  { id: "1", name: "로그라인",      sub: "점수·분석",      color: "#C8A84B" },
+  { id: "2", name: "개념 분석",     sub: "신화·전문가",    color: "#45B7D1" },
+  { id: "3", name: "캐릭터",        sub: "심리·아크",      color: "#FB923C" },
+  { id: "4", name: "스토리 설계",   sub: "구조·시놉시스",  color: "#4ECCA3" },
+  { id: "5", name: "트리트먼트",    sub: "씬·비트시트",    color: "#C8A84B" },
+  { id: "6", name: "시나리오 초고", sub: "자동 생성",      color: "#A78BFA" },
+  { id: "7", name: "Coverage",      sub: "심사·시장가치",  color: "#60A5FA" },
+  { id: "8", name: "고쳐쓰기",     sub: "진단·수정·개고", color: "#FB923C" },
 ];
 
-function StageCard({ id, name, sub, color, icon, status, doneCount, total, summary, onClick }) {
+function StageCard({ id, name, sub, color, status, doneCount, total, summary, onClick }) {
   const [hovered, setHovered] = useState(false);
   const isDone = status === "done";
   const isActive = status === "active";
@@ -26,20 +26,20 @@ function StageCard({ id, name, sub, color, icon, status, doneCount, total, summa
       onMouseLeave={() => setHovered(false)}
       style={{
         display: "flex", flexDirection: "column", alignItems: "flex-start",
-        gap: 6, padding: "14px 14px 12px",
+        gap: 7, padding: "12px 12px 10px",
         borderRadius: 12,
         border: isDone
-          ? `1px solid ${color}40`
+          ? `1px solid ${color}35`
           : hovered
           ? "1px solid var(--glass-bd-base)"
           : "1px solid var(--glass-bd-micro)",
         background: isDone
-          ? `linear-gradient(135deg, ${color}10 0%, var(--glass-micro) 70%)`
+          ? `linear-gradient(135deg, ${color}09 0%, var(--glass-micro) 70%)`
           : hovered
           ? "var(--glass-raised)"
           : "var(--glass-micro)",
         boxShadow: isDone
-          ? `inset 0 1px 0 ${color}22, 0 2px 8px ${color}0A`
+          ? `inset 0 1px 0 ${color}18, 0 2px 8px ${color}08`
           : hovered
           ? "inset 0 1px 0 var(--glass-bd-top), 0 6px 20px rgba(0,0,0,0.18)"
           : "inset 0 1px 0 var(--glass-bd-nano)",
@@ -53,40 +53,57 @@ function StageCard({ id, name, sub, color, icon, status, doneCount, total, summa
       {isDone && (
         <div style={{
           position: "absolute", top: 0, left: 0, right: 0, height: 2,
-          background: `linear-gradient(90deg, ${color}cc, ${color}44)`,
+          background: `linear-gradient(90deg, ${color}bb, ${color}33)`,
         }} />
       )}
+      {/* 상단 행: 번호 배지 + 이름 + 상태 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          <span style={{ fontSize: 16, lineHeight: 1 }}>{icon}</span>
+          {/* 숫자 배지 — 이모지 대신 */}
+          <div style={{
+            width: 20, height: 20, borderRadius: 5, flexShrink: 0,
+            background: isDone ? `${color}18` : "var(--glass-raised)",
+            border: `1px solid ${isDone ? color + "28" : "var(--c-bd-2)"}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <span style={{
+              fontSize: 8, fontWeight: 800,
+              fontFamily: "'JetBrains Mono', monospace",
+              color: isDone ? color : "var(--c-tx-30)",
+              lineHeight: 1,
+            }}>
+              {String(id).padStart(2, "0")}
+            </span>
+          </div>
           <span style={{ fontSize: 11, fontWeight: 700, color: isDone ? color : "var(--c-tx-55)" }}>
             {name}
           </span>
         </div>
         {isDone
-          ? <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg>
+          ? <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg>
           : isActive
-          ? <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#FFD166", boxShadow: "0 0 8px #FFD166", animation: "glowPulse 2s ease infinite" }} />
-          : <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--glass-bd-raised)" }} />
+          ? <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#FFD166", animation: "glowPulse 2s ease infinite" }} />
+          : <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--glass-bd-raised)" }} />
         }
       </div>
-      <div style={{ fontSize: 10, color: "var(--c-tx-35)" }}>{sub}</div>
+      {/* 서브텍스트 */}
+      <div style={{ fontSize: 9, color: "var(--c-tx-30)", letterSpacing: 0.2 }}>{sub}</div>
+      {/* 결과 배지 */}
       {summary && (
         <div style={{
-          fontSize: 10, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
           color: id === "7"
             ? (summary === "RECOMMEND" ? "#4ECCA3" : summary === "PASS" ? "#E85D75" : "#FFD166")
             : color,
-          padding: "2px 7px", borderRadius: 5,
-          background: `${color}12`, border: `1px solid ${color}28`,
-          boxShadow: `inset 0 1px 0 ${color}15`,
+          padding: "2px 6px", borderRadius: 4,
+          background: `${color}10`, border: `1px solid ${color}22`,
           maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
         }}>
           {summary}
         </div>
       )}
       {!summary && doneCount > 0 && total > 0 && (
-        <div style={{ fontSize: 9, color: "var(--c-tx-35)", fontFamily: "'JetBrains Mono', monospace" }}>
+        <div style={{ fontSize: 9, color: "var(--c-tx-28)", fontFamily: "'JetBrains Mono', monospace" }}>
           {doneCount}/{total}
         </div>
       )}
@@ -748,51 +765,50 @@ function CoachingTips({ getStageStatus, logline, stageResultSummary, doneStages 
   const score1Num = score1Raw ? parseInt(score1Raw, 10) : null;
 
   if (!logline) {
-    tips.push({ icon: "💡", color: "#C8A84B", text: "로그라인은 주인공 + 목표 + 갈등의 세 요소를 한 문장에 담아야 합니다." });
+    tips.push({ color: "#C8A84B", text: "로그라인은 주인공 + 목표 + 갈등의 세 요소를 한 문장에 담아야 합니다." });
   } else if (score1Num !== null && score1Num < 60) {
-    tips.push({ icon: "⚠️", color: "#E85D75", text: `로그라인 점수가 ${score1Num}점으로 낮습니다. 갈등과 스테이크를 더 구체적으로 명시하세요.` });
+    tips.push({ color: "#E85D75", text: `로그라인 점수가 ${score1Num}점으로 낮습니다. 갈등과 스테이크를 더 구체적으로 명시하세요.` });
   } else if (score1Num !== null && score1Num >= 80) {
-    tips.push({ icon: "✅", color: "#4ECCA3", text: `로그라인 점수 ${score1Num}점 — 탄탄한 기초입니다. 다음 단계로 진행하세요.` });
+    tips.push({ color: "#4ECCA3", text: `로그라인 점수 ${score1Num}점 — 탄탄한 기초입니다. 다음 단계로 진행하세요.` });
   }
 
   if (getStageStatus("1") === "done" && getStageStatus("3") !== "done") {
-    tips.push({ icon: "👤", color: "#FB923C", text: "캐릭터 설계(Stage 3)를 먼저 하면 스토리 구조가 훨씬 명확해집니다." });
+    tips.push({ color: "#FB923C", text: "캐릭터 설계(Stage 3)를 먼저 하면 스토리 구조가 훨씬 명확해집니다." });
   }
 
   if (getStageStatus("4") === "done" && getStageStatus("5") !== "done") {
-    tips.push({ icon: "📋", color: "#4ECCA3", text: "시놉시스가 완성됐습니다. 트리트먼트(Stage 5)에서 씬 단위로 쪼개세요." });
+    tips.push({ color: "#4ECCA3", text: "시놉시스가 완성됐습니다. 트리트먼트(Stage 5)에서 씬 단위로 쪼개세요." });
   }
 
   if (getStageStatus("6") === "done" && getStageStatus("7") !== "done") {
-    tips.push({ icon: "📊", color: "#60A5FA", text: "초고 완성 후 Script Coverage(Stage 7)로 방송사 시각의 피드백을 받아보세요." });
+    tips.push({ color: "#60A5FA", text: "초고 완성 후 Script Coverage(Stage 7)로 방송사 시각의 피드백을 받아보세요." });
   }
 
   const coverage7 = stageResultSummary?.["7"];
   if (coverage7 === "PASS") {
-    tips.push({ icon: "🔧", color: "#FB923C", text: "Coverage 결과 'PASS' — 고쳐쓰기(Stage 8)에서 지적된 항목을 집중 수정하세요." });
+    tips.push({ color: "#FB923C", text: "Coverage 결과 'PASS' — 고쳐쓰기(Stage 8)에서 지적된 항목을 집중 수정하세요." });
   }
 
   if (doneStages >= 5 && doneStages < 8) {
-    tips.push({ icon: "🏃", color: "#A78BFA", text: `${doneStages}/8 스테이지 완료. 나머지 ${8 - doneStages}개를 마치면 완성 프로젝트가 됩니다.` });
+    tips.push({ color: "#A78BFA", text: `${doneStages}/8 스테이지 완료. 나머지 ${8 - doneStages}개를 마치면 완성 프로젝트가 됩니다.` });
   }
 
   if (tips.length === 0) return null;
 
   return (
     <div style={{ marginBottom: 24 }}>
-      <div style={{ fontSize: 11, color: "var(--c-tx-30)", fontWeight: 700, marginBottom: 10, letterSpacing: 0.5 }}>
-        코칭 메시지
+      <div style={{ fontSize: 10, color: "var(--c-tx-25)", fontWeight: 700, marginBottom: 8, letterSpacing: 1, textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>
+        Next Steps
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         {tips.map((tip, i) => (
           <div key={i} style={{
-            display: "flex", alignItems: "flex-start", gap: 10,
-            padding: "10px 14px", borderRadius: 9,
-            border: `1px solid ${tip.color}22`,
-            background: `${tip.color}06`,
+            padding: "9px 12px 9px 14px",
+            borderRadius: 8,
+            borderLeft: `2px solid ${tip.color}`,
+            background: `${tip.color}05`,
           }}>
-            <span style={{ fontSize: 14, flexShrink: 0, lineHeight: 1.4 }}>{tip.icon}</span>
-            <span style={{ fontSize: 11, color: "var(--c-tx-60)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+            <span style={{ fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>
               {tip.text}
             </span>
           </div>

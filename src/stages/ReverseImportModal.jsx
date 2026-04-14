@@ -14,10 +14,10 @@ import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import { callClaudeText } from "../utils.js";
 
 const TABS = [
-  { id: "logline",   icon: "✏️", label: "로그라인",    stage: "1", color: "#C8A84B", hint: "개발할 스토리의 핵심을 한 줄로 입력하세요." },
-  { id: "synopsis",  icon: "📄", label: "시놉시스",     stage: "4", color: "#4ECCA3", hint: "2~5페이지 분량의 시놉시스를 붙여 넣으세요. AI가 로그라인을 추출하고 Stage 4부터 시작합니다." },
-  { id: "treatment", icon: "📋", label: "트리트먼트",   stage: "5", color: "#A78BFA", hint: "씬별 트리트먼트 원고를 붙여 넣으세요. AI가 로그라인을 추출하고 Stage 5부터 시작합니다." },
-  { id: "draft",     icon: "📝", label: "시나리오 초고", stage: "6", color: "#60A5FA", hint: "Fountain 포맷 또는 일반 텍스트 초고를 붙여 넣으세요. AI가 로그라인·장르를 추출하고 Stage 6부터 시작합니다." },
+  { id: "logline",   label: "로그라인",    stage: "1", color: "#C8A84B", hint: "개발할 스토리의 핵심을 한 줄로 입력하세요." },
+  { id: "synopsis",  label: "시놉시스",     stage: "4", color: "#4ECCA3", hint: "2~5페이지 분량의 시놉시스를 붙여 넣으세요. AI가 로그라인을 추출하고 Stage 4부터 시작합니다." },
+  { id: "treatment", label: "트리트먼트",   stage: "5", color: "#A78BFA", hint: "씬별 트리트먼트 원고를 붙여 넣으세요. AI가 로그라인을 추출하고 Stage 5부터 시작합니다." },
+  { id: "draft",     label: "시나리오 초고", stage: "6", color: "#60A5FA", hint: "Fountain 포맷 또는 일반 텍스트 초고를 붙여 넣으세요. AI가 로그라인·장르를 추출하고 Stage 6부터 시작합니다." },
 ];
 
 const GENRES = [
@@ -212,7 +212,6 @@ export default function ReverseImportModal({ onClose }) {
                   fontFamily: "'Noto Sans KR', sans-serif",
                 }}
               >
-                <span style={{ fontSize: 13 }}>{t.icon}</span>
                 {t.label}
                 <span style={{
                   fontSize: 8, fontWeight: 700, letterSpacing: "0.05em",

@@ -28,23 +28,39 @@ const STAGE_META = [
   { id: "8", title: "고쳐쓰기", sub: "진단 → 수정 → 개고", color: "#FB923C" },
 ];
 
-const STAGE_ICONS = ["📝","🎭","👤","📖","📋","✍️","📊","🔧"];
-
-function MobileNavTab({ id, icon, label, active, color, status, onClick }) {
+function MobileNavTab({ id, label, active, color, status, onClick, stageNum }) {
   return (
     <button onClick={onClick} style={{
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      gap: 2, padding: "6px 10px", minWidth: 52, flexShrink: 0,
+      gap: 3, padding: "7px 10px", minWidth: 50, flexShrink: 0,
       background: "none", border: "none", cursor: "pointer",
       borderTop: `2px solid ${active ? color : "transparent"}`,
-      transition: "all 0.15s", fontFamily: "'Noto Sans KR', sans-serif",
+      transition: "border-color 0.15s, opacity 0.15s",
+      fontFamily: "'Noto Sans KR', sans-serif",
+      opacity: active ? 1 : 0.65,
     }}>
-      <span style={{ fontSize: 15, lineHeight: 1 }}>{icon}</span>
+      {/* 숫자 배지 — 이모지 대신 */}
+      <div style={{
+        width: 22, height: 16, borderRadius: 4,
+        background: active ? `${color}20` : "transparent",
+        border: active ? `1px solid ${color}40` : "1px solid transparent",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        transition: "all 0.15s",
+      }}>
+        <span style={{
+          fontSize: 9, fontWeight: 800,
+          fontFamily: "'JetBrains Mono', monospace",
+          color: active ? color : "var(--c-tx-40)",
+          lineHeight: 1,
+        }}>
+          {stageNum}
+        </span>
+      </div>
       <span style={{ fontSize: 8, fontWeight: active ? 700 : 400, color: active ? color : "var(--c-tx-35)", whiteSpace: "nowrap" }}>
         {label}
       </span>
       {status === "done" && !active && (
-        <div style={{ width: 3, height: 3, borderRadius: "50%", background: "#4ECCA3", marginTop: 1 }} />
+        <div style={{ width: 3, height: 3, borderRadius: "50%", background: "#4ECCA3", marginTop: -1 }} />
       )}
     </button>
   );
@@ -382,9 +398,9 @@ export default function SidebarLayout({ stageProps, isMobile }) {
           display: "flex", overflowX: "auto", WebkitOverflowScrolling: "touch",
           scrollbarWidth: "none", paddingBottom: "env(safe-area-inset-bottom)",
         }}>
-          <MobileNavTab id="dashboard" icon="⊞" label="대시" active={currentStage === "dashboard"} color="#C8A84B" onClick={() => setCurrentStage("dashboard")} />
+          <MobileNavTab id="dashboard" stageNum="⊟" label="대시보드" active={currentStage === "dashboard"} color="#C8A84B" onClick={() => setCurrentStage("dashboard")} />
           {STAGE_META.map((s, i) => (
-            <MobileNavTab key={s.id} id={s.id} icon={STAGE_ICONS[i]} label={s.title.slice(0,4)} active={currentStage === s.id} color={s.color} status={getStageStatus(s.id)} onClick={() => setCurrentStage(s.id)} />
+            <MobileNavTab key={s.id} id={s.id} stageNum={String(i + 1).padStart(2, "0")} label={s.title.slice(0,4)} active={currentStage === s.id} color={s.color} status={getStageStatus(s.id)} onClick={() => setCurrentStage(s.id)} />
           ))}
         </div>
       )}

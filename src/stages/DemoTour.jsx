@@ -4,9 +4,27 @@ import { useLoglineCtx } from "../context/LoglineContext.jsx";
 // 0 = 대시보드 (DashboardView에서 인라인 렌더)
 // 1 = Stage 1 진입 후 결과 탐색 유도
 // 2 = 다른 스테이지 탐험 유도
+// SVG icons for tour steps
+const IconDoc = () => (
+  <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14,2 14,8 20,8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+    <line x1="10" y1="9" x2="8" y2="9"/>
+  </svg>
+);
+
+const IconCompass = () => (
+  <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88 16.24,7.76"/>
+  </svg>
+);
+
 const STEPS = {
   1: {
-    icon: "📝",
+    Icon: IconDoc,
     title: "로그라인 분석 결과예요",
     desc: "점수·흥미도·개선 제안을 살펴보세요. 스크롤해서 전체 결과를 확인한 뒤, 다음 스테이지로 넘어가보세요.",
     actionLabel: "개념 분석(Stage 2) 보러가기 →",
@@ -17,7 +35,7 @@ const STEPS = {
     },
   },
   2: {
-    icon: "🎉",
+    Icon: IconCompass,
     title: "이제 자유롭게 탐험하세요!",
     desc: "캐릭터 설계 → 스토리 구조 → 트리트먼트 → 시나리오 초고까지, 8단계 전부 결과가 준비돼 있어요. 좌측 사이드바 숫자를 눌러보세요.",
     actionLabel: "알겠어요!",
@@ -96,7 +114,7 @@ export default function DemoTour() {
 
       <div style={{ padding: "10px 16px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
-          <span style={{ fontSize: 20 }}>{step.icon}</span>
+          <div style={{ color: step.color, flexShrink: 0 }}><step.Icon /></div>
           <div style={{ fontSize: 13, fontWeight: 700, color: step.color }}>{step.title}</div>
         </div>
         <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.7, marginBottom: 14 }}>
