@@ -51,7 +51,7 @@ export default function Stage5Content({
   generatingBeat,
   generateScene,
 }) {
-  const { logline, genre, isMobile, cc, getStageStatus, advanceToStage, openApplicationDoc } = useLoglineCtx();
+  const { logline, genre, isMobile, cc, getStageStatus, advanceToStage, openApplicationDoc, teamMembers, setTeamMembers, sceneAssignments, setSceneAssignments } = useLoglineCtx();
 
   return (
     <ErrorBoundary><div>
@@ -349,6 +349,16 @@ export default function Stage5Content({
                         onCancelBeat={(id) => {
                           setEditingBeats(prev => ({ ...prev, [id]: false }));
                         }}
+                        teamMembers={teamMembers}
+                        sceneAssignments={sceneAssignments}
+                        onAssignScene={(beatId, memberId) =>
+                          setSceneAssignments(prev =>
+                            memberId
+                              ? { ...prev, [beatId]: memberId }
+                              : Object.fromEntries(Object.entries(prev).filter(([k]) => k !== String(beatId)))
+                          )
+                        }
+                        onUpdateTeam={setTeamMembers}
                       />
                     </Suspense>
 

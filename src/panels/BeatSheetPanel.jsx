@@ -1,7 +1,102 @@
 // ─────────────────────────────────────────────
 // 비트 시트 패널 (lazy-loaded)
 // ─────────────────────────────────────────────
-export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats, onToggle, onGenerateScene, onExportAll, isMobile, editingBeats, beatEditDrafts, onEditBeat, onSaveBeat, onCancelBeat }) {
+
+import { useState } from "react";
+
+const MEMBER_COLORS = ["#4ECCA3", "#A78BFA", "#FB923C", "#60A5FA", "#F472B6", "#FBBF24", "#34D399", "#F87171"];
+const MEMBER_ROLES = ["메인작가", "보조작가", "작가실장"];
+
+function TeamManager({ teamMembers, onUpdateTeam }) {
+  const [nameInput, setNameInput] = useState("");
+  const [roleInput, setRoleInput] = useState("보조작가");
+
+  const addMember = () => {
+    const name = nameInput.trim();
+    if (!name || teamMembers.length >= 8) return;
+    const color = MEMBER_COLORS[teamMembers.length % MEMBER_COLORS.length];
+    const id = `m${Date.now()}`;
+    onUpdateTeam([...teamMembers, { id, name, role: roleInput, color }]);
+    setNameInput("");
+  };
+
+  const removeMember = (id) => {
+    onUpdateTeam(teamMembers.filter(m => m.id !== id));
+  };
+
+  return (
+    <div style={{ marginBottom: 18, padding: "12px 14px", borderRadius: 10, border: "1px solid rgba(167,139,250,0.2)", background: "rgba(167,139,250,0.04)" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: "#A78BFA", letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace", marginBottom: 10 }}>
+        팀 구성원 ({teamMembers.length}/8)
+      </div>
+
+      {/* 구성원 목록 */}
+      {teamMembers.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+          {teamMembers.map(m => (
+            <div key={m.id} style={{
+              display: "flex", alignItems: "center", gap: 5,
+              padding: "4px 8px 4px 6px", borderRadius: 20,
+              border: `1px solid ${m.color}40`, background: `${m.color}10`,
+            }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: m.color, flexShrink: 0 }} />
+              <span style={{ fontSize: 11, color: m.color, fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif" }}>{m.name}</span>
+              <span style={{ fontSize: 9, color: "var(--c-tx-35)", fontFamily: "'JetBrains Mono', monospace" }}>{m.role}</span>
+              <button onClick={() => removeMember(m.id)} style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: "var(--c-tx-30)", fontSize: 11, padding: "0 2px", lineHeight: 1,
+              }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 추가 폼 */}
+      {teamMembers.length < 8 && (
+        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          <input
+            value={nameInput}
+            onChange={e => setNameInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addMember()}
+            placeholder="이름 입력"
+            style={{
+              flex: "1 1 80px", minWidth: 70, padding: "5px 9px",
+              borderRadius: 7, border: "1px solid var(--c-bd-3)",
+              background: "var(--c-card-1)", color: "var(--text-main)",
+              fontSize: 11, fontFamily: "'Noto Sans KR', sans-serif", outline: "none",
+            }}
+          />
+          <select
+            value={roleInput}
+            onChange={e => setRoleInput(e.target.value)}
+            style={{
+              padding: "5px 8px", borderRadius: 7, border: "1px solid var(--c-bd-3)",
+              background: "var(--c-card-1)", color: "var(--text-main)",
+              fontSize: 11, fontFamily: "'Noto Sans KR', sans-serif", cursor: "pointer", outline: "none",
+            }}
+          >
+            {MEMBER_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+          <button
+            onClick={addMember}
+            disabled={!nameInput.trim()}
+            style={{
+              padding: "5px 11px", borderRadius: 7,
+              border: "1px solid rgba(167,139,250,0.3)",
+              background: nameInput.trim() ? "rgba(167,139,250,0.12)" : "transparent",
+              color: nameInput.trim() ? "#A78BFA" : "var(--c-tx-25)",
+              fontSize: 11, fontWeight: 600, cursor: nameInput.trim() ? "pointer" : "default",
+              fontFamily: "'Noto Sans KR', sans-serif",
+            }}
+          >+ 추가</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expandedBeats, onToggle, onGenerateScene, onExportAll, isMobile, editingBeats, beatEditDrafts, onEditBeat, onSaveBeat, onCancelBeat, teamMembers = [], sceneAssignments = {}, onAssignScene, onUpdateTeam }) {
+  const [showTeamManager, setShowTeamManager] = useState(false);
   const beats = data.beats || [];
 
   const ACT_META = {
@@ -78,9 +173,52 @@ export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expan
       </div>
 
       {/* 진행 바 */}
-      <div style={{ height: 4, borderRadius: 2, background: "var(--c-bd-1)", marginBottom: 18, overflow: "hidden" }}>
+      <div style={{ height: 4, borderRadius: 2, background: "var(--c-bd-1)", marginBottom: 14, overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${beats.length ? (completedCount / beats.length) * 100 : 0}%`, background: "linear-gradient(90deg, #4ECCA3, #45B7D1)", borderRadius: 2, transition: "width 0.5s ease" }} />
       </div>
+
+      {/* 팀 관리 토글 버튼 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: showTeamManager ? 6 : 14 }}>
+        <button
+          onClick={() => setShowTeamManager(p => !p)}
+          style={{
+            display: "flex", alignItems: "center", gap: 5,
+            padding: "5px 10px", borderRadius: 7,
+            border: `1px solid ${teamMembers.length > 0 ? "rgba(167,139,250,0.35)" : "var(--c-bd-3)"}`,
+            background: teamMembers.length > 0 ? "rgba(167,139,250,0.08)" : "transparent",
+            color: teamMembers.length > 0 ? "#A78BFA" : "var(--c-tx-35)",
+            fontSize: 10, fontWeight: 600, cursor: "pointer",
+            fontFamily: "'JetBrains Mono', monospace",
+          }}
+        >
+          <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+            <circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/>
+            <path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.87"/>
+          </svg>
+          팀 구성원 {teamMembers.length > 0 ? `(${teamMembers.length})` : "설정"}
+          <span style={{ fontSize: 8 }}>{showTeamManager ? "▲" : "▼"}</span>
+        </button>
+        {teamMembers.length > 0 && (
+          <div style={{ display: "flex", gap: 4 }}>
+            {teamMembers.map(m => (
+              <div key={m.id} title={`${m.name} · ${m.role}`} style={{
+                width: 22, height: 22, borderRadius: "50%",
+                background: `${m.color}22`, border: `1.5px solid ${m.color}66`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 9, fontWeight: 700, color: m.color,
+                fontFamily: "'Noto Sans KR', sans-serif",
+              }}>
+                {m.name.slice(0, 1)}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 팀 관리 패널 */}
+      {showTeamManager && onUpdateTeam && (
+        <TeamManager teamMembers={teamMembers} onUpdateTeam={onUpdateTeam} />
+      )}
 
       {/* ── 페이지 타임라인 ── */}
       {beats.length >= 2 && data.total_pages > 0 && (() => {
@@ -264,6 +402,25 @@ export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expan
                     <span style={{ fontSize: 10, color: "var(--c-tx-30)", fontFamily: "'JetBrains Mono', monospace" }}>{beat.name_en}</span>
                     <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, border: `1px solid ${act.color}33`, color: act.color, fontFamily: "'Noto Sans KR', sans-serif" }}>{beat.act}</span>
                     {hasScene && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 10, background: "rgba(78,204,163,0.12)", color: "#4ECCA3", fontFamily: "'Noto Sans KR', sans-serif" }}>✓ 씬 완성</span>}
+                    {(() => {
+                      const assignedId = sceneAssignments[beat.id];
+                      const assignedMember = assignedId ? teamMembers.find(m => m.id === assignedId) : null;
+                      if (!assignedMember) return null;
+                      return (
+                        <span style={{
+                          display: "inline-flex", alignItems: "center", gap: 4,
+                          fontSize: 9, padding: "1px 6px 1px 4px", borderRadius: 20,
+                          border: `1px solid ${assignedMember.color}40`,
+                          background: `${assignedMember.color}12`,
+                          color: assignedMember.color,
+                          fontFamily: "'Noto Sans KR', sans-serif",
+                          fontWeight: 600,
+                        }}>
+                          <div style={{ width: 6, height: 6, borderRadius: "50%", background: assignedMember.color }} />
+                          {assignedMember.name}
+                        </span>
+                      );
+                    })()}
                   </div>
                   {!isExpanded && <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginTop: 2, fontFamily: "'Noto Sans KR', sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {beatEditDrafts?.[beat.id] || beat.summary}
@@ -359,6 +516,48 @@ export default function BeatSheetPanel({ data, beatScenes, generatingBeat, expan
                       </div>
                     );
                   })()}
+
+                  {/* 담당자 배정 (팀원이 있을 때만) */}
+                  {teamMembers.length > 0 && onAssignScene && (
+                    <div style={{ marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 10, color: "var(--c-tx-35)", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>담당자</span>
+                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                        {/* 미배정 버튼 */}
+                        <button
+                          onClick={() => onAssignScene(beat.id, null)}
+                          style={{
+                            padding: "3px 8px", borderRadius: 20, fontSize: 10,
+                            border: `1px solid ${!sceneAssignments[beat.id] ? "rgba(255,255,255,0.3)" : "var(--c-bd-3)"}`,
+                            background: !sceneAssignments[beat.id] ? "rgba(255,255,255,0.1)" : "transparent",
+                            color: !sceneAssignments[beat.id] ? "var(--text-main)" : "var(--c-tx-30)",
+                            cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
+                          }}
+                        >미배정</button>
+                        {teamMembers.map(m => {
+                          const isAssigned = sceneAssignments[beat.id] === m.id;
+                          return (
+                            <button
+                              key={m.id}
+                              onClick={() => onAssignScene(beat.id, m.id)}
+                              style={{
+                                display: "inline-flex", alignItems: "center", gap: 4,
+                                padding: "3px 8px 3px 5px", borderRadius: 20, fontSize: 10,
+                                border: `1px solid ${isAssigned ? m.color + "66" : m.color + "25"}`,
+                                background: isAssigned ? m.color + "20" : "transparent",
+                                color: isAssigned ? m.color : "var(--c-tx-40)",
+                                cursor: "pointer", fontWeight: isAssigned ? 700 : 400,
+                                fontFamily: "'Noto Sans KR', sans-serif",
+                                transition: "all 0.15s",
+                              }}
+                            >
+                              <div style={{ width: 6, height: 6, borderRadius: "50%", background: m.color, opacity: isAssigned ? 1 : 0.5 }} />
+                              {m.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* 씬 생성 버튼 */}
                   <button

@@ -35,7 +35,7 @@ export default function Stage6Content({
   scenarioDraftBefore, showScenarioDraftBefore, setShowScenarioDraftBefore,
   undoHistory,
 }) {
-  const { logline, isMobile, cc, getStageStatus, advanceToStage, showToast, apiKey } = useLoglineCtx();
+  const { logline, isMobile, cc, getStageStatus, advanceToStage, showToast, apiKey, sceneAssignments, teamMembers } = useLoglineCtx();
   const [editorMode, setEditorMode] = useState(true);   // true = 편집 모드 / false = 원본 텍스트
   const editorContainerRef = useRef(null);
 
@@ -188,6 +188,8 @@ export default function Stage6Content({
                 tokens={tokens}
                 editorContainerRef={editorContainerRef}
                 isMobile={isMobile}
+                sceneAssignments={sceneAssignments}
+                teamMembers={teamMembers}
               />
 
               {/* 에디터 패널 */}

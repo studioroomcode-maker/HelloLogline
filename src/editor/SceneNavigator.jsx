@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { extractScenes } from "./FountainParser.js";
 
-export default function SceneNavigator({ tokens, editorContainerRef, isMobile }) {
+export default function SceneNavigator({ tokens, editorContainerRef, isMobile, sceneAssignments = {}, teamMembers = [] }) {
   const scenes = extractScenes(tokens);
   const [activeScene, setActiveScene] = useState(0);
 
@@ -96,11 +96,16 @@ export default function SceneNavigator({ tokens, editorContainerRef, isMobile })
             ? scene.text.slice(0, 22) + '…'
             : scene.text;
 
+          // 씬 인덱스로 beatId 근사 매핑 (beat ID는 1-based)
+          const approxBeatId = scene.number;
+          const assignedMemberId = sceneAssignments[approxBeatId];
+          const assignedMember = assignedMemberId ? teamMembers.find(m => m.id === assignedMemberId) : null;
+
           return (
             <button
               key={idx}
               onClick={() => handleSceneClick(scene)}
-              title={scene.text}
+              title={scene.text + (assignedMember ? ` · ${assignedMember.name}` : "")}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -141,9 +146,19 @@ export default function SceneNavigator({ tokens, editorContainerRef, isMobile })
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 lineHeight: 1.3,
+                flex: 1,
               }}>
                 {label}
               </span>
+              {/* 담당자 색상 점 */}
+              {assignedMember && (
+                <span style={{
+                  width: 7, height: 7, borderRadius: "50%",
+                  background: assignedMember.color,
+                  flexShrink: 0,
+                  border: "1px solid rgba(0,0,0,0.2)",
+                }} title={assignedMember.name} />
+              )}
             </button>
           );
         })}
