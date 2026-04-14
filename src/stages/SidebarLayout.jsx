@@ -2,9 +2,9 @@ import { useRef, useEffect, Suspense, useState, lazy } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import SidebarNavItem from "./SidebarNavItem.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
+import NotificationPanel from "./NotificationPanel.jsx";
 
 const StageCommentThread = lazy(() => import("./StageCommentThread.jsx"));
-import NotificationPanel from "./NotificationPanel.jsx";
 
 function DashboardIcon() {
   return (
@@ -57,7 +57,7 @@ export default function SidebarLayout({ stageProps, isMobile }) {
 
   async function handleShare() {
     if (!logline) {
-      showToast?.("로그라인을 먼저 입력하세요.", "warn");
+      showToast?.("warn", "로그라인을 먼저 입력하세요.");
       return;
     }
     setShareLoading(true);
@@ -69,19 +69,19 @@ export default function SidebarLayout({ stageProps, isMobile }) {
       });
       const json = await res.json();
       if (!res.ok) {
-        showToast?.(json.error || "공유 링크 생성 실패", "error");
+        showToast?.("error", json.error || "공유 링크 생성 실패");
         return;
       }
       const url = `${window.location.origin}/share/${json.id}`;
       setShareUrl(url);
       try {
         await navigator.clipboard.writeText(url);
-        showToast?.("공유 링크가 클립보드에 복사됐습니다.", "success");
+        showToast?.("success", "공유 링크가 클립보드에 복사됐습니다.");
       } catch {
-        showToast?.(`공유 링크: ${url}`, "info");
+        showToast?.("info", `공유 링크: ${url}`);
       }
     } catch {
-      showToast?.("공유 링크 생성 중 오류가 발생했습니다.", "error");
+      showToast?.("error", "공유 링크 생성 중 오류가 발생했습니다.");
     } finally {
       setShareLoading(false);
     }
