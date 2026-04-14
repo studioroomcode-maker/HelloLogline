@@ -4636,7 +4636,15 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
             <div style={{ overflowY: "auto", flex: 1, padding: "8px 16px 8px" }}>
               {savedProjects.length === 0 ? (
                 <div style={{ textAlign: "center", color: "var(--c-tx-30)", fontSize: 13, padding: "40px 0" }}>저장된 프로젝트가 없습니다</div>
-              ) : savedProjects.map((proj) => (
+              ) : savedProjects.map((proj) => {
+                const stagesDone = [
+                  { n: 1, label: "분석", done: !!proj.result },
+                  { n: 2, label: "개념", done: !!(proj.academicResult || proj.mythMapResult || proj.expertPanelResult || proj.barthesCodeResult || proj.themeResult || proj.koreanMythResult) },
+                  { n: 3, label: "캐릭터", done: !!(proj.shadowResult || proj.authenticityResult || proj.charDevResult || proj.valueChargeResult) },
+                  { n: 4, label: "시놉시스", done: !!(proj.pipelineResult || proj.synopsisResults || proj.treatmentResult || proj.beatSheetResult) },
+                ];
+                const doneCount = stagesDone.filter(s => s.done).length;
+                return (
                 <div key={proj.id} style={{
                   padding: "12px 14px", borderRadius: 10, marginBottom: 6,
                   border: "1px solid var(--c-bd-1)", background: "rgba(var(--tw),0.02)",
@@ -4644,15 +4652,29 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-main)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{proj.title || "제목 없음"}</div>
-                    <div style={{ fontSize: 10, color: "var(--c-tx-30)", marginTop: 3, fontFamily: "'JetBrains Mono', monospace" }}>
-                      {new Date(proj.updatedAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 5, flexWrap: "wrap" }}>
+                      {stagesDone.map(s => (
+                        <span key={s.n} style={{
+                          fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
+                          fontFamily: "'JetBrains Mono', monospace",
+                          background: s.done ? (s.n === 1 ? "rgba(200,168,75,0.15)" : s.n === 2 ? "rgba(167,139,250,0.15)" : s.n === 3 ? "rgba(96,165,250,0.15)" : "rgba(78,204,163,0.15)") : "rgba(var(--tw),0.04)",
+                          color: s.done ? (s.n === 1 ? "#C8A84B" : s.n === 2 ? "#A78BFA" : s.n === 3 ? "#60A5FA" : "#4ECCA3") : "var(--c-tx-20)",
+                          border: s.done ? "none" : "1px solid var(--c-bd-1)",
+                        }}>
+                          {s.n}. {s.label}
+                        </span>
+                      ))}
+                      <span style={{ fontSize: 9, color: "var(--c-tx-25)", fontFamily: "'JetBrains Mono', monospace" }}>
+                        {new Date(proj.updatedAt).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                      </span>
                     </div>
                   </div>
                   <button onClick={() => { exportProjectJson(); }} title="현재 작업 내보내기" style={{ padding: "6px 10px", borderRadius: 7, border: "1px solid rgba(200,168,75,0.3)", background: "rgba(200,168,75,0.07)", color: "#C8A84B", cursor: "pointer", fontSize: 11 }}>↓ JSON</button>
                   <button onClick={() => loadProjectState(proj)} style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid rgba(78,204,163,0.3)", background: "rgba(78,204,163,0.07)", color: "#4ECCA3", cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>불러오기</button>
                   <button onClick={() => deleteProjectById(proj.id)} style={{ padding: "6px 10px", borderRadius: 7, border: "1px solid rgba(232,93,117,0.2)", background: "rgba(232,93,117,0.05)", color: "#E85D75", cursor: "pointer", fontSize: 11 }}>삭제</button>
                 </div>
-              ))}
+                );
+              })}
             </div>
             {/* ── 내보내기/가져오기 하단 영역 ── */}
             <div style={{ padding: "12px 16px", borderTop: "1px solid var(--c-card-3)", display: "flex", gap: 8 }}>
