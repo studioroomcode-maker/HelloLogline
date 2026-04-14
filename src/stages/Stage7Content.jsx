@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
-import { ToolButton, ResultCard, ErrorMsg, DocButton, SvgIcon, ICON } from "../ui.jsx";
+import { ToolButton, ResultCard, ErrorMsg, DocButton, SvgIcon, ICON, DemoCTA } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import { lazy } from "react";
 
@@ -21,10 +21,12 @@ export default function Stage7Content({
   rewriteGuide, rewriteGuideLoading, rewriteGuideError,
   generateCharGuide, generateRewriteGuide,
 }) {
-  const { logline, isMobile, cc, advanceToStage, openApplicationDoc } = useLoglineCtx();
+  const { logline, isMobile, cc, advanceToStage, openApplicationDoc, isDemoMode } = useLoglineCtx();
 
   return (
     <ErrorBoundary><div>
+
+      {isDemoMode && <DemoCTA label="개고(Stage 8) 둘러보기" onClick={() => advanceToStage("8")} />}
 
       {/* ── 단계 안내 ── */}
       <div style={{ marginBottom: 18, padding: "12px 16px", borderRadius: 10, background: "rgba(96,165,250,0.05)", border: "1px solid rgba(96,165,250,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>

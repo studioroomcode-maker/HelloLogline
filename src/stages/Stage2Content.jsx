@@ -1,5 +1,5 @@
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
-import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON } from "../ui.jsx";
+import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON, DemoCTA } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import { ExpertPanelSection } from "../panels/ConceptPanels.jsx";
 
@@ -38,7 +38,7 @@ export default function Stage2Content({
   analyzeNarrativeTheory,
   academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult,
 }) {
-  const { logline, isMobile, cc, getStageStatus, advanceToStage } = useLoglineCtx();
+  const { logline, isMobile, cc, getStageStatus, advanceToStage, isDemoMode } = useLoglineCtx();
 
   const narrativeCount = countNarrativeResults(academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult);
   const disabled = !logline.trim();
@@ -59,6 +59,8 @@ export default function Stage2Content({
           Stage 1에서 로그라인을 먼저 입력하세요.
         </div>
       )}
+
+      {isDemoMode && <DemoCTA label="캐릭터 설계(Stage 3) 둘러보기" onClick={() => advanceToStage("3")} />}
 
       {/* ─────────── GROUP 1: 서사 이론 종합 ─────────── */}
       <div style={{

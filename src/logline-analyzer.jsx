@@ -663,10 +663,6 @@ export default function LoglineAnalyzer() {
     if (currentStage === "1") setDemoTourStep(1);
   }, [isDemoMode, demoTourStep, currentStage]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (!isDemoMode || demoTourStep !== 1) return;
-    if (currentStage !== "1" && currentStage !== "dashboard") setDemoTourStep(2);
-  }, [isDemoMode, demoTourStep, currentStage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Abort controllers (per operation key) ──
   const abortControllersRef = useRef({});
@@ -4113,10 +4109,6 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       {/* ─── Toast notifications ─── */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-      {/* ─── Demo onboarding tour (steps 1-2) ─── */}
-      {isDemoMode && demoTourStep !== null && demoTourStep >= 1 && (
-        <Suspense fallback={null}><DemoTour /></Suspense>
-      )}
 
       {/* ─── Modals ─── */}
       {showApiKeyModal && (

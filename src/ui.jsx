@@ -402,3 +402,27 @@ export function ScriptExportPanel({ scriptText, logline, onCopy, copyLabel = "�
     </div>
   );
 }
+
+// 데모 모드 전용 — 다음 스테이지로 유도하는 pulsing CTA 버튼
+export function DemoCTA({ label, onClick }) {
+  return (
+    <div style={{ marginBottom: 16, borderRadius: 10, animation: "demoPulseRing 1.8s ease-out infinite" }}>
+      <button
+        onClick={onClick}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "11px 14px", borderRadius: 10,
+          border: "1px solid rgba(200,168,75,0.45)",
+          background: "rgba(200,168,75,0.08)",
+          cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
+          transition: "background 0.18s",
+        }}
+      >
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#C8A84B" }}>{label}</span>
+        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#C8A84B" strokeWidth={2} strokeLinecap="round">
+          <path d="M5 12h14M12 5l7 7-7 7" />
+        </svg>
+      </button>
+    </div>
+  );
+}

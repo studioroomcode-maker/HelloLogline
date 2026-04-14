@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useCallback } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
-import { ToolButton, ResultCard, ErrorMsg, FeedbackBox, SvgIcon, ICON, ScriptExportPanel } from "../ui.jsx";
+import { ToolButton, ResultCard, ErrorMsg, FeedbackBox, SvgIcon, ICON, ScriptExportPanel, DemoCTA } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import FountainEditor from "../editor/FountainEditor.jsx";
 import SceneNavigator from "../editor/SceneNavigator.jsx";
@@ -109,6 +109,8 @@ export default function Stage6Content({
 
   return (
     <ErrorBoundary><div>
+
+      {isDemoMode && <DemoCTA label="최종 평가(Stage 7) 둘러보기" onClick={() => advanceToStage("7")} />}
 
       {/* ── 안내 배너 ── */}
       <div style={{ marginBottom: 18, padding: "14px 16px", borderRadius: 12, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.2)" }}>

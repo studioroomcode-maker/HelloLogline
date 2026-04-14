@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
-import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON, Spinner, DocButton } from "../ui.jsx";
+import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON, Spinner, DocButton, DemoCTA } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import {
   StructureAnalysisPanel, ValueChargePanel, ComparableWorksPanel,
@@ -101,10 +101,12 @@ export default function Stage4Content({
   undoHistory,
   episodeDesignResult, episodeDesignLoading, episodeDesignError, generateEpisodeDesign,
 }) {
-  const { logline, isMobile, cc, getStageStatus, advanceToStage, showToast, apiKey, openApplicationDoc } = useLoglineCtx();
+  const { logline, isMobile, cc, getStageStatus, advanceToStage, showToast, apiKey, openApplicationDoc, isDemoMode } = useLoglineCtx();
 
   return (
     <ErrorBoundary><div>
+
+    {isDemoMode && <DemoCTA label="트리트먼트(Stage 5) 둘러보기" onClick={() => advanceToStage("5")} />}
 
     {/* ── 단계 안내 ── */}
     <div style={{ marginBottom: charDevResult ? 12 : 18, padding: "12px 16px", borderRadius: 10, background: "rgba(78,204,163,0.05)", border: "1px solid rgba(78,204,163,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
