@@ -339,7 +339,7 @@ export function ScoreBar({ score, max, label, found, feedback, delay = 0, criter
   const barColor =
     pct >= 80 ? "#4ECCA3" : pct >= 60 ? "#45B7D1" : pct >= 40 ? "#F7A072" : "#E85D75";
   const [show, setShow] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   useEffect(() => {
     const t = setTimeout(() => setShow(true), delay);
