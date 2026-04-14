@@ -133,10 +133,11 @@ function restoreCaret(el, offset) {
 }
 
 // ── 메인 컴포넌트 ────────────────────────────────────
-export default function FountainEditor({ value, onChange, readOnly = false, minHeight = 400 }) {
+export default function FountainEditor({ value, onChange, readOnly = false, minHeight = 400, sceneRevisionMap = {} }) {
   const editorRef = useRef(null);
   const isComposing = useRef(false); // IME 조합 중 여부 (한글 입력)
   const lastValue = useRef(value);
+  const lastRevMap = useRef(sceneRevisionMap);
 
   // 토큰 파싱 — value가 변할 때만 재계산
   const tokens = useMemo(() => parseFountain(value || ""), [value]);
@@ -144,7 +145,17 @@ export default function FountainEditor({ value, onChange, readOnly = false, minH
   // ── 에디터 HTML 렌더링 ──────────────────────────────
   const renderHTML = useCallback((tokens) => {
     return tokens.map((tok, i) => {
-      const st = TOKEN_STYLES[tok.type] || TOKEN_STYLES.action;
+      // 씬 헤딩의 개정 정보 확인
+      const revInfo = tok.type === 'scene_heading'
+        ? (sceneRevisionMap[tok.text.trim()] || null)
+        : null;
+
+      // 개정 색상으로 borderLeft 오버라이드
+      const baseStyle = TOKEN_STYLES[tok.type] || TOKEN_STYLES.action;
+      const st = revInfo
+        ? { ...baseStyle, borderLeft: `3px solid ${revInfo.color}` }
+        : baseStyle;
+
       const styleStr = Object.entries(st)
         .map(([k, v]) => `${k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}:${v}`)
         .join(';');
@@ -160,20 +171,32 @@ export default function FountainEditor({ value, onChange, readOnly = false, minH
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
+
+      // 씬 헤딩에 개정 배지 추가 (contentEditable="false"로 편집 불가)
+      if (revInfo) {
+        const badge = `<span data-rev-badge="true" contenteditable="false" style="float:right;color:${revInfo.color};font-size:9px;font-weight:800;font-family:'JetBrains Mono',monospace;letter-spacing:0.05em;opacity:0.9;user-select:none;pointer-events:none;margin-left:10px;">* ${revInfo.shortName}</span>`;
+        return `<div data-i="${i}" data-type="${tok.type}" style="${styleStr}">${badge}${safe || '\u200B'}</div>`;
+      }
+
       return `<div data-i="${i}" data-type="${tok.type}" style="${styleStr}">${safe || '\u200B'}</div>`;
     }).join('');
-  }, []);
+  }, [sceneRevisionMap]);
 
-  // ── 외부 value 변경 시 DOM 업데이트 ──────────────────
+  // ── 외부 value 또는 sceneRevisionMap 변경 시 DOM 업데이트 ──────────────────
   useEffect(() => {
     const el = editorRef.current;
     if (!el) return;
-    if (value === lastValue.current) return; // 자체 편집으로 인한 업데이트 무시
+    // 자체 편집(handleInput)에 의한 value 변경은 무시
+    // sceneRevisionMap 변경은 항상 반영
+    const valueUnchanged = value === lastValue.current;
+    const revMapUnchanged = sceneRevisionMap === lastRevMap.current;
+    if (valueUnchanged && revMapUnchanged) return;
     lastValue.current = value;
+    lastRevMap.current = sceneRevisionMap;
     const caret = saveCaret(el);
     el.innerHTML = renderHTML(parseFountain(value || ""));
     restoreCaret(el, caret);
-  }, [value, renderHTML]);
+  }, [value, sceneRevisionMap, renderHTML]);
 
   // ── 초기 렌더링 ──────────────────────────────────────
   useEffect(() => {
@@ -187,11 +210,19 @@ export default function FountainEditor({ value, onChange, readOnly = false, minH
     if (isComposing.current) return;
     const el = editorRef.current;
     if (!el) return;
-    // DOM → 순수 텍스트 추출
+    // DOM → 순수 텍스트 추출 (개정 배지 스팬 제외)
     const raw = Array.from(el.children)
       .map(div => {
-        const t = div.innerText || div.textContent;
-        return t === '\u200B' ? '' : t;
+        let text = '';
+        for (const node of div.childNodes) {
+          if (node.nodeType === Node.TEXT_NODE) {
+            text += node.textContent;
+          } else if (node.nodeType === Node.ELEMENT_NODE && !node.getAttribute('data-rev-badge')) {
+            text += node.textContent;
+          }
+        }
+        const clean = text.replace('\u200B', '');
+        return clean === '' ? '' : clean;
       })
       .join('\n');
     lastValue.current = raw;

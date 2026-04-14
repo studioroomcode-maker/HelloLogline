@@ -220,3 +220,47 @@ export function calcStats(tokens) {
 export function serializeFountain(tokens) {
   return tokens.map(t => t.raw).join('\n');
 }
+
+/**
+ * Final Draft 스타일 개정본 컬러 시스템
+ * id: 1-based 개정 번호
+ */
+export const REVISION_COLORS = [
+  { id: 1, name: "1차 개정", shortName: "1차", color: "#60A5FA" }, // Blue
+  { id: 2, name: "2차 개정", shortName: "2차", color: "#F472B6" }, // Pink
+  { id: 3, name: "3차 개정", shortName: "3차", color: "#FBBF24" }, // Yellow
+  { id: 4, name: "4차 개정", shortName: "4차", color: "#34D399" }, // Green
+  { id: 5, name: "5차 개정", shortName: "5차", color: "#F97316" }, // Goldenrod
+  { id: 6, name: "6차 개정", shortName: "6차", color: "#FCA5A5" }, // Salmon
+  { id: 7, name: "7차 개정", shortName: "7차", color: "#F87171" }, // Cherry
+  { id: 8, name: "8차 개정", shortName: "8차", color: "#C084FC" }, // Purple
+];
+
+/**
+ * Fountain 텍스트에서 씬별 본문을 추출
+ * @param {string} text  Fountain 원문
+ * @returns {Object} { sceneHeadingText: bodyText, ... }
+ */
+export function extractSceneBodies(text) {
+  if (!text) return {};
+  const tokens = parseFountain(text);
+  const result = {};
+  let currentKey = null;
+  let bodyLines = [];
+
+  tokens.forEach(tok => {
+    if (tok.type === 'scene_heading') {
+      if (currentKey !== null) {
+        result[currentKey] = bodyLines.join('\n').trim();
+      }
+      currentKey = tok.text.trim();
+      bodyLines = [];
+    } else if (currentKey !== null) {
+      bodyLines.push(tok.raw);
+    }
+  });
+  if (currentKey !== null) {
+    result[currentKey] = bodyLines.join('\n').trim();
+  }
+  return result;
+}

@@ -9,7 +9,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { extractScenes } from "./FountainParser.js";
 
-export default function SceneNavigator({ tokens, editorContainerRef, isMobile, sceneAssignments = {}, teamMembers = [] }) {
+export default function SceneNavigator({ tokens, editorContainerRef, isMobile, sceneAssignments = {}, teamMembers = [], sceneRevisionMap = {} }) {
   const scenes = extractScenes(tokens);
   const [activeScene, setActiveScene] = useState(0);
 
@@ -100,12 +100,13 @@ export default function SceneNavigator({ tokens, editorContainerRef, isMobile, s
           const approxBeatId = scene.number;
           const assignedMemberId = sceneAssignments[approxBeatId];
           const assignedMember = assignedMemberId ? teamMembers.find(m => m.id === assignedMemberId) : null;
+          const revInfo = sceneRevisionMap[scene.text.trim()] || null;
 
           return (
             <button
               key={idx}
               onClick={() => handleSceneClick(scene)}
-              title={scene.text + (assignedMember ? ` · ${assignedMember.name}` : "")}
+              title={scene.text + (assignedMember ? ` · ${assignedMember.name}` : "") + (revInfo ? ` [${revInfo.shortName}]` : "")}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -158,6 +159,14 @@ export default function SceneNavigator({ tokens, editorContainerRef, isMobile, s
                   flexShrink: 0,
                   border: "1px solid rgba(0,0,0,0.2)",
                 }} title={assignedMember.name} />
+              )}
+              {/* 개정 컬러 별표 */}
+              {revInfo && (
+                <span style={{
+                  fontSize: 8, color: revInfo.color, flexShrink: 0,
+                  fontWeight: 900, lineHeight: 1,
+                  fontFamily: "'JetBrains Mono', monospace",
+                }} title={`${revInfo.shortName} 개정`}>*</span>
               )}
             </button>
           );

@@ -17,6 +17,7 @@ import {
   MASTER_REPORT_SYSTEM_PROMPT,
 } from "./constants.js";
 import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText } from "./utils.js";
+import { REVISION_COLORS } from "./editor/FountainParser.js";
 import { exportToPdf, exportToMarkdown, downloadHtmlAsPdf } from "./utils-pdf.js";
 import {
   DEMO_LOGLINE, DEMO_GENRE, DEMO_RESULT, DEMO_CHAR_DEV_RESULT,
@@ -801,6 +802,11 @@ export default function LoglineAnalyzer() {
   const [currentWorkingAs, setCurrentWorkingAs] = useState(null); // null = "나" (owner)
   const [activityLog, setActivityLog] = useState([]); // 변경 알림 로그
 
+  // ── 개정본 버전 관리 (Final Draft 스타일) ──
+  const [revisions, setRevisions] = useState([]); // [{ id, name, shortName, color, snapshot, createdAt }]
+  const [currentRevisionId, setCurrentRevisionId] = useState(null); // null = 원고 (흰색)
+  const [sceneRevisionMap, setSceneRevisionMap] = useState({}); // { sceneHeading: { id, color, shortName } }
+
   // ── Character Development ──
   const [charDevResult, setCharDevResult] = useState(null);
   const [charDevLoading, setCharDevLoading] = useState(false);
@@ -1259,6 +1265,7 @@ export default function LoglineAnalyzer() {
     synopsisResults, pipelineResult, selectedSynopsisIndex,
     treatmentResult, beatSheetResult, beatScenes,
     teamMembers, sceneAssignments, stageComments, activityLog,
+    revisions, currentRevisionId, sceneRevisionMap,
     dialogueDevResult, scriptCoverageResult,
     structureResult, themeResult, sceneListResult, scenarioDraftResult,
     comparableResult, valuationResult, episodeDesignResult, masterReportResult,
@@ -1320,6 +1327,9 @@ export default function LoglineAnalyzer() {
     setSceneAssignments(proj.sceneAssignments || {});
     setStageComments(proj.stageComments || {});
     setActivityLog(proj.activityLog || []);
+    setRevisions(proj.revisions || []);
+    setCurrentRevisionId(proj.currentRevisionId ?? null);
+    setSceneRevisionMap(proj.sceneRevisionMap || {});
     setDialogueDevResult(proj.dialogueDevResult || null);
     setScriptCoverageResult(proj.scriptCoverageResult || null);
     setStructureResult(proj.structureResult || null);
@@ -4307,6 +4317,22 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setActivityLog(prev => [entry, ...prev].slice(0, 100)); // 최대 100개 유지
   }, []);
 
+  // ── 개정본 시작 ──
+  const startNewRevision = useCallback((name, snapshotText) => {
+    const nextId = revisions.length + 1;
+    const revColor = REVISION_COLORS[Math.min(nextId - 1, REVISION_COLORS.length - 1)];
+    const revision = {
+      id: nextId,
+      name: name || revColor.name,
+      shortName: revColor.shortName,
+      color: revColor.color,
+      snapshot: snapshotText || "",
+      createdAt: Date.now(),
+    };
+    setRevisions(prev => [...prev, revision]);
+    setCurrentRevisionId(nextId);
+  }, [revisions]);
+
   // ── 팀 권한 헬퍼 ──
   const currentWorkingMember = currentWorkingAs
     ? teamMembers.find(m => m.id === currentWorkingAs) || null
@@ -4364,6 +4390,9 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     currentWorkingAs, setCurrentWorkingAs,
     currentWorkingMember, isOwner, isReadOnly, getEditPermission,
     activityLog, addActivity,
+    // 개정본 버전 관리
+    revisions, setRevisions, currentRevisionId, setCurrentRevisionId,
+    sceneRevisionMap, setSceneRevisionMap, startNewRevision,
   };
 
   return (

@@ -5,7 +5,8 @@ import ErrorBoundary from "../ErrorBoundary.jsx";
 import FountainEditor from "../editor/FountainEditor.jsx";
 import SceneNavigator from "../editor/SceneNavigator.jsx";
 import InlineAI from "../editor/InlineAI.jsx";
-import { parseFountain, calcStats } from "../editor/FountainParser.js";
+import RevisionPanel from "./RevisionPanel.jsx";
+import { parseFountain, calcStats, extractSceneBodies } from "../editor/FountainParser.js";
 
 /** 통계 pill 컴포넌트 */
 function StatPill({ label, value, color = "var(--c-tx-40)" }) {
@@ -35,9 +36,61 @@ export default function Stage6Content({
   scenarioDraftBefore, showScenarioDraftBefore, setShowScenarioDraftBefore,
   undoHistory,
 }) {
-  const { logline, isMobile, cc, getStageStatus, advanceToStage, showToast, apiKey, sceneAssignments, teamMembers, isReadOnly } = useLoglineCtx();
+  const {
+    logline, isMobile, cc, getStageStatus, advanceToStage, showToast, apiKey,
+    sceneAssignments, teamMembers, isReadOnly,
+    revisions, setRevisions, currentRevisionId, setCurrentRevisionId,
+    sceneRevisionMap, setSceneRevisionMap, startNewRevision,
+  } = useLoglineCtx();
   const [editorMode, setEditorMode] = useState(true);   // true = 편집 모드 / false = 원본 텍스트
   const editorContainerRef = useRef(null);
+  const prevSceneBodiesRef = useRef(null); // 씬 변경 감지용
+
+  // ── 씬 변경 감지: 수정된 씬에 현재 개정 색상 마킹 ──────────────────────
+  const handleEditorChange = useCallback((newText) => {
+    setScenarioDraftResult(newText);
+    if (currentRevisionId == null || prevSceneBodiesRef.current == null) return;
+
+    const newBodies = extractSceneBodies(newText);
+    const prev = prevSceneBodiesRef.current;
+    const currentRevision = revisions.find(r => r.id === currentRevisionId);
+    if (!currentRevision) return;
+
+    const changedScenes = Object.keys(newBodies).filter(
+      key => key in prev && prev[key] !== newBodies[key]
+    );
+    if (changedScenes.length > 0) {
+      setSceneRevisionMap(p => {
+        const next = { ...p };
+        changedScenes.forEach(key => {
+          next[key] = { id: currentRevisionId, color: currentRevision.color, shortName: currentRevision.shortName };
+        });
+        return next;
+      });
+      prevSceneBodiesRef.current = newBodies;
+    }
+  }, [currentRevisionId, revisions, setScenarioDraftResult, setSceneRevisionMap]);
+
+  // ── 새 개정본 시작: 현재 씬 상태를 기준점으로 저장 ────────────────────
+  const handleStartRevision = useCallback((name) => {
+    prevSceneBodiesRef.current = extractSceneBodies(scenarioDraftResult);
+    startNewRevision(name, scenarioDraftResult);
+    showToast("success", `${name} 시작 — 이후 수정된 씬이 자동 마킹됩니다.`);
+  }, [scenarioDraftResult, startNewRevision, showToast]);
+
+  // ── 개정본 삭제 ────────────────────────────────────────────────────────
+  const handleDeleteRevision = useCallback((revId) => {
+    setRevisions(prev => prev.filter(r => r.id !== revId));
+    if (currentRevisionId === revId) setCurrentRevisionId(null);
+    // 해당 개정에 마킹된 씬들 초기화
+    setSceneRevisionMap(prev => {
+      const next = { ...prev };
+      Object.keys(next).forEach(key => {
+        if (next[key]?.id === revId) delete next[key];
+      });
+      return next;
+    });
+  }, [currentRevisionId, setCurrentRevisionId, setRevisions, setSceneRevisionMap]);
 
   // ── 인라인 AI: 선택 구간 교체 ──────────────────────
   const handleInlineReplace = useCallback((original, replacement) => {
@@ -124,6 +177,16 @@ export default function Stage6Content({
             </div>
           )}
 
+          {/* ── 개정 관리 패널 ── */}
+          <RevisionPanel
+            revisions={revisions}
+            currentRevisionId={currentRevisionId}
+            sceneRevisionMap={sceneRevisionMap}
+            scenarioDraftResult={scenarioDraftResult}
+            onStartRevision={handleStartRevision}
+            onDeleteRevision={handleDeleteRevision}
+          />
+
           {/* ── 통계 + 모드 토글 헤더 ── */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
             {/* 통계 */}
@@ -190,6 +253,7 @@ export default function Stage6Content({
                 isMobile={isMobile}
                 sceneAssignments={sceneAssignments}
                 teamMembers={teamMembers}
+                sceneRevisionMap={sceneRevisionMap}
               />
 
               {/* 에디터 패널 */}
@@ -205,9 +269,10 @@ export default function Stage6Content({
               >
                 <FountainEditor
                   value={scenarioDraftResult}
-                  onChange={(newText) => setScenarioDraftResult(newText)}
+                  onChange={handleEditorChange}
                   minHeight={460}
                   readOnly={isReadOnly}
+                  sceneRevisionMap={sceneRevisionMap}
                 />
                 {/* 인라인 AI 툴바 */}
                 {apiKey && (
