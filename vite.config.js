@@ -10,6 +10,11 @@ export default defineConfig({
       manifest: false, // public/manifest.json 직접 사용
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // 새 빌드 배포 시 이전 해시 청크를 즉시 제거 (stale chunk 방지)
+        cleanupOutdatedCaches: true,
+        // 새 SW가 설치되면 즉시 활성화 (waiting 없이)
+        skipWaiting: true,
+        clientsClaim: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

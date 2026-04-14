@@ -353,67 +353,54 @@ export async function exportToPdf(data, filename = "hellologline-report") {
 }
 
 /**
- * 전체 HTML 문서 문자열을 A4 PDF로 다운로드합니다.
- * <head><style>을 DOMParser로 추출해 wrapper div에 포함시켜 html2pdf에 전달합니다.
+ * 전체 HTML 문서 문자열을 새 창에서 인쇄 다이얼로그로 열어 PDF 저장합니다.
+ * html2canvas 방식은 앱의 다크 테마 CSS가 간섭해 빈 PDF가 생성되는 문제가 있어,
+ * 브라우저 네이티브 인쇄를 사용합니다.
  *
  * @param {string} htmlString  - 전체 HTML 문서 문자열 (<!DOCTYPE html>... 포함)
- * @param {string} filename    - 저장 파일명 (확장자 제외)
- * @param {number[]} [margin]  - [상, 우, 하, 좌] mm 단위 여백, 기본 [20, 20, 20, 25]
+ * @param {string} filename    - 저장 파일명 (확장자 제외, 인쇄 창 title로 표시)
+ * @param {number[]} [margin]  - [상, 우, 하, 좌] mm 단위 여백 (HTML에 @page가 없을 때만 적용)
  */
 export async function downloadHtmlAsPdf(htmlString, filename = "document", margin = [20, 20, 20, 25]) {
-  const html2pdf = (await import("html2pdf.js")).default;
+  const filenameJson = JSON.stringify(filename);
 
-  // HTML 파싱: head styles / body content 분리
-  const parser = new DOMParser();
-  const parsed = parser.parseFromString(htmlString, "text/html");
-  const bodyHtml = parsed.body.innerHTML;
+  // HTML에 @page가 없는 경우에만 margin 주입
+  const needsPage = !htmlString.includes("@page");
+  const [mTop, mRight, mBot, mLeft] = margin;
+  const pageStyle = needsPage
+    ? `<style>@page { size: A4 portrait; margin: ${mTop}mm ${mRight}mm ${mBot}mm ${mLeft}mm; }</style>`
+    : "";
 
-  // head의 <style> 태그를 실제 document.head에 임시 주입
-  // (html2canvas는 body 내부 <style>을 무시하므로 head에 넣어야 함)
-  const injectedStyles = Array.from(parsed.head.querySelectorAll("style")).map(s => {
-    const el = document.createElement("style");
-    el.textContent = s.textContent;
-    el.setAttribute("data-hll-pdf-temp", "1");
-    document.head.appendChild(el);
-    return el;
+  // 자동 인쇄 트리거 스크립트
+  const printScript = `<script>
+  window.addEventListener('load', function() {
+    document.title = ${filenameJson};
+    setTimeout(function() { window.print(); }, 400);
   });
+<\/script>`;
 
-  // 로딩 오버레이: 컨테이너가 사용자에게 보이지 않도록 화면을 가림
-  const overlay = document.createElement("div");
-  overlay.style.cssText = "position:fixed;inset:0;z-index:2147483646;background:#13131f;display:flex;align-items:center;justify-content:center;pointer-events:all;";
-  overlay.innerHTML = '<span style="color:#4ECCA3;font-family:sans-serif;font-size:14px;letter-spacing:1px;">PDF 생성 중…</span>';
-  document.body.appendChild(overlay);
-
-  // 컨테이너를 (0,0)에 배치 — left:-9999px는 html2canvas가 캡처 못함
-  // 오버레이가 가리므로 사용자에게는 보이지 않음
-  const container = document.createElement("div");
-  container.style.cssText = "position:absolute;top:0;left:0;width:210mm;background:#fff;z-index:1;";
-  container.innerHTML = bodyHtml;
-  document.body.appendChild(container);
-
-  // 브라우저 레이아웃 계산 대기
-  await new Promise(r => setTimeout(r, 150));
-
-  const opt = {
-    margin,
-    filename: `${filename}.pdf`,
-    image: { type: "jpeg", quality: 0.95 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      logging: false,
-      windowWidth: 794,    // 96dpi 기준 A4 너비(210mm)
-    },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    pagebreak: { mode: ["css", "legacy"] },
-  };
-
-  try {
-    await html2pdf().set(opt).from(container).save();
-  } finally {
-    if (container.parentNode) container.parentNode.removeChild(container);
-    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-    injectedStyles.forEach(el => el.parentNode?.removeChild(el));
+  // </head> 직전에 삽입
+  let modifiedHtml = htmlString;
+  if (modifiedHtml.includes("</head>")) {
+    modifiedHtml = modifiedHtml.replace("</head>", `${pageStyle}${printScript}</head>`);
+  } else {
+    modifiedHtml = `<head>${pageStyle}${printScript}</head>` + modifiedHtml;
   }
+
+  const blob = new Blob([modifiedHtml], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, "_blank");
+
+  // 팝업 차단 시 HTML 파일로 다운로드 (fallback)
+  if (!win || win.closed || typeof win.closed === "undefined") {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${filename}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  // 5분 후 URL 해제
+  setTimeout(() => URL.revokeObjectURL(url), 300000);
 }
