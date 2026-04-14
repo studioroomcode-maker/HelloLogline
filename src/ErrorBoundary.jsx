@@ -24,87 +24,48 @@ export default class ErrorBoundary extends Component {
     console.error("[ErrorBoundary]", error, info.componentStack);
     try {
       Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
-    } catch (_) {
-      // Sentry 미초기화 시 무시
-    }
+    } catch (_) {}
 
-    // 청크 로드 실패는 자동 새로고침 (lazyWithRetry에서 처리 못한 경우 대비)
+    // 청크 에러 최후 방어: main.jsx의 controllerchange 또는 lazyWithRetry에서
+    // 처리 못한 경우 여기서 한 번 더 자동 새로고침 시도
     if (isChunkLoadError(error)) {
-      const alreadyRetried = sessionStorage.getItem("hll-chunk-reload");
-      if (!alreadyRetried) {
-        sessionStorage.setItem("hll-chunk-reload", "1");
-        this.setState({ reloading: true });
-        // 짧은 딜레이 후 새로고침 (setState가 반영된 후)
+      const key = "hll-chunk-reload";
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
         setTimeout(() => window.location.reload(), 300);
       }
     }
   }
 
   componentDidMount() {
-    // 새로고침 후 정상 동작 시 sessionStorage 플래그 제거
-    if (!this.state.hasError) {
-      sessionStorage.removeItem("hll-chunk-reload");
-    }
+    // 정상 마운트 시 재시도 플래그 초기화
+    if (!this.state.hasError) sessionStorage.removeItem("hll-chunk-reload");
   }
 
-  reset = () => this.setState({ hasError: false, error: null, reloading: false });
+  reset = () => this.setState({ hasError: false, error: null });
 
   render() {
-    if (!this.state.hasError) {
-      return this.props.children;
-    }
+    if (!this.state.hasError) return this.props.children;
 
     const isChunk = isChunkLoadError(this.state.error);
-    const alreadyRetried = sessionStorage.getItem("hll-chunk-reload");
 
-    // 청크 에러이고 아직 재시도하지 않은 경우 → 새로고침 중 표시
-    if (isChunk && (!alreadyRetried || this.state.reloading)) {
-      return (
-        <div style={{
-          margin: "16px 0", padding: "20px 22px", borderRadius: 12,
-          background: "rgba(78,204,163,0.08)", border: "1.5px solid rgba(78,204,163,0.3)",
-          fontFamily: "'Noto Sans KR', sans-serif",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid #4ECCA3", borderTopColor: "transparent", animation: "spin 0.8s linear infinite" }} />
-            <div style={{ fontSize: 13, color: "#4ECCA3" }}>앱이 업데이트됐습니다. 자동으로 새로고침 중…</div>
-          </div>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-        </div>
-      );
-    }
-
-    // 청크 에러이고 이미 새로고침했는데도 실패한 경우 → 수동 버튼
+    // 청크 에러 → 조용히 새로고침 중이거나 아직 시도 전: 최소한의 안내만 표시
     if (isChunk) {
       return (
         <div style={{
-          margin: "16px 0", padding: "20px 22px", borderRadius: 12,
-          background: "rgba(232,93,117,0.12)", border: "1.5px solid rgba(232,93,117,0.45)",
+          margin: "16px 0", padding: "16px 20px", borderRadius: 10,
+          background: "rgba(78,204,163,0.07)", border: "1px solid rgba(78,204,163,0.25)",
+          display: "flex", alignItems: "center", gap: 10,
           fontFamily: "'Noto Sans KR', sans-serif",
         }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#E85D75", marginBottom: 8 }}>
-            이 단계를 불러오지 못했습니다
-          </div>
-          <div style={{ fontSize: 12, color: "rgba(232,93,117,0.8)", marginBottom: 14, lineHeight: 1.6 }}>
-            네트워크 상태를 확인하고 다시 시도해주세요.
-          </div>
-          <button
-            onClick={() => { sessionStorage.removeItem("hll-chunk-reload"); window.location.reload(); }}
-            style={{
-              padding: "7px 16px", borderRadius: 8,
-              border: "1px solid rgba(232,93,117,0.5)",
-              background: "rgba(232,93,117,0.15)", color: "#E85D75",
-              cursor: "pointer", fontSize: 12, fontWeight: 600,
-              fontFamily: "'Noto Sans KR', sans-serif",
-            }}
-          >
-            다시 시도
-          </button>
+          <div style={{ width: 14, height: 14, flexShrink: 0, borderRadius: "50%", border: "2px solid #4ECCA3", borderTopColor: "transparent", animation: "hll-spin 0.8s linear infinite" }} />
+          <span style={{ fontSize: 13, color: "#4ECCA3" }}>업데이트 적용 중…</span>
+          <style>{`@keyframes hll-spin{to{transform:rotate(360deg)}}`}</style>
         </div>
       );
     }
 
-    // 일반 에러 → 기존 동작 유지
+    // 일반 에러
     return (
       <div style={{
         margin: "16px 0", padding: "20px 22px", borderRadius: 12,
@@ -119,23 +80,11 @@ export default class ErrorBoundary extends Component {
             이 단계를 불러오는 중 오류가 발생했습니다
           </div>
         </div>
-        <div style={{
-          fontSize: 12, color: "rgba(232,93,117,0.85)", marginBottom: 14,
-          wordBreak: "break-word", lineHeight: 1.6, paddingLeft: 24,
-        }}>
+        <div style={{ fontSize: 12, color: "rgba(232,93,117,0.85)", marginBottom: 14, wordBreak: "break-word", lineHeight: 1.6, paddingLeft: 24 }}>
           {this.state.error?.message || "알 수 없는 오류가 발생했습니다."}
         </div>
         <div style={{ paddingLeft: 24 }}>
-          <button
-            onClick={this.reset}
-            style={{
-              padding: "7px 16px", borderRadius: 8,
-              border: "1px solid rgba(232,93,117,0.5)",
-              background: "rgba(232,93,117,0.15)", color: "#E85D75",
-              cursor: "pointer", fontSize: 12, fontWeight: 600,
-              fontFamily: "'Noto Sans KR', sans-serif",
-            }}
-          >
+          <button onClick={this.reset} style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.5)", background: "rgba(232,93,117,0.15)", color: "#E85D75", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif" }}>
             다시 시도
           </button>
         </div>

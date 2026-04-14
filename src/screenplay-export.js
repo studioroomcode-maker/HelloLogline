@@ -3,85 +3,22 @@
  * Fountain / Final Draft (.fdx) / PDF 시나리오 / PDF 방송 대본 출력 지원
  */
 
+import { parseFountain } from "./editor/FountainParser.js";
+
 // ────────────────────────────────────────────────────
-// 1. 시나리오 텍스트 파싱
+// 1. 시나리오 텍스트 파싱 (FountainParser 위임)
 // ────────────────────────────────────────────────────
 
 /**
  * 시나리오 텍스트를 타입별 요소 배열로 파싱
- * @param {string} text - 시나리오 원문
+ * FountainParser.js에 위임해 단일 파싱 소스를 유지합니다.
+ * @param {string} text - Fountain 시나리오 원문
  * @returns {{ type: string, text: string }[]}
  */
 export function parseScreenplay(text) {
-  const lines = text.split('\n');
-  const elements = [];
-  let prevType = 'blank';
-
-  for (const rawLine of lines) {
-    const trimmed = rawLine.trim();
-    const leadingSpaces = rawLine.length - rawLine.trimStart().length;
-
-    if (!trimmed) {
-      // 연속 blank 는 하나만
-      if (elements.length && elements[elements.length - 1].type !== 'blank') {
-        elements.push({ type: 'blank', text: '' });
-      }
-      prevType = 'blank';
-      continue;
-    }
-
-    // 씬 헤더 (INT. / EXT. / INT/EXT.)
-    if (/^(INT\.|EXT\.|INT\/EXT\.|I\/E\.)/i.test(trimmed)) {
-      elements.push({ type: 'scene_heading', text: trimmed.toUpperCase() });
-      prevType = 'scene_heading';
-      continue;
-    }
-
-    // 막 구분 (1막, 2막, 3막)
-    if (/^[1-9]막\s*[—–-]/.test(trimmed) || /^─{4,}/.test(trimmed)) {
-      elements.push({ type: 'act_marker', text: trimmed });
-      prevType = 'act_marker';
-      continue;
-    }
-
-    // 전환 지문
-    if (/^(FADE OUT|FADE IN|CUT TO:|DISSOLVE TO:|SMASH CUT:|MATCH CUT:|페이드 아웃|페이드 인)/i.test(trimmed)) {
-      elements.push({ type: 'transition', text: trimmed });
-      prevType = 'transition';
-      continue;
-    }
-
-    // 괄호 지문
-    if (/^\(.+\)$/.test(trimmed) && (prevType === 'character' || prevType === 'parenthetical')) {
-      elements.push({ type: 'parenthetical', text: trimmed });
-      prevType = 'parenthetical';
-      continue;
-    }
-
-    // 인물 큐: 많은 들여쓰기 + 짧은 이름 + 이전이 blank/action/scene_heading
-    if (
-      leadingSpaces >= 10 &&
-      trimmed.length <= 50 &&
-      !/[.。,、]$/.test(trimmed) &&
-      prevType !== 'dialogue' &&
-      prevType !== 'parenthetical'
-    ) {
-      elements.push({ type: 'character', text: trimmed });
-      prevType = 'character';
-      continue;
-    }
-
-    // 대사: 인물/괄호/대사 다음 + 어느 정도 들여쓰기
-    if ((prevType === 'character' || prevType === 'parenthetical' || prevType === 'dialogue') && leadingSpaces >= 4) {
-      elements.push({ type: 'dialogue', text: trimmed });
-      prevType = 'dialogue';
-      continue;
-    }
-
-    // 기본: 액션 라인
-    elements.push({ type: 'action', text: trimmed });
-    prevType = 'action';
-  }
+  const tokens = parseFountain(text || "");
+  // 토큰 → 요소 변환 (raw 제거, index 제거)
+  const elements = tokens.map(t => ({ type: t.type, text: t.text }));
 
   // 앞뒤 blank 제거
   while (elements.length && elements[0].type === 'blank') elements.shift();
