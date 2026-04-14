@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { markNextCallsAsRetry } from "./utils.js";
+import { useLoglineCtx } from "./context/LoglineContext.jsx";
 
 /* ─── SVG Icon Paths ─── */
 export const ICON = {
@@ -70,11 +71,13 @@ export function DocButton({ label, sub, onClick, disabled }) {
 export function ToolButton({ icon, label, sub, done, loading, color, onClick, disabled, tooltip, creditCost = 0 }) {
   const [hovered, setHovered] = useState(false);
   const [tipVisible, setTipVisible] = useState(false);
+  const { isDemoMode } = useLoglineCtx?.() || {};
+  const isLocked = isDemoMode && done; // 데모 모드에서 완료된 버튼은 재실행 불가
   return (
     <div style={{ position: "relative" }}>
       <button
-        onClick={onClick}
-        disabled={disabled || loading}
+        onClick={isLocked ? undefined : onClick}
+        disabled={disabled || loading || isLocked}
         onMouseEnter={() => { setHovered(true); setTipVisible(true); }}
         onMouseLeave={() => { setHovered(false); setTipVisible(false); }}
         style={{
@@ -94,12 +97,12 @@ export function ToolButton({ icon, label, sub, done, loading, color, onClick, di
             : hovered
             ? "inset 0 1px 0 var(--glass-bd-top), 0 4px 12px rgba(0,0,0,0.15)"
             : "inset 0 1px 0 var(--glass-bd-nano)",
-          cursor: disabled || loading ? "not-allowed" : "pointer",
+          cursor: disabled || loading || isLocked ? "not-allowed" : "pointer",
           opacity: disabled ? 0.45 : 1,
           display: "flex", alignItems: "center", gap: 10,
           textAlign: "left",
           transition: "background 0.22s var(--ease-spring), border-color 0.22s var(--ease-spring), box-shadow 0.22s var(--ease-spring), transform 0.18s var(--ease-spring)",
-          transform: hovered && !disabled ? "translateY(-1px)" : "translateY(0)",
+          transform: hovered && !disabled && !isLocked ? "translateY(-1px)" : "translateY(0)",
           fontFamily: "'Noto Sans KR', sans-serif",
         }}
       >
@@ -120,9 +123,14 @@ export function ToolButton({ icon, label, sub, done, loading, color, onClick, di
             }}>{creditCost}cr</span>
           )}
           {tooltip && <span style={{ fontSize: 12, color: "rgba(var(--tw),0.18)", lineHeight: 1, userSelect: "none" }}>ⓘ</span>}
-          {done && !loading && (
+          {done && !loading && !isLocked && (
             <span style={{ fontSize: 9, color: `${color}b3`, fontFamily: "'JetBrains Mono', monospace", marginLeft: "auto" }}>
               재실행 가능
+            </span>
+          )}
+          {done && !loading && isLocked && (
+            <span style={{ fontSize: 9, color: "var(--c-tx-25)", fontFamily: "'JetBrains Mono', monospace", marginLeft: "auto" }}>
+              DEMO
             </span>
           )}
           {loading ? <Spinner size={12} color={color} /> : done ? (

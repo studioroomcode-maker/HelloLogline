@@ -51,7 +51,7 @@ export default function Stage5Content({
   generatingBeat,
   generateScene,
 }) {
-  const { logline, genre, isMobile, cc, getStageStatus, advanceToStage, openApplicationDoc, teamMembers, setTeamMembers, sceneAssignments, setSceneAssignments, getEditPermission, isOwner, isReadOnly, addActivity, currentWorkingMember } = useLoglineCtx();
+  const { logline, genre, isMobile, cc, getStageStatus, advanceToStage, openApplicationDoc, teamMembers, setTeamMembers, sceneAssignments, setSceneAssignments, getEditPermission, isOwner, isReadOnly, addActivity, currentWorkingMember, isDemoMode } = useLoglineCtx();
 
   return (
     <ErrorBoundary><div>
@@ -136,8 +136,8 @@ export default function Stage5Content({
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                       <button onClick={() => setTreatmentStale(false)}
                         style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-35)", fontSize: 10, cursor: "pointer" }}>무시</button>
-                      <button onClick={generateTreatment}
-                        style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(247,160,114,0.4)", background: "rgba(247,160,114,0.1)", color: "#F7A072", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>재생성</button>
+                      <button onClick={generateTreatment} disabled={isDemoMode}
+                        style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(247,160,114,0.4)", background: "rgba(247,160,114,0.1)", color: "#F7A072", fontSize: 10, fontWeight: 700, cursor: isDemoMode ? "not-allowed" : "pointer", opacity: isDemoMode ? 0.45 : 1 }}>재생성</button>
                     </div>
                   </div>
                 )}
@@ -293,8 +293,8 @@ export default function Stage5Content({
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                       <button onClick={() => setBeatSheetStale(false)}
                         style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "none", color: "var(--c-tx-35)", fontSize: 10, cursor: "pointer" }}>무시</button>
-                      <button onClick={generateBeatSheet}
-                        style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(247,160,114,0.4)", background: "rgba(247,160,114,0.1)", color: "#F7A072", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>재생성</button>
+                      <button onClick={generateBeatSheet} disabled={isDemoMode}
+                        style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid rgba(247,160,114,0.4)", background: "rgba(247,160,114,0.1)", color: "#F7A072", fontSize: 10, fontWeight: 700, cursor: isDemoMode ? "not-allowed" : "pointer", opacity: isDemoMode ? 0.45 : 1 }}>재생성</button>
                     </div>
                   </div>
                 )}
