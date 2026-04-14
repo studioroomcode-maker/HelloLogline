@@ -51,7 +51,7 @@ export default function Stage5Content({
   generatingBeat,
   generateScene,
 }) {
-  const { logline, genre, isMobile, cc, getStageStatus, advanceToStage, openApplicationDoc, teamMembers, setTeamMembers, sceneAssignments, setSceneAssignments, getEditPermission, isOwner, isReadOnly } = useLoglineCtx();
+  const { logline, genre, isMobile, cc, getStageStatus, advanceToStage, openApplicationDoc, teamMembers, setTeamMembers, sceneAssignments, setSceneAssignments, getEditPermission, isOwner, isReadOnly, addActivity, currentWorkingMember } = useLoglineCtx();
 
   return (
     <ErrorBoundary><div>
@@ -351,13 +351,18 @@ export default function Stage5Content({
                         }}
                         teamMembers={teamMembers}
                         sceneAssignments={sceneAssignments}
-                        onAssignScene={(beatId, memberId) =>
+                        onAssignScene={(beatId, memberId) => {
                           setSceneAssignments(prev =>
                             memberId
                               ? { ...prev, [beatId]: memberId }
                               : Object.fromEntries(Object.entries(prev).filter(([k]) => k !== String(beatId)))
-                          )
-                        }
+                          );
+                          const assigneeName = memberId ? teamMembers.find(m => m.id === memberId)?.name : null;
+                          const actorName = currentWorkingMember?.name || "나";
+                          const actorColor = currentWorkingMember?.color || "#C8A84B";
+                          if (assigneeName) addActivity?.("assign", actorName, actorColor, `씬 #${beatId} → ${assigneeName} 배정`, "5");
+                          else addActivity?.("assign", actorName, actorColor, `씬 #${beatId} 배정 해제`, "5");
+                        }}
                         onUpdateTeam={setTeamMembers}
                         getEditPermission={getEditPermission}
                         isOwner={isOwner}

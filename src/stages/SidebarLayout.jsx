@@ -4,6 +4,7 @@ import SidebarNavItem from "./SidebarNavItem.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 
 const StageCommentThread = lazy(() => import("./StageCommentThread.jsx"));
+import NotificationPanel from "./NotificationPanel.jsx";
 
 function DashboardIcon() {
   return (
@@ -260,8 +261,13 @@ export default function SidebarLayout({ stageProps, isMobile }) {
             </button>
           </div>
 
+          {/* 변경 알림 */}
+          <div style={{ padding: "6px 10px 0" }}>
+            <NotificationPanel />
+          </div>
+
           {/* 공유 버튼 */}
-          <div style={{ padding: "16px 12px 0", borderTop: "1px solid var(--c-bd-1)", marginTop: 12 }}>
+          <div style={{ padding: "10px 12px 0", borderTop: "1px solid var(--c-bd-1)", marginTop: 8 }}>
             <button
               onClick={handleShare}
               disabled={shareLoading || !logline}

@@ -799,6 +799,7 @@ export default function LoglineAnalyzer() {
   const [sceneAssignments, setSceneAssignments] = useState({});
   const [stageComments, setStageComments] = useState({});
   const [currentWorkingAs, setCurrentWorkingAs] = useState(null); // null = "나" (owner)
+  const [activityLog, setActivityLog] = useState([]); // 변경 알림 로그
 
   // ── Character Development ──
   const [charDevResult, setCharDevResult] = useState(null);
@@ -1257,7 +1258,7 @@ export default function LoglineAnalyzer() {
     valueChargeResult, subtextResult,
     synopsisResults, pipelineResult, selectedSynopsisIndex,
     treatmentResult, beatSheetResult, beatScenes,
-    teamMembers, sceneAssignments, stageComments,
+    teamMembers, sceneAssignments, stageComments, activityLog,
     dialogueDevResult, scriptCoverageResult,
     structureResult, themeResult, sceneListResult, scenarioDraftResult,
     comparableResult, valuationResult, episodeDesignResult, masterReportResult,
@@ -1318,6 +1319,7 @@ export default function LoglineAnalyzer() {
     setTeamMembers(proj.teamMembers || []);
     setSceneAssignments(proj.sceneAssignments || {});
     setStageComments(proj.stageComments || {});
+    setActivityLog(proj.activityLog || []);
     setDialogueDevResult(proj.dialogueDevResult || null);
     setScriptCoverageResult(proj.scriptCoverageResult || null);
     setStructureResult(proj.structureResult || null);
@@ -3697,6 +3699,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       const sceneText = await callClaudeText(apiKey, SCENE_GEN_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-4-6", ctrl.signal, "scenario");
       setBeatScenes((prev) => ({ ...prev, [beat.id]: sceneText }));
       setExpandedBeats((prev) => ({ ...prev, [beat.id]: true }));
+      addActivity("scene_gen", currentWorkingMember?.name || user?.name || "나", currentWorkingMember?.color || "#C8A84B", `씬 #${beat.id} (${beat.name_kr}) 생성`, "5");
       await autoSave();
     } catch (err) {
       if (err.name !== "AbortError") setBeatSheetError(`씬 ${beat.id} 생성 오류: ${err.message}`);
@@ -4290,6 +4293,20 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     charDevResult,
   };
 
+  // ── 변경 알림 헬퍼 ──
+  const addActivity = useCallback((type, actorName, actorColor, detail, stageId = null) => {
+    const entry = {
+      id: Date.now() + Math.random(),
+      type,        // "comment"|"assign"|"scene_gen"|"beat_edit"|"generate"|"import"
+      actorName: actorName || "나",
+      actorColor: actorColor || "#C8A84B",
+      detail,
+      stageId,
+      timestamp: Date.now(),
+    };
+    setActivityLog(prev => [entry, ...prev].slice(0, 100)); // 최대 100개 유지
+  }, []);
+
   // ── 팀 권한 헬퍼 ──
   const currentWorkingMember = currentWorkingAs
     ? teamMembers.find(m => m.id === currentWorkingAs) || null
@@ -4346,6 +4363,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     stageComments, setStageComments,
     currentWorkingAs, setCurrentWorkingAs,
     currentWorkingMember, isOwner, isReadOnly, getEditPermission,
+    activityLog, addActivity,
   };
 
   return (

@@ -58,7 +58,7 @@ function renderWithMentions(text, teamMembers) {
 }
 
 export default function StageCommentThread({ stageId }) {
-  const { stageComments, setStageComments, teamMembers, user } = useLoglineCtx();
+  const { stageComments, setStageComments, teamMembers, user, addActivity } = useLoglineCtx();
   const [open, setOpen] = useState(false);
   const [inputText, setInputText] = useState("");
   const [authorName, setAuthorName] = useState("");
@@ -144,6 +144,7 @@ export default function StageCommentThread({ stageId }) {
       ...prev,
       [stageId]: [...(prev[stageId] || []), newComment],
     }));
+    addActivity?.("comment", name, newComment.authorColor, `${STAGE_LABELS[stageId] || `Stage ${stageId}`}에 피드백`, stageId);
     setInputText("");
   };
 
