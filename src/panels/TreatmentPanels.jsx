@@ -74,7 +74,7 @@ export function DialogueDevPanel({ data, isMobile }) {
 // ─────────────────────────────────────────────
 // 캐릭터 디벨롭 결과 패널
 // ─────────────────────────────────────────────
-export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructureChange, onGenerate, loading, isMobile, charDevResult, selectedFramework, NARRATIVE_FRAMEWORKS }) {
+export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructureChange, onGenerate, loading, isMobile, charDevResult, selectedFramework, NARRATIVE_FRAMEWORKS, pipelineResult }) {
   const proto = chars.protagonist;
 
   const setProto = (field, val) =>
@@ -93,23 +93,53 @@ export function TreatmentInputPanel({ chars, onCharsChange, structure, onStructu
 
   const fw = NARRATIVE_FRAMEWORKS?.find(f => f.id === selectedFramework);
 
+  // 파이프라인 방식 여부: pipelineResult가 있고 direction_title 또는 synopsis가 있으면 파이프라인으로 개발된 것
+  const isPipeline = !!(pipelineResult?.synopsis || pipelineResult?.direction_title);
+  const pipelineTitle = pipelineResult?.direction_title || "파이프라인 시놉시스";
+  const pipelineMeta = [
+    pipelineResult?.genre_tone,
+    pipelineResult?.theme ? `테마: ${pipelineResult.theme}` : null,
+  ].filter(Boolean).join(" · ");
+
   return (
     <div style={{ padding: "20px", borderRadius: 12, border: "1px solid rgba(251,191,36,0.15)", background: "rgba(251,191,36,0.02)" }}>
 
-      {/* 서사 구조 — 4단계에서 선택한 프레임워크 표시 */}
+      {/* 서사 구조 — 파이프라인 방식이면 파이프라인 컨텍스트, 아니면 선택된 프레임워크 표시 */}
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>서사 구조</div>
-        <div style={{ padding: "10px 14px", borderRadius: 9, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 14, flexShrink: 0 }}>📐</span>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#FBBf24", fontFamily: "'Noto Sans KR', sans-serif" }}>
-              {fw ? fw.label : "3막 구조"}
+        <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>서사 구조 기반</div>
+        {isPipeline ? (
+          <div style={{ padding: "10px 14px", borderRadius: 9, border: "1px solid rgba(78,204,163,0.35)", background: "rgba(78,204,163,0.06)", display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>📋</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#4ECCA3", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 2 }}>
+                {pipelineTitle}
+              </div>
+              <div style={{ fontSize: 10, color: "rgba(78,204,163,0.6)", fontFamily: "'JetBrains Mono', monospace" }}>
+                {pipelineMeta || "4단계 파이프라인에서 개발됨"}
+              </div>
+              {pipelineResult?.ending_type && (
+                <div style={{ fontSize: 10, color: "rgba(78,204,163,0.5)", marginTop: 2, fontFamily: "'JetBrains Mono', monospace" }}>
+                  결말 유형: {pipelineResult.ending_type}
+                </div>
+              )}
             </div>
-            <div style={{ fontSize: 10, color: "rgba(251,191,36,0.55)", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>
-              {fw ? fw.ref : "Field (1982)"} · 4단계에서 설정됨
+            <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 10, background: "rgba(78,204,163,0.12)", color: "#4ECCA3", border: "1px solid rgba(78,204,163,0.25)", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0, marginTop: 1 }}>
+              PIPELINE
+            </span>
+          </div>
+        ) : (
+          <div style={{ padding: "10px 14px", borderRadius: 9, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 14, flexShrink: 0 }}>📐</span>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#FBBf24", fontFamily: "'Noto Sans KR', sans-serif" }}>
+                {fw ? fw.label : "3막 구조"}
+              </div>
+              <div style={{ fontSize: 10, color: "rgba(251,191,36,0.55)", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>
+                {fw ? fw.ref : "Field (1982)"} · 4단계에서 설정됨
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* 인물 정보: Stage 3 캐릭터 분석 결과가 있으면 자동 반영 카드, 없으면 직접 입력 폼 */}
