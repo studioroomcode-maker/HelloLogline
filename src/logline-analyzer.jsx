@@ -50,6 +50,7 @@ import SidebarLayout from "./stages/SidebarLayout.jsx";
 import { saveProject, loadProjects, deleteProject } from "./db.js";
 import { ApiKeyModal, HistoryPanel } from "./panels.jsx";
 import { useStage1State } from "./hooks/useStage1State.js";
+import { useNetworkStatus } from "./hooks/useNetworkStatus.js";
 
 /* ─── Lazy-loaded heavy panels ─── */
 /* ─── Lazy-loaded stage content ─── */
@@ -1019,6 +1020,19 @@ export default function LoglineAnalyzer() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration);
   };
   const dismissToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
+
+  // ── 네트워크 상태 ──
+  const isOnline = useNetworkStatus();
+  const prevOnlineRef = useRef(true);
+  useEffect(() => {
+    if (prevOnlineRef.current === isOnline) return;
+    prevOnlineRef.current = isOnline;
+    if (!isOnline) {
+      showToast("warn", "오프라인 상태입니다. 편집·저장·내보내기는 계속 사용 가능합니다.", 6000);
+    } else {
+      showToast("success", "인터넷에 다시 연결되었습니다.");
+    }
+  }, [isOnline]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Abort controllers (per operation key) ──
   const abortControllersRef = useRef({});
@@ -4393,6 +4407,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     // 개정본 버전 관리
     revisions, setRevisions, currentRevisionId, setCurrentRevisionId,
     sceneRevisionMap, setSceneRevisionMap, startNewRevision,
+    // 네트워크 상태
+    isOnline,
   };
 
   return (

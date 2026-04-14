@@ -50,7 +50,7 @@ function MobileNavTab({ id, icon, label, active, color, status, onClick }) {
 }
 
 export default function SidebarLayout({ stageProps, isMobile }) {
-  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus, referenceScenarioEnabled, referenceScenarioSummary, showStoryDoctor, setShowStoryDoctor, apiKey, isDemoMode, stageComments, teamMembers, currentWorkingAs, setCurrentWorkingAs, currentWorkingMember, isReadOnly, isOwner } = useLoglineCtx();
+  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus, referenceScenarioEnabled, referenceScenarioSummary, showStoryDoctor, setShowStoryDoctor, apiKey, isDemoMode, stageComments, teamMembers, currentWorkingAs, setCurrentWorkingAs, currentWorkingMember, isReadOnly, isOwner, isOnline } = useLoglineCtx();
   const mainPanelRef = useRef(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState(null);
@@ -374,6 +374,49 @@ export default function SidebarLayout({ stageProps, isMobile }) {
             maxWidth: isMobile ? "100%" : 780,
           }}
         >
+          {/* ── 오프라인 배너 ── */}
+          {!isOnline && (
+            <div style={{
+              marginBottom: 16,
+              padding: "10px 16px",
+              borderRadius: 10,
+              background: "rgba(251,191,36,0.08)",
+              border: "1px solid rgba(251,191,36,0.3)",
+              display: "flex", alignItems: "center", gap: 10,
+            }}>
+              {/* 오프라인 아이콘 */}
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#FBBF24" strokeWidth={2} strokeLinecap="round" style={{ flexShrink: 0 }}>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+                <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+                <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+                <path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
+                <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+                <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+                <circle cx="12" cy="20" r="1"/>
+              </svg>
+              <div style={{ flex: 1 }}>
+                <span style={{
+                  fontSize: 11, fontWeight: 700, color: "#FBBF24",
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                }}>
+                  오프라인 모드
+                </span>
+                <span style={{
+                  fontSize: 11, color: "var(--c-tx-45)", marginLeft: 8,
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                }}>
+                  AI 생성 기능은 인터넷 연결 후 사용 가능합니다.
+                </span>
+              </div>
+              <span style={{
+                fontSize: 9, color: "var(--c-tx-30)", flexShrink: 0,
+                fontFamily: "'JetBrains Mono', monospace",
+              }}>
+                편집 · 저장 · 내보내기 사용 가능
+              </span>
+            </div>
+          )}
+
           <ErrorBoundary key={currentStage}>
             <Suspense fallback={<div style={{ padding: 20, color: "var(--c-tx-30)", fontSize: 12 }}>로딩 중...</div>}>
               {/* stageProps에서 현재 스테이지 콘텐츠를 렌더링 */}

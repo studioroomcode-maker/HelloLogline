@@ -195,6 +195,13 @@ export function markNextCallsAsRetry(n = 2) { _retryCredits = n; }
  * Fetch one Claude response (raw text returned from API).
  */
 async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature = null) {
+  // 오프라인 즉시 차단 — fetch 시도 전에 명확한 에러 반환
+  if (!navigator.onLine) {
+    const err = new Error("오프라인 상태입니다 — 인터넷에 연결되면 다시 시도하세요.");
+    err.name = "OfflineError";
+    throw err;
+  }
+
   const headers = { "Content-Type": "application/json" };
   // "__server__"는 서버 키 사용 센티넬값 — 실제 키가 아니므로 헤더에 보내지 않음
   if (apiKey && apiKey !== "__server__") headers["x-client-api-key"] = apiKey;
