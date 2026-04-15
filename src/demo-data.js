@@ -685,6 +685,18 @@ export const DEMO_VALUATION_RESULT = {
     { title: "카메라를 멈추면 안 돼!", deal_info: "2017 / 저예산 메타 영화 / 세계적 흥행", relevance: "영화 만들기 메타 구조 + 저예산 성공 공식" },
     { title: "Cinema Paradiso", deal_info: "1988 / 아카데미 외국어영화상", relevance: "영화와 세대, 스승과 제자, 사랑과 상실의 정석" },
   ],
+  predicted_reviews: [
+    { reviewer_type: "영화 비평가", platform: "씨네21", rating: 4.0, review: "잔치국수라는 소재를 통해 예술과 노동, 모방과 창조의 간극을 정밀하게 포착한다. 6분40초라는 반복 모티프가 영화 전체를 견고하게 묶어내는 솜씨가 인상적이다." },
+    { reviewer_type: "일반 관객", platform: "CGV", rating: 3.5, review: "국수 끓이는 장면이 왜 그렇게 많은지 처음엔 답답했는데 끝나고 나서야 이해됐다. 조용히 오래 남는 영화." },
+    { reviewer_type: "시네필", platform: "왓챠피디아", rating: 4.5, review: "타르코프스키적 리듬과 한국 독립영화의 감성이 교차하는 지점에서 만들어진 희귀한 작품. 만수의 루틴 시퀀스만으로도 이 영화는 존재 가치가 있다." },
+    { reviewer_type: "드라마 PD", platform: "업계 관계자", rating: 3.5, review: "극장 공개 후 OTT 편성을 염두에 두면 충분히 매력적인 소재. 다만 2막 민혁의 내면 변화가 드라마적으로 더 명시화되어야 일반 시청자 확보가 가능하다." },
+    { reviewer_type: "OTT 에디터", platform: "왓챠 오리지널", rating: 4.0, review: "왓챠 시네필 구독자층이 가장 좋아할 유형의 한국 독립영화. 영화제 섹션과 일반 카탈로그 사이에서 균형을 잡는 드문 케이스로 편성 우선순위가 높다." },
+    { reviewer_type: "20대 관객", platform: "네이버 영화", rating: 3.0, review: "솔직히 좀 지루했는데 친구들이랑 얘기하다 보니 계속 생각남. 전반부는 집중하기 힘들었지만 엔딩은 진짜 좋았음." },
+    { reviewer_type: "50대 이상 관객", platform: "다음 영화", rating: 4.5, review: "오래전 젊은 시절 꿈과 현실 사이에서 방황하던 기억이 떠올랐다. 만수 어르신의 국수 씬에서 눈물이 났다. 이런 영화가 많아져야 한다." },
+    { reviewer_type: "영화과 교수", platform: "학술 리뷰", rating: 4.0, review: "시간성과 반복 구조를 통해 기억과 정체성의 문제를 탐구하는 방식이 베케트적이다. 루틴의 의미론적 전환이 3막에서 완성되는 구조 설계는 교육적 가치가 크다." },
+    { reviewer_type: "장르 팬", platform: "레터박스드", rating: 3.5, review: "Not my usual pick but the food sequences hit different. There's a quiet Ozu-esque patience here that rewards viewers who stick with it. The ending is quietly devastating." },
+    { reviewer_type: "해외 관객", platform: "IMDb", rating: 4.0, review: "A rare kind of Korean indie that feels both deeply local and universally resonant. The noodle-making ritual becomes a meditation on time, grief, and what we make with our hands." },
+  ],
 };
 
 export const DEMO_STRUCTURE_RESULT = {

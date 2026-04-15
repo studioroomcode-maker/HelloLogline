@@ -343,6 +343,12 @@ export const ValuationSchema = z
     factors_boosting_value: z.array(z.string()),
     factors_reducing_value: z.array(z.string()),
     development_recommendation: z.string(),
+    predicted_reviews: z.array(z.object({
+      reviewer_type: z.string(),
+      platform: z.string(),
+      rating: z.number(),
+      review: z.string(),
+    }).passthrough()).optional(),
     disclaimer: z.string(),
   })
   .passthrough();

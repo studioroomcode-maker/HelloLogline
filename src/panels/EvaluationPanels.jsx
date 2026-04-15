@@ -184,8 +184,73 @@ export function ValuationPanel({ data, isMobile }) {
   const km = data.korean_market || {};
   const um = data.us_market || {};
 
+  const reviews = data.predicted_reviews || [];
+  const avgRating = reviews.length
+    ? Math.round(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length * 10) / 10
+    : null;
+  const starColor = (r) => r >= 4.0 ? "#4ECCA3" : r >= 3.0 ? "#FFD166" : "#F7A072";
+
   return (
     <div>
+      {/* ── 예상 관람객 리뷰 ── */}
+      {reviews.length > 0 && (
+        <div style={{ marginBottom: 22 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-40)", letterSpacing: 1, textTransform: "uppercase" }}>예상 관람객 반응</div>
+            {avgRating !== null && (
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: starColor(avgRating), fontFamily: "'JetBrains Mono', monospace" }}>{avgRating}</span>
+                <span style={{ fontSize: 10, color: "var(--c-tx-30)" }}>/ 5.0 평균</span>
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            {reviews.map((rev, i) => {
+              const rc = starColor(rev.rating);
+              const fullStars = Math.floor(rev.rating);
+              const hasHalf = rev.rating % 1 >= 0.5;
+              return (
+                <div key={i} style={{
+                  padding: "10px 12px", borderRadius: 9,
+                  border: "1px solid var(--c-bd-2)",
+                  background: "rgba(var(--tw),0.015)",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 5,
+                        background: `${rc}15`, color: rc,
+                      }}>{rev.reviewer_type}</span>
+                      <span style={{ fontSize: 10, color: "var(--c-tx-30)", fontFamily: "'JetBrains Mono', monospace" }}>{rev.platform}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                      {/* 별 아이콘 */}
+                      <div style={{ display: "flex", gap: 1 }}>
+                        {[1,2,3,4,5].map(n => (
+                          <svg key={n} width={11} height={11} viewBox="0 0 24 24" fill={n <= fullStars ? rc : n === fullStars + 1 && hasHalf ? "url(#half)" : "var(--c-bd-2)"} style={{ flexShrink: 0 }}>
+                            <defs>
+                              <linearGradient id="half">
+                                <stop offset="50%" stopColor={rc} />
+                                <stop offset="50%" stopColor="var(--c-bd-2)" />
+                              </linearGradient>
+                            </defs>
+                            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+                          </svg>
+                        ))}
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: rc, fontFamily: "'JetBrains Mono', monospace", marginLeft: 3 }}>{rev.rating.toFixed(1)}</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                    {rev.review}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* 완성도 점수 헤더 */}
       <div style={{
         display: "flex", alignItems: "center", gap: 20, marginBottom: 20,
