@@ -18,15 +18,19 @@ export default async function handler(req, res) {
     const redirectUri = `${proto}://${host}/auth/kakao/callback`;
     const clientId = (process.env.KAKAO_REST_API_KEY || "").trim();
 
+    const tokenParams = {
+      grant_type: "authorization_code",
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      code,
+    };
+    const clientSecret = (process.env.KAKAO_CLIENT_SECRET || "").trim();
+    if (clientSecret) tokenParams.client_secret = clientSecret;
+
     const tokenRes = await fetch("https://kauth.kakao.com/oauth/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        code,
-      }),
+      body: new URLSearchParams(tokenParams),
     });
     const td = await tokenRes.json();
     if (td.error) {
