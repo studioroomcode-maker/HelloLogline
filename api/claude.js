@@ -61,7 +61,7 @@ export default async function handler(req, res) {
 
   // ── 레이트 리미팅 ──
   const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || "unknown";
-  const userEmail = (() => { try { return JSON.parse(Buffer.from(authHeader.split(".")[1], "base64url").toString()).email || ""; } catch { return ""; } })();
+  const userEmail = (() => { try { return JSON.parse(Buffer.from(rawToken.split(".")[1], "base64url").toString()).email || ""; } catch { return ""; } })();
 
   // IP 기준: 분당 30회
   const ipLimit = await checkRateLimit(`rl:ip:${ip}`, 30, 60);
@@ -94,7 +94,7 @@ export default async function handler(req, res) {
     if (cost > 0) {
       let payload_email;
       try {
-        const parts = authHeader.split(".");
+        const parts = rawToken.split(".");
         payload_email = JSON.parse(Buffer.from(parts[1], "base64url").toString()).email;
       } catch { payload_email = null; }
       if (payload_email) {

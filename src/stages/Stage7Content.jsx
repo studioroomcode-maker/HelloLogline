@@ -1,8 +1,7 @@
-import { Suspense } from "react";
+import { Suspense, lazy } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
-import { ToolButton, ResultCard, ErrorMsg, DocButton, SvgIcon, ICON, DemoCTA } from "../ui.jsx";
+import { ToolButton, ResultCard, ErrorMsg, DocButton, SvgIcon, ICON } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
-import { lazy } from "react";
 
 const ScriptCoveragePanel = lazy(() =>
   import("../panels/EvaluationPanels.jsx").then((m) => ({ default: m.ScriptCoveragePanel }))
