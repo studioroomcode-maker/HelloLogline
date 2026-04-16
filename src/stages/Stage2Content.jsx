@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
-import { ExpertPanelSection } from "../panels/ConceptPanels.jsx";
+import { ExpertPanelSection, MythMapPanel, BarthesCodePanel, KoreanMythPanel, ThemeAnalysisPanel } from "../panels/ConceptPanels.jsx";
+import { AcademicPanel } from "../panels.jsx";
 
 // 서사 이론 분석 완료 개수 계산
 function countNarrativeResults(academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult) {
@@ -116,6 +117,33 @@ export default function Stage2Content({
           </div>
         )}
       </div>
+
+      {/* ─────────── 서사 이론 결과 패널들 ─────────── */}
+      {academicResult && (
+        <ResultCard title="학술 서사 이론" color="rgba(69,183,209,0.15)">
+          <ErrorBoundary><AcademicPanel academic={academicResult} /></ErrorBoundary>
+        </ResultCard>
+      )}
+      {mythMapResult && (
+        <ResultCard title="신화 지도 (Campbell 영웅 여정)" color="rgba(167,139,250,0.15)">
+          <ErrorBoundary><MythMapPanel data={mythMapResult} isMobile={isMobile} /></ErrorBoundary>
+        </ResultCard>
+      )}
+      {barthesCodeResult && (
+        <ResultCard title="바르트 코드 (S/Z)" color="rgba(78,204,163,0.15)">
+          <ErrorBoundary><BarthesCodePanel data={barthesCodeResult} isMobile={isMobile} /></ErrorBoundary>
+        </ResultCard>
+      )}
+      {koreanMythResult && (
+        <ResultCard title="한국 신화·미학 공명" color="rgba(247,160,114,0.15)">
+          <ErrorBoundary><KoreanMythPanel data={koreanMythResult} isMobile={isMobile} /></ErrorBoundary>
+        </ResultCard>
+      )}
+      {themeResult && (
+        <ResultCard title="핵심 테마 분석" color="rgba(200,168,75,0.15)">
+          <ErrorBoundary><ThemeAnalysisPanel data={themeResult} isMobile={isMobile} /></ErrorBoundary>
+        </ResultCard>
+      )}
 
       {/* ─────────── GROUP 2: 전문가 패널 ─────────── */}
       <div style={{
