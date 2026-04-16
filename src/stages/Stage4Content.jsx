@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
-import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON, Spinner, DocButton, DemoCTA } from "../ui.jsx";
+import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON, Spinner, DocButton } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import {
   StructureAnalysisPanel, ValueChargePanel, ComparableWorksPanel,

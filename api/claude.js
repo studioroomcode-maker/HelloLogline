@@ -1,4 +1,4 @@
-import { rcall, deductCredits, checkRateLimit } from "./_redis.js";
+import { rcall, deductCredits, getCredits, redisConfigured, checkRateLimit } from "./_redis.js";
 import { verifyToken, getTokenFromRequest } from "./auth/_jwt.js";
 
 const CREDIT_COSTS = {
@@ -86,24 +86,25 @@ export default async function handler(req, res) {
 
   const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
-  // ── 크레딧 차감 (서버 키 사용 + basic 등급, 재시도 제외) ──
+  // ── 크레딧 사전 확인 (차감은 AI 성공 후에 실행) ──
   const usingServerKey = !clientApiKey && !!serverApiKey;
+  let creditEmail = null;
+  let creditCost = 0;
+
   if (usingServerKey && tier === "basic" && !body._retry) {
     const feature = body._feature || "logline";
-    const cost = CREDIT_COSTS[feature] ?? 1;
-    if (cost > 0) {
-      let payload_email;
-      try {
-        const parts = rawToken.split(".");
-        payload_email = JSON.parse(Buffer.from(parts[1], "base64url").toString()).email;
-      } catch { payload_email = null; }
-      if (payload_email) {
-        const newBalance = await deductCredits(payload_email, cost);
-        if (newBalance === null) {
-          // DB 미설정 또는 연결 실패 — 과금 사고 방지를 위해 요청 거부
-          console.error(`[Credits] DB 미연결로 크레딧 차감 불가: ${payload_email}, feature: ${feature}`);
+    creditCost = CREDIT_COSTS[feature] ?? 1;
+    if (creditCost > 0) {
+      creditEmail = userEmail || null;
+      if (creditEmail) {
+        if (!redisConfigured()) {
+          // DB 미설정 — 과금 사고 방지를 위해 요청 거부
+          console.error(`[Credits] DB 미연결: ${creditEmail}, feature: ${feature}`);
           return res.status(503).json({ error: { message: "결제 시스템에 일시적 문제가 발생했습니다. 잠시 후 다시 시도해주세요." } });
-        } else if (newBalance === -1) {
+        }
+        // 잔액 사전 확인 (AI 호출 전에 부족 여부만 체크, 실제 차감은 아님)
+        const balance = await getCredits(creditEmail);
+        if (balance < creditCost) {
           return res.status(402).json({ error: { message: "크레딧이 부족합니다. 크레딧을 충전해주세요." } });
         }
       }
@@ -113,8 +114,9 @@ export default async function handler(req, res) {
   // _feature, _retry 필드는 내부 라우팅용이므로 Anthropic에 전달하지 않음
   const { _feature: _f, _retry: _r, ...anthropicBody } = body;
 
+  let upstream, data;
   try {
-    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+    upstream = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -124,11 +126,23 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify(anthropicBody),
     });
-
-    const data = await upstream.json();
-    res.status(upstream.status).json(data);
+    data = await upstream.json();
   } catch (err) {
     console.error("[proxy error]", err.message);
-    res.status(500).json({ error: { message: err.message } });
+    return res.status(500).json({ error: { message: err.message } });
   }
+
+  // ── AI 성공 후에만 크레딧 차감 ──
+  if (upstream.ok && creditEmail && creditCost > 0) {
+    const newBalance = await deductCredits(creditEmail, creditCost);
+    if (newBalance === null) {
+      console.error(`[Credits] AI 성공 후 차감 실패 (DB 오류): ${creditEmail}`);
+      // DB 오류 시 사용자에게 패널티 없음 — 결과 그대로 반환
+    } else if (newBalance === -1) {
+      // 사전 확인과 실제 차감 사이 경합 조건 (극히 드묾)
+      console.warn(`[Credits] 경합 조건 감지: ${creditEmail}, cost: ${creditCost}`);
+    }
+  }
+
+  res.status(upstream.status).json(data);
 }

@@ -848,6 +848,16 @@ export default function LoglineAnalyzer() {
     }).catch(() => {});
   }, []);
 
+  // ── Auth: 세션 만료 → 자동 로그아웃 ──
+  useEffect(() => {
+    const onAuthExpired = () => {
+      handleLogout();
+      showToast("info", "세션이 만료되었습니다. 다시 로그인해주세요.");
+    };
+    window.addEventListener("hll:auth-expired", onAuthExpired);
+    return () => window.removeEventListener("hll:auth-expired", onAuthExpired);
+  }, []);
+
   // ── Credits: listen for hll:credits-empty & Toss URL params ──
   useEffect(() => {
     const onEmpty = () => setShowCreditModal(true);

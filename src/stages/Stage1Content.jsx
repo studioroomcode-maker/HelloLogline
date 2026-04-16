@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
-import { ToolButton, ResultCard, ErrorMsg, Spinner, DocButton, DemoCTA } from "../ui.jsx";
+import { ToolButton, ResultCard, ErrorMsg, Spinner, DocButton } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import {
   CRITERIA_GUIDE, LABELS_KR, GENRES, DURATION_OPTIONS, EXAMPLE_LOGLINES,

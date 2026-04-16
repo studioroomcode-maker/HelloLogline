@@ -280,6 +280,14 @@ async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, 
       throw new Error("크레딧이 부족합니다. 크레딧을 충전해주세요.");
     }
     const errData = await response.json().catch(() => ({}));
+    // 우리 프록시가 반환한 세션 만료 → 자동 로그아웃 이벤트
+    if (response.status === 401) {
+      const msg = errData?.error?.message || "";
+      if (msg.includes("로그인이 필요") || msg.includes("인증 토큰")) {
+        window.dispatchEvent(new CustomEvent("hll:auth-expired"));
+        throw new Error("세션이 만료되었습니다. 다시 로그인해주세요.");
+      }
+    }
     const fallback = response.status === 404
       ? "API 오류 (404) — 프록시 서버가 실행 중이지 않습니다. 터미널에서 'npm run dev'로 실행하세요."
       : response.status === 401
@@ -392,6 +400,14 @@ export async function callClaudeText(
       throw new Error("크레딧이 부족합니다. 크레딧을 충전해주세요.");
     }
     const errData = await response.json().catch(() => ({}));
+    // 우리 프록시가 반환한 세션 만료 → 자동 로그아웃 이벤트
+    if (response.status === 401) {
+      const msg = errData?.error?.message || "";
+      if (msg.includes("로그인이 필요") || msg.includes("인증 토큰")) {
+        window.dispatchEvent(new CustomEvent("hll:auth-expired"));
+        throw new Error("세션이 만료되었습니다. 다시 로그인해주세요.");
+      }
+    }
     const fallback = response.status === 404
       ? "API 오류 (404) — 프록시 서버가 실행 중이지 않습니다. 터미널에서 'npm run dev'로 실행하세요."
       : response.status === 401

@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useCallback } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
-import { ToolButton, ResultCard, ErrorMsg, FeedbackBox, SvgIcon, ICON, ScriptExportPanel, DemoCTA } from "../ui.jsx";
+import { ToolButton, ResultCard, ErrorMsg, FeedbackBox, SvgIcon, ICON, ScriptExportPanel } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import FountainEditor from "../editor/FountainEditor.jsx";
 import SceneNavigator from "../editor/SceneNavigator.jsx";

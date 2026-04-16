@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
-import { ToolButton, ResultCard, ErrorMsg, FeedbackBox, SvgIcon, ICON, Spinner, DemoCTA } from "../ui.jsx";
+import { ToolButton, ResultCard, ErrorMsg, FeedbackBox, SvgIcon, ICON, Spinner } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import { TreatmentInputPanel, DialogueDevPanel } from "../panels/TreatmentPanels.jsx";
 import { GENRES } from "../constants.js";
