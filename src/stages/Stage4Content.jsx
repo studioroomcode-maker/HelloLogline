@@ -150,7 +150,7 @@ export default function Stage4Content({
 
     {/* ── 구조 & 감정 아크 (통합 버튼) ── */}
     <div style={{ marginBottom: 16 }}>
-      <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>1순위 — 구조 & 감정 아크</div>
+      <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>1단계 — 구조 & 감정 아크 <span style={{ color: "rgba(78,204,163,0.5)", textTransform: "none", letterSpacing: 0 }}>(3막 구조 고정)</span></div>
       <ToolButton icon={<SvgIcon d={ICON.film} size={16} />} label="구조 & 감정 아크" sub="Field · Snyder · McKee 3막 구조 + 가치 전하" done={structureAllDone} loading={structureAllLoading} color="#4ECCA3" onClick={analyzeStructureAll} disabled={!logline.trim()}
         tooltip={"이야기의 뼈대와 감정 흐름을 설계합니다.\n\n• 3막 구조 — Field·Snyder·McKee·Hauge·Truby의 핵심 플롯 포인트 배치\n  (1막 설정 → 촉발 사건 → 2막 대립 → 절정 → 3막 해소)\n\n• 가치 전하 (McKee) — 장면마다 긍정↔부정으로 뒤바뀌는 감정 가치를 추적합니다.\n  감정 기복이 없는 이야기는 관객을 잃습니다."}
         creditCost={cc(2)} />
@@ -186,29 +186,6 @@ export default function Stage4Content({
               <ValueChargePanel data={valueChargeResult} isMobile={isMobile} />
             </div>
           )}
-        </ResultCard>
-      )}
-    </div>
-
-    {/* ── 유사 작품 비교 ── */}
-    <div style={{ marginBottom: 16 }}>
-      <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>시장 포지셔닝</div>
-      <ToolButton
-        icon={<SvgIcon d={ICON.film} size={16} />}
-        label="유사 작품 비교 분석"
-        sub="한국·해외 참고 작품 + 시장 포지셔닝"
-        done={!!comparableResult}
-        loading={comparableLoading}
-        color="#F472B6"
-        onClick={analyzeComparableWorks}
-        disabled={!logline.trim()}
-        tooltip={"이 이야기와 유사한 국내외 레퍼런스 작품을 찾아 시장 맥락을 파악합니다.\n\n• 유사 작품 — 장르·톤·주제 기준 비교 분석\n• 배울 점 — 각 레퍼런스에서 참고할 전략\n• 시장 포지셔닝 — OTT·극장·방송 채널 적합성\n• 타깃 관객 — 연령·성별·취향 프로파일\n\n투자 제안서와 방송사 기획안에 필수로 포함되는 섹션입니다."}
-        creditCost={cc(1)}
-      />
-      <ErrorMsg msg={comparableError} />
-      {comparableResult && (
-        <ResultCard title="유사 작품 비교" onClose={() => setComparableResult(null)} color="rgba(244,114,182,0.15)">
-          <ErrorBoundary><ComparableWorksPanel data={comparableResult} isMobile={isMobile} /></ErrorBoundary>
         </ResultCard>
       )}
     </div>
@@ -249,6 +226,7 @@ export default function Stage4Content({
     })()}
 
     {/* Synopsis mode toggle */}
+    <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>2단계 — 시놉시스 생성</div>
     <div style={{ display: "flex", gap: 6, marginBottom: 16, background: "var(--c-card-1)", padding: 4, borderRadius: 10, border: "1px solid var(--c-bd-1)" }}>
       {[
         { id: "auto", label: "자동 생성", align: "left", tip: "로그라인과 이전 분석 결과를 바탕으로 원하는 서사 구조와 방향 수를 선택해 여러 시놉시스를 한 번에 생성합니다.\n\n생성된 시놉시스 중 마음에 드는 방향을 '확정'하면, 이후 트리트먼트·비트시트가 그 방향을 기반으로 작성됩니다." },
@@ -437,6 +415,29 @@ export default function Stage4Content({
         <DocButton label="시놉시스 PDF" sub="A4 한 장 시놉시스 문서" onClick={() => openApplicationDoc("synopsis")} />
       </div>
     )}
+
+    {/* ── 유사 작품 비교 ── */}
+    <div style={{ marginTop: 28, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", marginBottom: 16 }}>
+      <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>3단계 — 시장 포지셔닝 <span style={{ color: "rgba(244,114,182,0.5)", textTransform: "none", letterSpacing: 0 }}>(시놉시스 확정 후 추천)</span></div>
+      <ToolButton
+        icon={<SvgIcon d={ICON.film} size={16} />}
+        label="유사 작품 비교 분석"
+        sub="한국·해외 참고 작품 + 시장 포지셔닝"
+        done={!!comparableResult}
+        loading={comparableLoading}
+        color="#F472B6"
+        onClick={analyzeComparableWorks}
+        disabled={!logline.trim()}
+        tooltip={"이 이야기와 유사한 국내외 레퍼런스 작품을 찾아 시장 맥락을 파악합니다.\n\n• 유사 작품 — 장르·톤·주제 기준 비교 분석\n• 배울 점 — 각 레퍼런스에서 참고할 전략\n• 시장 포지셔닝 — OTT·극장·방송 채널 적합성\n• 타깃 관객 — 연령·성별·취향 프로파일\n\n투자 제안서와 방송사 기획안에 필수로 포함되는 섹션입니다."}
+        creditCost={cc(1)}
+      />
+      <ErrorMsg msg={comparableError} />
+      {comparableResult && (
+        <ResultCard title="유사 작품 비교" onClose={() => setComparableResult(null)} color="rgba(244,114,182,0.15)">
+          <ErrorBoundary><ComparableWorksPanel data={comparableResult} isMobile={isMobile} /></ErrorBoundary>
+        </ResultCard>
+      )}
+    </div>
 
     {/* ── 에피소드 시리즈 설계 ── */}
     {logline && (
