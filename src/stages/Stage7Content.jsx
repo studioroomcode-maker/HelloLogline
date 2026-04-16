@@ -26,8 +26,6 @@ export default function Stage7Content({
   return (
     <ErrorBoundary><div>
 
-      {isDemoMode && <DemoCTA label="개고(Stage 8) 둘러보기" onClick={() => advanceToStage("8")} />}
-
       {/* ── 단계 안내 ── */}
       <div style={{ marginBottom: 18, padding: "12px 16px", borderRadius: 10, background: "rgba(96,165,250,0.05)", border: "1px solid rgba(96,165,250,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
         <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>📋</span>

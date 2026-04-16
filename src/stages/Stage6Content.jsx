@@ -110,8 +110,6 @@ export default function Stage6Content({
   return (
     <ErrorBoundary><div>
 
-      {isDemoMode && <DemoCTA label="최종 평가(Stage 7) 둘러보기" onClick={() => advanceToStage("7")} />}
-
       {/* ── 안내 배너 ── */}
       <div style={{ marginBottom: 18, padding: "14px 16px", borderRadius: 12, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.2)" }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: "#A78BFA", marginBottom: 6 }}>이 단계에 대해 솔직하게</div>

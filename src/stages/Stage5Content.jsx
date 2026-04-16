@@ -56,8 +56,6 @@ export default function Stage5Content({
   return (
     <ErrorBoundary><div>
 
-              {isDemoMode && <DemoCTA label="시나리오 초고(Stage 6) 둘러보기" onClick={() => advanceToStage("6")} />}
-
               {/* ── 단계 안내 ── */}
               <div style={{ marginBottom: (pipelineResult || charDevResult) ? 10 : 18, padding: "12px 16px", borderRadius: 10, background: "rgba(255,209,102,0.05)", border: "1px solid rgba(255,209,102,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
                 <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>🎬</span>

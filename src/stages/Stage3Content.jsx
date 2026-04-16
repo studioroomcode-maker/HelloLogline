@@ -80,8 +80,6 @@ export default function Stage3Content({
   return (
     <ErrorBoundary><div>
 
-              {isDemoMode && <DemoCTA label="스토리 구조(Stage 4) 둘러보기" onClick={() => advanceToStage("4")} />}
-
               {/* ── 단계 안내 ── */}
               <div style={{ marginBottom: 18, padding: "12px 16px", borderRadius: 10, background: "rgba(251,146,60,0.05)", border: "1px solid rgba(251,146,60,0.15)" }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(251,146,60,0.9)", marginBottom: 8 }}>

@@ -42,7 +42,7 @@ const STAGE_GUIDE = {
 
 /* ─── 다음 단계 CTA ─── */
 function StageNextCTA({ currentStage, isMobile }) {
-  const { setCurrentStage, getStageStatus } = useLoglineCtx();
+  const { setCurrentStage, getStageStatus, isDemoMode } = useLoglineCtx();
 
   if (!currentStage || currentStage === "dashboard") return null;
 
@@ -79,6 +79,8 @@ function StageNextCTA({ currentStage, isMobile }) {
     ) : null;
   }
 
+  const shouldPulse = isDemoMode && isDone;
+
   return (
     <div style={{
       marginTop: 40,
@@ -91,7 +93,14 @@ function StageNextCTA({ currentStage, isMobile }) {
         ? `1px solid ${nextMeta.color}35`
         : "1px solid var(--c-bd-2)",
       transition: "all 0.3s",
+      animation: shouldPulse ? `hll-next-cta-pulse 1.6s ease-in-out infinite` : undefined,
     }}>
+    <style>{`
+      @keyframes hll-next-cta-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 ${nextMeta.color}00; }
+        50% { box-shadow: 0 0 0 6px ${nextMeta.color}40; }
+      }
+    `}</style>
       <div style={{
         padding: "16px 20px", borderRadius: 12,
         display: "flex", alignItems: "center", justifyContent: "space-between",

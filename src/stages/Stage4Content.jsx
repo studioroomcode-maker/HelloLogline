@@ -106,8 +106,6 @@ export default function Stage4Content({
   return (
     <ErrorBoundary><div>
 
-    {isDemoMode && <DemoCTA label="트리트먼트(Stage 5) 둘러보기" onClick={() => advanceToStage("5")} />}
-
     {/* ── 단계 안내 ── */}
     <div style={{ marginBottom: charDevResult ? 12 : 18, padding: "12px 16px", borderRadius: 10, background: "rgba(78,204,163,0.05)", border: "1px solid rgba(78,204,163,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
       <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>🗺️</span>
