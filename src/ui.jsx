@@ -111,7 +111,13 @@ export function ToolButton({ icon, label, sub, done, loading, color, onClick, di
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: done ? color : "var(--c-tx-75)", lineHeight: 1.3 }}>{label}</div>
-          {sub && <div style={{ fontSize: 10, color: "var(--c-tx-30)", marginTop: 1 }}>{sub}</div>}
+          {loading ? (
+            <div style={{ fontSize: 10, color, marginTop: 2, opacity: 0.75, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              분석 중... 조금만 기다려주세요
+            </div>
+          ) : sub ? (
+            <div style={{ fontSize: 10, color: "var(--c-tx-30)", marginTop: 1 }}>{sub}</div>
+          ) : null}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
           {creditCost > 0 && (
