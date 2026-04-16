@@ -134,9 +134,12 @@ export default function LoginScreen({ onDemo, authError }) {
         >
           로그인 없이 데모 체험하기
         </button>
-        <div style={{ marginTop: 8, textAlign: "center", fontSize: 11, color: "var(--c-tx-35)", lineHeight: 1.55, fontFamily: "'Noto Sans KR', sans-serif" }}>
-          처음 이용하신다면 여기서 시작하세요 — 로그인 없이<br />
-          로그라인 분석부터 시나리오 초고까지 전 과정을 체험할 수 있습니다
+        <div style={{ marginTop: 8, textAlign: "center", fontSize: 11, color: "var(--c-tx-35)", lineHeight: 1.9, fontFamily: "'Noto Sans KR', sans-serif" }}>
+          처음 이용하신다면 여기서 시작하세요<br />
+          <br />
+          로그인 없이 로그라인 분석부터 시나리오 초고까지<br />
+          <br />
+          전 과정을 체험할 수 있습니다
         </div>
       </div>
 
