@@ -4643,6 +4643,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                   <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 100, background: "var(--bg-nav)", border: "1px solid var(--c-bd-2)", borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", minWidth: 160, padding: "8px 0", overflow: "hidden" }}>
                     <div style={{ padding: "8px 14px 10px", borderBottom: "1px solid var(--c-bd-1)" }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-main)", marginBottom: 2 }}>{user.name}</div>
+                      {user.email && <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 2, fontFamily: "'JetBrains Mono', monospace" }}>{user.email}</div>}
                       <div style={{ fontSize: 10, fontWeight: 700, color: TIER_COLOR[tier], fontFamily: "'JetBrains Mono', monospace" }}>{TIER_LABEL[tier]}</div>
                     </div>
                     {isAdmin && (

@@ -43,11 +43,13 @@ export default async function handler(req, res) {
     });
     const ud = await userRes.json();
 
+    const email = ud.kakao_account?.email || "";
+    const nickname = ud.kakao_account?.profile?.nickname || "";
     const user = {
       id: `kakao_${ud.id}`,
       provider: "kakao",
-      name: ud.kakao_account?.profile?.nickname || "카카오 사용자",
-      email: ud.kakao_account?.email || "",
+      name: nickname || email || "카카오 사용자",
+      email,
       avatar: ud.kakao_account?.profile?.profile_image_url || "",
     };
 

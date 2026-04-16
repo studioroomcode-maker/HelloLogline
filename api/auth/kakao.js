@@ -11,6 +11,7 @@ export default function handler(req, res) {
     redirect_uri: redirectUri,
     response_type: "code",
     state,
+    scope: "profile_nickname,profile_image,account_email",
   });
   res.setHeader("Set-Cookie", stateCookieHeader(state, proto));
   res.redirect(`https://kauth.kakao.com/oauth/authorize?${params}`);

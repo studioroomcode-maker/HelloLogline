@@ -141,7 +141,25 @@ export default function LoginScreen({ onDemo, authError }) {
         </div>
       </div>
 
-      <div style={{ marginTop: 20, fontSize: 11, color: "var(--c-tx-20)", textAlign: "center" }}>
+      {/* Privacy assurance */}
+      <div style={{
+        marginTop: 16, width: "100%", maxWidth: 360,
+        padding: "12px 16px", borderRadius: 12,
+        background: "rgba(78,204,163,0.05)", border: "1px solid rgba(78,204,163,0.15)",
+        display: "flex", alignItems: "flex-start", gap: 10,
+      }}>
+        <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="rgba(78,204,163,0.8)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <div style={{ fontSize: 11, color: "var(--c-tx-40)", lineHeight: 1.75, fontFamily: "'Noto Sans KR', sans-serif" }}>
+          <span style={{ color: "rgba(78,204,163,0.85)", fontWeight: 700 }}>여러분의 아이디어는 절대 저장되지 않습니다.</span><br />
+          입력하신 내용은 분석 즉시 처리 후 폐기되며,<br />
+          아이디어의 안전이 보장됩니다.
+        </div>
+      </div>
+
+      <div style={{ marginTop: 12, fontSize: 11, color: "var(--c-tx-20)", textAlign: "center" }}>
         로그인 시 서비스 이용약관 및 개인정보처리방침에 동의합니다
       </div>
     </div>
