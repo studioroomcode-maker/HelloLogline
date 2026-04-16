@@ -449,7 +449,11 @@ export default function DashboardView() {
             boxShadow: "0 4px 20px rgba(200,168,75,0.12)",
             display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
           }}>
-            <div style={{ fontSize: 28, flexShrink: 0, animation: "demoBounceArrow 1.4s ease-in-out infinite" }}>👇</div>
+            <div style={{ flexShrink: 0, animation: "demoBounceArrow 1.4s ease-in-out infinite" }}>
+              <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#C8A84B" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+              </svg>
+            </div>
             <div style={{ flex: 1, minWidth: 160 }}>
               <div style={{
                 fontSize: 13, fontWeight: 800, color: "#C8A84B", marginBottom: 5,
@@ -916,7 +920,9 @@ function NextStepSuggestion({ getStageStatus, advanceToStage, logline, stageResu
         background: "rgba(78,204,163,0.06)",
         display: "flex", alignItems: "center", gap: 12,
       }}>
-        <span style={{ fontSize: 22 }}>🎉</span>
+        <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: "#4ECCA3" }}>모든 스테이지 완료!</div>
           <div style={{ fontSize: 11, color: "var(--c-tx-45)", marginTop: 3 }}>
