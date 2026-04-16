@@ -317,6 +317,29 @@ export default function Stage3Content({
                 </div>
               )}
 
+              {/* ── 심리 분석 결과: 심리 원형 & 그림자 / 실존적 진정성 ── */}
+              {(shadowResult || authenticityResult) && (
+                <ResultCard
+                  title="심리 원형 & 그림자 / 실존적 진정성"
+                  onClose={() => { setShadowResult(null); setAuthenticityResult(null); }}
+                  color="rgba(167,139,250,0.15)"
+                >
+                  {shadowResult && (
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(167,139,250,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>심리 원형 &amp; 그림자 (Jung)</div>
+                      <ErrorBoundary><ShadowAnalysisPanel data={shadowResult} isMobile={isMobile} /></ErrorBoundary>
+                    </div>
+                  )}
+                  {shadowResult && authenticityResult && <div style={{ margin: "20px 0", height: 1, background: "var(--c-bd-1)" }} />}
+                  {authenticityResult && (
+                    <div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(167,139,250,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>실존적 진정성 (Sartre)</div>
+                      <ErrorBoundary><AuthenticityPanel data={authenticityResult} isMobile={isMobile} /></ErrorBoundary>
+                    </div>
+                  )}
+                </ResultCard>
+              )}
+
               {/* ── STEP 3: 캐릭터 종합 개발 ── */}
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6, marginTop: 16 }}>
                 <span style={{ fontSize: 9, fontWeight: 800, color: "#4ECCA3", fontFamily: "'JetBrains Mono', monospace", padding: "2px 6px", borderRadius: 4, border: "1px solid rgba(78,204,163,0.25)", background: "rgba(78,204,163,0.08)" }}>STEP 3</span>
@@ -332,31 +355,23 @@ export default function Stage3Content({
               <ErrorMsg msg={charDevError} onRetry={charDevError ? analyzeCharacterDev : undefined} />
               {charDevLoading && (
                 <div style={{ display: "flex", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: charDevResult ? "#4ECCA3" : "#4ECCA3", display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "#4ECCA3", display: "flex", alignItems: "center", gap: 4 }}>
                     {charDevResult ? "✓" : <Spinner size={9} color="#4ECCA3" />} 캐릭터 디벨롭
                   </span>
                 </div>
               )}
 
-              {charAllDone && (
+              {/* ── 3차원 인물 설계 결과 ── */}
+              {charDevResult && (
                 <ResultCard
-                  title="캐릭터 심층 분석"
-                  onClose={() => { setShadowResult(null); setAuthenticityResult(null); setCharDevResult(null); setCharDevHistory([]); }}
+                  title="3차원 인물 설계"
+                  onClose={() => { setCharDevResult(null); setCharDevHistory([]); }}
                   onUndo={() => undoHistory(setCharDevHistory, setCharDevResult, charDevHistory)}
                   historyCount={charDevHistory.length}
-                  color="rgba(251,146,60,0.15)"
+                  color="rgba(78,204,163,0.15)"
                 >
-                  {[
-                    charDevResult && { label: "3차원 인물 설계 (Egri · Truby · Hauge · Vogler · Maslow)", node: <ErrorBoundary><CharacterDevPanel data={charDevResult} isMobile={isMobile} /></ErrorBoundary> },
-                    shadowResult && { label: "심리 원형 & 그림자 (Jung)", node: <ErrorBoundary><ShadowAnalysisPanel data={shadowResult} isMobile={isMobile} /></ErrorBoundary> },
-                    authenticityResult && { label: "실존적 진정성 (Sartre)", node: <ErrorBoundary><AuthenticityPanel data={authenticityResult} isMobile={isMobile} /></ErrorBoundary> },
-                  ].filter(Boolean).map((item, i) => (
-                    <div key={i}>
-                      {i > 0 && <div style={{ margin: "20px 0", height: 1, background: "var(--c-bd-1)" }} />}
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(251,146,60,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>{item.label}</div>
-                      {item.node}
-                    </div>
-                  ))}
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(78,204,163,0.7)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>3차원 인물 설계 (Egri · Truby · Hauge · Vogler · Maslow)</div>
+                  <ErrorBoundary><CharacterDevPanel data={charDevResult} isMobile={isMobile} /></ErrorBoundary>
 
                   {/* ── 핵심 설정 편집 ── */}
                   <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--c-bd-1)" }}>
@@ -387,7 +402,6 @@ export default function Stage3Content({
                         <button onClick={() => clearWriterEdit("character")} style={{ fontSize: 10, color: "rgba(232,93,117,0.6)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>AI 원본으로</button>
                       )}
                     </div>
-
                     {editingCharacter && (
                       <div style={{ background: "rgba(251,146,60,0.04)", border: "1px solid rgba(251,146,60,0.15)", borderRadius: 10, padding: "14px 16px" }}>
                         {[
@@ -406,13 +420,7 @@ export default function Stage3Content({
                               onChange={e => setCharEditDraft(prev => ({ ...prev, [key]: e.target.value }))}
                               placeholder={placeholder}
                               rows={key === "want" || key === "need" || key === "ghost" ? 2 : 1}
-                              style={{
-                                width: "100%", padding: "8px 12px", background: "rgba(var(--tw),0.04)",
-                                border: "1px solid rgba(251,146,60,0.2)", borderRadius: 8,
-                                color: "var(--text-main)", fontSize: 12, lineHeight: 1.6,
-                                fontFamily: "'Noto Sans KR', sans-serif", resize: "vertical",
-                                boxSizing: "border-box", outline: "none",
-                              }}
+                              style={{ width: "100%", padding: "8px 12px", background: "rgba(var(--tw),0.04)", border: "1px solid rgba(251,146,60,0.2)", borderRadius: 8, color: "var(--text-main)", fontSize: 12, lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", resize: "vertical", boxSizing: "border-box", outline: "none" }}
                             />
                           </div>
                         ))}
@@ -436,13 +444,7 @@ export default function Stage3Content({
                       </div>
                     )}
                   </div>
-                  <FeedbackBox
-                    value={charDevFeedback}
-                    onChange={setCharDevFeedback}
-                    onSubmit={refineCharDev}
-                    loading={charDevRefineLoading}
-                    placeholder="수정 요청을 입력하세요"
-                  />
+                  <FeedbackBox value={charDevFeedback} onChange={setCharDevFeedback} onSubmit={refineCharDev} loading={charDevRefineLoading} placeholder="수정 요청을 입력하세요" />
                 </ResultCard>
               )}
               {/* ── 캐릭터 → 스토리 교차 연결 힌트 ── */}
