@@ -2,8 +2,12 @@
   "buildCommand": "vite build",
   "outputDirectory": "dist",
   "functions": {
-    "api/claude.js": { "maxDuration": 120 }
+    "api/claude.js":           { "maxDuration": 120 },
+    "api/cron/subscribe.js":   { "maxDuration": 60  }
   },
+  "crons": [
+    { "path": "/api/cron/subscribe", "schedule": "0 0 * * *" }
+  ],
   "rewrites": [
     { "source": "/api/health", "destination": "/api/credits?health=1" },
     { "source": "/auth/kakao/callback", "destination": "/api/auth/kakao/callback" },

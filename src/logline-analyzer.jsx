@@ -724,6 +724,8 @@ export default function LoglineAnalyzer() {
   const [credits, setCredits] = useState(null);
   const [showCreditModal, setShowCreditModal] = useState(false);
   const [creditPurchasing, setCreditPurchasing] = useState(false);
+  const [subscription, setSubscription] = useState(null); // { plan, status, next_billing_at }
+  const [subCancelling, setSubCancelling] = useState(false);
 
   // ── Toast notifications ──
   const [toasts, setToasts] = useState([]);
@@ -900,9 +902,9 @@ export default function LoglineAnalyzer() {
       .catch(() => { if (!apiKey && localStorage.getItem("logline_visited")) setShowApiKeyModal(true); });
   }, []);
 
-  // ── Credits: fetch on login ──
+  // ── Credits + Subscription: fetch on login ──
   useEffect(() => {
-    if (!user) { setCredits(null); return; }
+    if (!user) { setCredits(null); setSubscription(null); return; }
     const token = localStorage.getItem("hll_auth_token");
     if (!token) return;
     fetch("/api/credits", { headers: { "x-auth-token": token } })
@@ -910,10 +912,13 @@ export default function LoglineAnalyzer() {
       .then(d => {
         if (d && d.credits != null) {
           setCredits(d.credits);
-          // 로그인 직후 크레딧이 0이면 5초 후 충전 모달 자동 표시
           if (d.credits === 0) setTimeout(() => setShowCreditModal(true), 5000);
         }
       })
+      .catch(() => {});
+    fetch("/api/subscribe/status", { headers: { "x-auth-token": token } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setSubscription(d.subscription); })
       .catch(() => {});
   }, [user]);
 
@@ -942,14 +947,18 @@ export default function LoglineAnalyzer() {
     const onEmpty = () => setShowCreditModal(true);
     window.addEventListener("hll:credits-empty", onEmpty);
 
-    // Toss 결제 후 리다이렉트 파라미터 처리
+    // Toss 결제/구독 후 리다이렉트 파라미터 처리
     const params = new URLSearchParams(window.location.search);
     const paymentKey = params.get("paymentKey");
     const orderId = params.get("orderId");
     const amount = params.get("amount");
-    const paymentFail = params.get("code"); // Toss fail: code=PAY_PROCESS_CANCELED etc.
+    const authKey = params.get("authKey");         // 구독 billingAuth 성공
+    const customerKey = params.get("customerKey"); // 구독 billingAuth 성공
+    const billingPlan = params.get("plan");         // 구독 플랜
+    const paymentFail = params.get("code");         // Toss fail: code=PAY_PROCESS_CANCELED etc.
 
     if (paymentKey && orderId && amount) {
+      // ── 일회성 결제 완료 ──
       window.history.replaceState({}, "", window.location.pathname);
       const token = localStorage.getItem("hll_auth_token");
       setCreditPurchasing(true);
@@ -968,6 +977,29 @@ export default function LoglineAnalyzer() {
           }
         })
         .catch(() => showToast("error", "결제 처리 중 오류가 발생했습니다."))
+        .finally(() => setCreditPurchasing(false));
+    } else if (authKey && customerKey && billingPlan) {
+      // ── 구독 billingKey 교환 ──
+      window.history.replaceState({}, "", window.location.pathname);
+      const token = localStorage.getItem("hll_auth_token");
+      setCreditPurchasing(true);
+      fetch("/api/subscribe/billing-auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-auth-token": token || "" },
+        body: JSON.stringify({ authKey, customerKey, plan: billingPlan }),
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok) {
+            setCredits(prev => d.new_balance ?? (prev ?? 0) + d.credits_added);
+            setSubscription({ plan: d.plan, status: "active", next_billing_at: d.next_billing_at });
+            const planLabel = billingPlan === "sub_pro" ? "Pro" : "Basic";
+            showToast("success", `${planLabel} 구독 시작! ${d.credits_added}cr 즉시 충전됨`);
+          } else {
+            showToast("error", d.error || "구독 처리에 실패했습니다.");
+          }
+        })
+        .catch(() => showToast("error", "구독 처리 중 오류가 발생했습니다."))
         .finally(() => setCreditPurchasing(false));
     } else if (paymentFail) {
       window.history.replaceState({}, "", window.location.pathname);
@@ -5380,48 +5412,104 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
             {/* 구독 플랜 */}
             <div style={{ margin: "12px 24px 0", padding: "14px", borderRadius: 12, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.2)" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", letterSpacing: 0.5, marginBottom: 10 }}>월간 구독 플랜 — 더 저렴한 크레딧</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {[
-                  { key: "sub_basic", credits: 100, price: 9900,  label: "Basic", badge: "100cr/월", color: "#4ECCA3" },
-                  { key: "sub_pro",   credits: 250, price: 19900, label: "Pro",   badge: "250cr/월", color: "#A78BFA" },
-                ].map(pkg => (
-                  <button
-                    key={pkg.key}
-                    disabled={creditPurchasing}
-                    onClick={() => {
-                      if (!window.TossPayments) { showToast("error", "결제 모듈 로딩 중입니다. 잠시 후 다시 시도해주세요."); return; }
-                      const tossKey = import.meta.env.VITE_TOSS_CLIENT_KEY;
-                      if (!tossKey) { showToast("error", "결제 키가 설정되지 않았습니다."); return; }
-                      const orderId = `hll-${pkg.key}-${Date.now()}`;
-                      const toss = window.TossPayments(tossKey);
-                      setCreditPurchasing(true);
-                      toss.requestPayment("카드", {
-                        amount: pkg.price,
-                        orderId,
-                        orderName: `Hello Loglines ${pkg.label} 구독 ${pkg.credits}cr`,
-                        successUrl: window.location.href,
-                        failUrl: window.location.href,
-                      }).catch(() => setCreditPurchasing(false));
-                    }}
-                    style={{
-                      padding: "12px 10px", borderRadius: 10, cursor: creditPurchasing ? "not-allowed" : "pointer",
-                      border: `1px solid ${pkg.color}40`, background: `${pkg.color}08`,
-                      transition: "all 0.15s", textAlign: "center",
-                      fontFamily: "'Noto Sans KR', sans-serif",
-                      opacity: creditPurchasing ? 0.6 : 1,
-                    }}
-                  >
-                    <div style={{ fontSize: 10, fontWeight: 700, color: pkg.color, letterSpacing: 1, marginBottom: 4 }}>{pkg.label}</div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: pkg.color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{pkg.credits}<span style={{ fontSize: 11, fontWeight: 400 }}>cr</span></div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-tx-70)", marginTop: 5 }}>{pkg.price.toLocaleString()}원/월</div>
-                    <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginTop: 2 }}>{Math.round(pkg.price / pkg.credits)}원/cr</div>
-                  </button>
-                ))}
-              </div>
-              <div style={{ marginTop: 8, fontSize: 10, color: "var(--c-tx-30)", textAlign: "center" }}>
-                이번 달 크레딧 즉시 적립 · 자동 갱신은 준비 중입니다
-              </div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", letterSpacing: 0.5, marginBottom: 10 }}>월간 구독 플랜 — 자동 갱신</div>
+
+              {/* 구독 중인 경우: 상태 표시 + 취소 버튼 */}
+              {subscription && subscription.status === "active" ? (
+                <div style={{ padding: "12px 14px", borderRadius: 10, background: "rgba(78,204,163,0.08)", border: "1px solid rgba(78,204,163,0.25)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#4ECCA3" }}>
+                        {subscription.plan === "sub_pro" ? "Pro" : "Basic"} 구독 중
+                      </div>
+                      {subscription.next_billing_at && (
+                        <div style={{ fontSize: 10, color: "var(--c-tx-40)", marginTop: 3 }}>
+                          다음 결제일: {new Date(subscription.next_billing_at).toLocaleDateString("ko-KR")}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      disabled={subCancelling}
+                      onClick={() => {
+                        if (!confirm("구독을 취소하시겠습니까? 남은 기간은 계속 사용할 수 있습니다.")) return;
+                        const token = localStorage.getItem("hll_auth_token");
+                        setSubCancelling(true);
+                        fetch("/api/subscribe/cancel", {
+                          method: "POST",
+                          headers: { "x-auth-token": token || "" },
+                        })
+                          .then(r => r.json())
+                          .then(d => {
+                            if (d.ok) {
+                              setSubscription(s => ({ ...s, status: "cancelled" }));
+                              showToast("info", d.message || "구독이 취소되었습니다.");
+                            } else {
+                              showToast("error", d.error || "취소에 실패했습니다.");
+                            }
+                          })
+                          .catch(() => showToast("error", "오류가 발생했습니다."))
+                          .finally(() => setSubCancelling(false));
+                      }}
+                      style={{
+                        padding: "5px 10px", borderRadius: 7, border: "1px solid rgba(232,93,117,0.3)",
+                        background: "rgba(232,93,117,0.06)", color: "#E85D75",
+                        fontSize: 10, cursor: subCancelling ? "not-allowed" : "pointer",
+                        fontFamily: "'Noto Sans KR', sans-serif", opacity: subCancelling ? 0.6 : 1,
+                      }}
+                    >
+                      {subCancelling ? "..." : "구독 취소"}
+                    </button>
+                  </div>
+                </div>
+              ) : subscription && subscription.status === "cancelled" ? (
+                <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(232,93,117,0.06)", border: "1px solid rgba(232,93,117,0.2)", fontSize: 11, color: "#E85D75" }}>
+                  구독이 취소되었습니다.{subscription.next_billing_at && ` ${new Date(subscription.next_billing_at).toLocaleDateString("ko-KR")}까지 사용 가능`}
+                </div>
+              ) : (
+                /* 구독 없음: 플랜 선택 */
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {[
+                      { key: "sub_basic", credits: 100, price: 9900,  label: "Basic", color: "#4ECCA3" },
+                      { key: "sub_pro",   credits: 250, price: 19900, label: "Pro",   color: "#A78BFA" },
+                    ].map(pkg => (
+                      <button
+                        key={pkg.key}
+                        disabled={creditPurchasing || !user}
+                        onClick={() => {
+                          if (!user) { showToast("info", "로그인 후 구독하실 수 있습니다."); return; }
+                          if (!window.TossPayments) { showToast("error", "결제 모듈 로딩 중입니다."); return; }
+                          const tossKey = import.meta.env.VITE_TOSS_CLIENT_KEY;
+                          if (!tossKey) { showToast("error", "결제 키가 설정되지 않았습니다."); return; }
+                          const toss = window.TossPayments(tossKey);
+                          const base = window.location.origin + window.location.pathname;
+                          toss.requestBillingAuth("카드", {
+                            customerKey: user.email,
+                            successUrl: `${base}?plan=${pkg.key}`,
+                            failUrl: base,
+                          });
+                        }}
+                        style={{
+                          padding: "12px 10px", borderRadius: 10,
+                          cursor: (creditPurchasing || !user) ? "not-allowed" : "pointer",
+                          border: `1px solid ${pkg.color}40`, background: `${pkg.color}08`,
+                          transition: "all 0.15s", textAlign: "center",
+                          fontFamily: "'Noto Sans KR', sans-serif",
+                          opacity: (creditPurchasing || !user) ? 0.6 : 1,
+                        }}
+                      >
+                        <div style={{ fontSize: 10, fontWeight: 700, color: pkg.color, letterSpacing: 1, marginBottom: 4 }}>{pkg.label}</div>
+                        <div style={{ fontSize: 18, fontWeight: 900, color: pkg.color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{pkg.credits}<span style={{ fontSize: 11, fontWeight: 400 }}>cr</span></div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-tx-70)", marginTop: 5 }}>{pkg.price.toLocaleString()}원/월</div>
+                        <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginTop: 2 }}>{Math.round(pkg.price / pkg.credits)}원/cr</div>
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: 10, color: "var(--c-tx-30)", textAlign: "center" }}>
+                    매월 자동 갱신 · 언제든지 취소 가능
+                  </div>
+                </>
+              )}
             </div>
 
             {/* 구독 플랜 알림 신청 */}

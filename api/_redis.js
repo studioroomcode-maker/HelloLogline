@@ -229,3 +229,47 @@ export async function checkRateLimit(key, limit, windowSec) {
     return { ok: true, remaining: limit, reset: windowSec };
   }
 }
+
+// ─── 구독 관리 (Supabase 전용) ─────────────────────────────────────
+// 테이블 생성 SQL (Supabase SQL Editor에서 실행):
+//   CREATE TABLE hll_subscriptions (
+//     email           text PRIMARY KEY,
+//     plan            text NOT NULL,
+//     billing_key     text NOT NULL,
+//     customer_key    text,
+//     status          text DEFAULT 'active',
+//     next_billing_at bigint DEFAULT 0,
+//     created_at      bigint DEFAULT 0
+//   );
+
+/** 구독 정보 조회. 없으면 null */
+export async function getSubscription(email) {
+  if (!usingSupa()) return null;
+  const rows = await supaReq(
+    `hll_subscriptions?email=eq.${encodeURIComponent(email)}&select=*`
+  );
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return rows[0];
+}
+
+/** 구독 정보 생성/갱신 */
+export async function upsertSubscription(email, data) {
+  if (!usingSupa()) return null;
+  return supaReq("hll_subscriptions", {
+    method: "POST",
+    prefer: "resolution=merge-duplicates",
+    body: { email, ...data },
+  });
+}
+
+/**
+ * 자동 결제 대상 구독 목록 — status='active' AND next_billing_at <= now
+ * @param {number} nowMs — Date.now()
+ */
+export async function listDueSubscriptions(nowMs) {
+  if (!usingSupa()) return [];
+  const rows = await supaReq(
+    `hll_subscriptions?status=eq.active&next_billing_at=lte.${nowMs}&select=*`
+  );
+  return Array.isArray(rows) ? rows : [];
+}
