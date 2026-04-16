@@ -11,7 +11,7 @@ const STAGE_META = [
   { id: "4", name: "스토리 설계",   sub: "구조·시놉시스",  color: "#4ECCA3" },
   { id: "5", name: "트리트먼트",    sub: "씬·비트시트",    color: "#C8A84B" },
   { id: "6", name: "시나리오 초고", sub: "자동 생성",      color: "#A78BFA" },
-  { id: "7", name: "Coverage",      sub: "심사·시장가치",  color: "#60A5FA" },
+  { id: "7", name: "Script Coverage", sub: "심사·시장가치",  color: "#60A5FA" },
   { id: "8", name: "고쳐쓰기",     sub: "진단·수정·개고", color: "#FB923C" },
 ];
 

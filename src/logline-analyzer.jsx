@@ -93,11 +93,11 @@ function lazyWithRetry(importFn) {
 const Stage1Content = lazyWithRetry(() => import("./stages/Stage1Content.jsx"));
 const Stage2Content = lazyWithRetry(() => import("./stages/Stage2Content.jsx"));
 const Stage3Content = lazyWithRetry(() => import("./stages/Stage3Content.jsx"));
-const Stage7Content = lazyWithRetry(() => import("./stages/Stage7Content.jsx"));
-const Stage6Content = lazyWithRetry(() => import("./stages/Stage6Content.jsx"));
-const Stage8Content = lazyWithRetry(() => import("./stages/Stage8Content.jsx"));
 const Stage4Content = lazyWithRetry(() => import("./stages/Stage4Content.jsx"));
 const Stage5Content = lazyWithRetry(() => import("./stages/Stage5Content.jsx"));
+const Stage6Content = lazyWithRetry(() => import("./stages/Stage6Content.jsx"));
+const Stage7Content = lazyWithRetry(() => import("./stages/Stage7Content.jsx"));
+const Stage8Content = lazyWithRetry(() => import("./stages/Stage8Content.jsx"));
 const DashboardView = lazyWithRetry(() => import("./stages/DashboardView.jsx"));
 const ScriptCoveragePanel = lazyWithRetry(() =>
   import("./panels/EvaluationPanels.jsx").then((m) => ({ default: m.ScriptCoveragePanel }))
@@ -224,6 +224,85 @@ const GENRE_BEAT_HINTS = {
 };
 
 
+/* ─── 구독 알림 신청 배너 (크레딧 모달 내) ─── */
+function CreditSubNotifyBanner({ user, showToast }) {
+  const [notifyEmail, setNotifyEmail] = useState(user?.email || "");
+  const [notifyDone, setNotifyDone] = useState(false);
+  const [notifyLoading, setNotifyLoading] = useState(false);
+
+  async function handleNotify(e) {
+    e.preventDefault();
+    if (!notifyEmail.trim()) return;
+    setNotifyLoading(true);
+    try {
+      const token = localStorage.getItem("hll_auth_token");
+      const headers = { "Content-Type": "application/json" };
+      if (token) { headers["x-auth-token"] = token; headers["Authorization"] = `Bearer ${token}`; }
+      const res = await fetch("/api/notify-subscribe", {
+        method: "POST",
+        credentials: "include",
+        headers,
+        body: JSON.stringify({ email: notifyEmail.trim() }),
+      });
+      if (res.ok) {
+        setNotifyDone(true);
+        showToast("success", "출시 알림이 등록되었습니다!");
+      } else {
+        const d = await res.json().catch(() => ({}));
+        showToast("error", d.error || "등록에 실패했습니다. 다시 시도해주세요.");
+      }
+    } catch {
+      showToast("error", "네트워크 오류가 발생했습니다.");
+    } finally {
+      setNotifyLoading(false);
+    }
+  }
+
+  return (
+    <div style={{ margin: "14px 24px 0", padding: "12px 16px", borderRadius: 10, background: "linear-gradient(135deg, rgba(78,204,163,0.08), rgba(167,139,250,0.08))", border: "1px solid rgba(78,204,163,0.2)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/>
+        </svg>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#4ECCA3" }}>월 구독 플랜 출시 예정</div>
+      </div>
+      <div style={{ fontSize: 11, color: "var(--c-tx-40)", lineHeight: 1.5, marginBottom: 8 }}>
+        월 9,900원 → 100cr/월 자동 충전 · 출시 알림 등록 시 <strong style={{ color: "#4ECCA3" }}>첫 달 30% 할인</strong>
+      </div>
+      {notifyDone ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 8, background: "rgba(78,204,163,0.1)", border: "1px solid rgba(78,204,163,0.3)" }}>
+          <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round">
+            <path d="M5 13l4 4L19 7"/>
+          </svg>
+          <span style={{ fontSize: 11, color: "#4ECCA3", fontWeight: 700 }}>알림 등록 완료</span>
+        </div>
+      ) : (
+        <form onSubmit={handleNotify} style={{ display: "flex", gap: 6 }}>
+          <input
+            type="email"
+            value={notifyEmail}
+            onChange={e => setNotifyEmail(e.target.value)}
+            placeholder="이메일 주소 입력"
+            required
+            style={{
+              flex: 1, padding: "7px 10px", borderRadius: 8, fontSize: 11,
+              border: "1px solid rgba(78,204,163,0.3)", background: "rgba(78,204,163,0.06)",
+              color: "var(--text-main)", outline: "none", fontFamily: "'Noto Sans KR', sans-serif",
+            }}
+          />
+          <button
+            type="submit"
+            disabled={notifyLoading}
+            style={{ flexShrink: 0, padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(78,204,163,0.35)", background: "rgba(78,204,163,0.1)", color: "#4ECCA3", fontSize: 11, fontWeight: 700, cursor: notifyLoading ? "not-allowed" : "pointer", fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "nowrap", opacity: notifyLoading ? 0.6 : 1 }}
+          >
+            {notifyLoading ? "..." : "알림 신청"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 /* ─── Toast component ─── */
 function ToastContainer({ toasts, onDismiss }) {
   if (!toasts.length) return null;
@@ -231,7 +310,7 @@ function ToastContainer({ toasts, onDismiss }) {
     error:   { bg: "rgba(232,93,117,0.12)", border: "rgba(232,93,117,0.35)", text: "#E85D75", icon: "✕" },
     success: { bg: "rgba(78,204,163,0.12)",  border: "rgba(78,204,163,0.35)",  text: "#4ECCA3", icon: "✓" },
     info:    { bg: "rgba(96,165,250,0.12)",  border: "rgba(96,165,250,0.35)",  text: "#60A5FA", icon: "ℹ" },
-    warn:    { bg: "rgba(200,168,75,0.12)",  border: "rgba(200,168,75,0.35)",  text: "#C8A84B", icon: "🔒" },
+    warn:    { bg: "rgba(200,168,75,0.12)",  border: "rgba(200,168,75,0.35)",  text: "#C8A84B", icon: "!" },
   };
   return (
     <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 2000, display: "flex", flexDirection: "column", gap: 8, maxWidth: 380, pointerEvents: "none" }}>
@@ -5224,12 +5303,24 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
           <div onClick={e => e.stopPropagation()} style={{ maxWidth: 480, width: "100%", background: "var(--bg-surface)", border: "1px solid rgba(167,139,250,0.35)", borderRadius: 20, overflow: "hidden", fontFamily: "'Noto Sans KR', sans-serif" }}>
             {/* Header */}
             <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--c-bd-2)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontSize: 17, fontWeight: 800, color: credits === 0 ? "#E85D75" : "#A78BFA" }}>
-                  {credits === 0 ? "⚠️ 크레딧 소진" : "⚡ 크레딧 충전"}
-                </div>
-                <div style={{ fontSize: 12, color: "var(--c-tx-40)", marginTop: 3 }}>
-                  현재 잔액: <span style={{ color: credits === 0 ? "#E85D75" : "#A78BFA", fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{credits ?? 0}cr</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {credits === 0 ? (
+                  <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#E85D75" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                ) : (
+                  <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#A78BFA" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                  </svg>
+                )}
+                <div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: credits === 0 ? "#E85D75" : "#A78BFA" }}>
+                    {credits === 0 ? "크레딧 소진" : "크레딧 충전"}
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--c-tx-40)", marginTop: 2 }}>
+                    현재 잔액: <span style={{ color: credits === 0 ? "#E85D75" : "#A78BFA", fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{credits ?? 0}cr</span>
+                  </div>
                 </div>
               </div>
               <button onClick={() => setShowCreditModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--c-tx-35)", padding: 4 }}>
@@ -5246,8 +5337,11 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
             )}
 
             {/* 이벤트 배너 */}
-            <div style={{ margin: "16px 24px 0", padding: "10px 14px", borderRadius: 10, background: "rgba(200,168,75,0.08)", border: "1px solid rgba(200,168,75,0.2)", fontSize: 12, color: "#C8A84B", lineHeight: 1.6 }}>
-              🎉 <strong>이벤트 기간</strong> — 로그라인 분석 · 캐릭터 분석은 <strong>무료</strong>! 기타 기능 1~5cr 소모.
+            <div style={{ margin: "16px 24px 0", padding: "10px 14px", borderRadius: 10, background: "rgba(200,168,75,0.08)", border: "1px solid rgba(200,168,75,0.2)", fontSize: 12, color: "#C8A84B", lineHeight: 1.6, display: "flex", alignItems: "center", gap: 8 }}>
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#C8A84B" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+              <span><strong>이벤트 기간</strong> — 로그라인 분석 · 캐릭터 분석은 <strong>무료</strong>! 기타 기능 1~5cr 소모.</span>
             </div>
 
             {/* 기능별 비용 안내 */}
@@ -5256,17 +5350,17 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
                 {[
                   { label: "로그라인 기본 분석", cost: "무료" },
-                  { label: "개선안 생성",        cost: "1cr" },
-                  { label: "상업성 체크",         cost: "1cr" },
-                  { label: "전문가 패널",         cost: "2cr" },
-                  { label: "학술/신화 분석",      cost: "2cr" },
-                  { label: "캐릭터 분석",         cost: "2cr" },
-                  { label: "시놉시스·구조",       cost: "2cr" },
-                  { label: "트리트먼트·비트",     cost: "3cr" },
-                  { label: "시나리오 초고",       cost: "3cr" },
-                  { label: "Script Coverage",     cost: "4cr" },
-                  { label: "에피소드 설계",       cost: "3cr" },
-                  { label: "마스터 리포트",       cost: "3cr" },
+                  { label: "개선안 생성",        cost: "무료" },
+                  { label: "캐릭터 분석",         cost: "무료" },
+                  { label: "상업성·전문가 패널", cost: "1cr" },
+                  { label: "학술·신화 분석",     cost: "1cr" },
+                  { label: "시놉시스·구조 분석", cost: "1cr" },
+                  { label: "트리트먼트·비트시트", cost: "2cr" },
+                  { label: "Script Coverage",    cost: "2cr" },
+                  { label: "부분 개고",           cost: "2cr" },
+                  { label: "에피소드 설계",       cost: "2cr" },
+                  { label: "전체 개고",           cost: "3cr" },
+                  { label: "시나리오 초고",       cost: "5cr" },
                 ].map(({ label, cost }) => (
                   <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "1px solid var(--c-bd-1)" }}>
                     <span style={{ fontSize: 10, color: "var(--c-tx-50)", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
@@ -5276,27 +5370,13 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               </div>
               {credits !== null && (
                 <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--c-bd-2)", fontSize: 11, color: "var(--c-tx-45)" }}>
-                  현재 <span style={{ color: "#A78BFA", fontWeight: 700 }}>{credits}cr</span>으로 Script Coverage <span style={{ color: "#A78BFA", fontWeight: 700 }}>{Math.floor(credits / 4)}회</span> · 트리트먼트 <span style={{ color: "#A78BFA", fontWeight: 700 }}>{Math.floor(credits / 3)}회</span> 가능
+                  현재 <span style={{ color: "#A78BFA", fontWeight: 700 }}>{credits}cr</span>으로 Script Coverage <span style={{ color: "#A78BFA", fontWeight: 700 }}>{Math.floor(credits / 2)}회</span> · 시나리오 초고 <span style={{ color: "#A78BFA", fontWeight: 700 }}>{Math.floor(credits / 5)}회</span> 가능
                 </div>
               )}
             </div>
 
             {/* 구독 플랜 배너 */}
-            <div style={{ margin: "14px 24px 0", padding: "12px 16px", borderRadius: 10, background: "linear-gradient(135deg, rgba(78,204,163,0.08), rgba(167,139,250,0.08))", border: "1px solid rgba(78,204,163,0.2)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: "#4ECCA3", marginBottom: 2 }}>월 구독 플랜 (준비 중)</div>
-                <div style={{ fontSize: 11, color: "var(--c-tx-40)", lineHeight: 1.5 }}>
-                  월 9,900원 → 100cr/월 자동 충전<br />
-                  <span style={{ fontSize: 10, color: "var(--c-tx-30)" }}>출시 알림 신청 시 첫 달 30% 할인</span>
-                </div>
-              </div>
-              <button
-                onClick={() => showToast("info", "구독 플랜 출시 시 이메일로 알려드리겠습니다.")}
-                style={{ flexShrink: 0, padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(78,204,163,0.35)", background: "rgba(78,204,163,0.1)", color: "#4ECCA3", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "nowrap" }}
-              >
-                알림 신청
-              </button>
-            </div>
+            <CreditSubNotifyBanner user={user} showToast={showToast} />
 
             {/* Packages */}
             <div style={{ padding: "16px 24px 24px", display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr", gap: 10 }}>

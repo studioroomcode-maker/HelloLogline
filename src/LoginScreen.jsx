@@ -95,7 +95,7 @@ export default function LoginScreen({ onDemo, authError }) {
           {PROVIDERS.map(({ key, label, bg, hoverBg, color, border, Logo }) => (
             <button
               key={key}
-              onClick={() => { window.location.href = `/auth/${key}`; }}
+              onClick={() => { window.location.href = `/api/auth/${key}`; }}
               onMouseEnter={() => setHovered(key)}
               onMouseLeave={() => setHovered(null)}
               style={{
