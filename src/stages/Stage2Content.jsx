@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
-import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON, DemoCTA } from "../ui.jsx";
+import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import { ExpertPanelSection } from "../panels/ConceptPanels.jsx";
 
@@ -42,9 +43,20 @@ export default function Stage2Content({
 
   const narrativeCount = countNarrativeResults(academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult);
   const disabled = !logline.trim();
+  const [r1Opened, setR1Opened] = useState(false);
 
   return (
     <ErrorBoundary><div>
+    <style>{`
+      @keyframes hll-pulse-violet {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(167,139,250,0); }
+        50% { box-shadow: 0 0 0 4px rgba(167,139,250,0.45); }
+      }
+      @keyframes hll-pulse-gold {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(200,168,75,0); }
+        50% { box-shadow: 0 0 0 5px rgba(200,168,75,0.4); }
+      }
+    `}</style>
 
       {/* ── 단계 안내 ── */}
       <div style={{ marginBottom: 22, padding: "12px 14px", borderRadius: 10, background: "rgba(69,183,209,0.05)", borderLeft: "2px solid rgba(69,183,209,0.4)" }}>
@@ -59,8 +71,6 @@ export default function Stage2Content({
           Stage 1에서 로그라인을 먼저 입력하세요.
         </div>
       )}
-
-      {isDemoMode && <DemoCTA label="캐릭터 설계(Stage 3) 둘러보기" onClick={() => advanceToStage("3")} />}
 
       {/* ─────────── GROUP 1: 서사 이론 종합 ─────────── */}
       <div style={{
@@ -130,7 +140,7 @@ export default function Stage2Content({
         <ErrorMsg msg={expertPanelError} />
         {expertPanelResult && (
           <ResultCard title="전문가 패널 토론" onClose={() => setExpertPanelResult(null)} color="rgba(255,209,102,0.15)">
-            <ErrorBoundary><ExpertPanelSection data={expertPanelResult} isMobile={isMobile} /></ErrorBoundary>
+            <ErrorBoundary><ExpertPanelSection data={expertPanelResult} isMobile={isMobile} onR1Open={() => setR1Opened(true)} /></ErrorBoundary>
           </ResultCard>
         )}
       </div>
@@ -140,7 +150,15 @@ export default function Stage2Content({
         <div style={{ marginTop: 28, paddingTop: 20, borderTop: "1px solid var(--glass-bd-nano)", display: "flex", justifyContent: "flex-end" }}>
           <button
             onClick={() => advanceToStage("3")}
-            style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s", fontFamily: "'Noto Sans KR', sans-serif" }}
+            style={{
+              padding: "11px 24px", borderRadius: 10,
+              border: "1px solid rgba(200,168,75,0.4)",
+              background: "rgba(200,168,75,0.1)", color: "#C8A84B",
+              fontSize: 13, fontWeight: 700, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 8,
+              transition: "all 0.2s", fontFamily: "'Noto Sans KR', sans-serif",
+              animation: r1Opened ? "hll-pulse-gold 1.4s ease-in-out infinite" : undefined,
+            }}
           >
             다음 단계: 캐릭터
             <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>

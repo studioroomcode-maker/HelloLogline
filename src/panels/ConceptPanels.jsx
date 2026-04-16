@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { PANEL_EXPERTS } from "../constants.js";
 
-export function ExpertPanelSection({ data, isMobile }) {
+export function ExpertPanelSection({ data, isMobile, onR1Open }) {
   const [openRound, setOpenRound] = useState(2); // 0=모두접기, 1=R1, 2=R2, 3=종합
+  const [r1EverOpened, setR1EverOpened] = useState(false);
 
   const getExpert = (id) => PANEL_EXPERTS.find((e) => e.id === id) || { name: id, color: "#aaa", initial: "?" };
 
@@ -34,13 +35,14 @@ export function ExpertPanelSection({ data, isMobile }) {
     </div>
   );
 
-  const SectionHeader = ({ num, label, isOpen, onToggle }) => (
+  const SectionHeader = ({ num, label, isOpen, onToggle, pulse }) => (
     <button onClick={onToggle} style={{
       width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
       padding: "10px 14px", borderRadius: 10,
-      border: "1px solid var(--c-bd-2)",
+      border: pulse ? "1px solid rgba(167,139,250,0.55)" : "1px solid var(--c-bd-2)",
       background: isOpen ? "var(--c-card-2)" : "rgba(var(--tw),0.02)",
       cursor: "pointer", marginBottom: isOpen ? 10 : 0,
+      animation: pulse ? "hll-pulse-violet 1.8s ease-in-out infinite" : undefined,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 10, fontWeight: 700, color: "#a78bfa", fontFamily: "'JetBrains Mono', monospace", background: "rgba(167,139,250,0.12)", padding: "2px 7px", borderRadius: 6 }}>
@@ -73,7 +75,16 @@ export function ExpertPanelSection({ data, isMobile }) {
 
       {/* ── 라운드 1 ── */}
       <div>
-        <SectionHeader num="R1" label="초기 분석 — 각 전문가의 첫 번째 발언" isOpen={openRound === 1} onToggle={() => setOpenRound(openRound === 1 ? 0 : 1)} />
+        <SectionHeader
+          num="R1"
+          label="초기 분석 — 각 전문가의 첫 번째 발언"
+          isOpen={openRound === 1}
+          pulse={!r1EverOpened && openRound !== 1}
+          onToggle={() => {
+            if (openRound !== 1 && !r1EverOpened) { setR1EverOpened(true); onR1Open?.(); }
+            setOpenRound(openRound === 1 ? 0 : 1);
+          }}
+        />
         {openRound === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {(data.round1 || []).map((item, i) => {
