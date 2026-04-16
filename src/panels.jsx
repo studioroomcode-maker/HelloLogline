@@ -1567,7 +1567,7 @@ export function ExportButton({ result, logline, qualityScore, interestScore }) {
 // ─────────────────────────────────────────────
 // 학술 분석 패널
 // ─────────────────────────────────────────────
-export function TheorySection({ title, ref: refText, color, children, defaultOpen = false }) {
+export function TheorySection({ title, cite, color, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div style={{ marginBottom: 10, borderRadius: 12, border: `1px solid ${color}20`, overflow: "hidden" }}>
@@ -1582,9 +1582,9 @@ export function TheorySection({ title, ref: refText, color, children, defaultOpe
       >
         <div>
           <span style={{ fontSize: 13, fontWeight: 700, color, fontFamily: "'Noto Sans KR', sans-serif" }}>{title}</span>
-          {refText && (
+          {cite && (
             <span style={{ fontSize: 10, color: "var(--c-tx-30)", marginLeft: 10, fontFamily: "'JetBrains Mono', monospace" }}>
-              {refText}
+              {cite}
             </span>
           )}
         </div>
@@ -1632,7 +1632,7 @@ export function AcademicPanel({ academic }) {
   return (
     <div>
       {/* 아리스토텔레스 시학 */}
-      <TheorySection title="아리스토텔레스 시학" ref="Poetics, c.335 BCE" color="#FFD700" defaultOpen={true}>
+      <TheorySection title="아리스토텔레스 시학" cite="Poetics, c.335 BCE" color="#FFD700" defaultOpen={true}>
         <AcademicFieldRow label="하마르티아 (Hamartia)" value={aristotle?.hamartia?.detected} analysis={aristotle?.hamartia?.analysis} />
         <AcademicFieldRow label="페리페테이아 (Peripeteia)" value={aristotle?.peripeteia?.detected} analysis={aristotle?.peripeteia?.analysis} />
         <AcademicFieldRow label="아나그노리시스 (Anagnorisis)" value={aristotle?.anagnorisis?.detected} analysis={aristotle?.anagnorisis?.analysis} />
@@ -1644,7 +1644,7 @@ export function AcademicPanel({ academic }) {
       </TheorySection>
 
       {/* 캠벨 영웅 여정 */}
-      <TheorySection title="캠벨 영웅의 여정 (모노미스)" ref="The Hero with a Thousand Faces, 1949" color="#4ECCA3">
+      <TheorySection title="캠벨 영웅의 여정 (모노미스)" cite="The Hero with a Thousand Faces, 1949" color="#4ECCA3">
         <AcademicFieldRow label="감지된 여정 단계" value={campbell?.detected_departure_stage} />
         <AcademicFieldRow label="영웅 원형" value={campbell?.hero_archetype} />
         <AcademicFieldRow label="그림자 원형 (Shadow)" value={campbell?.shadow_archetype} />
@@ -1657,7 +1657,7 @@ export function AcademicPanel({ academic }) {
       </TheorySection>
 
       {/* 프롭 민담 형태론 */}
-      <TheorySection title="프롭 민담 형태론" ref="Morphology of the Folktale, 1928/1968" color="#45B7D1">
+      <TheorySection title="프롭 민담 형태론" cite="Morphology of the Folktale, 1928/1968" color="#45B7D1">
         {propp?.detected_functions?.length > 0 && (
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-40)", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.8 }}>감지된 서사 기능</div>
@@ -1695,7 +1695,7 @@ export function AcademicPanel({ academic }) {
       </TheorySection>
 
       {/* 토도로프 */}
-      <TheorySection title="토도로프 서사 이론" ref="The Poetics of Prose, 1977" color="#F7A072">
+      <TheorySection title="토도로프 서사 이론" cite="The Poetics of Prose, 1977" color="#F7A072">
         <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 14, overflowX: "auto" }}>
           {[
             { label: "초기 평형", val: todorov?.initial_equilibrium, color: "#4ECCA3" },
@@ -1718,7 +1718,7 @@ export function AcademicPanel({ academic }) {
       </TheorySection>
 
       {/* 바르트 서사 코드 */}
-      <TheorySection title="바르트 서사 코드" ref="S/Z, 1970" color="#a78bfa">
+      <TheorySection title="바르트 서사 코드" cite="S/Z, 1970" color="#a78bfa">
         {[
           ["HER · 헤르메네우틱 코드", barthes?.hermeneutic_code, "수수께끼·질문·서스펜스"],
           ["ACT · 프로아이레틱 코드", barthes?.proairetic_code, "행동 시퀀스·인과"],
@@ -1737,7 +1737,7 @@ export function AcademicPanel({ academic }) {
       </TheorySection>
 
       {/* 프라이탁 피라미드 */}
-      <TheorySection title="프라이탁 피라미드" ref="Die Technik des Dramas, 1863" color="#45B7D1">
+      <TheorySection title="프라이탁 피라미드" cite="Die Technik des Dramas, 1863" color="#45B7D1">
         <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
           {[
             { label: "발단", val: freytag?.exposition, w: "15%" },
@@ -1757,7 +1757,7 @@ export function AcademicPanel({ academic }) {
       </TheorySection>
 
       {/* 질만 + 스미스 */}
-      <TheorySection title="심리학적 분석" ref="Zillmann (1983) · Smith (1995)" color="#4ECCA3">
+      <TheorySection title="심리학적 분석" cite="Zillmann (1983) · Smith (1995)" color="#4ECCA3">
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-40)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>질만 흥분 전이 이론</div>
           <AcademicFieldRow label="각성 메커니즘" analysis={zillmann?.arousal_mechanism} />
@@ -1783,7 +1783,7 @@ export function AcademicPanel({ academic }) {
       </TheorySection>
 
       {/* 한국 서사 미학 */}
-      <TheorySection title="한국 서사 미학" ref="이효인 (1992) · 김소영 (2000)" color="#f472b6">
+      <TheorySection title="한국 서사 미학" cite="이효인 (1992) · 김소영 (2000)" color="#f472b6">
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
           {[
             { key: "han", label: "한(恨)", val: korean_aesthetics?.han },
