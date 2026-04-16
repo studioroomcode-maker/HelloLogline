@@ -46,7 +46,10 @@ export default function ShareView({ shareId }) {
         }}
       >
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>🔗</div>
+          <svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="#E85D75" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 12 }}>
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
           <div style={{ color: "#E85D75", fontSize: 14 }}>{error}</div>
           <a
             href="/"
@@ -320,21 +323,43 @@ export default function ShareView({ shareId }) {
           >
             18개 항목 점수 · 캐릭터 설계 · Script Coverage · 완성 시나리오까지
           </div>
-          <a
-            href="/"
-            style={{
-              display: "inline-block",
-              padding: "12px 28px",
-              borderRadius: 10,
-              background: "linear-gradient(135deg, #C8A84B, #E8C86A)",
-              color: "#1a1a1a",
-              fontSize: 13,
-              fontWeight: 800,
-              textDecoration: "none",
-            }}
-          >
-            무료로 시작하기 →
-          </a>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+            <a
+              href={`/?logline=${encodeURIComponent(logline)}${genre && genre !== "auto" ? "&genre=" + encodeURIComponent(genre) : ""}`}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "12px 24px",
+                borderRadius: 10,
+                background: "linear-gradient(135deg, #C8A84B, #E8C86A)",
+                color: "#1a1a1a",
+                fontSize: 13,
+                fontWeight: 800,
+                textDecoration: "none",
+                boxShadow: "0 4px 16px rgba(200,168,75,0.3)",
+              }}
+            >
+              이 로그라인으로 분석 시작
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" strokeWidth={2.5} strokeLinecap="round">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </a>
+            <a
+              href="/"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                padding: "12px 20px",
+                borderRadius: 10,
+                border: "1px solid rgba(200,168,75,0.3)",
+                background: "transparent",
+                color: "#C8A84B",
+                fontSize: 13,
+                fontWeight: 700,
+                textDecoration: "none",
+              }}
+            >
+              새 로그라인으로 시작
+            </a>
+          </div>
         </div>
       </div>
     </div>

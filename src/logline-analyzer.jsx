@@ -2849,7 +2849,6 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       const qScore = sT + eT + tT;
       setResult(parsed);
       saveToHistory(target, genre, parsed, qScore, iT);
-      trackCreditUsage("로그라인 분석", 2);
       showToast("success", `로그라인 분석 완료 — 품질 ${qScore}점 / 흥미 ${iT}점`);
       if (compareMode && logline2.trim()) {
         setLoading2(true);
@@ -3003,7 +3002,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const data = await callClaude(apiKey, SYNOPSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, SynopsisSchema, "synopsis");
       setSynopsisResults(data);
-      trackCreditUsage("시놉시스 생성", 3);
+      trackCreditUsage("시놉시스 생성", 1);
       await autoSave();
     } catch (err) {
       if (err.name !== "AbortError") setSynopsisError(err.message || "시놉시스 생성 중 오류가 발생했습니다.");
@@ -3217,7 +3216,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const data = await callClaude(apiKey, MASTER_REPORT_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-4-6", null, MasterReportSchema, "master_report");
       setMasterReportResult(data);
-      trackCreditUsage("통합 마스터 리포트", 3);
+      trackCreditUsage("통합 마스터 리포트", 1);
       await autoSave();
     } catch (err) {
       setMasterReportError(err.message || "마스터 리포트 생성 중 오류가 발생했습니다.");
@@ -3242,7 +3241,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const data = await callClaude(apiKey, EPISODE_SERIES_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, EpisodeSeriesSchema, "episode");
       setEpisodeDesignResult(data);
-      trackCreditUsage("에피소드 시리즈 설계", 3);
+      trackCreditUsage("에피소드 시리즈 설계", 2);
       await autoSave();
     } catch (err) {
       if (err.name !== "AbortError") setEpisodeDesignError(err.message || "에피소드 설계 중 오류가 발생했습니다.");
@@ -3432,6 +3431,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal, "scenario");
       setScenarioDraftResult(decodeHtmlEntities(text));
+      trackCreditUsage("시나리오 초고", 5);
       setScenarioDraftStale(false);
       setScenarioDraftCtx({
         char: !!(charDevResult?.protagonist || writerEdits.character),
@@ -3475,7 +3475,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const genreHint = GENRE_BEAT_HINTS[genre] || "";
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}${structureBlock}${contextBlock}${genreHint ? `\n\n${genreHint}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요. 시놉시스·트리트먼트·플롯포인트가 있다면 반드시 그 방향의 이야기와 인물을 따르세요.`;
     try {
-      trackCreditUsage("비트시트 생성", 3);
+      trackCreditUsage("비트시트 생성", 2);
       const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, BeatSheetSchema, "beatsheet");
       setBeatSheetResult(data);
       setBeatSheetStale(false);
@@ -3633,7 +3633,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const charHint = treatmentChars.protagonist.name ? `\n\n[작가 설정 — 이 정보를 우선하여 캐릭터를 분석하세요]\n주인공: ${treatmentChars.protagonist.name}${treatmentChars.protagonist.role ? ` (${treatmentChars.protagonist.role})` : ""}${treatmentChars.protagonist.want ? `\n외적 목표: ${treatmentChars.protagonist.want}` : ""}${treatmentChars.protagonist.need ? `\n내적 욕구: ${treatmentChars.protagonist.need}` : ""}${treatmentChars.protagonist.flaw ? `\n핵심 결함: ${treatmentChars.protagonist.flaw}` : ""}${treatmentChars.supporting.filter(s => s.name).map(s => `\n조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}${s.mbti ? ` [MBTI: ${s.mbti}]` : ""}${s.description ? `\n  설명: ${s.description}` : ""}`).join("")}` : "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}${charHint}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요. 시놉시스가 있다면 그 방향의 인물 이름·설정을 따르세요.`;
-    try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema, "character"); setCharDevResult(data); trackCreditUsage("캐릭터 설계", 3); if (treatmentResult) setTreatmentStale(true); if (beatSheetResult) setBeatSheetStale(true); if (scenarioDraftResult) setScenarioDraftStale(true); await autoSave(); }
+    try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema, "character"); setCharDevResult(data); if (treatmentResult) setTreatmentStale(true); if (beatSheetResult) setBeatSheetStale(true); if (scenarioDraftResult) setScenarioDraftStale(true); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setCharDevError(err.message || "캐릭터 분석 중 오류가 발생했습니다."); }
     finally { setCharDevLoading(false); clearController("charDev"); }
   };
@@ -3696,6 +3696,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal, "treatment");
       setTreatmentResult(text);
+      trackCreditUsage("트리트먼트", 2);
       setTreatmentStale(false);
       if (beatSheetResult) setBeatSheetStale(true);
       if (scenarioDraftResult) setScenarioDraftStale(true);
@@ -3815,6 +3816,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const text = await callClaudeText(apiKey, PARTIAL_REWRITE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, "partial_rewrite");
       setPartialRewriteResult(text);
+      trackCreditUsage("부분 개고", 2);
       await autoSave();
     } catch (e) {
       if (e.name !== "AbortError") setPartialRewriteError(e.message || "재작성 중 오류가 발생했습니다.");
@@ -3836,6 +3838,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const text = await callClaudeText(apiKey, FULL_REWRITE_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal, "full_rewrite");
       setFullRewriteResult(text);
+      trackCreditUsage("전체 개고", 3);
       await autoSave();
     } catch (e) {
       if (e.name !== "AbortError") setFullRewriteError(e.message || "개고 중 오류가 발생했습니다.");
@@ -5375,11 +5378,60 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
               )}
             </div>
 
-            {/* 구독 플랜 배너 */}
+            {/* 구독 플랜 */}
+            <div style={{ margin: "12px 24px 0", padding: "14px", borderRadius: 12, background: "rgba(78,204,163,0.04)", border: "1px solid rgba(78,204,163,0.2)" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", letterSpacing: 0.5, marginBottom: 10 }}>월간 구독 플랜 — 더 저렴한 크레딧</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {[
+                  { key: "sub_basic", credits: 100, price: 9900,  label: "Basic", badge: "100cr/월", color: "#4ECCA3" },
+                  { key: "sub_pro",   credits: 250, price: 19900, label: "Pro",   badge: "250cr/월", color: "#A78BFA" },
+                ].map(pkg => (
+                  <button
+                    key={pkg.key}
+                    disabled={creditPurchasing}
+                    onClick={() => {
+                      if (!window.TossPayments) { showToast("error", "결제 모듈 로딩 중입니다. 잠시 후 다시 시도해주세요."); return; }
+                      const tossKey = import.meta.env.VITE_TOSS_CLIENT_KEY;
+                      if (!tossKey) { showToast("error", "결제 키가 설정되지 않았습니다."); return; }
+                      const orderId = `hll-${pkg.key}-${Date.now()}`;
+                      const toss = window.TossPayments(tossKey);
+                      setCreditPurchasing(true);
+                      toss.requestPayment("카드", {
+                        amount: pkg.price,
+                        orderId,
+                        orderName: `Hello Loglines ${pkg.label} 구독 ${pkg.credits}cr`,
+                        successUrl: window.location.href,
+                        failUrl: window.location.href,
+                      }).catch(() => setCreditPurchasing(false));
+                    }}
+                    style={{
+                      padding: "12px 10px", borderRadius: 10, cursor: creditPurchasing ? "not-allowed" : "pointer",
+                      border: `1px solid ${pkg.color}40`, background: `${pkg.color}08`,
+                      transition: "all 0.15s", textAlign: "center",
+                      fontFamily: "'Noto Sans KR', sans-serif",
+                      opacity: creditPurchasing ? 0.6 : 1,
+                    }}
+                  >
+                    <div style={{ fontSize: 10, fontWeight: 700, color: pkg.color, letterSpacing: 1, marginBottom: 4 }}>{pkg.label}</div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: pkg.color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{pkg.credits}<span style={{ fontSize: 11, fontWeight: 400 }}>cr</span></div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-tx-70)", marginTop: 5 }}>{pkg.price.toLocaleString()}원/월</div>
+                    <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginTop: 2 }}>{Math.round(pkg.price / pkg.credits)}원/cr</div>
+                  </button>
+                ))}
+              </div>
+              <div style={{ marginTop: 8, fontSize: 10, color: "var(--c-tx-30)", textAlign: "center" }}>
+                이번 달 크레딧 즉시 적립 · 자동 갱신은 준비 중입니다
+              </div>
+            </div>
+
+            {/* 구독 플랜 알림 신청 */}
             <CreditSubNotifyBanner user={user} showToast={showToast} />
 
-            {/* Packages */}
-            <div style={{ padding: "16px 24px 24px", display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr", gap: 10 }}>
+            {/* 일회성 충전 패키지 */}
+            <div style={{ padding: "0 24px 4px", marginTop: 12 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--c-tx-35)", letterSpacing: 0.5 }}>일회성 충전</div>
+            </div>
+            <div style={{ padding: "8px 24px 24px", display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr", gap: 10 }}>
               {[
                 { key: "c30",  credits: 30,  price: 3000,  label: "스타터",    color: "#60A5FA" },
                 { key: "c70",  credits: 70,  price: 7000,  label: "스탠다드",  color: "#4ECCA3" },

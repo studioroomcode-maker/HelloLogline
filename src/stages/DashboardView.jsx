@@ -162,10 +162,11 @@ export default function DashboardView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterGenre, setFilterGenre] = useState("");
   const [creditHistory, setCreditHistory] = useState([]);
+  const [projectDisplayCount, setProjectDisplayCount] = useState(20);
 
   useEffect(() => {
     loadProjects()
-      .then(list => setProjects(list.slice(0, 20)))
+      .then(list => setProjects(list))
       .catch(() => {})
       .finally(() => setProjectsLoading(false));
     setCreditHistory(loadCreditHistory().slice(0, 10));
@@ -182,6 +183,8 @@ export default function DashboardView() {
     const matchG = !filterGenre || p.genre === filterGenre;
     return matchQ && matchG;
   });
+  const visibleProjects = filteredProjects.slice(0, projectDisplayCount);
+  const hasMoreProjects = filteredProjects.length > projectDisplayCount;
 
   const score1 = stageResultSummary?.["1"];
   const coverage7 = stageResultSummary?.["7"];
@@ -576,7 +579,7 @@ export default function DashboardView() {
               </svg>
               <input
                 value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
+                onChange={e => { setSearchQuery(e.target.value); setProjectDisplayCount(20); }}
                 placeholder="제목·로그라인 검색..."
                 style={{
                   width: "100%", boxSizing: "border-box",
@@ -590,7 +593,7 @@ export default function DashboardView() {
             {genreOptions.length > 0 && (
               <select
                 value={filterGenre}
-                onChange={e => setFilterGenre(e.target.value)}
+                onChange={e => { setFilterGenre(e.target.value); setProjectDisplayCount(20); }}
                 style={{
                   padding: "7px 10px", borderRadius: 8,
                   border: "1px solid var(--c-bd-2)", background: "rgba(var(--tw),0.03)",
@@ -609,7 +612,7 @@ export default function DashboardView() {
               <div style={{ padding: "16px", textAlign: "center", fontSize: 11, color: "var(--c-tx-30)", borderRadius: 8, border: "1px dashed var(--c-bd-2)" }}>
                 검색 결과가 없습니다
               </div>
-            ) : filteredProjects.map(p => (
+            ) : visibleProjects.map(p => (
               <div
                 key={p.id}
                 style={{
@@ -632,6 +635,22 @@ export default function DashboardView() {
                 </div>
               </div>
             ))}
+            {hasMoreProjects && (
+              <button
+                onClick={() => setProjectDisplayCount(c => c + 20)}
+                style={{
+                  marginTop: 4, padding: "8px 0", borderRadius: 8,
+                  border: "1px dashed var(--c-bd-2)", background: "transparent",
+                  color: "var(--c-tx-35)", fontSize: 11,
+                  fontFamily: "'Noto Sans KR', sans-serif", cursor: "pointer",
+                  transition: "color 0.15s, border-color 0.15s",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.color = "var(--c-tx-60)"; e.currentTarget.style.borderColor = "var(--c-bd-3)"; }}
+                onMouseLeave={e => { e.currentTarget.style.color = "var(--c-tx-35)"; e.currentTarget.style.borderColor = "var(--c-bd-2)"; }}
+              >
+                더 보기 ({filteredProjects.length - projectDisplayCount}개 더)
+              </button>
+            )}
           </div>
         </div>
       )}

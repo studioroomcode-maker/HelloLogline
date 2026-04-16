@@ -8,10 +8,12 @@ import { verifyToken, getTokenFromRequest } from "./auth/_jwt.js";
 const TOSS_SECRET_KEY = (process.env.TOSS_SECRET_KEY || "").trim();
 
 const PACKAGES = {
-  c30:  { credits: 30,  amount: 3000 },
-  c70:  { credits: 70,  amount: 7000 },
-  c230: { credits: 230, amount: 20000 },
-  c400: { credits: 400, amount: 35000 },
+  c30:       { credits: 30,  amount: 3000  },
+  c70:       { credits: 70,  amount: 7000  },
+  c230:      { credits: 230, amount: 20000 },
+  c400:      { credits: 400, amount: 35000 },
+  sub_basic: { credits: 100, amount: 9900  },
+  sub_pro:   { credits: 250, amount: 19900 },
 };
 
 export default async function handler(req, res) {
