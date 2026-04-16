@@ -224,6 +224,12 @@ export default function Stage4Content({
     })()}
 
     {/* Synopsis mode toggle */}
+    <style>{`
+      @keyframes hll-pulse-pipeline {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(200,168,75,0); background: transparent; }
+        50% { box-shadow: 0 0 0 4px rgba(200,168,75,0.35); background: rgba(200,168,75,0.08); }
+      }
+    `}</style>
     <div style={{ fontSize: 11, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8, fontWeight: 600 }}>2단계 — 시놉시스 생성</div>
     <div style={{ display: "flex", gap: 6, marginBottom: 16, background: "var(--c-card-1)", padding: 4, borderRadius: 10, border: "1px solid var(--c-bd-1)" }}>
       {[
@@ -237,6 +243,8 @@ export default function Stage4Content({
             background: synopsisMode === m.id ? "rgba(200,168,75,0.15)" : "transparent",
             color: synopsisMode === m.id ? "#C8A84B" : "var(--c-tx-35)",
             transition: "all 0.15s", width: "100%",
+            animation: isDemoMode && m.id === "pipeline" && synopsisMode !== "pipeline"
+              ? "hll-pulse-pipeline 1.6s ease-in-out infinite" : undefined,
           }}>{m.label}</button>
         </Tooltip>
       ))}
