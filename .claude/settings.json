@@ -6,9 +6,21 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /d D:\\MakingApps\\Apps\\HelloLoglines && npx vite build 2>&1 | tail -5",
+            "command": "cd D:/MakingApps/Apps/HelloLogline && npx vite build 2>&1 | tail -5 || true",
             "timeout": 60,
             "statusMessage": "빌드 검증 중..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd D:/MakingApps/Apps/HelloLogline && npm test -- --passWithNoTests 2>&1 | tail -10 || true",
+            "timeout": 60,
+            "statusMessage": "테스트 실행 중..."
           }
         ]
       }

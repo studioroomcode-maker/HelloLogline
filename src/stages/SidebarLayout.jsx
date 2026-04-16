@@ -16,67 +16,370 @@ function DashboardIcon() {
   );
 }
 
-// 각 스테이지 설정
+// 스테이지 메타
 const STAGE_META = [
-  { id: "1", title: "로그라인", sub: "한 줄 입력 → 분석", color: "#C8A84B" },
-  { id: "2", title: "개념 분석", sub: "테마 · 신화구조", color: "#45B7D1" },
-  { id: "3", title: "캐릭터", sub: "심리 · 욕구 · 아크", color: "#FB923C" },
-  { id: "4", title: "스토리 설계", sub: "구조 · 시놉시스", color: "#4ECCA3" },
-  { id: "5", title: "트리트먼트", sub: "씬 구성 · 비트시트", color: "#C8A84B" },
-  { id: "6", title: "시나리오 초고", sub: "자동 초고 생성", color: "#A78BFA" },
-  { id: "7", title: "Script Coverage", sub: "심사 · 시장 가치", color: "#60A5FA" },
-  { id: "8", title: "고쳐쓰기", sub: "진단 → 수정 → 개고", color: "#FB923C" },
+  { id: "1", title: "로그라인",      sub: "한 줄 입력 → 분석",      color: "#C8A84B" },
+  { id: "2", title: "개념 분석",     sub: "테마 · 신화구조",          color: "#45B7D1" },
+  { id: "3", title: "캐릭터",        sub: "심리 · 욕구 · 아크",       color: "#FB923C" },
+  { id: "4", title: "스토리 설계",   sub: "구조 · 시놉시스",          color: "#4ECCA3" },
+  { id: "5", title: "트리트먼트",    sub: "씬 구성 · 비트시트",       color: "#C8A84B" },
+  { id: "6", title: "시나리오 초고", sub: "자동 초고 생성",           color: "#A78BFA" },
+  { id: "7", title: "Script Coverage", sub: "심사 · 시장 가치",      color: "#60A5FA" },
+  { id: "8", title: "고쳐쓰기",      sub: "진단 → 수정 → 개고",      color: "#FB923C" },
 ];
 
-function MobileNavTab({ id, label, active, color, status, onClick, stageNum }) {
-  return (
-    <button onClick={onClick} style={{
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      gap: 3, padding: "7px 10px", minWidth: 50, flexShrink: 0,
-      background: "none", border: "none", cursor: "pointer",
-      borderTop: `2px solid ${active ? color : "transparent"}`,
-      transition: "border-color 0.15s, opacity 0.15s",
-      fontFamily: "'Noto Sans KR', sans-serif",
-      opacity: active ? 1 : 0.65,
-    }}>
-      {/* 숫자 배지 — 이모지 대신 */}
+// 스테이지별 핵심 안내 (1줄)
+const STAGE_GUIDE = {
+  "1": "로그라인을 입력하고 18개 기준으로 점수를 확인하세요.",
+  "2": "전문가 패널과 신화 구조로 이야기 방향을 잡으세요.",
+  "3": "주인공의 심리·욕구·내적 갈등을 AI로 설계합니다.",
+  "4": "3막 구조와 시놉시스를 생성하고 방향을 확정합니다.",
+  "5": "씬별 트리트먼트와 15비트 구조를 구체화합니다.",
+  "6": "확정된 트리트먼트로 시나리오 초고를 생성합니다.",
+  "7": "작품을 심사하고 시장 가치와 배급 가능성을 평가합니다.",
+  "8": "문제를 진단하고 부분 또는 전체 개고를 진행합니다.",
+};
+
+/* ─── 다음 단계 CTA ─── */
+function StageNextCTA({ currentStage, isMobile }) {
+  const { setCurrentStage, getStageStatus } = useLoglineCtx();
+
+  if (!currentStage || currentStage === "dashboard") return null;
+
+  const currentIdx = STAGE_META.findIndex(s => s.id === currentStage);
+  if (currentIdx < 0) return null;
+
+  const currentMeta = STAGE_META[currentIdx];
+  const nextMeta = currentIdx < STAGE_META.length - 1 ? STAGE_META[currentIdx + 1] : null;
+  const currentStatus = getStageStatus(currentStage);
+  const isDone = currentStatus === "done";
+
+  // 마지막 단계 (Stage 8)
+  if (!nextMeta) {
+    return isDone ? (
       <div style={{
-        width: 22, height: 16, borderRadius: 4,
-        background: active ? `${color}20` : "transparent",
-        border: active ? `1px solid ${color}40` : "1px solid transparent",
+        marginTop: 40, padding: "20px 24px", borderRadius: 14,
+        background: "linear-gradient(135deg, rgba(78,204,163,0.08), rgba(69,183,209,0.06))",
+        border: "1px solid rgba(78,204,163,0.3)",
+        textAlign: "center",
+        fontFamily: "'Noto Sans KR', sans-serif",
+      }}>
+        <div style={{ fontSize: 28, marginBottom: 8 }}>
+          <svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2} strokeLinecap="round" style={{ display: "inline-block" }}>
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 800, color: "#4ECCA3", marginBottom: 6 }}>
+          8단계 완료
+        </div>
+        <div style={{ fontSize: 12, color: "var(--c-tx-45)", lineHeight: 1.6 }}>
+          로그라인부터 고쳐쓰기까지 전 과정을 완료했습니다.
+        </div>
+      </div>
+    ) : null;
+  }
+
+  return (
+    <div style={{
+      marginTop: 40,
+      padding: 2,
+      borderRadius: 14,
+      background: isDone
+        ? `linear-gradient(135deg, ${nextMeta.color}12, ${nextMeta.color}06)`
+        : "var(--glass-nano)",
+      border: isDone
+        ? `1px solid ${nextMeta.color}35`
+        : "1px solid var(--c-bd-2)",
+      transition: "all 0.3s",
+    }}>
+      <div style={{
+        padding: "16px 20px", borderRadius: 12,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        gap: 16, flexWrap: "wrap",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+          {/* 다음 단계 번호 배지 */}
+          <div style={{
+            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+            background: isDone ? `${nextMeta.color}18` : "var(--c-card-1)",
+            border: `1.5px solid ${isDone ? nextMeta.color + "40" : "var(--c-bd-3)"}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <span style={{
+              fontSize: 11, fontWeight: 800,
+              fontFamily: "'JetBrains Mono', monospace",
+              color: isDone ? nextMeta.color : "var(--c-tx-35)",
+            }}>
+              {String(nextMeta.id).padStart(2, "0")}
+            </span>
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 10, color: "var(--c-tx-30)", fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 2, fontFamily: "'JetBrains Mono', monospace" }}>
+              다음 단계
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: isDone ? "var(--text-main)" : "var(--c-tx-45)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+              {nextMeta.title}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--c-tx-35)", fontFamily: "'Noto Sans KR', sans-serif", marginTop: 1 }}>
+              {STAGE_GUIDE[nextMeta.id]}
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setCurrentStage(nextMeta.id)}
+          style={{
+            flexShrink: 0,
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "10px 20px", borderRadius: 10,
+            border: isDone ? "none" : `1px solid ${nextMeta.color}40`,
+            background: isDone
+              ? `linear-gradient(135deg, ${nextMeta.color}, ${nextMeta.color}cc)`
+              : `${nextMeta.color}10`,
+            color: isDone ? "#fff" : nextMeta.color,
+            fontSize: 12, fontWeight: 800, cursor: "pointer",
+            transition: "all 0.2s",
+            fontFamily: "'Noto Sans KR', sans-serif",
+            boxShadow: isDone ? `0 4px 16px ${nextMeta.color}40` : "none",
+          }}
+        >
+          {isDone ? (
+            <>
+              {nextMeta.title}로 이동
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </>
+          ) : (
+            <>
+              건너뛰기
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── 스테이지 페이지 헤더 ─── */
+function StagePageHeader({ stageId, isMobile, status }) {
+  if (!stageId || stageId === "dashboard") return null;
+  const meta = STAGE_META.find(s => s.id === stageId);
+  if (!meta) return null;
+
+  return (
+    <div style={{
+      display: "flex", alignItems: "flex-start", gap: 14,
+      marginBottom: 28,
+      paddingBottom: 20,
+      borderBottom: "1px solid var(--c-bd-2)",
+    }}>
+      {/* 단계 번호 배지 */}
+      <div style={{
+        width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+        background: `${meta.color}15`,
+        border: `1.5px solid ${meta.color}40`,
         display: "flex", alignItems: "center", justifyContent: "center",
-        transition: "all 0.15s",
       }}>
         <span style={{
-          fontSize: 9, fontWeight: 800,
+          fontSize: 13, fontWeight: 800,
           fontFamily: "'JetBrains Mono', monospace",
-          color: active ? color : "var(--c-tx-40)",
+          color: meta.color,
           lineHeight: 1,
         }}>
-          {stageNum}
+          {String(meta.id).padStart(2, "0")}
         </span>
       </div>
-      <span style={{ fontSize: 8, fontWeight: active ? 700 : 400, color: active ? color : "var(--c-tx-35)", whiteSpace: "nowrap" }}>
-        {label}
-      </span>
-      {status === "done" && !active && (
-        <div style={{ width: 3, height: 3, borderRadius: "50%", background: "#4ECCA3", marginTop: -1 }} />
-      )}
-    </button>
+
+      {/* 제목 + 가이드 */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <h2 style={{
+            margin: 0,
+            fontSize: isMobile ? 17 : 20,
+            fontWeight: 800,
+            color: "var(--text-main)",
+            fontFamily: "'Noto Sans KR', sans-serif",
+            lineHeight: 1.2,
+          }}>
+            {meta.title}
+          </h2>
+          {status === "done" && (
+            <span style={{
+              fontSize: 9, fontWeight: 700,
+              padding: "2px 8px", borderRadius: 20,
+              background: "rgba(78,204,163,0.1)",
+              border: "1px solid rgba(78,204,163,0.3)",
+              color: "#4ECCA3",
+              fontFamily: "'JetBrains Mono', monospace",
+              letterSpacing: 0.5,
+            }}>
+              완료
+            </span>
+          )}
+        </div>
+        <p style={{
+          margin: 0, marginTop: 5,
+          fontSize: 12,
+          color: "var(--c-tx-40)",
+          fontFamily: "'Noto Sans KR', sans-serif",
+          lineHeight: 1.55,
+        }}>
+          {STAGE_GUIDE[stageId]}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── 모바일 하단 네비게이션 (prev/current/next 패턴) ─── */
+function MobileBottomNav({ currentStage, setCurrentStage, getStageStatus }) {
+  const isDashboard = currentStage === "dashboard";
+  const currentIdx = isDashboard ? -1 : STAGE_META.findIndex(s => s.id === currentStage);
+  const currentMeta = currentIdx >= 0 ? STAGE_META[currentIdx] : null;
+  const prevMeta = currentIdx > 0 ? STAGE_META[currentIdx - 1] : null;
+  const nextMeta = currentIdx >= 0 && currentIdx < STAGE_META.length - 1 ? STAGE_META[currentIdx + 1] : null;
+
+  return (
+    <div style={{
+      display: "flex", alignItems: "center",
+      height: 56,
+      paddingBottom: "env(safe-area-inset-bottom)",
+      paddingLeft: 8, paddingRight: 8,
+      gap: 4,
+    }}>
+      {/* 대시보드 버튼 */}
+      <button
+        onClick={() => setCurrentStage("dashboard")}
+        title="대시보드"
+        style={{
+          width: 40, height: 40, flexShrink: 0, borderRadius: 10, border: "none",
+          background: isDashboard ? "rgba(200,168,75,0.15)" : "transparent",
+          color: isDashboard ? "#C8A84B" : "var(--c-tx-35)",
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "all 0.15s",
+        }}
+      >
+        <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+        </svg>
+      </button>
+
+      {/* 이전 단계 버튼 */}
+      <button
+        onClick={() => prevMeta && setCurrentStage(prevMeta.id)}
+        disabled={!prevMeta && !isDashboard}
+        style={{
+          width: 36, height: 40, flexShrink: 0, borderRadius: 8,
+          border: prevMeta ? `1px solid ${prevMeta.color}30` : "1px solid transparent",
+          background: "transparent",
+          color: prevMeta ? prevMeta.color : "var(--c-tx-20)",
+          cursor: prevMeta ? "pointer" : "default",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
+          opacity: prevMeta ? 0.75 : 0.2, transition: "all 0.15s",
+        }}
+      >
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        {prevMeta && (
+          <span style={{ fontSize: 7, fontFamily: "'JetBrains Mono', monospace", color: prevMeta.color, fontWeight: 700 }}>
+            {String(prevMeta.id).padStart(2, "0")}
+          </span>
+        )}
+      </button>
+
+      {/* 현재 스테이지 표시 (중앙, 확장) */}
+      <div style={{ flex: 1, height: 40, borderRadius: 10, overflow: "hidden", position: "relative" }}>
+        {isDashboard ? (
+          <div style={{
+            height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+            background: "rgba(200,168,75,0.1)", border: "1px solid rgba(200,168,75,0.3)",
+            borderRadius: 10,
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 800, color: "#C8A84B", fontFamily: "'Noto Sans KR', sans-serif" }}>
+              대시보드
+            </span>
+          </div>
+        ) : currentMeta ? (
+          <div style={{
+            height: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+            paddingLeft: 12, paddingRight: 12,
+            background: `${currentMeta.color}12`,
+            border: `1px solid ${currentMeta.color}35`,
+            borderRadius: 10,
+          }}>
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: currentMeta.color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1, marginBottom: 3 }}>
+                {String(currentMeta.id).padStart(2, "0")} / 08
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1 }}>
+                {currentMeta.title}
+              </div>
+            </div>
+            {getStageStatus(currentMeta.id) === "done" && (
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round">
+                <path d="M5 13l4 4L19 7"/>
+              </svg>
+            )}
+          </div>
+        ) : null}
+      </div>
+
+      {/* 다음 단계 버튼 */}
+      <button
+        onClick={() => nextMeta && setCurrentStage(nextMeta.id)}
+        disabled={!nextMeta}
+        style={{
+          width: 36, height: 40, flexShrink: 0, borderRadius: 8,
+          border: nextMeta ? `1px solid ${nextMeta.color}30` : "1px solid transparent",
+          background: nextMeta && getStageStatus(currentStage) === "done"
+            ? `${nextMeta.color}15` : "transparent",
+          color: nextMeta ? nextMeta.color : "var(--c-tx-20)",
+          cursor: nextMeta ? "pointer" : "default",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
+          opacity: nextMeta ? 1 : 0.2, transition: "all 0.15s",
+        }}
+      >
+        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+        {nextMeta && (
+          <span style={{ fontSize: 7, fontFamily: "'JetBrains Mono', monospace", color: nextMeta.color, fontWeight: 700 }}>
+            {String(nextMeta.id).padStart(2, "0")}
+          </span>
+        )}
+      </button>
+    </div>
   );
 }
 
 export default function SidebarLayout({ stageProps, isMobile }) {
-  const { currentStage, setCurrentStage, logline, genre, shareSnapshot, showToast, getStageStatus, referenceScenarioEnabled, referenceScenarioSummary, showStoryDoctor, setShowStoryDoctor, apiKey, isDemoMode, stageComments, teamMembers, currentWorkingAs, setCurrentWorkingAs, currentWorkingMember, isReadOnly, isOwner, isOnline } = useLoglineCtx();
+  const {
+    currentStage, setCurrentStage,
+    logline, genre,
+    shareSnapshot, showToast,
+    getStageStatus,
+    referenceScenarioEnabled, referenceScenarioSummary,
+    showStoryDoctor, setShowStoryDoctor,
+    apiKey, isDemoMode,
+    stageComments, teamMembers,
+    currentWorkingAs, setCurrentWorkingAs,
+    currentWorkingMember,
+    isReadOnly, isOwner, isOnline,
+  } = useLoglineCtx();
+
   const mainPanelRef = useRef(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState(null);
+  const [toolsOpen, setToolsOpen] = useState(false);
 
   async function handleShare() {
-    if (!logline) {
-      showToast?.("warn", "로그라인을 먼저 입력하세요.");
-      return;
-    }
+    if (!logline) { showToast?.("warn", "로그라인을 먼저 입력하세요."); return; }
     setShareLoading(true);
     try {
       const res = await fetch("/api/share", {
@@ -85,10 +388,7 @@ export default function SidebarLayout({ stageProps, isMobile }) {
         body: JSON.stringify({ logline, genre, data: shareSnapshot || {} }),
       });
       const json = await res.json();
-      if (!res.ok) {
-        showToast?.("error", json.error || "공유 링크 생성 실패");
-        return;
-      }
+      if (!res.ok) { showToast?.("error", json.error || "공유 링크 생성 실패"); return; }
       const url = `${window.location.origin}/share/${json.id}`;
       setShareUrl(url);
       try {
@@ -109,269 +409,177 @@ export default function SidebarLayout({ stageProps, isMobile }) {
     mainPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentStage]);
 
-  // 사이드바 너비
   const SIDEBAR_W = 210;
+  const currentStatus = getStageStatus(currentStage);
 
   return (
     <div style={{ display: "flex", alignItems: "flex-start" }}>
-      {/* ── 사이드바 ── */}
+
+      {/* ── 데스크탑 사이드바 ── */}
       {!isMobile && (
         <aside style={{
-          width: SIDEBAR_W,
-          flexShrink: 0,
-          position: "sticky",
-          top: 56,
+          width: SIDEBAR_W, flexShrink: 0,
+          position: "sticky", top: 56,
           height: "calc(100vh - 56px)",
           overflowY: "auto",
           borderRight: "1px solid var(--glass-bd-micro)",
           background: "var(--glass-nano)",
-          paddingTop: 16,
-          paddingBottom: 24,
+          display: "flex", flexDirection: "column",
         }}>
-          {/* 대시보드 버튼 */}
-          <div style={{ paddingLeft: 10, paddingRight: 10, paddingBottom: 8 }}>
-            <button
-              onClick={() => setCurrentStage("dashboard")}
-              style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 8,
-                padding: "8px 10px", borderRadius: 8, cursor: "pointer",
-                border: currentStage === "dashboard"
-                  ? "1px solid rgba(200,168,75,0.35)"
-                  : "1px solid transparent",
-                background: currentStage === "dashboard"
-                  ? "linear-gradient(135deg, rgba(200,168,75,0.12), rgba(200,168,75,0.04))"
-                  : "transparent",
-                boxShadow: currentStage === "dashboard"
-                  ? "inset 0 1px 0 rgba(200,168,75,0.15)"
-                  : "none",
-                color: currentStage === "dashboard" ? "#C8A84B" : "var(--c-tx-40)",
-                fontSize: 11, fontWeight: 700, transition: "all 0.18s",
-                fontFamily: "'Noto Sans KR', sans-serif",
-              }}
-            >
-              <DashboardIcon />
-              대시보드
-            </button>
-          </div>
 
-          {/* ── 진행률 바 ── */}
-          {(() => {
-            const doneCount = STAGE_META.filter(s => getStageStatus(s.id) === "done").length;
-            const pct = Math.round((doneCount / STAGE_META.length) * 100);
-            return (
-              <div style={{ padding: "4px 14px 10px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
-                  <div style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--c-tx-25)", fontWeight: 700, textTransform: "uppercase" }}>워크플로우</div>
-                  <div style={{ fontSize: 9, color: doneCount > 0 ? "#4ECCA3" : "var(--c-tx-25)", fontWeight: 700 }}>
-                    {doneCount}/{STAGE_META.length}
-                  </div>
-                </div>
-                <div style={{ height: 3, borderRadius: 2, background: "var(--c-bd-2)", overflow: "hidden" }}>
-                  <div style={{
-                    height: "100%", borderRadius: 2,
-                    width: `${pct}%`,
-                    background: doneCount === STAGE_META.length
-                      ? "linear-gradient(90deg,#4ECCA3,#45B7D1)"
-                      : "#4ECCA3",
-                    transition: "width 0.4s ease",
-                  }} />
-                </div>
-              </div>
-            );
-          })()}
-          {STAGE_META.map(s => (
-            <SidebarNavItem
-              key={s.id}
-              id={s.id}
-              title={s.title}
-              sub={s.sub}
-              accentColor={s.color}
-              commentCount={(stageComments?.[s.id] || []).length}
-            />
-          ))}
+          {/* 상단 영역: 대시보드 + 진행률 + 스테이지 목록 */}
+          <div style={{ flex: 1, overflowY: "auto", paddingTop: 14, paddingBottom: 8 }}>
 
-          {/* ── 작업 모드 (팀원이 있을 때만) ── */}
-          {teamMembers.length > 0 && (
-            <div style={{ padding: "8px 12px 0", marginTop: 6, borderTop: "1px solid var(--c-bd-1)" }}>
-              <div style={{ fontSize: 9, color: "var(--c-tx-25)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>
-                작업 모드
-              </div>
-              <select
-                value={currentWorkingAs || ""}
-                onChange={e => setCurrentWorkingAs(e.target.value || null)}
+            {/* 대시보드 버튼 */}
+            <div style={{ paddingLeft: 10, paddingRight: 10, paddingBottom: 8 }}>
+              <button
+                onClick={() => setCurrentStage("dashboard")}
                 style={{
-                  width: "100%", padding: "6px 8px", borderRadius: 7,
-                  border: currentWorkingAs
-                    ? `1px solid ${currentWorkingMember?.color || "#A78BFA"}44`
-                    : "1px solid var(--c-bd-3)",
-                  background: currentWorkingAs
-                    ? `${currentWorkingMember?.color || "#A78BFA"}0d`
-                    : "var(--glass-nano)",
-                  color: currentWorkingAs ? (currentWorkingMember?.color || "#A78BFA") : "var(--c-tx-50)",
-                  fontSize: 11, fontFamily: "'Noto Sans KR', sans-serif",
-                  cursor: "pointer", outline: "none", fontWeight: currentWorkingAs ? 700 : 400,
-                }}
-              >
-                <option value="">나 (전체 권한)</option>
-                {teamMembers.map(m => (
-                  <option key={m.id} value={m.id}>{m.name} · {m.role}</option>
-                ))}
-              </select>
-              {/* 권한 설명 배지 */}
-              {currentWorkingAs && (
-                <div style={{
-                  marginTop: 5, padding: "5px 8px", borderRadius: 6,
-                  background: isReadOnly
-                    ? "rgba(232,93,117,0.08)"
-                    : "rgba(78,204,163,0.06)",
-                  border: isReadOnly
-                    ? "1px solid rgba(232,93,117,0.2)"
-                    : "1px solid rgba(78,204,163,0.2)",
-                  fontSize: 9, lineHeight: 1.5,
-                  color: isReadOnly ? "#E85D75" : "#4ECCA3",
+                  width: "100%", display: "flex", alignItems: "center", gap: 8,
+                  padding: "8px 10px", borderRadius: 8, cursor: "pointer",
+                  border: currentStage === "dashboard"
+                    ? "1px solid rgba(200,168,75,0.35)"
+                    : "1px solid transparent",
+                  background: currentStage === "dashboard"
+                    ? "linear-gradient(135deg, rgba(200,168,75,0.12), rgba(200,168,75,0.04))"
+                    : "transparent",
+                  boxShadow: currentStage === "dashboard"
+                    ? "inset 0 1px 0 rgba(200,168,75,0.15)"
+                    : "none",
+                  color: currentStage === "dashboard" ? "#C8A84B" : "var(--c-tx-40)",
+                  fontSize: 11, fontWeight: 700, transition: "all 0.18s",
                   fontFamily: "'Noto Sans KR', sans-serif",
-                }}>
-                  {isReadOnly
-                    ? "읽기 전용 · 댓글만 가능"
-                    : currentWorkingMember?.role === "보조작가"
-                      ? "배정된 씬만 편집 가능"
-                      : "전체 편집 가능"}
-                </div>
-              )}
-              {/* 팀원 초대 링크 복사 */}
-              {isOwner && !currentWorkingAs && (
-                <div style={{ marginTop: 8 }}>
-                  <div style={{ fontSize: 9, color: "var(--c-tx-25)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace" }}>팀원 초대 링크</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                    {teamMembers.map(m => (
-                      <button
-                        key={m.id}
-                        onClick={() => {
-                          const url = `${window.location.origin}${window.location.pathname}?as=${m.id}`;
-                          navigator.clipboard.writeText(url).then(() => {
-                            showToast?.("success", `${m.name}용 링크가 복사됐습니다.`);
-                          }).catch(() => {
-                            showToast?.("info", `링크: ?as=${m.id}`);
-                          });
-                        }}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 5,
-                          padding: "4px 7px", borderRadius: 6, textAlign: "left",
-                          border: `1px solid ${m.color}25`,
-                          background: `${m.color}08`,
-                          cursor: "pointer",
-                        }}
-                      >
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: m.color, flexShrink: 0 }} />
-                        <span style={{ fontSize: 9, color: m.color, fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif", flex: 1 }}>{m.name}</span>
-                        <svg width={8} height={8} viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth={2} strokeLinecap="round">
-                          <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-                        </svg>
-                      </button>
-                    ))}
+                }}
+              >
+                <DashboardIcon />
+                대시보드
+              </button>
+            </div>
+
+            {/* 진행률 바 */}
+            {(() => {
+              const doneCount = STAGE_META.filter(s => getStageStatus(s.id) === "done").length;
+              const pct = Math.round((doneCount / STAGE_META.length) * 100);
+              return (
+                <div style={{ padding: "2px 14px 10px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+                    <div style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--c-tx-25)", fontWeight: 700, textTransform: "uppercase" }}>워크플로우</div>
+                    <div style={{ fontSize: 9, color: doneCount > 0 ? "#4ECCA3" : "var(--c-tx-25)", fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>
+                      {doneCount}/{STAGE_META.length}
+                    </div>
+                  </div>
+                  <div style={{ height: 3, borderRadius: 2, background: "var(--c-bd-2)", overflow: "hidden" }}>
+                    <div style={{
+                      height: "100%", borderRadius: 2,
+                      width: `${pct}%`,
+                      background: doneCount === STAGE_META.length
+                        ? "linear-gradient(90deg,#4ECCA3,#45B7D1)"
+                        : "#4ECCA3",
+                      transition: "width 0.4s ease",
+                    }} />
                   </div>
                 </div>
-              )}
-            </div>
-          )}
+              );
+            })()}
 
-          {/* 스토리 닥터 버튼 */}
-          <div style={{ paddingLeft: 10, paddingRight: 10, paddingTop: 8 }}>
-            <button
-              onClick={() => setShowStoryDoctor(true)}
-              disabled={!logline || !apiKey}
-              title="막힌 곳, 어색한 곳을 AI에게 물어보세요"
-              style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 8,
-                padding: "8px 10px", borderRadius: 8, cursor: !logline || !apiKey ? "not-allowed" : "pointer",
-                border: showStoryDoctor ? "1px solid rgba(167,139,250,0.45)" : "1px solid rgba(167,139,250,0.18)",
-                background: showStoryDoctor
-                  ? "linear-gradient(135deg, rgba(167,139,250,0.14), rgba(167,139,250,0.06))"
-                  : "rgba(167,139,250,0.04)",
-                boxShadow: showStoryDoctor ? "inset 0 1px 0 rgba(167,139,250,0.15)" : "none",
-                color: !logline || !apiKey ? "rgba(167,139,250,0.3)" : "#A78BFA",
-                fontSize: 11, fontWeight: 700, transition: "all 0.18s",
-                fontFamily: "'Noto Sans KR', sans-serif",
-                opacity: !logline || !apiKey ? 0.5 : 1,
-              }}
-            >
-              <span style={{ fontSize: 13, lineHeight: 1 }}>🩺</span>
-              스토리 닥터
-            </button>
-          </div>
+            {/* 스테이지 목록 */}
+            {STAGE_META.map(s => (
+              <SidebarNavItem
+                key={s.id}
+                id={s.id}
+                title={s.title}
+                sub={s.sub}
+                accentColor={s.color}
+                commentCount={(stageComments?.[s.id] || []).length}
+              />
+            ))}
 
-          {/* 변경 알림 */}
-          <div style={{ padding: "6px 10px 0" }}>
-            <NotificationPanel />
-          </div>
-
-          {/* 로컬 AI (Ollama) 설정 */}
-          <OllamaSettings />
-
-          {/* 공유 버튼 */}
-          <div style={{ padding: "10px 12px 0", borderTop: "1px solid var(--c-bd-1)", marginTop: 8 }}>
-            <button
-              onClick={handleShare}
-              disabled={shareLoading || !logline}
-              style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                padding: "8px 12px",
-                borderRadius: 8,
-                border: "1px solid rgba(200,168,75,0.3)",
-                background: shareLoading ? "rgba(200,168,75,0.04)" : "rgba(200,168,75,0.08)",
-                color: !logline ? "rgba(200,168,75,0.3)" : "#C8A84B",
-                fontSize: 11,
-                fontWeight: 700,
-                cursor: shareLoading || !logline ? "not-allowed" : "pointer",
-                opacity: !logline ? 0.5 : 1,
-                transition: "all 0.2s",
-                fontFamily: "'Noto Sans KR', sans-serif",
-              }}
-            >
-              {shareLoading ? (
-                <span style={{
-                  display: "inline-block", width: 10, height: 10,
-                  border: "2px solid rgba(200,168,75,0.3)", borderTop: "2px solid #C8A84B",
-                  borderRadius: "50%", animation: "spin 0.8s linear infinite",
-                }} />
-              ) : (
-                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                </svg>
-              )}
-              {shareLoading ? "생성 중..." : "공유 링크"}
-            </button>
-            {shareUrl && (
-              <div
-                title={shareUrl}
-                style={{
-                  marginTop: 6,
-                  fontSize: 9,
-                  color: "rgba(200,168,75,0.5)",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  cursor: "pointer",
-                  padding: "2px 4px",
-                }}
-                onClick={() => navigator.clipboard.writeText(shareUrl).catch(() => {})}
-              >
-                {shareUrl}
+            {/* 작업 모드 (팀원이 있을 때만) */}
+            {teamMembers.length > 0 && (
+              <div style={{ padding: "8px 12px 0", marginTop: 6, borderTop: "1px solid var(--c-bd-1)" }}>
+                <div style={{ fontSize: 9, color: "var(--c-tx-25)", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>
+                  작업 모드
+                </div>
+                <select
+                  value={currentWorkingAs || ""}
+                  onChange={e => setCurrentWorkingAs(e.target.value || null)}
+                  style={{
+                    width: "100%", padding: "6px 8px", borderRadius: 7,
+                    border: currentWorkingAs
+                      ? `1px solid ${currentWorkingMember?.color || "#A78BFA"}44`
+                      : "1px solid var(--c-bd-3)",
+                    background: currentWorkingAs
+                      ? `${currentWorkingMember?.color || "#A78BFA"}0d`
+                      : "var(--glass-nano)",
+                    color: currentWorkingAs ? (currentWorkingMember?.color || "#A78BFA") : "var(--c-tx-50)",
+                    fontSize: 11, fontFamily: "'Noto Sans KR', sans-serif",
+                    cursor: "pointer", outline: "none", fontWeight: currentWorkingAs ? 700 : 400,
+                  }}
+                >
+                  <option value="">나 (전체 권한)</option>
+                  {teamMembers.map(m => (
+                    <option key={m.id} value={m.id}>{m.name} · {m.role}</option>
+                  ))}
+                </select>
+                {currentWorkingAs && (
+                  <div style={{
+                    marginTop: 5, padding: "5px 8px", borderRadius: 6,
+                    background: isReadOnly ? "rgba(232,93,117,0.08)" : "rgba(78,204,163,0.06)",
+                    border: isReadOnly ? "1px solid rgba(232,93,117,0.2)" : "1px solid rgba(78,204,163,0.2)",
+                    fontSize: 9, lineHeight: 1.5,
+                    color: isReadOnly ? "#E85D75" : "#4ECCA3",
+                    fontFamily: "'Noto Sans KR', sans-serif",
+                  }}>
+                    {isReadOnly
+                      ? "읽기 전용 · 댓글만 가능"
+                      : currentWorkingMember?.role === "보조작가"
+                        ? "배정된 씬만 편집 가능"
+                        : "전체 편집 가능"}
+                  </div>
+                )}
+                {isOwner && !currentWorkingAs && (
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ fontSize: 9, color: "var(--c-tx-25)", marginBottom: 4, fontFamily: "'JetBrains Mono', monospace" }}>팀원 초대 링크</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                      {teamMembers.map(m => (
+                        <button
+                          key={m.id}
+                          onClick={() => {
+                            const url = `${window.location.origin}${window.location.pathname}?as=${m.id}`;
+                            navigator.clipboard.writeText(url).then(() => {
+                              showToast?.("success", `${m.name}용 링크가 복사됐습니다.`);
+                            }).catch(() => {
+                              showToast?.("info", `링크: ?as=${m.id}`);
+                            });
+                          }}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 5,
+                            padding: "4px 7px", borderRadius: 6, textAlign: "left",
+                            border: `1px solid ${m.color}25`,
+                            background: `${m.color}08`,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <div style={{ width: 6, height: 6, borderRadius: "50%", background: m.color, flexShrink: 0 }} />
+                          <span style={{ fontSize: 9, color: m.color, fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif", flex: 1 }}>{m.name}</span>
+                          <svg width={8} height={8} viewBox="0 0 24 24" fill="none" stroke={m.color} strokeWidth={2} strokeLinecap="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                          </svg>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* 기존 시나리오 참고 중 배지 */}
+            {/* 시나리오 참고 중 배지 */}
             {referenceScenarioEnabled && (
               <div
-                onClick={() => { /* 클릭 시 1단계로 이동 */ setCurrentStage("1"); }}
+                onClick={() => setCurrentStage("1")}
                 title="기존 시나리오가 모든 단계 분석에 반영됩니다. 클릭하여 설정 변경"
                 style={{
-                  marginTop: 8, padding: "6px 10px", borderRadius: 7,
+                  margin: "8px 10px 0", padding: "6px 10px", borderRadius: 7,
                   border: "1px solid rgba(78,204,163,0.3)",
                   background: "rgba(78,204,163,0.07)",
                   cursor: "pointer",
@@ -387,6 +595,117 @@ export default function SidebarLayout({ stageProps, isMobile }) {
               </div>
             )}
           </div>
+
+          {/* 하단 고정 영역 */}
+          <div style={{ borderTop: "1px solid var(--c-bd-1)", padding: "10px 10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+
+            {/* 스토리 닥터 */}
+            <button
+              onClick={() => setShowStoryDoctor(true)}
+              disabled={!logline || !apiKey}
+              title="막힌 곳, 어색한 곳을 AI에게 물어보세요"
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 8,
+                padding: "8px 10px", borderRadius: 8,
+                cursor: !logline || !apiKey ? "not-allowed" : "pointer",
+                border: showStoryDoctor ? "1px solid rgba(167,139,250,0.45)" : "1px solid rgba(167,139,250,0.18)",
+                background: showStoryDoctor
+                  ? "linear-gradient(135deg, rgba(167,139,250,0.14), rgba(167,139,250,0.06))"
+                  : "rgba(167,139,250,0.04)",
+                color: !logline || !apiKey ? "rgba(167,139,250,0.3)" : "#A78BFA",
+                fontSize: 11, fontWeight: 700, transition: "all 0.18s",
+                fontFamily: "'Noto Sans KR', sans-serif",
+                opacity: !logline || !apiKey ? 0.5 : 1,
+              }}
+            >
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+              </svg>
+              스토리 닥터
+            </button>
+
+            {/* 공유 + 도구 버튼 행 */}
+            <div style={{ display: "flex", gap: 6 }}>
+              {/* 공유 */}
+              <button
+                onClick={handleShare}
+                disabled={shareLoading || !logline}
+                style={{
+                  flex: 1,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  padding: "7px 10px", borderRadius: 8,
+                  border: "1px solid rgba(200,168,75,0.3)",
+                  background: "rgba(200,168,75,0.07)",
+                  color: !logline ? "rgba(200,168,75,0.3)" : "#C8A84B",
+                  fontSize: 11, fontWeight: 700,
+                  cursor: shareLoading || !logline ? "not-allowed" : "pointer",
+                  opacity: !logline ? 0.5 : 1,
+                  transition: "all 0.2s",
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                }}
+              >
+                {shareLoading ? (
+                  <span style={{
+                    display: "inline-block", width: 10, height: 10,
+                    border: "2px solid rgba(200,168,75,0.3)", borderTop: "2px solid #C8A84B",
+                    borderRadius: "50%", animation: "spin 0.8s linear infinite",
+                  }} />
+                ) : (
+                  <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                  </svg>
+                )}
+                공유
+              </button>
+
+              {/* 도구 (알림 + Ollama) 접기/펼치기 */}
+              <button
+                onClick={() => setToolsOpen(v => !v)}
+                title="알림 및 로컬 AI 설정"
+                style={{
+                  width: 34, display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "7px 8px", borderRadius: 8,
+                  border: toolsOpen ? "1px solid var(--c-bd-4)" : "1px solid var(--c-bd-2)",
+                  background: toolsOpen ? "var(--glass-nano)" : "transparent",
+                  color: toolsOpen ? "var(--c-tx-55)" : "var(--c-tx-30)",
+                  cursor: "pointer", transition: "all 0.18s",
+                }}
+              >
+                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* 공유 URL 미리보기 */}
+            {shareUrl && (
+              <div
+                title={shareUrl}
+                style={{
+                  fontSize: 9, color: "rgba(200,168,75,0.5)",
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  cursor: "pointer", padding: "2px 4px",
+                }}
+                onClick={() => navigator.clipboard.writeText(shareUrl).catch(() => {})}
+              >
+                {shareUrl}
+              </div>
+            )}
+
+            {/* 접힌 도구 영역: 알림 + Ollama */}
+            {toolsOpen && (
+              <div style={{
+                borderTop: "1px solid var(--c-bd-1)",
+                paddingTop: 8,
+                display: "flex", flexDirection: "column", gap: 4,
+              }}>
+                <NotificationPanel />
+                <OllamaSettings />
+              </div>
+            )}
+          </div>
         </aside>
       )}
 
@@ -394,18 +713,20 @@ export default function SidebarLayout({ stageProps, isMobile }) {
       {isMobile && (
         <div style={{
           position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 900,
-          background: "var(--bg-page)", borderTop: "1px solid var(--c-bd-2)",
-          display: "flex", overflowX: "auto", WebkitOverflowScrolling: "touch",
-          scrollbarWidth: "none", paddingBottom: "env(safe-area-inset-bottom)",
+          background: "var(--bg-page)",
+          borderTop: "1px solid var(--c-bd-2)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
         }}>
-          <MobileNavTab id="dashboard" stageNum="⊟" label="대시보드" active={currentStage === "dashboard"} color="#C8A84B" onClick={() => setCurrentStage("dashboard")} />
-          {STAGE_META.map((s, i) => (
-            <MobileNavTab key={s.id} id={s.id} stageNum={String(i + 1).padStart(2, "0")} label={s.title.slice(0,4)} active={currentStage === s.id} color={s.color} status={getStageStatus(s.id)} onClick={() => setCurrentStage(s.id)} />
-          ))}
+          <MobileBottomNav
+            currentStage={currentStage}
+            setCurrentStage={setCurrentStage}
+            getStageStatus={getStageStatus}
+          />
         </div>
       )}
 
-      {/* ── 메인 패널 래퍼 (가운데 정렬) ── */}
+      {/* ── 메인 패널 래퍼 ── */}
       <div style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}>
         <main
           ref={mainPanelRef}
@@ -416,17 +737,21 @@ export default function SidebarLayout({ stageProps, isMobile }) {
             maxWidth: isMobile ? "100%" : 780,
           }}
         >
-          {/* ── 오프라인 배너 ── */}
+          {/* 스테이지 페이지 헤더 */}
+          <StagePageHeader
+            stageId={currentStage}
+            isMobile={isMobile}
+            status={currentStatus}
+          />
+
+          {/* 오프라인 배너 */}
           {!isOnline && (
             <div style={{
-              marginBottom: 16,
-              padding: "10px 16px",
-              borderRadius: 10,
+              marginBottom: 16, padding: "10px 16px", borderRadius: 10,
               background: "rgba(251,191,36,0.08)",
               border: "1px solid rgba(251,191,36,0.3)",
               display: "flex", alignItems: "center", gap: 10,
             }}>
-              {/* 오프라인 아이콘 */}
               <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#FBBF24" strokeWidth={2} strokeLinecap="round" style={{ flexShrink: 0 }}>
                 <line x1="1" y1="1" x2="23" y2="23"/>
                 <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
@@ -437,40 +762,46 @@ export default function SidebarLayout({ stageProps, isMobile }) {
                 <circle cx="12" cy="20" r="1"/>
               </svg>
               <div style={{ flex: 1 }}>
-                <span style={{
-                  fontSize: 11, fontWeight: 700, color: "#FBBF24",
-                  fontFamily: "'Noto Sans KR', sans-serif",
-                }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#FBBF24", fontFamily: "'Noto Sans KR', sans-serif" }}>
                   오프라인 모드
                 </span>
-                <span style={{
-                  fontSize: 11, color: "var(--c-tx-45)", marginLeft: 8,
-                  fontFamily: "'Noto Sans KR', sans-serif",
-                }}>
+                <span style={{ fontSize: 11, color: "var(--c-tx-45)", marginLeft: 8, fontFamily: "'Noto Sans KR', sans-serif" }}>
                   AI 생성 기능은 인터넷 연결 후 사용 가능합니다.
                 </span>
               </div>
-              <span style={{
-                fontSize: 9, color: "var(--c-tx-30)", flexShrink: 0,
-                fontFamily: "'JetBrains Mono', monospace",
-              }}>
+              <span style={{ fontSize: 9, color: "var(--c-tx-30)", flexShrink: 0, fontFamily: "'JetBrains Mono', monospace" }}>
                 편집 · 저장 · 내보내기 사용 가능
               </span>
             </div>
           )}
 
           <ErrorBoundary key={currentStage}>
-            <Suspense fallback={<div style={{ padding: 20, color: "var(--c-tx-30)", fontSize: 12 }}>로딩 중...</div>}>
-              {/* stageProps에서 현재 스테이지 콘텐츠를 렌더링 */}
+            <Suspense fallback={
+              <div style={{
+                padding: "40px 20px", display: "flex", flexDirection: "column",
+                alignItems: "center", gap: 12,
+              }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: "50%",
+                  border: "2px solid var(--c-bd-3)",
+                  borderTop: "2px solid #4ECCA3",
+                  animation: "spin 0.8s linear infinite",
+                }} />
+                <span style={{ fontSize: 12, color: "var(--c-tx-30)", fontFamily: "'Noto Sans KR', sans-serif" }}>
+                  불러오는 중...
+                </span>
+              </div>
+            }>
               {stageProps.renderStage(currentStage)}
-              {/* 스테이지별 피드백 쓰레드 */}
+              {/* 다음 단계 CTA */}
+              <StageNextCTA currentStage={currentStage} isMobile={isMobile} />
               {currentStage !== "dashboard" && (
                 <StageCommentThread stageId={currentStage} />
               )}
             </Suspense>
           </ErrorBoundary>
 
-          {/* ── 데모 게이팅 배너 (Stage 3+) ── */}
+          {/* 데모 게이팅 배너 (Stage 3+) */}
           {isDemoMode && parseInt(currentStage) >= 3 && (
             <div style={{
               marginTop: 32, padding: 2, borderRadius: 16,

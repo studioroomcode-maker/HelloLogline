@@ -37,8 +37,6 @@ export default function Stage1Content({
   customTheme, setCustomTheme,
   customDurationText, setCustomDurationText,
   customFormatLabel, setCustomFormatLabel,
-  // tabs
-  activeTab, setActiveTab,
   // insight
   insightResult, insightLoading, insightError,
   generateInsight,
@@ -188,20 +186,32 @@ export default function Stage1Content({
     { label: "장르톤",  section: "technical",  rawScore: result.technical?.genre_tone?.score        || 0, rawMax: 4,  value: (result.technical?.genre_tone?.score        || 0) / 4  },
   ] : [];
 
-  const tabs = [
-    { id: "overview", label: "종합" },
-    { id: "structure", label: isMobile ? "구조" : "구조 (50)" },
-    { id: "expression", label: isMobile ? "표현" : "표현 (30)" },
-    { id: "technical", label: isMobile ? "기술" : "기술 (20)" },
-    { id: "interest", label: isMobile ? "흥미도" : "흥미도 (100)" },
-    { id: "feedback", label: "개선·방향" },
-    ...(academicResult ? [{ id: "academic", label: "학술" }] : []),
-  ];
+  // ── 결과 섹션 아코디언 상태 ──
+  const [openSections, setOpenSections] = useState(() => new Set(["overview", "feedback"]));
+  const [structureOpened, setStructureOpened] = useState(false);
+  const toggleSection = (id) => {
+    if (id === "structure" && !openSections.has("structure")) setStructureOpened(true);
+    setOpenSections(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   const charCount = logline.length;
 
   return (
     <ErrorBoundary><div>
+    <style>{`
+      @keyframes hll-pulse-teal {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(78,204,163,0); }
+        50% { box-shadow: 0 0 0 4px rgba(78,204,163,0.45); }
+      }
+      @keyframes hll-pulse-gold {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(200,168,75,0), inset 0 0 0 0 rgba(200,168,75,0); }
+        50% { box-shadow: 0 0 0 5px rgba(200,168,75,0.35), inset 0 0 8px rgba(200,168,75,0.08); }
+      }
+    `}</style>
 
     {/* ── 교육 모드 배너 ── */}
     {eduMode && (
@@ -739,9 +749,6 @@ export default function Stage1Content({
     {/* ── Result display ── */}
     {result && (
       <div ref={resultRef} style={{ marginTop: 24 }}>
-        {isDemoMode && (
-          <DemoCTA label="개념 분석(Stage 2) 둘러보기" onClick={() => advanceToStage("2")} />
-        )}
         {/* Score card */}
         <ResultCard color="var(--c-bd-1)">
           {compareMode && result2 ? (
@@ -793,148 +800,223 @@ export default function Stage1Content({
           </div>
         )}
 
-        {/* ── 개선·방향 탭 유도 CTA ── */}
+        {/* ── 개선·방향 유도 CTA ── */}
         <div
-          onClick={() => setActiveTab("feedback")}
+          onClick={() => setOpenSections(prev => { const next = new Set(prev); next.add("feedback"); return next; })}
           style={{
             marginTop: 14, padding: "12px 16px", borderRadius: 10,
-            background: activeTab === "feedback"
-              ? "rgba(200,168,75,0.04)"
-              : "linear-gradient(90deg, rgba(200,168,75,0.1) 0%, rgba(96,165,250,0.08) 100%)",
-            border: activeTab === "feedback"
-              ? "1px solid rgba(200,168,75,0.12)"
-              : "1px solid rgba(200,168,75,0.22)",
+            background: "linear-gradient(90deg, rgba(200,168,75,0.1) 0%, rgba(96,165,250,0.08) 100%)",
+            border: "1px solid rgba(200,168,75,0.22)",
             cursor: "pointer", display: "flex", alignItems: "center", gap: 12,
             transition: "all 0.2s",
           }}
         >
-          <div style={{ fontSize: 22, lineHeight: 1, flexShrink: 0 }}>🔀</div>
+          <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#C8A84B" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6"/></svg>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#C8A84B", marginBottom: 2 }}>
               이 로그라인을 발전시키고 싶다면?
             </div>
             <div style={{ fontSize: 11, color: "var(--c-tx-45)", lineHeight: 1.6 }}>
-              약점만 골라 수정 · 장르·관점·갈등 방향 전환 · AI 개선안 — <span style={{ color: "#C8A84B", fontWeight: 700 }}>개선·방향 탭</span>에서 확인하세요
+              약점만 골라 수정 · 장르·관점·갈등 방향 전환 · AI 개선안 — 아래 <span style={{ color: "#C8A84B", fontWeight: 700 }}>개선·방향</span>을 열어보세요
             </div>
           </div>
           <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#C8A84B" strokeWidth={2} strokeLinecap="round" style={{ flexShrink: 0, opacity: 0.7 }}><path d="M5 12h14M12 5l7 7-7 7" /></svg>
         </div>
 
-        {/* Tab nav */}
-        <div style={{ overflowX: "auto", marginTop: 16, marginBottom: 12 }}>
-          <div style={{ display: "flex", gap: 4, minWidth: "max-content" }}>
-            {tabs.map((tab) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                flex: "0 0 auto", padding: isMobile ? "7px 11px" : "8px 14px",
-                borderRadius: 8, cursor: "pointer", transition: "all 0.18s",
-                border: activeTab === tab.id
-                  ? "1px solid rgba(200,168,75,0.55)"
-                  : "1px solid var(--c-bd-2)",
-                background: activeTab === tab.id
-                  ? "rgba(200,168,75,0.12)"
-                  : "var(--glass-micro)",
-                color: activeTab === tab.id ? "#C8A84B" : "var(--c-tx-50)",
-                fontSize: 11, fontWeight: activeTab === tab.id ? 700 : 500,
-                whiteSpace: "nowrap", fontFamily: "'Noto Sans KR', sans-serif",
-              }}>{tab.label}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* Tab content */}
-        <ResultCard>
-          {activeTab === "overview" && (
-            <div>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                <RadarChart data={radarData} size={isMobile ? 220 : 280} />
+        {/* ── P6: 점수 헤드라인 ── */}
+        {result && (
+          <div style={{ marginTop: 16, marginBottom: 4, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            {/* 품질 총점 */}
+            {(() => {
+              const total = qualityScore;
+              const pct = total / 100;
+              const color = pct >= 0.8 ? "#4ECCA3" : pct >= 0.6 ? "#60A5FA" : pct >= 0.4 ? "#FFD166" : "#E85D75";
+              const label = pct >= 0.8 ? "우수" : pct >= 0.6 ? "양호" : pct >= 0.4 ? "보통" : "개선 필요";
+              return (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderRadius: 12, background: `${color}10`, border: `1px solid ${color}30`, flex: "0 0 auto" }}>
+                  <div>
+                    <div style={{ fontSize: 28, fontWeight: 900, color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>
+                      {total}<span style={{ fontSize: 13, fontWeight: 400, color: "var(--c-tx-30)" }}>/100</span>
+                    </div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color, textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>품질 점수 · {label}</div>
+                  </div>
+                  <div style={{ width: 1, height: 36, background: `${color}25` }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {[
+                      { label: "구조", score: structureTotal, max: 50, color: "#4ECCA3" },
+                      { label: "표현", score: expressionTotal, max: 30, color: "#45B7D1" },
+                      { label: "기술", score: technicalTotal, max: 20, color: "#F7A072" },
+                    ].map(item => (
+                      <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                        <span style={{ fontSize: 9, color: "var(--c-tx-35)", width: 24 }}>{item.label}</span>
+                        <div style={{ width: 60, height: 4, borderRadius: 2, background: "var(--c-bd-1)", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${(item.score / item.max) * 100}%`, background: item.color, borderRadius: 2 }} />
+                        </div>
+                        <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono', monospace", color: item.color, fontWeight: 700 }}>{item.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+            {/* 흥미 지수 */}
+            {result.interest && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 12, background: "rgba(255,215,0,0.07)", border: "1px solid rgba(255,215,0,0.2)", flex: "0 0 auto" }}>
+                <div>
+                  <div style={{ fontSize: 28, fontWeight: 900, color: "#FFD700", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>
+                    {interestScore}<span style={{ fontSize: 13, fontWeight: 400, color: "var(--c-tx-30)" }}>/100</span>
+                  </div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: "#FFD700", textTransform: "uppercase", letterSpacing: 1, marginTop: 2 }}>흥미 지수</div>
+                </div>
               </div>
+            )}
+          </div>
+        )}
 
-              {/* ── 점수 히트맵 ── */}
-              {radarData.length > 0 && (
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 10, color: "var(--c-tx-30)", letterSpacing: 0.5, marginBottom: 8, textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>Score Snapshot</div>
-                  <div style={{ display: "grid", gridTemplateColumns: `repeat(${isMobile ? 4 : 7}, 1fr)`, gap: 5 }}>
-                    {radarData.map((d) => {
-                      const pct = d.value;
-                      const color = pct >= 0.8 ? "#4ECCA3" : pct >= 0.6 ? "#60A5FA" : pct >= 0.4 ? "#FFD166" : pct >= 0.2 ? "#F7A072" : "#E85D75";
-                      return (
-                        <div key={d.label} title={`${d.label}: ${d.rawScore}/${d.rawMax}`} style={{ padding: "6px 4px", borderRadius: 8, background: `${color}14`, border: `1px solid ${color}30`, textAlign: "center", cursor: "default" }}>
-                          <div style={{ fontSize: 8, color: "var(--c-tx-40)", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 3, lineHeight: 1.2 }}>{d.label}</div>
-                          <div style={{ fontSize: 12, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{d.rawScore}</div>
-                          <div style={{ height: 2, borderRadius: 1, background: "var(--c-bd-1)", marginTop: 4, overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${pct * 100}%`, background: color, borderRadius: 1 }} />
+        {/* ── 결과 아코디언 섹션들 ── */}
+        <div style={{ marginTop: 12 }}>
+
+          {/* 종합 개요 */}
+          {result && (() => {
+            const open = openSections.has("overview");
+            return (
+              <div style={{ marginBottom: 6 }}>
+                <button onClick={() => toggleSection("overview")} style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 8,
+                  padding: "9px 12px", borderRadius: open ? "8px 8px 0 0" : 8, cursor: "pointer",
+                  border: open ? "1px solid rgba(200,168,75,0.3)" : "1px solid var(--c-bd-2)",
+                  background: open ? "rgba(200,168,75,0.07)" : "var(--glass-nano)",
+                  borderBottom: open ? "none" : undefined, transition: "all 0.18s",
+                }}>
+                  <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: open ? "#C8A84B" : "var(--c-tx-55)", textAlign: "left", fontFamily: "'Noto Sans KR', sans-serif" }}>종합 개요</span>
+                  <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={open ? "#C8A84B" : "var(--c-tx-30)"} strokeWidth={2.5} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {open && (
+                  <div style={{ padding: "16px 14px", borderRadius: "0 0 8px 8px", border: "1px solid rgba(200,168,75,0.3)", borderTop: "none", background: "var(--glass-micro)" }}>
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+                      <RadarChart data={radarData} size={isMobile ? 220 : 280} />
+                    </div>
+                    {radarData.length > 0 && (
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontSize: 10, color: "var(--c-tx-30)", letterSpacing: 0.5, marginBottom: 8, textTransform: "uppercase", fontFamily: "'JetBrains Mono', monospace" }}>Score Snapshot</div>
+                        <div style={{ display: "grid", gridTemplateColumns: `repeat(${isMobile ? 4 : 7}, 1fr)`, gap: 5 }}>
+                          {radarData.map((d) => {
+                            const pct = d.value;
+                            const color = pct >= 0.8 ? "#4ECCA3" : pct >= 0.6 ? "#60A5FA" : pct >= 0.4 ? "#FFD166" : pct >= 0.2 ? "#F7A072" : "#E85D75";
+                            return (
+                              <div key={d.label} title={`${d.label}: ${d.rawScore}/${d.rawMax}`} style={{ padding: "6px 4px", borderRadius: 8, background: `${color}14`, border: `1px solid ${color}30`, textAlign: "center", cursor: "default" }}>
+                                <div style={{ fontSize: 8, color: "var(--c-tx-40)", fontFamily: "'Noto Sans KR', sans-serif", marginBottom: 3, lineHeight: 1.2 }}>{d.label}</div>
+                                <div style={{ fontSize: 12, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{d.rawScore}</div>
+                                <div style={{ height: 2, borderRadius: 1, background: "var(--c-bd-1)", marginTop: 4, overflow: "hidden" }}>
+                                  <div style={{ height: "100%", width: `${pct * 100}%`, background: color, borderRadius: 1 }} />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      {[
+                        { label: "구조적 완성도", score: structureTotal, max: 50, color: "#4ECCA3" },
+                        { label: "표현적 매력도", score: expressionTotal, max: 30, color: "#45B7D1" },
+                        { label: "기술적 완성도", score: technicalTotal, max: 20, color: "#F7A072" },
+                        { label: "흥미 유발 지수", score: interestScore, max: 100, color: "#FFD700" },
+                      ].map((item, i) => (
+                        <div key={i} style={{ padding: isMobile ? 12 : 16, background: "rgba(var(--tw),0.02)", borderRadius: 12, border: `1px solid ${item.color}18` }}>
+                          <div style={{ fontSize: 11, color: "var(--c-tx-45)", marginBottom: 5 }}>{item.label}</div>
+                          <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: item.color, fontFamily: "'JetBrains Mono', monospace" }}>
+                            {item.score}<span style={{ fontSize: 12, fontWeight: 400, color: "var(--c-tx-25)" }}>/{item.max}</span>
+                          </div>
+                          <div style={{ marginTop: 8, height: 3, background: "var(--c-card-3)", borderRadius: 2, overflow: "hidden" }}>
+                            <div style={{ height: "100%", width: `${(item.score / item.max) * 100}%`, background: item.color, borderRadius: 2 }} />
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                {[
-                  { label: "구조적 완성도", score: structureTotal, max: 50, color: "#4ECCA3" },
-                  { label: "표현적 매력도", score: expressionTotal, max: 30, color: "#45B7D1" },
-                  { label: "기술적 완성도", score: technicalTotal, max: 20, color: "#F7A072" },
-                  { label: "흥미 유발 지수", score: interestScore, max: 100, color: "#FFD700" },
-                ].map((item, i) => (
-                  <div key={i} style={{ padding: isMobile ? 12 : 16, background: "rgba(var(--tw),0.02)", borderRadius: 12, border: `1px solid ${item.color}18` }}>
-                    <div style={{ fontSize: 11, color: "var(--c-tx-45)", marginBottom: 5 }}>{item.label}</div>
-                    <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: item.color, fontFamily: "'JetBrains Mono', monospace" }}>
-                      {item.score}<span style={{ fontSize: 12, fontWeight: 400, color: "var(--c-tx-25)" }}>/{item.max}</span>
+                      ))}
                     </div>
-                    <div style={{ marginTop: 8, height: 3, background: "var(--c-card-3)", borderRadius: 2, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${(item.score / item.max) * 100}%`, background: item.color, borderRadius: 2 }} />
+                    {/* 종합 인사이트 */}
+                    <div style={{ marginTop: 20, borderTop: "1px solid var(--c-bd-1)", paddingTop: 18 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-tx-80)" }}>종합 인사이트</div>
+                          <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginTop: 2 }}>모든 분석을 종합해 지금 가장 중요한 개선점 3가지를 뽑아줍니다</div>
+                        </div>
+                        <button onClick={generateInsight} disabled={insightLoading} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid #C8A84B", background: insightLoading ? "rgba(200,168,75,0.08)" : "rgba(200,168,75,0.12)", color: "#C8A84B", fontSize: 12, fontWeight: 700, cursor: insightLoading ? "default" : "pointer", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", flexShrink: 0 }}>
+                          {insightLoading ? <><Spinner size={12} color="#C8A84B" /> 분석 중…</> : "✦ 인사이트 생성"}
+                        </button>
+                      </div>
+                      <ErrorMsg msg={insightError} />
+                      {insightResult && (
+                        <div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+                            {insightResult.overall_verdict && (
+                              <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)" }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--c-tx-35)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>전체 평가</div>
+                                <div style={{ fontSize: 12, color: "var(--c-tx-75)", lineHeight: 1.6 }}>{insightResult.overall_verdict}</div>
+                              </div>
+                            )}
+                            {insightResult.strongest_element && (
+                              <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(78,204,163,0.05)", border: "1px solid rgba(78,204,163,0.2)" }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>가장 강한 요소</div>
+                                <div style={{ fontSize: 12, color: "var(--c-tx-75)", lineHeight: 1.6 }}>{insightResult.strongest_element}</div>
+                              </div>
+                            )}
+                          </div>
+                          {insightResult.priority_issues?.map((issue, idx) => (
+                            <div key={idx} style={{ marginBottom: 10, padding: "12px 14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)", borderLeft: `3px solid ${["#FF6B6B","#C8A84B","#45B7D1"][idx]||"#C8A84B"}` }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+                                <span style={{ fontSize: 11, fontWeight: 800, color: ["#FF6B6B","#C8A84B","#45B7D1"][idx]||"#C8A84B", fontFamily: "monospace" }}>0{idx+1}</span>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-tx-80)" }}>{issue.title}</span>
+                              </div>
+                              <div style={{ fontSize: 12, color: "var(--c-tx-60)", lineHeight: 1.65, marginBottom: 5 }}>{issue.problem}</div>
+                              {issue.why_matters && <div style={{ fontSize: 11, color: "var(--c-tx-45)", marginBottom: 6, fontStyle: "italic" }}>→ {issue.why_matters}</div>}
+                              {issue.action && (
+                                <div style={{ padding: "7px 10px", borderRadius: 7, background: "rgba(var(--tw),0.03)", border: "1px solid var(--c-bd-1)", fontSize: 12, color: "var(--c-tx-70)", lineHeight: 1.65 }}>
+                                  <span style={{ fontSize: 10, fontWeight: 700, color: "var(--c-tx-35)", marginRight: 6 }}>개선 방법</span>{issue.action}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-                ))}
+                )}
               </div>
+            );
+          })()}
 
-              {/* ── 종합 인사이트 ── */}
-              <div style={{ marginTop: 20, borderTop: "1px solid var(--c-bd-1)", paddingTop: 18 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-tx-80)" }}>종합 인사이트</div>
-                    <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginTop: 2 }}>모든 분석을 종합해 지금 가장 중요한 개선점 3가지를 뽑아줍니다</div>
-                  </div>
-                  <button
-                    onClick={generateInsight}
-                    disabled={insightLoading}
-                    style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid #C8A84B", background: insightLoading ? "rgba(200,168,75,0.08)" : "rgba(200,168,75,0.12)", color: "#C8A84B", fontSize: 12, fontWeight: 700, cursor: insightLoading ? "default" : "pointer", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", flexShrink: 0 }}
-                  >
-                    {insightLoading ? <><Spinner size={12} color="#C8A84B" /> 분석 중…</> : "✦ 인사이트 생성"}
-                  </button>
-                </div>
-                <ErrorMsg msg={insightError} />
-                {insightResult && (
-                  <div>
-                    {/* 한 줄 평가 + 강점 */}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-                      {insightResult.overall_verdict && (
-                        <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)" }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: "var(--c-tx-35)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>전체 평가</div>
-                          <div style={{ fontSize: 12, color: "var(--c-tx-75)", lineHeight: 1.6 }}>{insightResult.overall_verdict}</div>
-                        </div>
-                      )}
-                      {insightResult.strongest_element && (
-                        <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(78,204,163,0.05)", border: "1px solid rgba(78,204,163,0.2)" }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>가장 강한 요소</div>
-                          <div style={{ fontSize: 12, color: "var(--c-tx-75)", lineHeight: 1.6 }}>{insightResult.strongest_element}</div>
-                        </div>
-                      )}
-                    </div>
-                    {/* 우선 개선점 3가지 */}
-                    {insightResult.priority_issues?.map((issue, idx) => (
-                      <div key={idx} style={{ marginBottom: 10, padding: "12px 14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)", borderLeft: `3px solid ${["#FF6B6B","#C8A84B","#45B7D1"][idx]||"#C8A84B"}` }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
-                          <span style={{ fontSize: 11, fontWeight: 800, color: ["#FF6B6B","#C8A84B","#45B7D1"][idx]||"#C8A84B", fontFamily: "monospace" }}>0{idx+1}</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-tx-80)" }}>{issue.title}</span>
-                        </div>
-                        <div style={{ fontSize: 12, color: "var(--c-tx-60)", lineHeight: 1.65, marginBottom: 5 }}>{issue.problem}</div>
-                        {issue.why_matters && <div style={{ fontSize: 11, color: "var(--c-tx-45)", marginBottom: 6, fontStyle: "italic" }}>→ {issue.why_matters}</div>}
-                        {issue.action && (
-                          <div style={{ padding: "7px 10px", borderRadius: 7, background: "rgba(var(--tw),0.03)", border: "1px solid var(--c-bd-1)", fontSize: 12, color: "var(--c-tx-70)", lineHeight: 1.65 }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, color: "var(--c-tx-35)", marginRight: 6 }}>개선 방법</span>{issue.action}
+          {/* 세부 점수 — 구조/표현/기술/흥미도 각각 */}
+          {result && [
+            { id: "structure", label: "A. 구조적 완성도", score: structureTotal, max: 50, color: "#4ECCA3", data: result.structure },
+            { id: "expression", label: "B. 표현적 매력도", score: expressionTotal, max: 30, color: "#45B7D1", data: result.expression },
+            { id: "technical",  label: "C. 기술적 완성도", score: technicalTotal,  max: 20, color: "#F7A072", data: result.technical },
+            { id: "interest",   label: "D. 흥미 유발 지수", score: interestScore,  max: 100, color: "#FFD700", data: result.interest },
+          ].map(({ id, label, score, max, color, data }) => {
+            if (!data) return null;
+            const open = openSections.has(id);
+            return (
+              <div key={id} style={{ marginBottom: 6 }}>
+                <button onClick={() => toggleSection(id)} style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 8,
+                  padding: "9px 12px", borderRadius: open ? "8px 8px 0 0" : 8, cursor: "pointer",
+                  border: open ? `1px solid ${color}30` : (id === "structure" && !structureOpened ? "1px solid rgba(78,204,163,0.5)" : "1px solid var(--c-bd-2)"),
+                  background: open ? `${color}08` : "var(--glass-nano)",
+                  borderBottom: open ? "none" : undefined, transition: "all 0.18s",
+                  animation: id === "structure" && !structureOpened && !open ? "hll-pulse-teal 1.8s ease-in-out infinite" : undefined,
+                }}>
+                  <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: open ? color : "var(--c-tx-55)", textAlign: "left", fontFamily: "'Noto Sans KR', sans-serif" }}>{label}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color, fontFamily: "'JetBrains Mono', monospace" }}>{score}<span style={{ fontSize: 9, opacity: 0.6 }}>/{max}</span></span>
+                  <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={open ? color : "var(--c-tx-30)"} strokeWidth={2.5} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {open && (
+                  <div style={{ padding: "14px 12px", borderRadius: "0 0 8px 8px", border: `1px solid ${color}30`, borderTop: "none", background: "var(--glass-micro)" }}>
+                    {Object.entries(data).map(([key, val], i) => (
+                      <div key={key}>
+                        <ScoreBar score={val.score} max={val.max} label={LABELS_KR[key]} found={val.found} feedback={val.feedback} delay={i * 100} criterionKey={key} />
+                        {val.score != null && val.max != null && val.score / val.max <= 0.5 && CRITERIA_GUIDE[key] && (
+                          <div style={{ margin: "-6px 0 14px 0", padding: "8px 12px", borderRadius: "0 0 8px 8px", background: "rgba(200,168,75,0.07)", borderLeft: "3px solid rgba(200,168,75,0.5)", fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.65 }}>
+                            <span style={{ fontWeight: 700, color: "#C8A84B", marginRight: 5 }}>개선 팁</span>{CRITERIA_GUIDE[key]}
                           </div>
                         )}
                       </div>
@@ -942,130 +1024,73 @@ export default function Stage1Content({
                   </div>
                 )}
               </div>
-            </div>
-          )}
-          {activeTab === "structure" && result.structure && (
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#4ECCA3", marginBottom: 18 }}>A. 구조적 완성도 -- {structureTotal}/50</div>
-              {Object.entries(result.structure).map(([key, val], i) => (
-                <div key={key}>
-                  <ScoreBar score={val.score} max={val.max} label={LABELS_KR[key]} found={val.found} feedback={val.feedback} delay={i * 100} criterionKey={key} />
-                  {val.score != null && val.max != null && val.score / val.max <= 0.5 && CRITERIA_GUIDE[key] && (
-                    <div style={{ margin: "-6px 0 14px 0", padding: "8px 12px", borderRadius: "0 0 8px 8px", background: "rgba(200,168,75,0.07)", borderLeft: "3px solid rgba(200,168,75,0.5)", fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.65 }}>
-                      <span style={{ fontWeight: 700, color: "#C8A84B", marginRight: 5 }}>개선 팁</span>{CRITERIA_GUIDE[key]}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-          {activeTab === "expression" && result.expression && (
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#45B7D1", marginBottom: 18 }}>B. 표현적 매력도 -- {expressionTotal}/30</div>
-              {Object.entries(result.expression).map(([key, val], i) => (
-                <div key={key}>
-                  <ScoreBar score={val.score} max={val.max} label={LABELS_KR[key]} found={val.found} feedback={val.feedback} delay={i * 100} criterionKey={key} />
-                  {val.score != null && val.max != null && val.score / val.max <= 0.5 && CRITERIA_GUIDE[key] && (
-                    <div style={{ margin: "-6px 0 14px 0", padding: "8px 12px", borderRadius: "0 0 8px 8px", background: "rgba(200,168,75,0.07)", borderLeft: "3px solid rgba(200,168,75,0.5)", fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.65 }}>
-                      <span style={{ fontWeight: 700, color: "#C8A84B", marginRight: 5 }}>개선 팁</span>{CRITERIA_GUIDE[key]}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-          {activeTab === "technical" && result.technical && (
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#F7A072", marginBottom: 18 }}>C. 기술적 완성도 -- {technicalTotal}/20</div>
-              {Object.entries(result.technical).map(([key, val], i) => (
-                <div key={key}>
-                  <ScoreBar score={val.score} max={val.max} label={LABELS_KR[key]} feedback={val.feedback} delay={i * 100} criterionKey={key} />
-                  {val.score != null && val.max != null && val.score / val.max <= 0.5 && CRITERIA_GUIDE[key] && (
-                    <div style={{ margin: "-6px 0 14px 0", padding: "8px 12px", borderRadius: "0 0 8px 8px", background: "rgba(200,168,75,0.07)", borderLeft: "3px solid rgba(200,168,75,0.5)", fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.65 }}>
-                      <span style={{ fontWeight: 700, color: "#C8A84B", marginRight: 5 }}>개선 팁</span>{CRITERIA_GUIDE[key]}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-          {activeTab === "interest" && result.interest && (
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#FFD700", marginBottom: 18 }}>D. 흥미 유발 지수 -- {interestScore}/100</div>
-              {Object.entries(result.interest).map(([key, val], i) => (
-                <div key={key}>
-                  <ScoreBar score={val.score} max={val.max} label={LABELS_KR[key]} feedback={val.feedback} delay={i * 100} criterionKey={key} />
-                  {val.score != null && val.max != null && val.score / val.max <= 0.5 && CRITERIA_GUIDE[key] && (
-                    <div style={{ margin: "-6px 0 14px 0", padding: "8px 12px", borderRadius: "0 0 8px 8px", background: "rgba(200,168,75,0.07)", borderLeft: "3px solid rgba(200,168,75,0.5)", fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.65 }}>
-                      <span style={{ fontWeight: 700, color: "#C8A84B", marginRight: 5 }}>개선 팁</span>{CRITERIA_GUIDE[key]}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-          {activeTab === "feedback" && (
-            <div>
-              {/* 탭 설명 헤더 */}
-              <div style={{ marginBottom: 20, padding: "12px 14px", borderRadius: 10, background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-1)" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--c-tx-60)", marginBottom: 8, letterSpacing: 0.5 }}>이 탭에서 할 수 있는 것</div>
-                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8 }}>
-                  {[
-                    { color: "#C8A84B", title: "약점 수정", desc: "낮은 점수 항목만 골라 직접 고친 버전 제안" },
-                    { color: "#60A5FA", title: "방향 전환", desc: "장르·관점·갈등을 완전히 다르게 바꾼 3가지 버전" },
-                    { color: "#4ECCA3", title: "AI 개선안", desc: "종합 피드백을 반영한 자유 형식 개선 로그라인" },
-                  ].map((item) => (
-                    <div key={item.title} style={{ display: "flex", gap: 8, padding: "8px 10px", borderRadius: 8, background: "rgba(var(--tw),0.02)" }}>
-                      <div style={{ width: 4, flexShrink: 0, borderRadius: 2, background: item.color, alignSelf: "stretch", minHeight: 32 }} />
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: item.color }}>{item.title}</div>
-                        <div style={{ fontSize: 10, color: "var(--c-tx-40)", marginTop: 2, lineHeight: 1.5 }}>{item.desc}</div>
+            );
+          })}
+
+          {/* 개선·방향 */}
+          {result && (() => {
+            const open = openSections.has("feedback");
+            return (
+              <div style={{ marginBottom: 6 }}>
+                <button onClick={() => toggleSection("feedback")} style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 8,
+                  padding: "9px 12px", borderRadius: open ? "8px 8px 0 0" : 8, cursor: "pointer",
+                  border: open ? "1px solid rgba(96,165,250,0.3)" : "1px solid var(--c-bd-2)",
+                  background: open ? "rgba(96,165,250,0.07)" : "var(--glass-nano)",
+                  borderBottom: open ? "none" : undefined, transition: "all 0.18s",
+                }}>
+                  <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: open ? "#60A5FA" : "var(--c-tx-55)", textAlign: "left", fontFamily: "'Noto Sans KR', sans-serif" }}>개선·방향</span>
+                  <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={open ? "#60A5FA" : "var(--c-tx-30)"} strokeWidth={2.5} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {open && (
+                  <div style={{ padding: "14px 12px", borderRadius: "0 0 8px 8px", border: "1px solid rgba(96,165,250,0.3)", borderTop: "none", background: "var(--glass-micro)" }}>
+                    {result.overall_feedback && (
+                      <div style={{ fontSize: 14, lineHeight: 1.85, color: "var(--c-tx-75)", marginBottom: 20, padding: "14px 16px", borderRadius: 10, background: "rgba(200,168,75,0.04)", borderLeft: "3px solid rgba(200,168,75,0.3)" }}>
+                        {result.overall_feedback}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                    {result.improvement_questions?.length > 0 && (
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-40)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>스스로 점검해볼 질문</div>
+                        {result.improvement_questions.map((q, i) => (
+                          <div key={i} style={{ fontSize: 13, color: "var(--c-tx-60)", padding: "9px 14px", marginBottom: 6, background: "rgba(200,168,75,0.04)", borderRadius: 8, borderLeft: "2px solid rgba(200,168,75,0.25)", lineHeight: 1.7 }}>
+                            <span style={{ color: "rgba(200,168,75,0.6)", fontWeight: 700, marginRight: 6 }}>Q{i + 1}.</span>{q}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <StoryDevPanel logline={logline} genre={genre} result={result} apiKey={apiKey} onApply={(improved) => analyze(improved)} onFixesChange={setStoryFixes} onPivotsChange={setStoryPivots} />
+                    <ImprovementPanel logline={logline} genre={genre} apiKey={apiKey} result={result} onReanalyze={(improved) => analyze(improved)} onImprovementChange={setAiImprovement} />
+                  </div>
+                )}
               </div>
+            );
+          })()}
 
-              {/* 종합 피드백 */}
-              {result.overall_feedback && (
-                <div style={{ fontSize: 14, lineHeight: 1.85, color: "var(--c-tx-75)", marginBottom: 20, padding: "14px 16px", borderRadius: 10, background: "rgba(200,168,75,0.04)", borderLeft: "3px solid rgba(200,168,75,0.3)" }}>
-                  {result.overall_feedback}
-                </div>
-              )}
-
-              {/* AI 유도 질문 */}
-              {result.improvement_questions?.length > 0 && (
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-40)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>스스로 점검해볼 질문</div>
-                  {result.improvement_questions.map((q, i) => (
-                    <div key={i} style={{ fontSize: 13, color: "var(--c-tx-60)", padding: "9px 14px", marginBottom: 6, background: "rgba(200,168,75,0.04)", borderRadius: 8, borderLeft: "2px solid rgba(200,168,75,0.25)", lineHeight: 1.7 }}>
-                      <span style={{ color: "rgba(200,168,75,0.6)", fontWeight: 700, marginRight: 6 }}>Q{i + 1}.</span>{q}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <StoryDevPanel
-                logline={logline}
-                genre={genre}
-                result={result}
-                apiKey={apiKey}
-                onApply={(improved) => analyze(improved)}
-                onFixesChange={setStoryFixes}
-                onPivotsChange={setStoryPivots}
-              />
-              <ImprovementPanel
-                logline={logline}
-                genre={genre}
-                apiKey={apiKey}
-                result={result}
-                onReanalyze={(improved) => analyze(improved)}
-                onImprovementChange={setAiImprovement}
-              />
-            </div>
-          )}
-          {activeTab === "academic" && academicResult && <AcademicPanel academic={academicResult} />}
-        </ResultCard>
+          {/* 학술 분석 */}
+          {academicResult && (() => {
+            const open = openSections.has("academic");
+            return (
+              <div style={{ marginBottom: 6 }}>
+                <button onClick={() => toggleSection("academic")} style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 8,
+                  padding: "9px 12px", borderRadius: open ? "8px 8px 0 0" : 8, cursor: "pointer",
+                  border: open ? "1px solid rgba(167,139,250,0.3)" : "1px solid var(--c-bd-2)",
+                  background: open ? "rgba(167,139,250,0.07)" : "var(--glass-nano)",
+                  borderBottom: open ? "none" : undefined, transition: "all 0.18s",
+                }}>
+                  <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: open ? "#A78BFA" : "var(--c-tx-55)", textAlign: "left", fontFamily: "'Noto Sans KR', sans-serif" }}>학술 분석</span>
+                  <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={open ? "#A78BFA" : "var(--c-tx-30)"} strokeWidth={2.5} style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }}><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                {open && (
+                  <div style={{ padding: "14px 12px", borderRadius: "0 0 8px 8px", border: "1px solid rgba(167,139,250,0.3)", borderTop: "none", background: "var(--glass-micro)" }}>
+                    <AcademicPanel academic={academicResult} />
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
           <DocButton label="기초 기획서 PDF" sub="로그라인 분석 기반 초기 기획서" onClick={() => openApplicationDoc("logline")} disabled={!logline.trim()} />
         </div>
@@ -1139,7 +1164,17 @@ export default function Stage1Content({
 
     {getStageStatus("1") === "done" && (
       <div style={{ marginTop: 32, paddingTop: 20, borderTop: "1px solid var(--c-bd-1)", display: "flex", justifyContent: "flex-end" }}>
-        <button onClick={() => advanceToStage("2")} style={{ padding: "11px 24px", borderRadius: 10, border: "1px solid rgba(200,168,75,0.4)", background: "rgba(200,168,75,0.1)", color: "#C8A84B", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
+        <button
+          onClick={() => advanceToStage("2")}
+          style={{
+            padding: "11px 24px", borderRadius: 10,
+            border: "1px solid rgba(200,168,75,0.4)",
+            background: "rgba(200,168,75,0.1)", color: "#C8A84B",
+            fontSize: 13, fontWeight: 700, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s",
+            animation: structureOpened ? "hll-pulse-gold 1.4s ease-in-out infinite" : undefined,
+          }}
+        >
           다음 단계: 개념 분석
           <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
         </button>

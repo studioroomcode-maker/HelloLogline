@@ -286,8 +286,6 @@ export default function LoglineAnalyzer() {
   // ── Input ──
   const [logline, setLogline] = useState("");
   const [genre, setGenre] = useState("auto");
-  const [activeTab, setActiveTab] = useState("overview");
-
   // ── Stage 1 상태 (useStage1 훅으로 분리) ──
   const {
     result, setResult,
@@ -318,7 +316,19 @@ export default function LoglineAnalyzer() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 
   // ── Stage ──
-  const [currentStage, setCurrentStage] = useState("dashboard");
+  const [currentStage, setCurrentStage] = useState(() => {
+    const p = new URLSearchParams(window.location.search).get("stage");
+    return p || "dashboard";
+  });
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (currentStage === "dashboard") {
+      url.searchParams.delete("stage");
+    } else {
+      url.searchParams.set("stage", currentStage);
+    }
+    window.history.replaceState({}, "", url);
+  }, [currentStage]);
 
   // ── Synopsis ──
   const [showSynopsisPanel, setShowSynopsisPanel] = useState(false);
@@ -4388,7 +4398,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
             onClose={() => setShowHistory(false)}
             onDelete={(id) => { const updated = history.filter((h) => h.id !== id); setHistory(updated); localStorage.setItem("logline_history", JSON.stringify(updated)); }}
             onClear={() => { localStorage.removeItem("logline_history"); setHistory([]); }}
-            onSelect={(entry) => { setLogline(entry.logline); setGenre(entry.genre || "auto"); setResult(entry.result); setResult2(null); setActiveTab("overview"); setShowHistory(false); setCurrentStage("1"); }}
+            onSelect={(entry) => { setLogline(entry.logline); setGenre(entry.genre || "auto"); setResult(entry.result); setResult2(null); setShowHistory(false); setCurrentStage("1"); }}
           />
         </>
       )}
@@ -4883,8 +4893,6 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
                       setCustomDurationText={setCustomDurationText}
                       customFormatLabel={customFormatLabel}
                       setCustomFormatLabel={setCustomFormatLabel}
-                      activeTab={activeTab}
-                      setActiveTab={setActiveTab}
                       insightResult={insightResult}
                       insightLoading={insightLoading}
                       insightError={insightError}
