@@ -2,9 +2,8 @@
   "buildCommand": "vite build",
   "outputDirectory": "dist",
   "functions": {
-    "api/claude.js":           { "maxDuration": 120 },
-    "api/claude-stream.js":    { "maxDuration": 300 },
-    "api/cron/subscribe.js":   { "maxDuration": 60  }
+    "api/claude.js":           { "maxDuration": 60 },
+    "api/cron/subscribe.js":   { "maxDuration": 60 }
   },
   "crons": [
     { "path": "/api/cron/subscribe", "schedule": "0 0 * * *" }

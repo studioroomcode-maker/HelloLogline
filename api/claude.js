@@ -114,9 +114,91 @@ export default async function handler(req, res) {
     }
   }
 
-  // _feature, _retry 필드는 내부 라우팅용이므로 Anthropic에 전달하지 않음
-  const { _feature: _f, _retry: _r, ...anthropicBody } = body;
+  // _feature, _retry, _stream 필드는 내부 라우팅용이므로 Anthropic에 전달하지 않음
+  const { _feature: _f, _retry: _r, _stream, ...anthropicBody } = body;
 
+  // ── 스트리밍 모드 (expertpanel 등 긴 응답용) — SSE로 파이프 ──
+  if (_stream) {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+
+    let upstream;
+    try {
+      upstream = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-beta": "prompt-caching-2024-07-31",
+        },
+        body: JSON.stringify({ ...anthropicBody, stream: true }),
+      });
+    } catch (err) {
+      captureServerException(err, { where: "api/claude.stream", email: userEmail });
+      res.write(`event: error\ndata: ${JSON.stringify({ message: "AI 응답을 받지 못했어요. 네트워크를 확인하고 다시 시도해 주세요." })}\n\n`);
+      res.end();
+      return;
+    }
+
+    if (!upstream.ok) {
+      const errData = await upstream.json().catch(() => ({}));
+      res.write(`event: error\ndata: ${JSON.stringify({ status: upstream.status, ...errData })}\n\n`);
+      res.end();
+      return;
+    }
+
+    const reader = upstream.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let success = false;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const raw = line.slice(6).trim();
+          if (raw === "[DONE]") continue;
+          let evt;
+          try { evt = JSON.parse(raw); } catch { continue; }
+          if (evt.type === "content_block_delta" && evt.delta?.type === "text_delta") {
+            res.write(`data: ${JSON.stringify({ t: evt.delta.text })}\n\n`);
+          } else if (evt.type === "message_stop") {
+            success = true;
+          } else if (evt.type === "error") {
+            res.write(`event: error\ndata: ${JSON.stringify({ message: evt.error?.message || "스트림 오류가 발생했습니다." })}\n\n`);
+            res.end();
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      captureServerException(err, { where: "api/claude.stream.read", email: userEmail });
+      res.write(`event: error\ndata: ${JSON.stringify({ message: "스트림 읽기 중 오류가 발생했습니다." })}\n\n`);
+      res.end();
+      return;
+    }
+
+    if (success && creditEmail && creditCost > 0) {
+      const newBalance = await deductCredits(creditEmail, creditCost);
+      if (newBalance === null) console.error(`[Credits] 스트림 차감 실패: ${creditEmail}`);
+      else if (newBalance === -1) console.warn(`[Credits] 스트림 경합 조건: ${creditEmail}, cost: ${creditCost}`);
+    }
+
+    res.write(`event: done\ndata: ${JSON.stringify({ ok: true })}\n\n`);
+    res.end();
+    return;
+  }
+
+  // ── 일반 모드 (JSON 응답) ──
   let upstream, data;
   try {
     upstream = await fetch("https://api.anthropic.com/v1/messages", {

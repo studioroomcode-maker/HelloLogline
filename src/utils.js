@@ -476,7 +476,7 @@ export async function fetchClaudeStream(
 
   let response;
   try {
-    response = await fetch("/api/claude-stream", {
+    response = await fetch("/api/claude", {
       method: "POST",
       credentials: "include",
       headers,
@@ -486,6 +486,7 @@ export async function fetchClaudeStream(
         system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: userMessage }],
         _feature: feature,
+        _stream: true,
       }),
       signal,
     });
