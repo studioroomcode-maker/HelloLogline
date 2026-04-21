@@ -42,18 +42,34 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Hero ── */}
-      <section style={{ maxWidth: 760, margin: "0 auto", padding: "96px 24px 80px", textAlign: "center" }}>
-        <div style={{ display: "inline-block", padding: "5px 14px", borderRadius: 20, border: "1px solid rgba(200,168,75,0.35)", background: "rgba(200,168,75,0.07)", fontSize: 12, color: "#C8A84B", fontWeight: 700, marginBottom: 24, letterSpacing: 0.5 }}>
-          AI 시나리오 개발 워크스테이션
+      <section style={{ maxWidth: 820, margin: "0 auto", padding: "96px 24px 72px", textAlign: "center" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 20, border: "1px solid rgba(200,168,75,0.35)", background: "rgba(200,168,75,0.07)", fontSize: 12, color: "#C8A84B", fontWeight: 700, marginBottom: 24, letterSpacing: 0.5 }}>
+          <span aria-hidden="true">🇰🇷</span> 한국 시나리오·드라마 포맷에 최적화된 AI 워크스테이션
         </div>
-        <h1 style={{ fontSize: "clamp(32px, 5vw, 54px)", fontWeight: 900, lineHeight: 1.2, color: "#f0f0f4", marginBottom: 24, letterSpacing: -1 }}>
+        <h1 style={{ fontSize: "clamp(32px, 5vw, 54px)", fontWeight: 900, lineHeight: 1.2, color: "#f0f0f4", marginBottom: 20, letterSpacing: -1 }}>
           로그라인 한 줄에서<br />
           <span style={{ color: "#C8A84B" }}>시나리오 초고</span>까지
         </h1>
-        <p style={{ fontSize: "clamp(14px, 2vw, 18px)", color: "rgba(240,240,244,0.55)", lineHeight: 1.7, marginBottom: 40, maxWidth: 540, margin: "0 auto 40px" }}>
-          12개 학술 이론으로 분석하는 AI 시나리오 코치.<br />
-          18개 기준 즉시 채점 · 8단계 완성 파이프라인
+        <p style={{ fontSize: "clamp(14px, 2vw, 18px)", color: "rgba(240,240,244,0.6)", lineHeight: 1.7, marginBottom: 28, maxWidth: 620, margin: "0 auto 28px" }}>
+          영문 툴을 억지로 한국어로 쓰던 시대는 끝. <strong style={{ color: "#f0f0f4", fontWeight: 700 }}>미니시리즈 16부작·8부작·단편·공모전 분량</strong>의
+          한국형 서사 구조와 대사 톤을 이해하는 AI가 <strong style={{ color: "#f0f0f4", fontWeight: 700 }}>18개 항목 즉시 채점</strong>부터
+          <strong style={{ color: "#f0f0f4", fontWeight: 700 }}> 8단계 초고 완성</strong>까지 함께합니다.
         </p>
+
+        {/* 차별점 3대 핵심 (경쟁사 대비) */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, maxWidth: 680, margin: "0 auto 36px" }}>
+          {[
+            { label: "국내 방송·영화 포맷 프리셋", sub: "16부작·미니·단편·공모전" },
+            { label: "한국어 뉘앙스·대사 톤 학습", sub: "번역체 없는 자연스러운 문장" },
+            { label: "Toss 결제·국내 CS", sub: "원화 결제·환불·고객지원" },
+          ].map(({ label, sub }) => (
+            <div key={label} style={{ padding: "12px 14px", borderRadius: 10, border: "1px solid rgba(78,204,163,0.22)", background: "rgba(78,204,163,0.04)", textAlign: "left" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#4ECCA3", marginBottom: 3 }}>✓ {label}</div>
+              <div style={{ fontSize: 11, color: "rgba(240,240,244,0.5)" }}>{sub}</div>
+            </div>
+          ))}
+        </div>
+
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
           <a href={APP_URL} style={{ padding: "14px 32px", borderRadius: 12, background: "#C8A84B", color: "#0c0c1c", fontSize: 15, fontWeight: 800, textDecoration: "none", boxShadow: "0 4px 24px rgba(200,168,75,0.35)" }}>
             무료로 시작하기
@@ -62,7 +78,7 @@ export default function LandingPage() {
             기능 살펴보기 ↓
           </a>
         </div>
-        <p style={{ marginTop: 16, fontSize: 12, color: "rgba(255,255,255,0.3)" }}>신용카드 불필요 · 무료 크레딧 10개 즉시 지급</p>
+        <p style={{ marginTop: 16, fontSize: 12, color: "rgba(255,255,255,0.3)" }}>신용카드 불필요 · 무료 크레딧 10개 즉시 지급 · 해외 툴과 달리 원화·세금계산서 가능</p>
       </section>
 
       {/* ── Features ── */}
