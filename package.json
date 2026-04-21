@@ -3,8 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
-    "predev": "node scripts/kill-port.mjs 3001",
     "dev": "concurrently -n server,vite -c cyan,yellow \"node server.js\" \"vite\"",
     "server": "node server.js",
     "client": "vite",
