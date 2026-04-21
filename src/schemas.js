@@ -185,10 +185,10 @@ export const ValueChargeSchema = z
 
 export const ShadowAnalysisSchema = z
   .object({
-    hero_archetype: z.object({}).passthrough(),
-    shadow: z.object({}).passthrough(),
-    individuation_arc: z.object({}).passthrough(),
-    jung_verdict: z.string(),
+    hero_archetype: z.object({}).passthrough().catch({}),
+    shadow: z.object({}).passthrough().catch({}),
+    individuation_arc: z.object({}).passthrough().catch({}),
+    jung_verdict: z.string().catch(""),
   })
   .passthrough();
 

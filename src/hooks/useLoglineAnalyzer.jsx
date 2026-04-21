@@ -20,7 +20,7 @@ import {
   EPISODE_SERIES_SYSTEM_PROMPT,
   MASTER_REPORT_SYSTEM_PROMPT,
 } from "../constants.js";
-import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText, buildProjectSnapshot } from "../utils.js";
+import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText, fetchClaudeStream, parseClaudeJson, buildProjectSnapshot } from "../utils.js";
 import { REVISION_COLORS } from "../editor/FountainParser.js";
 import { exportToPdf, exportToMarkdown, downloadHtmlAsPdf } from "../utils-pdf.js";
 import {
@@ -343,6 +343,7 @@ export function useLoglineAnalyzer() {
   const [expertPanelResult, setExpertPanelResult] = useState(null);
   const [expertPanelLoading, setExpertPanelLoading] = useState(false);
   const [expertPanelError, setExpertPanelError] = useState("");
+  const [expertPanelProgress, setExpertPanelProgress] = useState(0);
   const expertPanelRef = useRef(null);
 
   // ── Value Charge (McKee) ──
@@ -2975,12 +2976,23 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   const runExpertPanel = async () => {
     if (!logline.trim() || !apiKey) return;
     const ctrl = makeController("expertPanel");
-    setExpertPanelLoading(true); setExpertPanelError(""); setExpertPanelResult(null);
+    setExpertPanelLoading(true); setExpertPanelError(""); setExpertPanelResult(null); setExpertPanelProgress(0);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `분석할 로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n글자수: ${logline.trim().length}자\n\n위 로그라인을 7명의 전문가 패널이 학술 이론을 바탕으로 토론하세요.`;
-    try { const data = await callClaude(apiKey, EXPERT_PANEL_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal, ExpertPanelSchema, "expertpanel"); setExpertPanelResult(data); await autoSave(); }
+    try {
+      const rawText = await fetchClaudeStream(
+        apiKey, EXPERT_PANEL_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6",
+        ctrl.signal, "expertpanel",
+        (_chunk, total) => setExpertPanelProgress(total.length)
+      );
+      const parsed = parseClaudeJson(rawText);
+      const validated = ExpertPanelSchema.safeParse(parsed);
+      const data = validated.success ? validated.data : parsed;
+      setExpertPanelResult(data);
+      await autoSave();
+    }
     catch (err) { if (err.name !== "AbortError") setExpertPanelError(err.message || "전문가 패널 분석 중 오류가 발생했습니다."); }
-    finally { setExpertPanelLoading(false); clearController("expertPanel"); }
+    finally { setExpertPanelLoading(false); setExpertPanelProgress(0); clearController("expertPanel"); }
   };
 
   // ── Subtext ──
@@ -4154,7 +4166,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     pipelineEditData, setPipelineEditData,
     refinePipelineSynopsis,
     // Expert Panel
-    expertPanelResult, setExpertPanelResult, expertPanelLoading, expertPanelError, expertPanelRef,
+    expertPanelResult, setExpertPanelResult, expertPanelLoading, expertPanelError, expertPanelProgress, expertPanelRef,
     runExpertPanel,
     // Value Charge
     valueChargeResult, setValueChargeResult, valueChargeLoading, valueChargeError, valueChargeRef,

@@ -33,7 +33,7 @@ function SectionHeader({ title, badge, color = "#45B7D1" }) {
 
 export default function Stage2Content({
   expertPanelResult, setExpertPanelResult,
-  expertPanelLoading, expertPanelError,
+  expertPanelLoading, expertPanelError, expertPanelProgress,
   runExpertPanel,
   // 서사 이론
   narrativeTheoryDone, narrativeTheoryLoading,
@@ -165,6 +165,11 @@ export default function Stage2Content({
           tooltip={"시나리오 작가, 제작사 PD, 문학평론가, 마케터 등 현업 전문가 10인이 이 로그라인을 독립적으로 평가합니다.\n\n라운드 1 — 각자 개별 의견 제시\n라운드 2 — 의견 교환 후 토론\n종합 — 합의점·핵심 강점 도출\n\n실제 방송사·제작사 심사 환경과 유사한 피드백을 얻을 수 있습니다."}
           creditCost={cc(1)}
         />
+        {expertPanelLoading && expertPanelProgress > 0 && (
+          <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 6, marginBottom: 2, fontFamily: "'JetBrains Mono', monospace" }}>
+            생성 중... ({expertPanelProgress.toLocaleString()}자)
+          </div>
+        )}
         <ErrorMsg msg={expertPanelError} />
         {expertPanelResult && (
           <ResultCard title="전문가 패널 토론" onClose={() => setExpertPanelResult(null)} color="rgba(255,209,102,0.15)">

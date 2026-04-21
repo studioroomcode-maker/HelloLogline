@@ -3,6 +3,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/claude.js":           { "maxDuration": 120 },
+    "api/claude-stream.js":    { "maxDuration": 300 },
     "api/cron/subscribe.js":   { "maxDuration": 60  }
   },
   "crons": [

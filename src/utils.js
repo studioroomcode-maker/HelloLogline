@@ -339,7 +339,12 @@ export async function callClaude(
   const first = schema.safeParse(parsed);
   if (first.success) return first.data;
 
-  console.warn("[schema] 1차 검증 실패, 재시도합니다.", first.error.issues.slice(0, 3));
+  console.warn("[schema] 1차 검증 실패, 재시도합니다.", {
+    feature,
+    issues: first.error.issues.slice(0, 3),
+    parsedType: describeValue(parsed),
+    rawPreview: text.slice(0, 300),
+  });
 
   // Retry (same prompt — Claude responses are non-deterministic, retry often fixes it)
   // 내부 자동 재시도는 크레딧 미차감
@@ -350,15 +355,37 @@ export async function callClaude(
 
   if (second.success) return second.data;
 
-  // Both attempts failed — surface the error instead of passing garbage through
+  // Both attempts failed — surface the error with diagnostic context
+  console.error("[schema] 2차 검증도 실패", {
+    feature,
+    issues: second.error.issues.slice(0, 5),
+    parsedType: describeValue(retryParsed),
+    rawResponse: retryText,
+  });
+
   const issues = second.error.issues
     .slice(0, 5)
-    .map((i) => `${i.path.join(".")}: ${i.message}`)
+    .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
     .join(", ");
-  const err = new Error(`응답 형식 검증 실패 (2회 시도): ${issues}`);
+  const typeHint = describeValue(retryParsed);
+  const err = new Error(`응답 형식 검증 실패 (2회 시도) — 받은 값: ${typeHint} · ${issues}`);
   err.name = "SchemaValidationError";
   err.issues = second.error.issues;
+  err.rawResponse = retryText;
   throw err;
+}
+
+/** 디버그용: 값의 타입을 사람이 읽기 쉬운 문자열로 요약 */
+function describeValue(v) {
+  if (v === null) return "null";
+  if (v === undefined) return "undefined";
+  if (Array.isArray(v)) return `배열(길이 ${v.length})`;
+  if (typeof v === "object") {
+    const keys = Object.keys(v);
+    return `객체(키 ${keys.length}개: ${keys.slice(0, 5).join(", ")}${keys.length > 5 ? "…" : ""})`;
+  }
+  if (typeof v === "string") return `문자열("${v.slice(0, 40)}${v.length > 40 ? "…" : ""}")`;
+  return `${typeof v}(${String(v).slice(0, 40)})`;
 }
 
 /**
@@ -419,6 +446,106 @@ export async function callClaudeText(
 
   const data = await response.json();
   return data.content?.map((b) => b.text || "").join("") || "";
+}
+
+/**
+ * Expert panel 전용 SSE 스트리밍 fetch.
+ * onProgress(chunk, totalSoFar) 콜백으로 실시간 진행률 전달.
+ * 완료 후 fullText 문자열 반환.
+ */
+export async function fetchClaudeStream(
+  apiKey,
+  systemPrompt,
+  userMessage,
+  maxTokens,
+  model,
+  signal,
+  feature,
+  onProgress = null
+) {
+  if (!navigator.onLine) {
+    const err = new Error("오프라인 상태입니다 — 인터넷에 연결하거나 로컬 AI(Ollama)를 설정하세요.");
+    err.name = "OfflineError";
+    throw err;
+  }
+
+  const headers = { "Content-Type": "application/json" };
+  if (apiKey && apiKey !== "__server__") headers["x-client-api-key"] = apiKey;
+  const authToken = localStorage.getItem("hll_auth_token");
+  if (authToken) headers["x-auth-token"] = authToken;
+
+  let response;
+  try {
+    response = await fetch("/api/claude-stream", {
+      method: "POST",
+      credentials: "include",
+      headers,
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+        messages: [{ role: "user", content: userMessage }],
+        _feature: feature,
+      }),
+      signal,
+    });
+  } catch (netErr) {
+    if (netErr.name === "AbortError") throw netErr;
+    throw new Error("네트워크 오류 — 인터넷 연결을 확인하거나 잠시 후 다시 시도해주세요.");
+  }
+
+  if (!response.ok) {
+    if (response.status === 402) {
+      window.dispatchEvent(new CustomEvent("hll:credits-empty"));
+      throw new Error("크레딧이 부족합니다. 크레딧을 충전해주세요.");
+    }
+    const errData = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      const msg = errData?.error?.message || "";
+      if (msg.includes("로그인이 필요") || msg.includes("인증 토큰")) {
+        window.dispatchEvent(new CustomEvent("hll:auth-expired"));
+        throw new Error("세션이 만료되었습니다. 다시 로그인해주세요.");
+      }
+    }
+    const fallback = `API 오류 (${response.status})`;
+    throw new Error(koreanizeError(errData, response.status) || errData?.error?.message || fallback);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  let fullText = "";
+  let lastEvent = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split("\n");
+    buf = lines.pop() ?? "";
+
+    for (const line of lines) {
+      if (line.startsWith("event: ")) { lastEvent = line.slice(7).trim(); continue; }
+      if (!line.startsWith("data: ")) continue;
+      const raw = line.slice(6);
+      let data;
+      try { data = JSON.parse(raw); } catch { continue; }
+
+      if (lastEvent === "error" || data?.error) {
+        throw new Error(data?.message || data?.error?.message || "스트림 오류가 발생했습니다.");
+      }
+      if (lastEvent === "done") break;
+
+      if (data.t) {
+        fullText += data.t;
+        onProgress?.(data.t, fullText);
+      }
+      lastEvent = "";
+    }
+  }
+
+  return fullText;
 }
 
 /**

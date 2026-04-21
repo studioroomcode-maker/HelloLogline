@@ -145,6 +145,7 @@ function StageContent(props) {
             setExpertPanelResult={props.setExpertPanelResult}
             expertPanelLoading={props.expertPanelLoading}
             expertPanelError={props.expertPanelError}
+            expertPanelProgress={props.expertPanelProgress}
             runExpertPanel={props.runExpertPanel}
             narrativeTheoryDone={props.narrativeTheoryDone}
             narrativeTheoryLoading={props.narrativeTheoryLoading}
