@@ -845,7 +845,7 @@ export function useLoglineAnalyzer() {
             showToast("error", d.error || "결제 확인에 실패했습니다.");
           }
         })
-        .catch(() => showToast("error", "결제 확인에 실패했어요. 이미 결제됐다면 잠시 후 크레딧이 자동 반영되며, 10분 뒤에도 반영되지 않으면 studioroom.skb@gmail.com 으로 문의해 주세요."))
+        .catch(() => showToast("error", "결제 확인에 실패했어요. 이미 결제됐다면 잠시 후 크레딧이 자동 반영되며, 10분 뒤에도 반영되지 않으면 contact@studioroomkr.com 으로 문의해 주세요."))
         .finally(() => setCreditPurchasing(false));
     } else if (authKey && customerKey && billingPlan) {
       // ── 구독 billingKey 교환 ──

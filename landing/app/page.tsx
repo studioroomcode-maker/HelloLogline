@@ -19,9 +19,9 @@ const STAGES = [
 ];
 
 const TESTIMONIALS = [
-  { name: "김지은", role: "드라마 작가 (SBS 납품)", text: "로그라인 단계에서 '정보 격차' 점수가 낮다는 걸 알고 첫 문장을 수정했더니 피칭 통과율이 달라졌어요." },
-  { name: "박현우", role: "독립영화 감독", text: "블레이크 스나이더 비트 시트를 AI가 자동 생성해주는 건 처음 봤습니다. 개발 기간이 3분의 1로 줄었어요." },
-  { name: "이수진", role: "제작사 개발팀장", text: "팀원 5명이 각자 로그라인을 분석하고 비교 기능으로 최선안을 선택합니다. B2B 플랜으로 사용 중입니다." },
+  { name: "K 작가", role: "드라마 작가 (활용 예시)",    text: "로그라인 단계에서 '정보 격차' 점수가 낮다는 걸 알고 첫 문장을 수정 — 피칭 통과율 개선을 노리는 시나리오." },
+  { name: "P 감독", role: "독립영화 감독 (활용 예시)", text: "블레이크 스나이더 비트 시트를 AI가 자동 생성 — 개발 기간 단축을 목표로 한 프로젝트 활용 예시." },
+  { name: "L 팀장", role: "제작사 개발팀장 (활용 예시)", text: "팀원이 각자 로그라인을 분석하고 비교 기능으로 최선안 선택 — 팀 협업 기능을 활용하는 사용 예시." },
 ];
 
 const PLANS = [
@@ -117,12 +117,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 후기 ── */}
+      {/* ── 가상 시나리오 예시 ── */}
       <section style={{ background: "rgba(255,255,255,0.02)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "80px 24px" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(78,204,163,0.7)", textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>사용 후기</div>
-            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 800, color: "#f0f0f4" }}>현업 작가와 제작자가 선택했습니다</h2>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(78,204,163,0.7)", textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>가상 시나리오 예시</div>
+            <h2 style={{ fontSize: "clamp(22px, 3vw, 34px)", fontWeight: 800, color: "#f0f0f4" }}>이런 방식으로 활용할 수 있어요</h2>
+            <p style={{ marginTop: 10, fontSize: 12, color: "rgba(240,240,244,0.35)" }}>※ 아래는 서비스 활용 예시이며 실제 고객 후기가 아닙니다.</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
             {TESTIMONIALS.map(t => (

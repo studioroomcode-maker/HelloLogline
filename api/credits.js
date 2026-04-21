@@ -146,7 +146,7 @@ export default async function handler(req, res) {
         return res.status(500).json({
           error: cancelled
             ? "크레딧 적립에 실패하여 자동 환불했습니다. 다시 시도해 주세요."
-            : "크레딧 적립에 실패했습니다. 고객센터로 문의해 주세요 (studioroom.skb@gmail.com).",
+            : "크레딧 적립에 실패했습니다. 고객센터로 문의해 주세요 (contact@studioroomkr.com).",
         });
       }
 
