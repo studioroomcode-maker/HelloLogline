@@ -52,7 +52,7 @@ import {
   uploadLocalProjectsToCloud,
   saveProjectVersion,
 } from "../db.js";
-import { ICON } from "../ui.jsx";
+import { ICON, Spinner } from "../ui.jsx";
 import { useStage1 } from "./useStage1.js";
 import { useNetworkStatus } from "./useNetworkStatus.js";
 
