@@ -10,12 +10,30 @@
   ],
   "rewrites": [
     { "source": "/api/health", "destination": "/api/credits?health=1" },
-    { "source": "/auth/kakao/callback", "destination": "/api/auth/kakao/callback" },
-    { "source": "/auth/google/callback", "destination": "/api/auth/google/callback" },
-    { "source": "/auth/naver/callback", "destination": "/api/auth/naver/callback" },
-    { "source": "/auth/kakao", "destination": "/api/auth/kakao" },
-    { "source": "/auth/google", "destination": "/api/auth/google" },
-    { "source": "/auth/naver", "destination": "/api/auth/naver" },
+
+    { "source": "/auth/kakao/callback", "destination": "/api/auth?action=kakao-callback" },
+    { "source": "/auth/google/callback", "destination": "/api/auth?action=google-callback" },
+    { "source": "/auth/naver/callback", "destination": "/api/auth?action=naver-callback" },
+    { "source": "/auth/kakao", "destination": "/api/auth?action=kakao" },
+    { "source": "/auth/google", "destination": "/api/auth?action=google" },
+    { "source": "/auth/naver", "destination": "/api/auth?action=naver" },
+
+    { "source": "/api/auth/me", "destination": "/api/auth?action=me" },
+    { "source": "/api/auth/logout", "destination": "/api/auth?action=logout" },
+    { "source": "/api/auth/google", "destination": "/api/auth?action=google" },
+    { "source": "/api/auth/kakao", "destination": "/api/auth?action=kakao" },
+    { "source": "/api/auth/naver", "destination": "/api/auth?action=naver" },
+
+    { "source": "/api/subscribe/billing-auth", "destination": "/api/subscribe?action=billing-auth" },
+    { "source": "/api/subscribe/cancel", "destination": "/api/subscribe?action=cancel" },
+    { "source": "/api/subscribe/status", "destination": "/api/subscribe?action=status" },
+
+    { "source": "/api/admin/audit", "destination": "/api/admin?resource=audit" },
+    { "source": "/api/admin/users", "destination": "/api/admin?resource=users" },
+
+    { "source": "/api/teams/members", "destination": "/api/teams?resource=members" },
+    { "source": "/api/projects/versions", "destination": "/api/projects?resource=versions" },
+
     { "source": "/share/:path*", "destination": "/index.html" },
     { "source": "/((?!api/|legal/).*)", "destination": "/index.html" }
   ]
