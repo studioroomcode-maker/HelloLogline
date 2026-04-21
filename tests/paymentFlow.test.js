@@ -23,6 +23,9 @@ vi.mock("../api/_redis.js", () => ({
   checkRateLimit: vi.fn(() => ({ ok: true, remaining: 20, reset: 60 })),
   grantInitialCredits: vi.fn(),
   redisConfigured: vi.fn().mockReturnValue(true),
+  getPaymentEvent: vi.fn().mockResolvedValue(null),
+  savePaymentEvent: vi.fn().mockResolvedValue(null),
+  writeAuditLog: vi.fn().mockResolvedValue(null),
 }));
 
 import { getCredits, addCreditsDb } from "../api/_redis.js";

@@ -1,4 +1,4 @@
-import { rcall, redisConfigured } from "../_redis.js";
+import { rcall, redisConfigured, writeAuditLog } from "../_redis.js";
 import { verifyToken, getTokenFromRequest } from "../auth/_jwt.js";
 
 function adminEmails() {
@@ -69,6 +69,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "유효하지 않은 등급입니다." });
     }
     await rcall("set", `hll:tier:${email.toLowerCase()}`, tier);
+    await writeAuditLog(payload.email, "tier.change", email.toLowerCase(), { newTier: tier });
     return res.json({ ok: true });
   }
 

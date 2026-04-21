@@ -152,7 +152,15 @@
       }
 
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { background: var(--bg-page); transition: background 0.25s; }
+      body { background: var(--bg-page); transition: background 0.25s; overflow-x: hidden; }
+      /* 모바일: 패널 내 넓은 콘텐츠 오버플로우 방지 */
+      @media (max-width: 768px) {
+        #root { overflow-x: hidden; }
+        img, svg, canvas { max-width: 100%; height: auto; }
+        table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        pre, code { overflow-x: auto; max-width: 100%; white-space: pre-wrap; }
+        .hll-prose, .hll-panel-body { overflow-wrap: break-word; word-break: break-word; }
+      }
       @keyframes spin { to { transform: rotate(360deg); } }
       @keyframes fadeIn { from { opacity:0; transform:translateY(4px);} to { opacity:1; transform:translateY(0);} }
       @keyframes fadeSlideUp { from { opacity:0; transform:translateY(12px);} to { opacity:1; transform:translateY(0);} }

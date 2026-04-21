@@ -1,5 +1,7 @@
 import { rcall, deductCredits, getCredits, redisConfigured, checkRateLimit } from "./_redis.js";
 import { verifyToken, getTokenFromRequest } from "./auth/_jwt.js";
+import { ensureEnv } from "./_env.js";
+import { captureServerException } from "./_sentry.js";
 
 const CREDIT_COSTS = {
   logline: 0, improve: 0,
@@ -36,6 +38,7 @@ async function getUserTier(email, userId) {
 }
 
 export default async function handler(req, res) {
+  if (!ensureEnv(res, ["JWT_SECRET", "ANTHROPIC_API_KEY"])) return;
   if (req.method !== "POST") {
     return res.status(405).json({ error: { message: "Method not allowed" } });
   }
@@ -128,8 +131,8 @@ export default async function handler(req, res) {
     });
     data = await upstream.json();
   } catch (err) {
-    console.error("[proxy error]", err.message);
-    return res.status(500).json({ error: { message: err.message } });
+    captureServerException(err, { where: "api/claude.proxy", email: userEmail });
+    return res.status(500).json({ error: { message: "AI 응답을 받지 못했어요. 네트워크를 확인하고 다시 시도해 주세요. (크레딧은 차감되지 않았습니다)" } });
   }
 
   // ── AI 성공 후에만 크레딧 차감 ──

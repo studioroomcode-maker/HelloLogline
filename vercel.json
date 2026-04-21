@@ -17,6 +17,6 @@
     { "source": "/auth/google", "destination": "/api/auth/google" },
     { "source": "/auth/naver", "destination": "/api/auth/naver" },
     { "source": "/share/:path*", "destination": "/index.html" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|legal/).*)", "destination": "/index.html" }
   ]
 }

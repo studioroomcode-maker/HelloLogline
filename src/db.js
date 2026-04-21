@@ -1,11 +1,54 @@
 /**
  * IndexedDB wrapper for HelloLoglines project persistence.
  * Projects are stored with all analysis state so work survives browser refreshes.
+ *
+ * localStorage backup: a minimal snapshot {id, name, logline, genre, updatedAt}
+ * is kept under "hll_bk_<id>" so data is recoverable after browser storage clears.
  */
 
 const DB_NAME = "hellologlines_v1";
 const DB_VERSION = 1;
 const STORE = "projects";
+
+// ─── localStorage backup helpers ────────────────────────────────────────────
+
+const LS_PREFIX = "hll_bk_";
+
+function lsBackupKey(id) { return LS_PREFIX + id; }
+
+/** Write a minimal snapshot to localStorage (safe, ignores quota errors). */
+function lsWrite(project) {
+  try {
+    const snap = {
+      id: project.id,
+      name: project.name || "",
+      logline: project.logline || "",
+      genre: project.genre || "",
+      updatedAt: project.updatedAt || new Date().toISOString(),
+      _fromBackup: true,
+    };
+    localStorage.setItem(lsBackupKey(project.id), JSON.stringify(snap));
+  } catch { /* quota exceeded — silent */ }
+}
+
+/** Remove backup entry for a deleted project. */
+function lsRemove(id) {
+  try { localStorage.removeItem(lsBackupKey(id)); } catch { /* ignore */ }
+}
+
+/** Return all localStorage backup entries (used when IndexedDB is empty). */
+function lsReadAll() {
+  try {
+    const results = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(LS_PREFIX)) {
+        try { results.push(JSON.parse(localStorage.getItem(key))); } catch { /* corrupt entry */ }
+      }
+    }
+    return results.sort((a, b) => (b.updatedAt > a.updatedAt ? 1 : -1)).slice(0, 50);
+  } catch { return []; }
+}
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -24,27 +67,35 @@ function openDB() {
 
 /** Save or update a project snapshot. */
 export async function saveProject(project) {
+  const saved = { ...project, updatedAt: new Date().toISOString() };
   const db = await openDB();
-  return new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).put({
-      ...project,
-      updatedAt: new Date().toISOString(),
-    });
+    tx.objectStore(STORE).put(saved);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
+  lsWrite(saved);
 }
 
-/** Load all projects, newest first (max 50). */
+/** Load all projects, newest first (max 50).
+ *  Falls back to localStorage backup entries when IndexedDB returns nothing.
+ */
 export async function loadProjects() {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, "readonly");
-    const req = tx.objectStore(STORE).index("updatedAt").getAll();
-    req.onsuccess = () => resolve(req.result.reverse().slice(0, 50));
-    req.onerror = () => reject(req.error);
-  });
+  try {
+    const db = await openDB();
+    const rows = await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE, "readonly");
+      const req = tx.objectStore(STORE).index("updatedAt").getAll();
+      req.onsuccess = () => resolve(req.result.reverse().slice(0, 50));
+      req.onerror = () => reject(req.error);
+    });
+    if (rows.length > 0) return rows;
+    // IndexedDB is empty — try localStorage backups
+    return lsReadAll();
+  } catch {
+    return lsReadAll();
+  }
 }
 
 /** Load a single project by id. */
@@ -61,12 +112,13 @@ export async function loadProject(id) {
 /** Delete a project by id. */
 export async function deleteProject(id) {
   const db = await openDB();
-  return new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, "readwrite");
     tx.objectStore(STORE).delete(id);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
+  lsRemove(id);
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -144,6 +196,79 @@ export async function deleteProjectFromCloud(id, token) {
     return res.ok;
   } catch {
     return false;
+  }
+}
+
+// ─── Fork (branch) ───────────────────────────────────────────────────────────
+
+/**
+ * 기존 프로젝트를 분기(fork)합니다.
+ * 분기된 프로젝트는 parentId 필드로 원본을 참조합니다.
+ */
+export async function forkProject(original) {
+  const forked = {
+    ...original,
+    id: Date.now().toString(),
+    parentId: original.id,
+    title: `[분기] ${original.title || "프로젝트"}`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  await saveProject(forked);
+  return forked;
+}
+
+// ─── Version History ─────────────────────────────────────────────────────────
+
+/**
+ * 현재 프로젝트 스냅샷을 버전 히스토리에 저장합니다.
+ * Supabase 미연동 시 아무것도 하지 않고 false를 반환합니다.
+ */
+export async function saveProjectVersion(projectId, snapshot, token) {
+  if (!token || !projectId) return false;
+  try {
+    const res = await fetch("/api/projects/versions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-auth-token": token },
+      body: JSON.stringify({ projectId, snapshot }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 특정 프로젝트의 저장된 버전 목록을 가져옵니다.
+ */
+export async function loadProjectVersions(projectId, token) {
+  if (!token || !projectId) return [];
+  try {
+    const res = await fetch(`/api/projects/versions?projectId=${encodeURIComponent(projectId)}`, {
+      headers: { "x-auth-token": token },
+    });
+    if (!res.ok) return [];
+    const { versions } = await res.json();
+    return Array.isArray(versions) ? versions : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 특정 버전 ID의 전체 스냅샷(복원 데이터)을 서버에서 가져옵니다.
+ */
+export async function fetchVersionSnapshot(versionId, token) {
+  if (!token || !versionId) return null;
+  try {
+    const res = await fetch(`/api/projects/versions?id=${encodeURIComponent(versionId)}`, {
+      headers: { "x-auth-token": token },
+    });
+    if (!res.ok) return null;
+    const { snapshot } = await res.json();
+    return snapshot || null;
+  } catch {
+    return null;
   }
 }
 

@@ -205,6 +205,26 @@ export async function grantInitialCredits(email, amount = 10) {
   } catch { /* 무시 — 크레딧 지급 실패가 로그인을 막으면 안 됨 */ }
 }
 
+// ─── In-memory rate limit fallback ──────────────────────────────────────────
+// Used when Redis/Supabase is unreachable. Provides burst protection within a
+// warm serverless instance. Not shared across instances — best-effort only.
+const _memStore = new Map();
+
+function memRateCheck(key, limit, windowSec) {
+  const now = Date.now();
+  const entry = _memStore.get(key);
+  if (!entry || entry.resetAt <= now) {
+    _memStore.set(key, { count: 1, resetAt: now + windowSec * 1000 });
+    return { ok: true, remaining: limit - 1, reset: windowSec };
+  }
+  entry.count++;
+  return {
+    ok: entry.count <= limit,
+    remaining: Math.max(0, limit - entry.count),
+    reset: Math.ceil((entry.resetAt - now) / 1000),
+  };
+}
+
 /**
  * 레이트 리미팅 체크
  * @param {string} key - 리미팅 키 (예: "rl:ip:1.2.3.4" 또는 "rl:user:email@a.com")
@@ -225,8 +245,8 @@ export async function checkRateLimit(key, limit, windowSec) {
       reset: ttl,
     };
   } catch {
-    // Redis 없으면 통과
-    return { ok: true, remaining: limit, reset: windowSec };
+    // Redis/Supabase 불가 — 인스턴스 내 in-memory 폴백으로 최소한의 버스트 방어
+    return memRateCheck(key, limit, windowSec);
   }
 }
 
@@ -272,4 +292,68 @@ export async function listDueSubscriptions(nowMs) {
     `hll_subscriptions?status=eq.active&next_billing_at=lte.${nowMs}&select=*`
   );
   return Array.isArray(rows) ? rows : [];
+}
+
+// ─── 결제 이벤트 로그 (멱등성 + 감사) ────────────────────────────
+// 테이블 생성 SQL:
+//   CREATE TABLE hll_payment_events (
+//     payment_key   text PRIMARY KEY,
+//     order_id      text,
+//     email         text,
+//     amount        bigint,
+//     status        text,
+//     event         text,
+//     credits_added bigint DEFAULT 0,
+//     raw           jsonb,
+//     created_at    bigint
+//   );
+//   CREATE INDEX hll_payment_events_email_idx ON hll_payment_events(email);
+//   CREATE INDEX hll_payment_events_order_idx ON hll_payment_events(order_id);
+
+/** 결제 이벤트 조회 — 이미 처리됐는지 확인 (멱등성) */
+export async function getPaymentEvent(paymentKey) {
+  if (!usingSupa()) return null;
+  const rows = await supaReq(
+    `hll_payment_events?payment_key=eq.${encodeURIComponent(paymentKey)}&select=*`
+  );
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return rows[0];
+}
+
+/** 결제 이벤트 저장 — merge-duplicates로 upsert */
+export async function savePaymentEvent(paymentKey, data) {
+  if (!usingSupa()) return null;
+  return supaReq("hll_payment_events", {
+    method: "POST",
+    prefer: "resolution=merge-duplicates",
+    body: {
+      payment_key: paymentKey,
+      created_at: Date.now(),
+      ...data,
+    },
+  });
+}
+
+// ─── 감사 로그 ──────────────────────────────────────────────────
+// 테이블 생성 SQL:
+//   CREATE TABLE hll_audit_logs (
+//     id         bigserial PRIMARY KEY,
+//     actor      text,
+//     action     text,
+//     target     text,
+//     detail     jsonb,
+//     created_at bigint
+//   );
+//   CREATE INDEX hll_audit_logs_actor_idx ON hll_audit_logs(actor);
+//   CREATE INDEX hll_audit_logs_action_idx ON hll_audit_logs(action);
+
+/** 감사 로그 기록 — 실패해도 호출자에게 예외를 던지지 않음 */
+export async function writeAuditLog(actor, action, target, detail) {
+  if (!usingSupa()) return null;
+  try {
+    return await supaReq("hll_audit_logs", {
+      method: "POST",
+      body: { actor, action, target, detail, created_at: Date.now() },
+    });
+  } catch { return null; }
 }

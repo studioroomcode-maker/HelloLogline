@@ -7,20 +7,37 @@
  */
 import { listDueSubscriptions, upsertSubscription, addCreditsDb } from "../_redis.js";
 import { sendEmail, subscriptionRenewedHtml, subscriptionFailedHtml } from "../_email.js";
+import { captureServerException } from "../_sentry.js";
+
+import crypto from "node:crypto";
 
 const TOSS_SECRET_KEY = (process.env.TOSS_SECRET_KEY || "").trim();
 const CRON_SECRET = (process.env.CRON_SECRET || "").trim();
+const IS_PROD = (process.env.VERCEL_ENV || process.env.NODE_ENV) === "production";
 
 const PLANS = {
   sub_basic: { credits: 100, amount: 9900,  label: "Basic" },
   sub_pro:   { credits: 250, amount: 19900, label: "Pro"   },
 };
 
+function timingSafeEqual(a, b) {
+  const ab = Buffer.from(a || "");
+  const bb = Buffer.from(b || "");
+  if (ab.length !== bb.length) return false;
+  try { return crypto.timingSafeEqual(ab, bb); } catch { return false; }
+}
+
 export default async function handler(req, res) {
-  // ── 보안 검증 ──
+  // ── 보안 검증: 프로덕션에서는 CRON_SECRET 필수 ──
+  if (IS_PROD && !CRON_SECRET) {
+    console.error("[cron:subscribe] CRON_SECRET 미설정 — 프로덕션 실행 차단");
+    return res.status(500).json({ error: "CRON_SECRET not configured" });
+  }
+
   if (CRON_SECRET) {
     const authHeader = req.headers.authorization || "";
-    if (authHeader !== `Bearer ${CRON_SECRET}`) {
+    const expected = `Bearer ${CRON_SECRET}`;
+    if (!timingSafeEqual(authHeader, expected)) {
       return res.status(401).json({ error: "Unauthorized" });
     }
   }
@@ -93,7 +110,7 @@ export default async function handler(req, res) {
 
       results.push({ email: sub.email, ok: true, credits: pkg.credits });
     } catch (e) {
-      console.error("[cron:subscribe] error for", sub.email, e.message);
+      captureServerException(e, { where: "cron:subscribe", email: sub.email, plan: sub.plan });
       results.push({ email: sub.email, ok: false, reason: e.message });
     }
   }

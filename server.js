@@ -23,6 +23,16 @@ try {
   // .env not found — rely on system env
 }
 
+// 필수/권장 환경변수 점검 (부트 시 1회)
+{
+  const required = ["JWT_SECRET", "ANTHROPIC_API_KEY", "SUPABASE_URL", "SUPABASE_SERVICE_KEY"];
+  const advisory = ["TOSS_SECRET_KEY", "CRON_SECRET", "RESEND_API_KEY", "VITE_TOSS_CLIENT_KEY"];
+  const missingReq = required.filter(k => !(process.env[k] || "").trim());
+  const missingAdv = advisory.filter(k => !(process.env[k] || "").trim());
+  if (missingReq.length) console.warn(`[env] 필수 환경변수 누락: ${missingReq.join(", ")} — 해당 기능 비활성화됨`);
+  if (missingAdv.length) console.warn(`[env] 권장 환경변수 누락: ${missingAdv.join(", ")}`);
+}
+
 app.use(
   cors({
     origin: [

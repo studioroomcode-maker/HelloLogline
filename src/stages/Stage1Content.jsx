@@ -138,6 +138,17 @@ export default function Stage1Content({
   useEffect(() => {
     if (!eduMode) { setEduPhase("checklist"); setSelfScores(null); }
   }, [eduMode]);
+
+  // WelcomeModal의 "샘플로 체험" CTA를 받아 자동 분석 실행 (1회)
+  useEffect(() => {
+    const onAutorun = () => {
+      if (logline && !loading && !result) {
+        try { analyze?.(); } catch { /* noop */ }
+      }
+    };
+    window.addEventListener("hll:autorun-analyze", onAutorun);
+    return () => window.removeEventListener("hll:autorun-analyze", onAutorun);
+  }, [logline, loading, result, analyze]);
   useEffect(() => {
     if (result && eduPhase === "checklist") setEduPhase("result");
   }, [result]);

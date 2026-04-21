@@ -244,8 +244,102 @@ function StagePageHeader({ stageId, isMobile, status }) {
   );
 }
 
-/* ─── 모바일 하단 네비게이션 (prev/current/next 패턴) ─── */
+/* ─── 모바일 스테이지 드롭다운 (전체 스테이지 직접 이동) ─── */
+function StageDropdown({ currentStage, setCurrentStage, getStageStatus, onClose }) {
+  const stages = [
+    { id: "dashboard", title: "대시보드", color: "#C8A84B" },
+    ...STAGE_META,
+  ];
+  return (
+    <>
+      {/* 오버레이 */}
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed", inset: 0, zIndex: 1200,
+          background: "rgba(0,0,0,0.5)",
+          backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)",
+        }}
+      />
+      {/* 시트 */}
+      <div style={{
+        position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1201,
+        background: "var(--bg-surface)",
+        borderTop: "1px solid var(--c-bd-2)",
+        borderRadius: "18px 18px 0 0",
+        padding: "16px 16px calc(16px + env(safe-area-inset-bottom))",
+        fontFamily: "'Noto Sans KR', sans-serif",
+        maxHeight: "75vh", overflowY: "auto",
+        animation: "fadeSlideUp 0.22s ease",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--c-tx-40)", textTransform: "uppercase", letterSpacing: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+            스테이지 이동
+          </span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--c-tx-35)", padding: 4 }}>
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {stages.map(s => {
+            const isActive = currentStage === s.id;
+            const isDone = s.id !== "dashboard" && getStageStatus(s.id) === "done";
+            return (
+              <button
+                key={s.id}
+                onClick={() => { setCurrentStage(s.id); onClose(); }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "12px 14px", borderRadius: 12, border: "none",
+                  background: isActive ? `${s.color}15` : "transparent",
+                  cursor: "pointer", textAlign: "left",
+                  transition: "background 0.15s",
+                }}
+              >
+                <div style={{
+                  width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: `${s.color}20`, border: `1px solid ${s.color}35`,
+                  fontSize: 9, fontWeight: 800, color: s.color,
+                  fontFamily: "'JetBrains Mono', monospace",
+                }}>
+                  {s.id === "dashboard" ? (
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                      <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                  ) : String(s.id).padStart(2, "0")}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: isActive ? 800 : 600, color: isActive ? s.color : "var(--text-main)" }}>
+                    {s.title}
+                  </div>
+                  {s.sub && (
+                    <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginTop: 1 }}>{s.sub}</div>
+                  )}
+                </div>
+                {isDone && (
+                  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round">
+                    <path d="M5 13l4 4L19 7"/>
+                  </svg>
+                )}
+                {isActive && !isDone && (
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ─── 모바일 하단 네비게이션 (prev/current/next + 드롭다운) ─── */
 function MobileBottomNav({ currentStage, setCurrentStage, getStageStatus }) {
+  const [showDropdown, setShowDropdown] = useState(false);
   const isDashboard = currentStage === "dashboard";
   const currentIdx = isDashboard ? -1 : STAGE_META.findIndex(s => s.id === currentStage);
   const currentMeta = currentIdx >= 0 ? STAGE_META[currentIdx] : null;
@@ -253,117 +347,141 @@ function MobileBottomNav({ currentStage, setCurrentStage, getStageStatus }) {
   const nextMeta = currentIdx >= 0 && currentIdx < STAGE_META.length - 1 ? STAGE_META[currentIdx + 1] : null;
 
   return (
-    <div style={{
-      display: "flex", alignItems: "center",
-      height: 56,
-      paddingBottom: "env(safe-area-inset-bottom)",
-      paddingLeft: 8, paddingRight: 8,
-      gap: 4,
-    }}>
-      {/* 대시보드 버튼 */}
-      <button
-        onClick={() => setCurrentStage("dashboard")}
-        title="대시보드"
-        style={{
-          width: 40, height: 40, flexShrink: 0, borderRadius: 10, border: "none",
-          background: isDashboard ? "rgba(200,168,75,0.15)" : "transparent",
-          color: isDashboard ? "#C8A84B" : "var(--c-tx-35)",
-          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          transition: "all 0.15s",
-        }}
-      >
-        <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-          <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-        </svg>
-      </button>
+    <>
+      {showDropdown && (
+        <StageDropdown
+          currentStage={currentStage}
+          setCurrentStage={setCurrentStage}
+          getStageStatus={getStageStatus}
+          onClose={() => setShowDropdown(false)}
+        />
+      )}
+      <div style={{
+        display: "flex", alignItems: "center",
+        height: 56,
+        paddingBottom: "env(safe-area-inset-bottom)",
+        paddingLeft: 8, paddingRight: 8,
+        gap: 4,
+      }}>
+        {/* 대시보드 버튼 */}
+        <button
+          onClick={() => setCurrentStage("dashboard")}
+          title="대시보드"
+          style={{
+            width: 40, height: 40, flexShrink: 0, borderRadius: 10, border: "none",
+            background: isDashboard ? "rgba(200,168,75,0.15)" : "transparent",
+            color: isDashboard ? "#C8A84B" : "var(--c-tx-35)",
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.15s",
+          }}
+        >
+          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
+        </button>
 
-      {/* 이전 단계 버튼 */}
-      <button
-        onClick={() => prevMeta && setCurrentStage(prevMeta.id)}
-        disabled={!prevMeta && !isDashboard}
-        style={{
-          width: 36, height: 40, flexShrink: 0, borderRadius: 8,
-          border: prevMeta ? `1px solid ${prevMeta.color}30` : "1px solid transparent",
-          background: "transparent",
-          color: prevMeta ? prevMeta.color : "var(--c-tx-20)",
-          cursor: prevMeta ? "pointer" : "default",
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
-          opacity: prevMeta ? 0.75 : 0.2, transition: "all 0.15s",
-        }}
-      >
-        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-          <polyline points="15 18 9 12 15 6"/>
-        </svg>
-        {prevMeta && (
-          <span style={{ fontSize: 7, fontFamily: "'JetBrains Mono', monospace", color: prevMeta.color, fontWeight: 700 }}>
-            {String(prevMeta.id).padStart(2, "0")}
-          </span>
-        )}
-      </button>
-
-      {/* 현재 스테이지 표시 (중앙, 확장) */}
-      <div style={{ flex: 1, height: 40, borderRadius: 10, overflow: "hidden", position: "relative" }}>
-        {isDashboard ? (
-          <div style={{
-            height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
-            background: "rgba(200,168,75,0.1)", border: "1px solid rgba(200,168,75,0.3)",
-            borderRadius: 10,
-          }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: "#C8A84B", fontFamily: "'Noto Sans KR', sans-serif" }}>
-              대시보드
+        {/* 이전 단계 버튼 */}
+        <button
+          onClick={() => prevMeta && setCurrentStage(prevMeta.id)}
+          disabled={!prevMeta && !isDashboard}
+          style={{
+            width: 36, height: 40, flexShrink: 0, borderRadius: 8,
+            border: prevMeta ? `1px solid ${prevMeta.color}30` : "1px solid transparent",
+            background: "transparent",
+            color: prevMeta ? prevMeta.color : "var(--c-tx-20)",
+            cursor: prevMeta ? "pointer" : "default",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
+            opacity: prevMeta ? 0.75 : 0.2, transition: "all 0.15s",
+          }}
+        >
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          {prevMeta && (
+            <span style={{ fontSize: 7, fontFamily: "'JetBrains Mono', monospace", color: prevMeta.color, fontWeight: 700 }}>
+              {String(prevMeta.id).padStart(2, "0")}
             </span>
-          </div>
-        ) : currentMeta ? (
-          <div style={{
-            height: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-            paddingLeft: 12, paddingRight: 12,
-            background: `${currentMeta.color}12`,
-            border: `1px solid ${currentMeta.color}35`,
-            borderRadius: 10,
-          }}>
-            <div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: currentMeta.color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1, marginBottom: 3 }}>
-                {String(currentMeta.id).padStart(2, "0")} / 08
+          )}
+        </button>
+
+        {/* 현재 스테이지 표시 (중앙 — 탭하면 드롭다운) */}
+        <button
+          onClick={() => setShowDropdown(true)}
+          style={{
+            flex: 1, height: 40, borderRadius: 10, border: "none", cursor: "pointer",
+            background: "transparent", padding: 0, position: "relative",
+          }}
+        >
+          {isDashboard ? (
+            <div style={{
+              height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+              background: "rgba(200,168,75,0.1)", border: "1px solid rgba(200,168,75,0.3)",
+              borderRadius: 10,
+            }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "#C8A84B", fontFamily: "'Noto Sans KR', sans-serif" }}>
+                대시보드
+              </span>
+              <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#C8A84B" strokeWidth={2.5} strokeLinecap="round" style={{ marginLeft: 5, opacity: 0.7 }}>
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </div>
+          ) : currentMeta ? (
+            <div style={{
+              height: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+              paddingLeft: 12, paddingRight: 10,
+              background: `${currentMeta.color}12`,
+              border: `1px solid ${currentMeta.color}35`,
+              borderRadius: 10,
+            }}>
+              <div style={{ textAlign: "left" }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: currentMeta.color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1, marginBottom: 3 }}>
+                  {String(currentMeta.id).padStart(2, "0")} / 08
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1 }}>
+                  {currentMeta.title}
+                </div>
               </div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1 }}>
-                {currentMeta.title}
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                {getStageStatus(currentMeta.id) === "done" && (
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round">
+                    <path d="M5 13l4 4L19 7"/>
+                  </svg>
+                )}
+                <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={currentMeta.color} strokeWidth={2.5} strokeLinecap="round" style={{ opacity: 0.7 }}>
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
               </div>
             </div>
-            {getStageStatus(currentMeta.id) === "done" && (
-              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#4ECCA3" strokeWidth={2.5} strokeLinecap="round">
-                <path d="M5 13l4 4L19 7"/>
-              </svg>
-            )}
-          </div>
-        ) : null}
-      </div>
+          ) : null}
+        </button>
 
-      {/* 다음 단계 버튼 */}
-      <button
-        onClick={() => nextMeta && setCurrentStage(nextMeta.id)}
-        disabled={!nextMeta}
-        style={{
-          width: 36, height: 40, flexShrink: 0, borderRadius: 8,
-          border: nextMeta ? `1px solid ${nextMeta.color}30` : "1px solid transparent",
-          background: nextMeta && getStageStatus(currentStage) === "done"
-            ? `${nextMeta.color}15` : "transparent",
-          color: nextMeta ? nextMeta.color : "var(--c-tx-20)",
-          cursor: nextMeta ? "pointer" : "default",
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
-          opacity: nextMeta ? 1 : 0.2, transition: "all 0.15s",
-        }}
-      >
-        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
-          <polyline points="9 18 15 12 9 6"/>
-        </svg>
-        {nextMeta && (
-          <span style={{ fontSize: 7, fontFamily: "'JetBrains Mono', monospace", color: nextMeta.color, fontWeight: 700 }}>
-            {String(nextMeta.id).padStart(2, "0")}
-          </span>
-        )}
-      </button>
-    </div>
+        {/* 다음 단계 버튼 */}
+        <button
+          onClick={() => nextMeta && setCurrentStage(nextMeta.id)}
+          disabled={!nextMeta}
+          style={{
+            width: 36, height: 40, flexShrink: 0, borderRadius: 8,
+            border: nextMeta ? `1px solid ${nextMeta.color}30` : "1px solid transparent",
+            background: nextMeta && getStageStatus(currentStage) === "done"
+              ? `${nextMeta.color}15` : "transparent",
+            color: nextMeta ? nextMeta.color : "var(--c-tx-20)",
+            cursor: nextMeta ? "pointer" : "default",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
+            opacity: nextMeta ? 1 : 0.2, transition: "all 0.15s",
+          }}
+        >
+          <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+          {nextMeta && (
+            <span style={{ fontSize: 7, fontFamily: "'JetBrains Mono', monospace", color: nextMeta.color, fontWeight: 700 }}>
+              {String(nextMeta.id).padStart(2, "0")}
+            </span>
+          )}
+        </button>
+      </div>
+    </>
   );
 }
 

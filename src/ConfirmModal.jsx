@@ -1,15 +1,36 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 /**
  * ConfirmModal — window.confirm() 대체
  * 사용: <ConfirmModal title="..." message="..." onConfirm={fn} onCancel={fn} />
  */
 export default function ConfirmModal({ title, message, confirmLabel = "확인", cancelLabel = "취소", confirmColor = "var(--accent-gold)", onConfirm, onCancel }) {
-  // ESC로 취소
+  const confirmBtnRef = useRef(null);
+  const dialogRef = useRef(null);
+
+  // ESC로 취소 + 오픈 시 확인 버튼 포커스
   useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") onCancel?.(); };
+    const prevActive = document.activeElement;
+    confirmBtnRef.current?.focus();
+
+    const handler = (e) => {
+      if (e.key === "Escape") { onCancel?.(); return; }
+      if (e.key === "Tab") {
+        // 간이 focus trap — dialog 내부로만 이동
+        const root = dialogRef.current;
+        if (!root) return;
+        const focusables = root.querySelectorAll("button,[href],input,textarea,select,[tabindex]:not([tabindex='-1'])");
+        if (focusables.length === 0) return;
+        const first = focusables[0], last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      try { prevActive?.focus?.(); } catch { /* noop */ }
+    };
   }, [onCancel]);
 
   return (
@@ -22,10 +43,16 @@ export default function ConfirmModal({ title, message, confirmLabel = "확인", 
         padding: 20,
       }}
       onClick={onCancel}
+      role="presentation"
     >
       {/* outer bezel */}
       <div
+        ref={dialogRef}
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? "confirm-modal-title" : undefined}
+        aria-describedby={message ? "confirm-modal-desc" : undefined}
         style={{
           maxWidth: 360, width: "100%",
           padding: 2, borderRadius: 18,
@@ -44,18 +71,19 @@ export default function ConfirmModal({ title, message, confirmLabel = "확인", 
           padding: "24px 22px 20px",
         }}>
           {title && (
-            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--text-main)", marginBottom: 8, lineHeight: 1.3 }}>
+            <div id="confirm-modal-title" style={{ fontSize: 15, fontWeight: 800, color: "var(--text-main)", marginBottom: 8, lineHeight: 1.3 }}>
               {title}
             </div>
           )}
           {message && (
-            <div style={{ fontSize: 13, color: "var(--c-tx-55)", lineHeight: 1.65, marginBottom: 22, whiteSpace: "pre-line" }}>
+            <div id="confirm-modal-desc" style={{ fontSize: 13, color: "var(--c-tx-55)", lineHeight: 1.65, marginBottom: 22, whiteSpace: "pre-line" }}>
               {message}
             </div>
           )}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <button
               onClick={onCancel}
+              aria-label={cancelLabel}
               style={{
                 padding: "9px 18px", borderRadius: 9,
                 border: "1px solid var(--glass-bd-base)", background: "var(--glass-nano)",
@@ -67,7 +95,9 @@ export default function ConfirmModal({ title, message, confirmLabel = "확인", 
               {cancelLabel}
             </button>
             <button
+              ref={confirmBtnRef}
               onClick={onConfirm}
+              aria-label={confirmLabel}
               style={{
                 padding: "9px 20px", borderRadius: 9,
                 border: "none", background: confirmColor,

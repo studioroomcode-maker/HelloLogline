@@ -1,6 +1,69 @@
 import { Component } from "react";
 import { Sentry } from "./sentry.js";
 
+/**
+ * Per-stage error boundary. Isolates crashes to a single stage panel —
+ * does not auto-reload (preserving all other stage state).
+ */
+export class StageErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error(`[Stage ${this.props.stageId ?? "?"} Error]`, error, info.componentStack);
+    try {
+      Sentry.captureException(error, {
+        extra: { stageId: this.props.stageId, componentStack: info.componentStack },
+      });
+    } catch (_) {}
+  }
+
+  reset = () => this.setState({ hasError: false, error: null });
+
+  render() {
+    if (!this.state.hasError) return this.props.children;
+
+    const stageName = this.props.stageName ?? `Stage ${this.props.stageId ?? ""}`;
+
+    return (
+      <div style={{
+        margin: "24px auto", maxWidth: 680, padding: "20px 24px", borderRadius: 12,
+        background: "rgba(232,93,117,0.09)", border: "1.5px solid rgba(232,93,117,0.35)",
+        fontFamily: "'Noto Sans KR', sans-serif",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#E85D75" strokeWidth={2} strokeLinecap="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#E85D75" }}>
+            {stageName}을(를) 불러오지 못했어요
+          </div>
+        </div>
+        <div style={{ fontSize: 12, color: "rgba(232,93,117,0.8)", marginBottom: 6, lineHeight: 1.6, paddingLeft: 24 }}>
+          다른 단계의 작업은 영향받지 않았어요. 아래 "다시 시도"를 눌러 주세요.
+        </div>
+        <div style={{ fontSize: 11, color: "rgba(232,93,117,0.55)", marginBottom: 14, lineHeight: 1.6, paddingLeft: 24, wordBreak: "break-word", fontFamily: "'JetBrains Mono', monospace" }}>
+          {this.state.error?.message || "알 수 없는 오류"}
+        </div>
+        <div style={{ paddingLeft: 24 }}>
+          <button
+            onClick={this.reset}
+            style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.45)", background: "rgba(232,93,117,0.12)", color: "#E85D75", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif" }}
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
+}
+
 function isChunkLoadError(error) {
   return (
     error?.message?.includes("dynamically imported module") ||
@@ -77,15 +140,21 @@ export default class ErrorBoundary extends Component {
             <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
           </svg>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#E85D75" }}>
-            이 단계를 불러오는 중 오류가 발생했습니다
+            이 화면을 불러오지 못했어요
           </div>
         </div>
-        <div style={{ fontSize: 12, color: "rgba(232,93,117,0.85)", marginBottom: 14, wordBreak: "break-word", lineHeight: 1.6, paddingLeft: 24 }}>
-          {this.state.error?.message || "알 수 없는 오류가 발생했습니다."}
+        <div style={{ fontSize: 12, color: "rgba(232,93,117,0.85)", marginBottom: 6, lineHeight: 1.6, paddingLeft: 24 }}>
+          작업 내용은 그대로 남아 있어요. 아래 버튼으로 다시 시도하거나, 반복되면 페이지를 새로고침해 주세요.
         </div>
-        <div style={{ paddingLeft: 24 }}>
-          <button onClick={this.reset} style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.5)", background: "rgba(232,93,117,0.15)", color: "#E85D75", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif" }}>
+        <div style={{ fontSize: 11, color: "rgba(232,93,117,0.6)", marginBottom: 14, wordBreak: "break-word", lineHeight: 1.6, paddingLeft: 24, fontFamily: "'JetBrains Mono', monospace" }}>
+          {this.state.error?.message || "알 수 없는 오류"}
+        </div>
+        <div style={{ paddingLeft: 24, display: "flex", gap: 8 }}>
+          <button onClick={this.reset} aria-label="이 화면 다시 불러오기" style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.5)", background: "rgba(232,93,117,0.15)", color: "#E85D75", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif" }}>
             다시 시도
+          </button>
+          <button onClick={() => window.location.reload()} aria-label="페이지 전체 새로고침" style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.3)", background: "transparent", color: "rgba(232,93,117,0.75)", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "'Noto Sans KR', sans-serif" }}>
+            새로고침
           </button>
         </div>
       </div>
