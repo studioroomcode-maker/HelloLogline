@@ -8,6 +8,7 @@
 
 import { useRef, useState } from "react";
 import { callClaude } from "../utils.js";
+import { downloadHtmlAsPdf } from "../utils-pdf.js";
 import { Spinner } from "../ui.jsx";
 
 const EDU_COLOR = "#A78BFA";
@@ -151,6 +152,18 @@ export default function ClassCompareAnalysis({ apiKey, genre, selectedDuration }
     setEntries([newEntry(), newEntry()]);
     setResult(null);
     setError("");
+  };
+
+  // ── PDF 저장 (A4 세로) ──
+  const exportPdf = async () => {
+    if (!result?.items?.length) return;
+    const html = buildClassReportHtml({
+      items: result.items,
+      class_feedback: result.class_feedback || "",
+      meta: { genre, duration: selectedDuration },
+    });
+    const stamp = new Date().toISOString().slice(0, 10);
+    await downloadHtmlAsPdf(html, `로그라인_단체분석_${stamp}`);
   };
 
   // ── 템플릿 다운로드 ──
@@ -539,6 +552,36 @@ export default function ClassCompareAnalysis({ apiKey, genre, selectedDuration }
           {/* ── 결과 ── */}
           {result && result.items?.length > 0 && (
             <div style={{ marginTop: 16 }}>
+              {/* 결과 헤더 + PDF 저장 */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 10, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 11, color: "var(--c-tx-40)" }}>
+                  <strong style={{ color: EDU_COLOR }}>{result.items.length}명</strong>
+                  {" "}분석 완료 · 1위{" "}
+                  <strong style={{ color: "var(--c-tx-70)" }}>{result.items[0]?.name || "학생1"}</strong>
+                  {" "}({result.items[0]?.score ?? 0}점)
+                </div>
+                <button
+                  onClick={exportPdf}
+                  style={{
+                    padding: "7px 13px", borderRadius: 7,
+                    border: `1px solid ${EDU_COLOR}55`,
+                    background: `${EDU_COLOR}12`, color: EDU_COLOR,
+                    cursor: "pointer", fontSize: 11, fontWeight: 700,
+                    fontFamily: "'Noto Sans KR', sans-serif",
+                    display: "flex", alignItems: "center", gap: 6,
+                  }}
+                  title="A4 용지 레이아웃으로 PDF 저장 (브라우저 인쇄 → PDF로 저장)"
+                >
+                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1={12} y1={18} x2={12} y2={12}/>
+                    <polyline points="9 15 12 12 15 15"/>
+                  </svg>
+                  PDF로 저장 (A4)
+                </button>
+              </div>
+
               {/* 반 전체 총평 */}
               {result.class_feedback && (
                 <div style={{
@@ -710,4 +753,181 @@ function toolBtnStyle(color) {
     fontFamily: "'Noto Sans KR', sans-serif",
     display: "flex", alignItems: "center", gap: 5,
   };
+}
+
+// ── PDF HTML 빌더 (A4 세로 레이아웃) ───────────────────────────────
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function pdfScoreColor(s) {
+  if (s >= 80) return "#2E8B57";
+  if (s >= 60) return "#2868B0";
+  if (s >= 40) return "#C77A30";
+  return "#B03030";
+}
+
+function buildClassReportHtml({ items, class_feedback, meta }) {
+  const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+
+  const rankingRows = items.map((it, i) => {
+    const c = pdfScoreColor(it.score || 0);
+    const medal = it.rank === 1 ? "🥇" : it.rank === 2 ? "🥈" : it.rank === 3 ? "🥉" : "";
+    return `
+      <tr style="border-bottom:0.5pt solid #e0e0e0;">
+        <td style="padding:6pt 4pt;font-weight:700;color:${c};font-family:'Courier New',monospace;font-size:9pt;white-space:nowrap;">
+          ${medal ? `<span style="font-size:11pt;margin-right:3pt;">${medal}</span>` : ""}${it.rank ?? i + 1}
+        </td>
+        <td style="padding:6pt 4pt;font-weight:700;color:#1a1a2e;font-size:9pt;">${escapeHtml(it.name || `학생${i + 1}`)}</td>
+        <td style="padding:6pt 4pt;color:#555;font-size:8.5pt;line-height:1.5;">${escapeHtml(it.headline || "")}</td>
+        <td style="padding:6pt 4pt;text-align:right;font-weight:800;color:${c};font-family:'Courier New',monospace;font-size:10pt;">
+          ${it.score ?? 0}<span style="font-size:7pt;color:#999;font-weight:400;">/100</span>
+        </td>
+        <td style="padding:6pt 4pt;text-align:center;">
+          <span style="display:inline-block;padding:1pt 6pt;border-radius:4pt;background:${c}22;color:${c};font-weight:800;font-family:'Courier New',monospace;font-size:9pt;">${escapeHtml(it.grade || "-")}</span>
+        </td>
+      </tr>`;
+  }).join("");
+
+  const list = (arr, color) => {
+    if (!Array.isArray(arr) || arr.length === 0) return "";
+    return arr.map(t => `
+      <li style="font-size:8.5pt;color:#333;line-height:1.65;margin-bottom:2pt;padding-left:2pt;border-left:2pt solid ${color}55;padding-left:6pt;list-style:none;">${escapeHtml(t)}</li>
+    `).join("");
+  };
+
+  const cards = items.map((it, i) => {
+    const c = pdfScoreColor(it.score || 0);
+    return `
+      <div style="border:0.8pt solid ${c}40;border-radius:6pt;padding:10pt 12pt;margin-bottom:9pt;background:${c}05;page-break-inside:avoid;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6pt;border-bottom:0.5pt solid ${c}30;padding-bottom:5pt;">
+          <div>
+            <span style="display:inline-block;padding:1pt 6pt;border-radius:4pt;background:${c}22;color:${c};font-weight:800;font-family:'Courier New',monospace;font-size:8pt;margin-right:5pt;">#${it.rank ?? i + 1}</span>
+            <span style="font-size:10.5pt;font-weight:700;color:#1a1a2e;">${escapeHtml(it.name || `학생${i + 1}`)}</span>
+            ${it.grade ? `<span style="margin-left:6pt;font-size:8pt;color:${c};font-weight:700;">${escapeHtml(it.grade)}급</span>` : ""}
+          </div>
+          <div style="font-size:12pt;font-weight:800;color:${c};font-family:'Courier New',monospace;">
+            ${it.score ?? 0}<span style="font-size:8pt;color:#999;font-weight:400;">/100</span>
+          </div>
+        </div>
+        ${it.logline ? `
+          <div style="font-size:8.5pt;color:#444;line-height:1.65;padding:6pt 8pt;background:#fafafa;border-radius:4pt;border:0.3pt solid #eaeaea;margin-bottom:7pt;">
+            ${escapeHtml(it.logline)}
+          </div>` : ""}
+        ${it.headline ? `
+          <div style="font-size:8.5pt;color:#555;font-style:italic;margin-bottom:7pt;">
+            ${escapeHtml(it.headline)}
+          </div>` : ""}
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="width:33.3%;vertical-align:top;padding-right:4pt;">
+              <div style="font-size:7pt;font-weight:800;color:#2E8B57;letter-spacing:1px;margin-bottom:3pt;text-transform:uppercase;">장점</div>
+              <ul style="margin:0;padding:0;">${list(it.strengths, "#2E8B57")}</ul>
+            </td>
+            <td style="width:33.3%;vertical-align:top;padding:0 4pt;border-left:0.5pt solid #e8e8e8;">
+              <div style="font-size:7pt;font-weight:800;color:#B03030;letter-spacing:1px;margin-bottom:3pt;padding-left:6pt;text-transform:uppercase;">단점</div>
+              <ul style="margin:0;padding:0;padding-left:6pt;">${list(it.weaknesses, "#B03030")}</ul>
+            </td>
+            <td style="width:33.3%;vertical-align:top;padding-left:4pt;border-left:0.5pt solid #e8e8e8;">
+              <div style="font-size:7pt;font-weight:800;color:#C77A30;letter-spacing:1px;margin-bottom:3pt;padding-left:6pt;text-transform:uppercase;">개선점</div>
+              <ul style="margin:0;padding:0;padding-left:6pt;">${list(it.improvements, "#C77A30")}</ul>
+            </td>
+          </tr>
+        </table>
+      </div>`;
+  }).join("");
+
+  const avg = items.length
+    ? Math.round(items.reduce((s, it) => s + (it.score || 0), 0) / items.length)
+    : 0;
+  const top = items[0];
+  const metaChip = (label, value) => value
+    ? `<span style="display:inline-block;padding:2pt 8pt;border-radius:10pt;border:0.5pt solid #d0d0d0;background:#f5f5f5;font-size:7.5pt;color:#555;margin-right:5pt;">${escapeHtml(label)}: ${escapeHtml(value)}</span>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>로그라인 단체 분석 리포트</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 16mm 18mm 16mm 18mm;
+    @bottom-right {
+      content: counter(page) " / " counter(pages);
+      font-size: 7.5pt;
+      color: #999;
+      font-family: 'Courier New', monospace;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Malgun Gothic", "AppleGothic", "NanumGothic", sans-serif;
+    font-size: 9.5pt;
+    color: #1a1a2e;
+    background: #fff;
+    line-height: 1.65;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    word-break: keep-all;
+  }
+  h1 { orphans: 2; widows: 2; }
+  table { border-collapse: collapse; }
+</style>
+</head>
+<body>
+  <!-- 표지 / 헤더 -->
+  <div style="border-bottom:2pt solid #A78BFA;padding-bottom:10pt;margin-bottom:14pt;">
+    <div style="font-size:7.5pt;font-weight:700;color:#A78BFA;letter-spacing:2px;margin-bottom:4pt;text-transform:uppercase;">HelloLogline · Education</div>
+    <div style="font-size:18pt;font-weight:800;color:#1a1a2e;margin-bottom:4pt;">로그라인 단체 비교 분석 리포트</div>
+    <div style="font-size:8.5pt;color:#666;">
+      ${metaChip("생성일", today)}
+      ${metaChip("참여 인원", `${items.length}명`)}
+      ${metaChip("평균 점수", `${avg}/100`)}
+      ${top ? metaChip("1위", `${top.name || "학생1"} (${top.score ?? 0}점)`) : ""}
+      ${meta?.genre ? metaChip("장르", meta.genre) : ""}
+      ${meta?.duration ? metaChip("포맷", meta.duration) : ""}
+    </div>
+  </div>
+
+  ${class_feedback ? `
+    <div style="border:0.8pt solid #A78BFA55;border-left:3pt solid #A78BFA;border-radius:5pt;padding:10pt 12pt;margin-bottom:14pt;background:#A78BFA0a;page-break-inside:avoid;">
+      <div style="font-size:7.5pt;font-weight:800;color:#A78BFA;letter-spacing:1.5px;margin-bottom:5pt;text-transform:uppercase;">반 전체 총평</div>
+      <div style="font-size:9.5pt;color:#1a1a2e;line-height:1.85;">${escapeHtml(class_feedback)}</div>
+    </div>` : ""}
+
+  <!-- 순위표 -->
+  <div style="margin-bottom:14pt;page-break-inside:avoid;">
+    <div style="font-size:7.5pt;font-weight:800;color:#666;letter-spacing:1.5px;margin-bottom:6pt;text-transform:uppercase;">순위표 (Ranking)</div>
+    <table style="width:100%;border-collapse:collapse;border:0.5pt solid #d0d0d0;border-radius:4pt;">
+      <thead>
+        <tr style="background:#f2f2f5;">
+          <th style="padding:6pt 4pt;text-align:left;font-size:7.5pt;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;width:44pt;">순위</th>
+          <th style="padding:6pt 4pt;text-align:left;font-size:7.5pt;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;width:80pt;">이름</th>
+          <th style="padding:6pt 4pt;text-align:left;font-size:7.5pt;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;">한 줄 총평</th>
+          <th style="padding:6pt 4pt;text-align:right;font-size:7.5pt;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;width:50pt;">점수</th>
+          <th style="padding:6pt 4pt;text-align:center;font-size:7.5pt;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;width:36pt;">등급</th>
+        </tr>
+      </thead>
+      <tbody>${rankingRows}</tbody>
+    </table>
+  </div>
+
+  <!-- 학생별 상세 -->
+  <div style="page-break-before:auto;">
+    <div style="font-size:7.5pt;font-weight:800;color:#666;letter-spacing:1.5px;margin-bottom:8pt;text-transform:uppercase;">학생별 상세 분석</div>
+    ${cards}
+  </div>
+
+  <div style="margin-top:14pt;padding-top:8pt;border-top:0.3pt solid #e0e0e0;font-size:7pt;color:#999;text-align:center;">
+    Generated by HelloLogline · AI 시나리오 개발 워크스테이션
+  </div>
+</body>
+</html>`;
 }
