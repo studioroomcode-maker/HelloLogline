@@ -155,15 +155,17 @@ export default function ClassCompareAnalysis({ apiKey, genre, selectedDuration }
   };
 
   // ── PDF 저장 (A4 세로) ──
-  const exportPdf = async () => {
+  const exportPdf = async (anonymize = false) => {
     if (!result?.items?.length) return;
     const html = buildClassReportHtml({
       items: result.items,
       class_feedback: result.class_feedback || "",
       meta: { genre, duration: selectedDuration },
+      anonymize,
     });
     const stamp = new Date().toISOString().slice(0, 10);
-    await downloadHtmlAsPdf(html, `로그라인_단체분석_${stamp}`);
+    const suffix = anonymize ? "_익명" : "";
+    await downloadHtmlAsPdf(html, `로그라인_단체분석${suffix}_${stamp}`);
   };
 
   // ── 템플릿 다운로드 ──
@@ -560,26 +562,46 @@ export default function ClassCompareAnalysis({ apiKey, genre, selectedDuration }
                   <strong style={{ color: "var(--c-tx-70)" }}>{result.items[0]?.name || "학생1"}</strong>
                   {" "}({result.items[0]?.score ?? 0}점)
                 </div>
-                <button
-                  onClick={exportPdf}
-                  style={{
-                    padding: "7px 13px", borderRadius: 7,
-                    border: `1px solid ${EDU_COLOR}55`,
-                    background: `${EDU_COLOR}12`, color: EDU_COLOR,
-                    cursor: "pointer", fontSize: 11, fontWeight: 700,
-                    fontFamily: "'Noto Sans KR', sans-serif",
-                    display: "flex", alignItems: "center", gap: 6,
-                  }}
-                  title="A4 용지 레이아웃으로 PDF 저장 (브라우저 인쇄 → PDF로 저장)"
-                >
-                  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                    <line x1={12} y1={18} x2={12} y2={12}/>
-                    <polyline points="9 15 12 12 15 15"/>
-                  </svg>
-                  PDF로 저장 (A4)
-                </button>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => exportPdf(false)}
+                    style={{
+                      padding: "7px 13px", borderRadius: 7,
+                      border: `1px solid ${EDU_COLOR}55`,
+                      background: `${EDU_COLOR}12`, color: EDU_COLOR,
+                      cursor: "pointer", fontSize: 11, fontWeight: 700,
+                      fontFamily: "'Noto Sans KR', sans-serif",
+                      display: "flex", alignItems: "center", gap: 6,
+                    }}
+                    title="A4 용지 레이아웃 · 학생 이름 포함"
+                  >
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                      <line x1={12} y1={18} x2={12} y2={12}/>
+                      <polyline points="9 15 12 12 15 15"/>
+                    </svg>
+                    PDF 저장 (A4)
+                  </button>
+                  <button
+                    onClick={() => exportPdf(true)}
+                    style={{
+                      padding: "7px 13px", borderRadius: 7,
+                      border: `1px solid ${EDU_COLOR}40`,
+                      background: "transparent", color: EDU_COLOR,
+                      cursor: "pointer", fontSize: 11, fontWeight: 700,
+                      fontFamily: "'Noto Sans KR', sans-serif",
+                      display: "flex", alignItems: "center", gap: 6,
+                    }}
+                    title="A4 용지 · 이름을 '응답자 N'으로 대체해 저장 (공유용)"
+                  >
+                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                      <line x1={1} y1={1} x2={23} y2={23}/>
+                    </svg>
+                    이름 제외 PDF
+                  </button>
+                </div>
               </div>
 
               {/* 반 전체 총평 */}
@@ -772,8 +794,12 @@ function pdfScoreColor(s) {
   return "#B03030";
 }
 
-function buildClassReportHtml({ items, class_feedback, meta }) {
+function buildClassReportHtml({ items, class_feedback, meta, anonymize = false }) {
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+
+  // 표시용 이름 — 익명 모드면 '응답자 N' (원래 입력 순서)로 대체
+  const displayName = (it, i) =>
+    anonymize ? `응답자 ${i + 1}` : (it.name || `학생${i + 1}`);
 
   const rankingRows = items.map((it, i) => {
     const c = pdfScoreColor(it.score || 0);
@@ -783,7 +809,7 @@ function buildClassReportHtml({ items, class_feedback, meta }) {
         <td style="padding:6pt 4pt;font-weight:700;color:${c};font-family:'Courier New',monospace;font-size:9pt;white-space:nowrap;">
           ${medal ? `<span style="font-size:11pt;margin-right:3pt;">${medal}</span>` : ""}${it.rank ?? i + 1}
         </td>
-        <td style="padding:6pt 4pt;font-weight:700;color:#1a1a2e;font-size:9pt;">${escapeHtml(it.name || `학생${i + 1}`)}</td>
+        <td style="padding:6pt 4pt;font-weight:700;color:#1a1a2e;font-size:9pt;">${escapeHtml(displayName(it, i))}</td>
         <td style="padding:6pt 4pt;color:#555;font-size:8.5pt;line-height:1.5;">${escapeHtml(it.headline || "")}</td>
         <td style="padding:6pt 4pt;text-align:right;font-weight:800;color:${c};font-family:'Courier New',monospace;font-size:10pt;">
           ${it.score ?? 0}<span style="font-size:7pt;color:#999;font-weight:400;">/100</span>
@@ -808,7 +834,7 @@ function buildClassReportHtml({ items, class_feedback, meta }) {
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6pt;border-bottom:0.5pt solid ${c}30;padding-bottom:5pt;">
           <div>
             <span style="display:inline-block;padding:1pt 6pt;border-radius:4pt;background:${c}22;color:${c};font-weight:800;font-family:'Courier New',monospace;font-size:8pt;margin-right:5pt;">#${it.rank ?? i + 1}</span>
-            <span style="font-size:10.5pt;font-weight:700;color:#1a1a2e;">${escapeHtml(it.name || `학생${i + 1}`)}</span>
+            <span style="font-size:10.5pt;font-weight:700;color:#1a1a2e;">${escapeHtml(displayName(it, i))}</span>
             ${it.grade ? `<span style="margin-left:6pt;font-size:8pt;color:${c};font-weight:700;">${escapeHtml(it.grade)}급</span>` : ""}
           </div>
           <div style="font-size:12pt;font-weight:800;color:${c};font-family:'Courier New',monospace;">
@@ -885,12 +911,12 @@ function buildClassReportHtml({ items, class_feedback, meta }) {
   <!-- 표지 / 헤더 -->
   <div style="border-bottom:2pt solid #A78BFA;padding-bottom:10pt;margin-bottom:14pt;">
     <div style="font-size:7.5pt;font-weight:700;color:#A78BFA;letter-spacing:2px;margin-bottom:4pt;text-transform:uppercase;">HelloLogline · Education</div>
-    <div style="font-size:18pt;font-weight:800;color:#1a1a2e;margin-bottom:4pt;">로그라인 단체 비교 분석 리포트</div>
+    <div style="font-size:18pt;font-weight:800;color:#1a1a2e;margin-bottom:4pt;">로그라인 단체 비교 분석 리포트${anonymize ? " <span style=\"font-size:10pt;color:#A78BFA;font-weight:700;\">· 익명판</span>" : ""}</div>
     <div style="font-size:8.5pt;color:#666;">
       ${metaChip("생성일", today)}
       ${metaChip("참여 인원", `${items.length}명`)}
       ${metaChip("평균 점수", `${avg}/100`)}
-      ${top ? metaChip("1위", `${top.name || "학생1"} (${top.score ?? 0}점)`) : ""}
+      ${top ? metaChip("1위", `${anonymize ? "응답자 " + (items.indexOf(top) + 1) : (top.name || "학생1")} (${top.score ?? 0}점)`) : ""}
       ${meta?.genre ? metaChip("장르", meta.genre) : ""}
       ${meta?.duration ? metaChip("포맷", meta.duration) : ""}
     </div>
