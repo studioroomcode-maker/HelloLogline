@@ -136,6 +136,7 @@ export default function ClassCompareAnalysis({ apiKey, genre, selectedDuration }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
   const fileInputRef = useRef(null);
 
   const updateEntry = (id, patch) =>
@@ -205,7 +206,7 @@ export default function ClassCompareAnalysis({ apiKey, genre, selectedDuration }
     }
   };
 
-  // ── 분석 실행 ──
+  // ── 분석 실행 (배치 병렬 — 단일 호출은 504 위험) ──
   const analyze = async () => {
     const valid = entries.filter(e => e.logline.trim().length > 0);
     if (valid.length < 2) { setError("최소 2개 이상의 로그라인이 필요합니다."); return; }
@@ -215,26 +216,46 @@ export default function ClassCompareAnalysis({ apiKey, genre, selectedDuration }
     setError("");
     setResult(null);
 
+    // Vercel 함수 타임아웃 + Claude 응답 지연 때문에 한 호출당 학생 수를 제한한다.
+    const BATCH_SIZE = 5;
+    const batches = [];
+    for (let i = 0; i < valid.length; i += BATCH_SIZE) {
+      batches.push(valid.slice(i, i + BATCH_SIZE));
+    }
+    setProgress({ done: 0, total: batches.length });
+
     try {
-      const userMessage = buildUserMessage(valid, genre, selectedDuration);
-      const out = await callClaude(
-        apiKey,
-        SYSTEM_PROMPT,
-        userMessage,
-        Math.min(8000, 1500 + valid.length * 400),
-        "claude-haiku-4-5-20251001",
-        null,
-        null,
-        "logline"
+      let done = 0;
+      const settled = await Promise.allSettled(
+        batches.map(async (batch) => {
+          const userMessage = buildUserMessage(batch, genre, selectedDuration);
+          const out = await callClaude(
+            apiKey,
+            SYSTEM_PROMPT,
+            userMessage,
+            800 + batch.length * 450,
+            "claude-haiku-4-5-20251001",
+            null,
+            null,
+            "logline"
+          );
+          done += 1;
+          setProgress({ done, total: batches.length });
+          return out;
+        })
       );
 
-      if (!out || !Array.isArray(out.items)) {
-        throw new Error("분석 결과 형식이 올바르지 않습니다.");
+      const successes = settled.filter(s => s.status === "fulfilled").map(s => s.value);
+      const failures = settled.filter(s => s.status === "rejected");
+
+      if (successes.length === 0) {
+        throw new Error(failures[0]?.reason?.message || "모든 배치 분석에 실패했습니다.");
       }
 
-      // id 매핑
+      // 모든 배치의 items를 합치고 원본 학생과 매핑
       const byId = new Map(valid.map(e => [e.id, e]));
-      const items = out.items
+      const allItems = successes
+        .flatMap(r => (Array.isArray(r?.items) ? r.items : []))
         .map(it => {
           const src = byId.get(it.id) || valid.find(e => e.name && e.name === it.name);
           return {
@@ -243,14 +264,36 @@ export default function ClassCompareAnalysis({ apiKey, genre, selectedDuration }
             name: it.name || src?.name || "",
             logline: src?.logline || "",
           };
-        })
-        .sort((a, b) => (a.rank || 999) - (b.rank || 999));
+        });
 
-      setResult({ items, class_feedback: out.class_feedback || "" });
+      // 전체 기준으로 재정렬 & 재순위 부여 (동점 처리)
+      allItems.sort((a, b) => (b.score || 0) - (a.score || 0));
+      let prevScore = null;
+      let prevRank = 0;
+      allItems.forEach((it, i) => {
+        if (prevScore !== null && it.score === prevScore) {
+          it.rank = prevRank;
+        } else {
+          it.rank = i + 1;
+          prevRank = i + 1;
+          prevScore = it.score;
+        }
+      });
+
+      // 반 전체 총평 — 배치 하나짜리면 그대로, 여러 배치면 첫 비어있지 않은 걸 대표로 사용
+      const class_feedback =
+        successes.find(r => r?.class_feedback)?.class_feedback || "";
+
+      setResult({ items: allItems, class_feedback });
+
+      if (failures.length > 0) {
+        setError(`${failures.length}개 그룹 분석 실패 — 성공한 ${successes.length}개 그룹 결과만 표시합니다. (${failures[0]?.reason?.message || "원인 불명"})`);
+      }
     } catch (err) {
       setError(err.message || "분석 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
+      setProgress({ done: 0, total: 0 });
     }
   };
 
@@ -470,7 +513,12 @@ export default function ClassCompareAnalysis({ apiKey, genre, selectedDuration }
             }}
           >
             {loading ? (
-              <><Spinner size={13} color={EDU_COLOR} /> 단체 분석 중…</>
+              <>
+                <Spinner size={13} color={EDU_COLOR} />
+                {progress.total > 0
+                  ? ` 단체 분석 중… (${progress.done}/${progress.total} 그룹)`
+                  : " 단체 분석 중…"}
+              </>
             ) : readyCount < 2 ? (
               `로그라인 입력 중 (${readyCount}/2 이상 필요)`
             ) : (
