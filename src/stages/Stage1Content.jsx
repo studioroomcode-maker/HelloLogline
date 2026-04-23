@@ -13,6 +13,7 @@ import {
 import {
   EduHintChecklist, SelfAssessPanel, ComparePanel, ReflectionBox, ScoreCriteriaModal,
 } from "./EduModePanel.jsx";
+import ClassCompareAnalysis from "./ClassCompareAnalysis.jsx";
 
 /* ─── Tooltip wrapper (simplified — no pop-up, just renders children) ─── */
 function Tooltip({ text, children, maxWidth = 300 }) {
@@ -238,6 +239,15 @@ export default function Stage1Content({
           </span>
         </div>
       </div>
+    )}
+
+    {/* ── 교육 모드: 단체 로그라인 비교 분석 ── */}
+    {eduMode && (
+      <ClassCompareAnalysis
+        apiKey={apiKey}
+        genre={genre}
+        selectedDuration={selectedDuration}
+      />
     )}
 
     {/* ── 단계 안내 ── */}
