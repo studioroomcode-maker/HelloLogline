@@ -186,17 +186,25 @@ export default function ClassCompareAnalysis({ apiKey, genre, selectedDuration }
     setError("");
   };
 
+  // ── PDF 옵션 (체크박스) ──
+  const [pdfShowName, setPdfShowName] = useState(true);
+  const [pdfShowScore, setPdfShowScore] = useState(true);
+
   // ── PDF 저장 (A4 세로) ──
-  const exportPdf = async (anonymize = false) => {
+  const exportPdf = async () => {
     if (!result?.items?.length) return;
     const html = buildClassReportHtml({
       items: result.items,
       class_feedback: result.class_feedback || "",
       meta: { genre, duration: selectedDuration },
-      anonymize,
+      anonymize: !pdfShowName,
+      hideScore: !pdfShowScore,
     });
     const stamp = new Date().toISOString().slice(0, 10);
-    const suffix = anonymize ? "_익명" : "";
+    const parts = [];
+    if (!pdfShowName) parts.push("익명");
+    if (!pdfShowScore) parts.push("점수비공개");
+    const suffix = parts.length ? `_${parts.join("_")}` : "";
     await downloadHtmlAsPdf(html, `로그라인_단체분석${suffix}_${stamp}`);
   };
 
@@ -668,9 +676,29 @@ export default function ClassCompareAnalysis({ apiKey, genre, selectedDuration }
                   <strong style={{ color: "var(--c-tx-70)" }}>{result.items[0]?.name || "학생1"}</strong>
                   {" "}({result.items[0]?.score ?? 0}점)
                 </div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11, color: "var(--c-tx-55)" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={pdfShowName}
+                        onChange={e => setPdfShowName(e.target.checked)}
+                        style={{ accentColor: EDU_COLOR, width: 13, height: 13, cursor: "pointer" }}
+                      />
+                      이름
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={pdfShowScore}
+                        onChange={e => setPdfShowScore(e.target.checked)}
+                        style={{ accentColor: EDU_COLOR, width: 13, height: 13, cursor: "pointer" }}
+                      />
+                      점수·순위
+                    </label>
+                  </div>
                   <button
-                    onClick={() => exportPdf(false)}
+                    onClick={exportPdf}
                     style={{
                       padding: "7px 13px", borderRadius: 7,
                       border: `1px solid ${EDU_COLOR}55`,
@@ -679,7 +707,7 @@ export default function ClassCompareAnalysis({ apiKey, genre, selectedDuration }
                       fontFamily: "'Noto Sans KR', sans-serif",
                       display: "flex", alignItems: "center", gap: 6,
                     }}
-                    title="A4 용지 레이아웃 · 학생 이름 포함"
+                    title="체크한 항목을 포함해 A4 PDF로 저장"
                   >
                     <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -688,24 +716,6 @@ export default function ClassCompareAnalysis({ apiKey, genre, selectedDuration }
                       <polyline points="9 15 12 12 15 15"/>
                     </svg>
                     PDF 저장 (A4)
-                  </button>
-                  <button
-                    onClick={() => exportPdf(true)}
-                    style={{
-                      padding: "7px 13px", borderRadius: 7,
-                      border: `1px solid ${EDU_COLOR}40`,
-                      background: "transparent", color: EDU_COLOR,
-                      cursor: "pointer", fontSize: 11, fontWeight: 700,
-                      fontFamily: "'Noto Sans KR', sans-serif",
-                      display: "flex", alignItems: "center", gap: 6,
-                    }}
-                    title="A4 용지 · 이름을 '응답자 N'으로 대체해 저장 (공유용)"
-                  >
-                    <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                      <line x1={1} y1={1} x2={23} y2={23}/>
-                    </svg>
-                    이름 제외 PDF
                   </button>
                 </div>
               </div>
@@ -900,29 +910,42 @@ function pdfScoreColor(s) {
   return "#B03030";
 }
 
-function buildClassReportHtml({ items, class_feedback, meta, anonymize = false }) {
+function buildClassReportHtml({ items: rawItems, class_feedback, meta, anonymize = false, hideScore = false }) {
   const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
 
-  // 표시용 이름 — 익명 모드면 '응답자 N' (원래 입력 순서)로 대체
+  // 점수를 숨길 땐 서열 유출을 피하기 위해 이름 가나다순(익명이면 셔플 대신 id 순)으로 재정렬
+  const items = hideScore
+    ? [...rawItems].sort((a, b) => {
+        if (anonymize) return String(a.id || "").localeCompare(String(b.id || ""));
+        return (a.name || "").localeCompare(b.name || "", "ko");
+      })
+    : rawItems;
+
+  // 표시용 이름 — 익명 모드면 '응답자 N' (정렬 이후 순서)
   const displayName = (it, i) =>
     anonymize ? `응답자 ${i + 1}` : (it.name || `학생${i + 1}`);
 
   const rankingRows = items.map((it, i) => {
-    const c = pdfScoreColor(it.score || 0);
-    const medal = it.rank === 1 ? "🥇" : it.rank === 2 ? "🥈" : it.rank === 3 ? "🥉" : "";
-    return `
-      <tr style="border-bottom:0.5pt solid #e0e0e0;">
-        <td style="padding:6pt 4pt;font-weight:700;color:${c};font-family:'Courier New',monospace;font-size:9pt;white-space:nowrap;">
-          ${medal ? `<span style="font-size:11pt;margin-right:3pt;">${medal}</span>` : ""}${it.rank ?? i + 1}
-        </td>
-        <td style="padding:6pt 4pt;font-weight:700;color:#1a1a2e;font-size:9pt;">${escapeHtml(displayName(it, i))}</td>
-        <td style="padding:6pt 4pt;color:#555;font-size:8.5pt;line-height:1.5;">${escapeHtml(it.headline || "")}</td>
+    const c = hideScore ? "#555" : pdfScoreColor(it.score || 0);
+    const medal = !hideScore && it.rank === 1 ? "🥇" : !hideScore && it.rank === 2 ? "🥈" : !hideScore && it.rank === 3 ? "🥉" : "";
+    const leadCol = hideScore
+      ? `<td style="padding:6pt 4pt;color:#888;font-family:'Courier New',monospace;font-size:9pt;white-space:nowrap;">${i + 1}</td>`
+      : `<td style="padding:6pt 4pt;font-weight:700;color:${c};font-family:'Courier New',monospace;font-size:9pt;white-space:nowrap;">
+           ${medal ? `<span style="font-size:11pt;margin-right:3pt;">${medal}</span>` : ""}${it.rank ?? i + 1}
+         </td>`;
+    const scoreCol = hideScore ? "" : `
         <td style="padding:6pt 4pt;text-align:right;font-weight:800;color:${c};font-family:'Courier New',monospace;font-size:10pt;">
           ${it.score ?? 0}<span style="font-size:7pt;color:#999;font-weight:400;">/100</span>
         </td>
         <td style="padding:6pt 4pt;text-align:center;">
           <span style="display:inline-block;padding:1pt 6pt;border-radius:4pt;background:${c}22;color:${c};font-weight:800;font-family:'Courier New',monospace;font-size:9pt;">${escapeHtml(it.grade || "-")}</span>
-        </td>
+        </td>`;
+    return `
+      <tr style="border-bottom:0.5pt solid #e0e0e0;">
+        ${leadCol}
+        <td style="padding:6pt 4pt;font-weight:700;color:#1a1a2e;font-size:9pt;">${escapeHtml(displayName(it, i))}</td>
+        <td style="padding:6pt 4pt;color:#555;font-size:8.5pt;line-height:1.5;">${escapeHtml(it.headline || "")}</td>
+        ${scoreCol}
       </tr>`;
   }).join("");
 
@@ -934,18 +957,24 @@ function buildClassReportHtml({ items, class_feedback, meta, anonymize = false }
   };
 
   const cards = items.map((it, i) => {
-    const c = pdfScoreColor(it.score || 0);
+    const c = hideScore ? "#666" : pdfScoreColor(it.score || 0);
+    const rankBadge = hideScore
+      ? `<span style="display:inline-block;padding:1pt 6pt;border-radius:4pt;background:#eee;color:#777;font-weight:700;font-family:'Courier New',monospace;font-size:8pt;margin-right:5pt;">No.${i + 1}</span>`
+      : `<span style="display:inline-block;padding:1pt 6pt;border-radius:4pt;background:${c}22;color:${c};font-weight:800;font-family:'Courier New',monospace;font-size:8pt;margin-right:5pt;">#${it.rank ?? i + 1}</span>`;
+    const scoreChip = hideScore ? "" : `
+          <div style="font-size:12pt;font-weight:800;color:${c};font-family:'Courier New',monospace;">
+            ${it.score ?? 0}<span style="font-size:8pt;color:#999;font-weight:400;">/100</span>
+          </div>`;
+    const gradeChip = (hideScore || !it.grade) ? "" : `<span style="margin-left:6pt;font-size:8pt;color:${c};font-weight:700;">${escapeHtml(it.grade)}급</span>`;
     return `
       <div style="border:0.8pt solid ${c}40;border-radius:6pt;padding:10pt 12pt;margin-bottom:9pt;background:${c}05;page-break-inside:avoid;">
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6pt;border-bottom:0.5pt solid ${c}30;padding-bottom:5pt;">
           <div>
-            <span style="display:inline-block;padding:1pt 6pt;border-radius:4pt;background:${c}22;color:${c};font-weight:800;font-family:'Courier New',monospace;font-size:8pt;margin-right:5pt;">#${it.rank ?? i + 1}</span>
+            ${rankBadge}
             <span style="font-size:10.5pt;font-weight:700;color:#1a1a2e;">${escapeHtml(displayName(it, i))}</span>
-            ${it.grade ? `<span style="margin-left:6pt;font-size:8pt;color:${c};font-weight:700;">${escapeHtml(it.grade)}급</span>` : ""}
+            ${gradeChip}
           </div>
-          <div style="font-size:12pt;font-weight:800;color:${c};font-family:'Courier New',monospace;">
-            ${it.score ?? 0}<span style="font-size:8pt;color:#999;font-weight:400;">/100</span>
-          </div>
+          ${scoreChip}
         </div>
         ${it.logline ? `
           <div style="font-size:8.5pt;color:#444;line-height:1.65;padding:6pt 8pt;background:#fafafa;border-radius:4pt;border:0.3pt solid #eaeaea;margin-bottom:7pt;">
@@ -1017,12 +1046,16 @@ function buildClassReportHtml({ items, class_feedback, meta, anonymize = false }
   <!-- 표지 / 헤더 -->
   <div style="border-bottom:2pt solid #A78BFA;padding-bottom:10pt;margin-bottom:14pt;">
     <div style="font-size:7.5pt;font-weight:700;color:#A78BFA;letter-spacing:2px;margin-bottom:4pt;text-transform:uppercase;">HelloLogline · Education</div>
-    <div style="font-size:18pt;font-weight:800;color:#1a1a2e;margin-bottom:4pt;">로그라인 단체 비교 분석 리포트${anonymize ? " <span style=\"font-size:10pt;color:#A78BFA;font-weight:700;\">· 익명판</span>" : ""}</div>
+    <div style="font-size:18pt;font-weight:800;color:#1a1a2e;margin-bottom:4pt;">로그라인 단체 ${hideScore ? "피드백" : "비교 분석"} 리포트${
+      (anonymize || hideScore)
+        ? ` <span style="font-size:10pt;color:#A78BFA;font-weight:700;">· ${[anonymize ? "익명" : "", hideScore ? "점수 비공개" : ""].filter(Boolean).join(" · ")}</span>`
+        : ""
+    }</div>
     <div style="font-size:8.5pt;color:#666;">
       ${metaChip("생성일", today)}
       ${metaChip("참여 인원", `${items.length}명`)}
-      ${metaChip("평균 점수", `${avg}/100`)}
-      ${top ? metaChip("1위", `${anonymize ? "응답자 " + (items.indexOf(top) + 1) : (top.name || "학생1")} (${top.score ?? 0}점)`) : ""}
+      ${hideScore ? "" : metaChip("평균 점수", `${avg}/100`)}
+      ${hideScore ? "" : (top ? metaChip("1위", `${anonymize ? "응답자 " + (items.indexOf(top) + 1) : (top.name || "학생1")} (${top.score ?? 0}점)`) : "")}
       ${meta?.genre ? metaChip("장르", meta.genre) : ""}
       ${meta?.duration ? metaChip("포맷", meta.duration) : ""}
     </div>
@@ -1034,17 +1067,18 @@ function buildClassReportHtml({ items, class_feedback, meta, anonymize = false }
       <div style="font-size:9.5pt;color:#1a1a2e;line-height:1.85;">${escapeHtml(class_feedback)}</div>
     </div>` : ""}
 
-  <!-- 순위표 -->
+  <!-- 순위표 / 목록 -->
   <div style="margin-bottom:14pt;page-break-inside:avoid;">
-    <div style="font-size:7.5pt;font-weight:800;color:#666;letter-spacing:1.5px;margin-bottom:6pt;text-transform:uppercase;">순위표 (Ranking)</div>
+    <div style="font-size:7.5pt;font-weight:800;color:#666;letter-spacing:1.5px;margin-bottom:6pt;text-transform:uppercase;">${hideScore ? "목록 (List)" : "순위표 (Ranking)"}</div>
     <table style="width:100%;border-collapse:collapse;border:0.5pt solid #d0d0d0;border-radius:4pt;">
       <thead>
         <tr style="background:#f2f2f5;">
-          <th style="padding:6pt 4pt;text-align:left;font-size:7.5pt;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;width:44pt;">순위</th>
-          <th style="padding:6pt 4pt;text-align:left;font-size:7.5pt;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;width:80pt;">이름</th>
+          <th style="padding:6pt 4pt;text-align:left;font-size:7.5pt;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;width:44pt;">${hideScore ? "번호" : "순위"}</th>
+          <th style="padding:6pt 4pt;text-align:left;font-size:7.5pt;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;width:80pt;">${anonymize ? "응답자" : "이름"}</th>
           <th style="padding:6pt 4pt;text-align:left;font-size:7.5pt;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;">한 줄 총평</th>
+          ${hideScore ? "" : `
           <th style="padding:6pt 4pt;text-align:right;font-size:7.5pt;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;width:50pt;">점수</th>
-          <th style="padding:6pt 4pt;text-align:center;font-size:7.5pt;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;width:36pt;">등급</th>
+          <th style="padding:6pt 4pt;text-align:center;font-size:7.5pt;font-weight:700;color:#666;letter-spacing:0.5px;text-transform:uppercase;width:36pt;">등급</th>`}
         </tr>
       </thead>
       <tbody>${rankingRows}</tbody>
@@ -1053,7 +1087,7 @@ function buildClassReportHtml({ items, class_feedback, meta, anonymize = false }
 
   <!-- 학생별 상세 -->
   <div style="page-break-before:auto;">
-    <div style="font-size:7.5pt;font-weight:800;color:#666;letter-spacing:1.5px;margin-bottom:8pt;text-transform:uppercase;">학생별 상세 분석</div>
+    <div style="font-size:7.5pt;font-weight:800;color:#666;letter-spacing:1.5px;margin-bottom:8pt;text-transform:uppercase;">${anonymize ? "응답자별" : "학생별"} 상세 ${hideScore ? "피드백" : "분석"}</div>
     ${cards}
   </div>
 
