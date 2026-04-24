@@ -615,7 +615,237 @@ function subsectionTitle(title, color = "#999") {
 function listBox(items, color = "#4ECCA3") {
   if (!items || !items.length) return "";
   return `<div style="border:1pt solid ${color}28;border-radius:5pt;padding:9pt 11pt;background:${color}06;margin-bottom:7pt;page-break-inside:avoid;">
-    ${items.map(x => `<div style="font-size:8.5pt;color:#1a1a2e;margin-bottom:3pt;padding-left:10pt;position:relative;line-height:1.65;"><span style="position:absolute;left:0;color:${color};">•</span>${escapeHtml(x)}</div>`).join("")}
+    ${items.map(x => `<div style="font-size:8.5pt;color:#1a1a2e;margin-bottom:3pt;padding-left:10pt;position:relative;line-height:1.65;"><span style="position:absolute;left:0;color:${color};">•</span>${typeof x === "string" ? escapeHtml(x) : escapeHtml(JSON.stringify(x))}</div>`).join("")}
+  </div>`;
+}
+
+// ── 필드명 한글 라벨 (공통) ───────────────────────────────────────────────────
+const FIELD_LABELS_KR = {
+  // Stage 1
+  protagonist: "주인공", inciting_incident: "촉발 사건", goal: "목표",
+  conflict: "갈등", stakes: "이해관계", irony: "아이러니", mental_picture: "심상",
+  emotional_hook: "감정 훅", originality: "독창성", conciseness: "간결성",
+  active_language: "능동 언어", no_violations: "금기사항", genre_tone: "장르 톤",
+  information_gap: "정보 격차", cognitive_dissonance: "인지 부조화",
+  narrative_transportation: "서사 몰입", universal_relatability: "보편 공감",
+  unpredictability: "예측 불가", overall_feedback: "종합 피드백",
+  improvement_questions: "개선 질문", detected_genre: "감지 장르",
+  structure: "구조적 완성도", expression: "표현적 매력도",
+  technical: "기술적 완성도", interest: "흥미 유발 지수",
+  // Early coverage
+  marketability_score: "상업성 점수", one_line_verdict: "한 줄 판정",
+  best_platform: "최적 플랫폼", target_audience: "핵심 타겟",
+  comparable_hit: "유사 히트작", key_strengths: "핵심 강점",
+  key_risks: "위험 요소", development_priority: "우선 보완 사항",
+  // Insight
+  overall_verdict: "전체 평가", strongest_element: "가장 강한 요소",
+  priority_issues: "우선순위 이슈", problem: "문제점",
+  why_matters: "중요한 이유", action: "개선 방법", title: "제목",
+  // Stage 2 academic
+  aristotle: "아리스토텔레스 (시학)", integrated_assessment: "통합 평가",
+  dominant_theory_fit: "지배 이론 부합도", theoretical_verdict: "이론적 판정",
+  // Stage 2 myth map
+  primary_stage: "핵심 단계", campbell_verdict: "Campbell 판정",
+  journey_phases: "여정 단계", archetype_roles: "원형 역할",
+  // Stage 2 barthes
+  hermeneutic_code: "해석학적 코드", proairetic_code: "행위적 코드",
+  semic_code: "의미적 코드", symbolic_code: "상징적 코드",
+  cultural_code: "문화적 코드", total_activation: "총 활성화",
+  dominant_code: "지배 코드", barthes_verdict: "Barthes 판정",
+  // Stage 2 korean myth
+  han_resonance: "한(恨) 공명", jeong_resonance: "정(情) 공명",
+  sinmyeong_element: "신명(神明) 요소", korean_myth_verdict: "한국 신화 판정",
+  // Stage 2 theme
+  controlling_idea: "지배 테마", moral_premise: "도덕적 전제",
+  thematic_question: "주제적 질문", central_theme: "중심 테마",
+  moral_argument: "도덕적 논거", sub_themes: "하위 테마",
+  protagonist_inner_journey: "주인공 내적 여정",
+  // Stage 2 expert panel
+  panel_title: "패널 주제", round1: "라운드 1 (개별 의견)",
+  round2: "라운드 2 (토론)", synthesis: "종합",
+  consensus: "합의점", improvements: "개선안", critical_gap: "핵심 결함",
+  philosophical_core: "철학적 핵심",
+  // Stage 3 character dev
+  egri_dimensions: "Egri 3차원", supporting_characters: "조연 캐릭터",
+  want: "외적 목표 (Want)", need: "내적 욕구 (Need)",
+  arc_type: "변화 호 (Arc)", flaw: "핵심 결함", ghost: "상처 (Ghost)",
+  sociology: "사회적 배경", physiology: "생리적 특성",
+  psychology: "심리적 특성", name_suggestion: "이름 제안",
+  occupation: "직업", background: "배경", role: "역할",
+  relation: "관계", function: "기능",
+  // Stage 3 shadow
+  hero_archetype: "영웅 원형", shadow: "그림자", shadow_self: "그림자 자기",
+  individuation_arc: "개성화 과정", jung_verdict: "Jung 판정",
+  integration: "통합", manifestations: "현현",
+  // Stage 3 authenticity
+  authenticity_score: "진정성 점수", authenticity_label: "진정성 레이블",
+  existential_verdict: "실존 판정", facticity: "피투성 (Facticity)",
+  mauvaise_foi: "자기기만 (Mauvaise Foi)", genuine_choice: "진정한 선택",
+  other_gaze: "타자의 시선 (Le Regard)", absurdity: "부조리 (Absurdity)",
+  kierkegaard_stage: "Kierkegaard 단계",
+  nietzsche_connection: "Nietzsche 연결",
+  // Stage 4 structure
+  structure_type: "구조 유형", acts: "막 구성", plot_points: "플롯 포인트",
+  turning_points: "전환점", act1_summary: "1막 요약",
+  act2_summary: "2막 요약", act3_summary: "3막 요약",
+  midpoint: "미드포인트", all_is_lost: "모든 것을 잃다",
+  // Stage 4 value charge
+  primary_charge: "주요 가치 변화", charge_intensity: "변화 강도",
+  mckee_verdict: "McKee 판정",
+  // Stage 4 subtext
+  subtext_score: "서브텍스트 점수", surface_story: "표층 이야기",
+  deeper_story: "심층 이야기", chekhov_verdict: "Chekhov 판정",
+  // Stage 4 pipeline/synopsis
+  direction_title: "방향 제목", synopsis: "시놉시스", theme: "테마",
+  key_scenes: "핵심 장면", ending_type: "결말 유형",
+  // Stage 4 comparable
+  comparable_works: "유사 작품", similarity_score: "유사도",
+  why_comparable: "유사한 이유", what_to_learn: "학습 포인트",
+  market_positioning: "시장 포지셔닝", tone_reference: "톤 레퍼런스",
+  year: "연도",
+  // Stage 4 episode series
+  series_type: "시리즈 유형", episode_count: "회차 수",
+  season_logline: "시즌 로그라인", episodes: "회차", number: "회차",
+  logline: "로그라인", key_scene: "핵심 씬", cliffhanger: "클리프행어",
+  series_arc: "시즌 아크", season_want: "시즌 목표", finale: "피날레",
+  // Stage 5
+  format_name: "포맷", total_pages: "총 페이지", beats: "비트",
+  name_kr: "비트명", page_start: "시작 페이지", summary: "요약",
+  character_voices: "캐릭터 보이스", subtext_techniques: "서브텍스트 기법",
+  key_scene_dialogue: "핵심 씬 대사", voice_analysis: "보이스 분석",
+  sample_lines: "샘플 대사",
+  // Stage 7 coverage
+  overall_score: "종합 점수", recommendation: "추천 여부",
+  verdict_rationale: "판정 근거", scores: "세부 점수",
+  strengths: "강점", weaknesses: "개선 사항",
+  verdict: "판정", logline_score: "로그라인 점수",
+  // Stage 7 valuation
+  completion_score: "완성도 점수", completion_label: "완성도 레이블",
+  completion_breakdown: "완성도 세부", market_tier: "시장 등급",
+  korean_market: "국내 시장", format_assumed: "가정 포맷",
+  price_rationale: "가격 근거", factors_boosting_value: "가치 상승 요인",
+  factors_reducing_value: "가치 하락 요인",
+  development_recommendation: "개발 제언",
+  predicted_reviews: "예상 리뷰", reviewer_type: "리뷰어 유형",
+  platform: "플랫폼", rating: "평점", review: "리뷰",
+  disclaimer: "면책 조항", market_value_score: "시장 가치 점수",
+  investment_grade: "투자 등급", comparable_budget: "유사 예산",
+  target_platform: "최적 플랫폼", development_notes: "개발 노트",
+  // Stage 7/8 rewrite
+  priorities: "우선순위", area: "영역", issue: "문제",
+  rank: "순위",
+};
+
+function toLabel(key) {
+  if (FIELD_LABELS_KR[key]) return FIELD_LABELS_KR[key];
+  return String(key).replace(/_/g, " ");
+}
+
+// 아래 키는 렌더링에서 제외 (내부 메타데이터)
+const SKIP_KEYS = new Set(["id", "max"]);
+
+/**
+ * 제너릭 재귀 렌더러 — 어떤 JS 값이든 A4 지면에 적합하게 HTML 로 변환.
+ * - score 필드가 있는 객체: 점수 바
+ * - 문자열: 텍스트 블록
+ * - 배열: 불릿 또는 카드 그리드
+ * - 중첩 객체: subsection 헤더 + 재귀
+ */
+function renderAnyValue(value, depth = 0) {
+  if (value == null || value === "") return "";
+
+  if (typeof value === "string") {
+    const safe = escapeHtml(value).replace(/\n/g, "<br/>");
+    return `<div style="font-size:9pt;color:#1a1a2e;line-height:1.75;margin-bottom:4pt;word-break:keep-all;">${safe}</div>`;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return `<span style="font-size:9pt;color:#1a1a2e;font-family:'Courier New',monospace;font-weight:600;">${value}</span>`;
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "";
+    if (value.every(v => typeof v === "string" || typeof v === "number")) {
+      return listBox(value.map(String), "#4ECCA3");
+    }
+    return value.map((v, i) => {
+      if (v == null) return "";
+      const inner = renderAnyValue(v, depth + 1);
+      if (!inner) return "";
+      return `<div style="border:1pt solid #e0e0e0;border-radius:4pt;padding:8pt 10pt;background:#fafafa;margin-bottom:6pt;page-break-inside:avoid;">
+        <div style="font-size:7pt;font-weight:700;color:#888;font-family:'Courier New',monospace;letter-spacing:1px;margin-bottom:4pt;">[${i + 1}]</div>
+        ${inner}
+      </div>`;
+    }).join("");
+  }
+
+  if (typeof value === "object") {
+    // score 객체: { score, found?, feedback?, max? }
+    if (typeof value.score === "number") {
+      const max = value.max || 10;
+      let html = `<div style="margin-bottom:6pt;page-break-inside:avoid;">${scoreBar("", value.score, max)}`;
+      if (value.found) html += `<div style="font-size:7.5pt;color:#666;padding-left:120pt;margin-top:-2pt;margin-bottom:3pt;line-height:1.55;">감지: "${escapeHtml(value.found)}"</div>`;
+      if (value.feedback) html += `<div style="font-size:8pt;color:#555;padding-left:120pt;margin-top:-2pt;margin-bottom:3pt;line-height:1.6;">${escapeHtml(value.feedback)}</div>`;
+      html += `</div>`;
+      return html;
+    }
+
+    const entries = Object.entries(value)
+      .filter(([k, v]) => !SKIP_KEYS.has(k) && v != null && v !== "" && !(Array.isArray(v) && v.length === 0));
+    if (entries.length === 0) return "";
+
+    return entries.map(([k, v]) => {
+      const label = toLabel(k);
+
+      // 원시값(스칼라) — 인라인 렌더
+      if (typeof v === "string") {
+        const safe = escapeHtml(v).replace(/\n/g, "<br/>");
+        return `<div style="margin-bottom:5pt;page-break-inside:avoid;">
+          <div style="font-size:7.5pt;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:2pt;">${escapeHtml(label)}</div>
+          <div style="font-size:9pt;color:#1a1a2e;line-height:1.7;padding-left:2pt;word-break:keep-all;">${safe}</div>
+        </div>`;
+      }
+      if (typeof v === "number" || typeof v === "boolean") {
+        return `<div style="margin-bottom:4pt;display:flex;gap:8pt;align-items:baseline;">
+          <span style="font-size:7.5pt;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;min-width:110pt;">${escapeHtml(label)}</span>
+          <span style="font-size:9pt;color:#1a1a2e;font-family:'Courier New',monospace;font-weight:600;">${v}</span>
+        </div>`;
+      }
+
+      // score 객체 — 점수 바
+      if (v && typeof v === "object" && typeof v.score === "number") {
+        const max = v.max || 10;
+        let html = `<div style="margin-bottom:6pt;page-break-inside:avoid;">${scoreBar(label, v.score, max)}`;
+        if (v.found) html += `<div style="font-size:7.5pt;color:#666;padding-left:120pt;margin-top:-2pt;margin-bottom:3pt;line-height:1.55;">감지: "${escapeHtml(v.found)}"</div>`;
+        if (v.feedback) html += `<div style="font-size:8pt;color:#555;padding-left:120pt;margin-top:-2pt;margin-bottom:3pt;line-height:1.6;">${escapeHtml(v.feedback)}</div>`;
+        html += `</div>`;
+        return html;
+      }
+
+      // 중첩 객체/배열 — subsection
+      const inner = renderAnyValue(v, depth + 1);
+      if (!inner) return "";
+      const indent = Math.min(depth, 2) * 8;
+      return `<div style="margin-bottom:8pt;padding-left:${indent}pt;page-break-inside:avoid;">
+        <div style="font-size:8pt;font-weight:700;color:#1a1a2e;text-transform:uppercase;letter-spacing:1px;margin-bottom:5pt;padding-bottom:2pt;border-bottom:1pt solid #e0e0e0;">${escapeHtml(label)}</div>
+        ${inner}
+      </div>`;
+    }).join("");
+  }
+
+  return "";
+}
+
+/**
+ * Result 전체를 카드로 감싸 렌더 — 섹션 구분용.
+ */
+function renderResultCard(title, data, accent = "#4ECCA3") {
+  if (!data) return "";
+  const body = renderAnyValue(data);
+  if (!body) return "";
+  return `<div style="border:1pt solid ${accent}30;border-left:3pt solid ${accent};border-radius:5pt;padding:12pt 14pt;background:${accent}04;margin-bottom:10pt;page-break-inside:auto;">
+    <div style="font-size:9pt;font-weight:800;color:${accent};text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10pt;padding-bottom:5pt;border-bottom:1pt solid ${accent}30;">${escapeHtml(title)}</div>
+    ${body}
   </div>`;
 }
 
@@ -657,84 +887,33 @@ function buildStage1SectionHtml(data) {
   if (!result && !earlyCoverageResult && !insightResult) return "";
 
   const meta = STAGE_META["1"];
-  const parts = [];
-  parts.push(sectionHeader(meta.name, `Stage ${meta.num}`, meta.accent));
+  const parts = [sectionHeader(meta.name, `Stage ${meta.num}`, meta.accent)];
 
   if (result) {
     const qualScore = calcSectionTotal(result, "structure") + calcSectionTotal(result, "expression") + calcSectionTotal(result, "technical");
     const intScore = calcSectionTotal(result, "interest");
-    const qualGrade = getGradeLabel(qualScore);
-    const intGrade = getGradeLabel(intScore);
-    const LABELS = {
-      protagonist: "주인공 설정", inciting_incident: "촉발 사건", goal: "목표 명확성",
-      conflict: "갈등 구조", stakes: "위험 요소", irony: "아이러니",
-      mental_picture: "시각적 이미지", emotional_hook: "감정 훅", originality: "독창성",
-      conciseness: "간결성", active_language: "능동 언어", no_violations: "포맷 준수",
-      genre_tone: "장르 톤", information_gap: "정보 격차", cognitive_dissonance: "인지 충돌",
-      narrative_transportation: "서사 몰입", universal_relatability: "보편 공감", unpredictability: "예측 불가",
-    };
-
     parts.push(`
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10pt;margin-bottom:14pt;">
         <div style="border:1pt solid #e0e0e0;border-radius:6pt;padding:12pt;text-align:center;background:#f9f9f9;">
           <div style="font-size:7pt;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:5pt;">품질 점수</div>
           <div style="font-size:28pt;font-weight:800;color:#1a1a2e;font-family:'Courier New',monospace;line-height:1;">${qualScore}</div>
-          <div style="font-size:8pt;color:#888;margin-top:4pt;">등급: ${qualGrade}</div>
+          <div style="font-size:8pt;color:#888;margin-top:4pt;">등급: ${getGradeLabel(qualScore)}</div>
         </div>
         <div style="border:1pt solid #e0e0e0;border-radius:6pt;padding:12pt;text-align:center;background:#f9f9f9;">
           <div style="font-size:7pt;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:5pt;">흥미도</div>
           <div style="font-size:28pt;font-weight:800;color:#1a1a2e;font-family:'Courier New',monospace;line-height:1;">${intScore}</div>
-          <div style="font-size:8pt;color:#888;margin-top:4pt;">등급: ${intGrade}</div>
+          <div style="font-size:8pt;color:#888;margin-top:4pt;">등급: ${getGradeLabel(intScore)}</div>
         </div>
       </div>`);
-
-    const groups = [
-      { title: "구조적 완성도", data: result.structure },
-      { title: "표현 기술", data: result.expression },
-      { title: "기술적 완성도", data: result.technical },
-      { title: "흥미도 지표", data: result.interest },
-    ].filter(g => g.data && Object.keys(g.data).length);
-
-    parts.push(`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14pt;margin-bottom:14pt;">`);
-    groups.forEach(g => {
-      const rows = Object.entries(g.data).map(([k, v]) => scoreBar(LABELS[k] || k, v?.score, 10)).join("");
-      parts.push(`<div>${subsectionTitle(g.title)}${rows}</div>`);
-    });
-    parts.push(`</div>`);
-
-    if (result.overall_feedback) parts.push(infoBox("종합 피드백", escapeHtml(result.overall_feedback)));
+    parts.push(renderResultCard("로그라인 상세 분석", result, "#C8A84B"));
   }
 
   if (earlyCoverageResult) {
-    parts.push(subsectionTitle("초기 커버리지", "#60A5FA"));
-    const ec = earlyCoverageResult;
-    const rows = [];
-    if (ec.verdict) rows.push(kv("판정", ec.verdict));
-    if (ec.logline_score != null) rows.push(kv("점수", `${ec.logline_score}/100`));
-    if (ec.summary) rows.push(kv("요약", ec.summary));
-    parts.push(rows.join(""));
-    if (ec.strengths?.length) parts.push(`<div style="margin-top:6pt;"><div style="font-size:7pt;font-weight:700;color:#4ECCA3;margin-bottom:4pt;">강점</div>${listBox(ec.strengths, "#4ECCA3")}</div>`);
-    if (ec.weaknesses?.length) parts.push(`<div style="margin-top:4pt;"><div style="font-size:7pt;font-weight:700;color:#E85D75;margin-bottom:4pt;">약점</div>${listBox(ec.weaknesses, "#E85D75")}</div>`);
+    parts.push(renderResultCard("빠른 상업성 체크 (Early Coverage)", earlyCoverageResult, "#60A5FA"));
   }
 
   if (insightResult) {
-    parts.push(subsectionTitle("종합 인사이트", "#A78BFA"));
-    if (insightResult.overall_verdict) parts.push(infoBox("전체 평가", escapeHtml(insightResult.overall_verdict), "#A78BFA"));
-    if (insightResult.strongest_element) parts.push(infoBox("가장 강한 요소", escapeHtml(insightResult.strongest_element), "#4ECCA3"));
-    if (Array.isArray(insightResult.priority_issues) && insightResult.priority_issues.length) {
-      insightResult.priority_issues.forEach((issue, i) => {
-        const accent = ["#FF6B6B","#C8A84B","#45B7D1"][i] || "#A78BFA";
-        parts.push(`<div style="border:1pt solid ${accent}28;border-left:3pt solid ${accent};border-radius:4pt;padding:8pt 11pt;background:${accent}06;margin-bottom:6pt;page-break-inside:avoid;">
-          <div style="display:flex;align-items:baseline;gap:6pt;margin-bottom:4pt;">
-            <span style="font-size:8pt;font-weight:800;color:${accent};font-family:'Courier New',monospace;">0${i+1}</span>
-            <span style="font-size:9.5pt;font-weight:700;color:#1a1a2e;">${escapeHtml(issue.title || "")}</span>
-          </div>
-          ${issue.problem ? `<div style="font-size:8.5pt;color:#333;line-height:1.65;margin-bottom:3pt;">${escapeHtml(issue.problem)}</div>` : ""}
-          ${issue.why_matters ? `<div style="font-size:8pt;color:#666;font-style:italic;margin-bottom:4pt;">→ ${escapeHtml(issue.why_matters)}</div>` : ""}
-          ${issue.action ? `<div style="padding:5pt 9pt;background:#fff;border:1pt solid #e0e0e0;border-radius:3pt;font-size:8.5pt;color:#1a1a2e;line-height:1.6;"><span style="font-size:7pt;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-right:4pt;">개선 방법</span>${escapeHtml(issue.action)}</div>` : ""}
-        </div>`);
-      });
-    }
+    parts.push(renderResultCard("종합 인사이트", insightResult, "#A78BFA"));
   }
 
   return `<div style="page-break-before:always;">${parts.join("")}</div>`;
@@ -748,59 +927,12 @@ function buildStage2SectionHtml(data) {
   const meta = STAGE_META["2"];
   const parts = [sectionHeader(meta.name, `Stage ${meta.num}`, meta.accent)];
 
-  if (academicResult) {
-    parts.push(subsectionTitle("학술 서사 이론", meta.accent));
-    if (academicResult.aristotle_analysis) parts.push(infoBox("Aristotle", escapeHtml(academicResult.aristotle_analysis), "#45B7D1"));
-    if (academicResult.freytag_analysis) parts.push(infoBox("Freytag", escapeHtml(academicResult.freytag_analysis), "#45B7D1"));
-    if (academicResult.field_analysis) parts.push(infoBox("Syd Field", escapeHtml(academicResult.field_analysis), "#45B7D1"));
-    if (academicResult.summary) parts.push(infoBox("종합", escapeHtml(academicResult.summary), "#45B7D1"));
-  }
-
-  if (mythMapResult) {
-    parts.push(subsectionTitle("신화 지도 (Campbell 영웅 여정)", "#A78BFA"));
-    if (mythMapResult.summary) parts.push(infoBox("", escapeHtml(mythMapResult.summary), "#A78BFA"));
-    const stages = mythMapResult.stages || [];
-    if (stages.length) {
-      parts.push(`<div style="display:grid;grid-template-columns:1fr 1fr;gap:7pt;margin-bottom:8pt;">`);
-      stages.slice(0, 12).forEach(s => {
-        parts.push(`<div style="border:1pt solid #A78BFA28;border-radius:4pt;padding:7pt 9pt;background:#A78BFA06;page-break-inside:avoid;">
-          <div style="font-size:7.5pt;font-weight:700;color:#A78BFA;margin-bottom:3pt;">${escapeHtml(s.name || s.stage || "")}</div>
-          <div style="font-size:8pt;color:#1a1a2e;line-height:1.6;">${escapeHtml(s.description || s.content || "")}</div>
-        </div>`);
-      });
-      parts.push(`</div>`);
-    }
-  }
-
-  if (barthesCodeResult) {
-    parts.push(subsectionTitle("바르트 코드 (S/Z)", "#4ECCA3"));
-    const codes = ["hermeneutic", "proairetic", "semic", "symbolic", "cultural"];
-    const labels = { hermeneutic: "해석학적", proairetic: "행위적", semic: "의미적", symbolic: "상징적", cultural: "문화적" };
-    codes.forEach(c => {
-      if (barthesCodeResult[c]) parts.push(infoBox(labels[c] + " 코드", escapeHtml(barthesCodeResult[c]), "#4ECCA3"));
-    });
-  }
-
-  if (koreanMythResult) {
-    parts.push(subsectionTitle("한국 신화·미학 공명", "#F7A072"));
-    if (koreanMythResult.summary) parts.push(infoBox("요약", escapeHtml(koreanMythResult.summary), "#F7A072"));
-    if (koreanMythResult.han_analysis) parts.push(infoBox("한(恨)", escapeHtml(koreanMythResult.han_analysis), "#F7A072"));
-    if (koreanMythResult.jeong_analysis) parts.push(infoBox("정(情)", escapeHtml(koreanMythResult.jeong_analysis), "#F7A072"));
-  }
-
-  if (themeResult) {
-    parts.push(subsectionTitle("핵심 테마", "#C8A84B"));
-    if (themeResult.central_theme) parts.push(infoBox("중심 테마", escapeHtml(themeResult.central_theme), "#C8A84B"));
-    if (themeResult.moral_argument) parts.push(infoBox("도덕적 논거", escapeHtml(themeResult.moral_argument), "#C8A84B"));
-    if (Array.isArray(themeResult.sub_themes)) parts.push(listBox(themeResult.sub_themes, "#C8A84B"));
-  }
-
-  if (expertPanelResult) {
-    parts.push(subsectionTitle("전문가 패널 토론", "#FFD166"));
-    if (expertPanelResult.consensus) parts.push(infoBox("합의점", escapeHtml(expertPanelResult.consensus), "#FFD166"));
-    if (expertPanelResult.key_strengths?.length) parts.push(`<div style="margin-bottom:6pt;"><div style="font-size:7pt;font-weight:700;color:#4ECCA3;margin-bottom:4pt;">핵심 강점</div>${listBox(expertPanelResult.key_strengths, "#4ECCA3")}</div>`);
-    if (expertPanelResult.key_concerns?.length) parts.push(`<div style="margin-bottom:6pt;"><div style="font-size:7pt;font-weight:700;color:#E85D75;margin-bottom:4pt;">주요 우려</div>${listBox(expertPanelResult.key_concerns, "#E85D75")}</div>`);
-  }
+  if (academicResult) parts.push(renderResultCard("학술 서사 이론 (Aristotle · Freytag · Syd Field)", academicResult, "#45B7D1"));
+  if (mythMapResult) parts.push(renderResultCard("신화 지도 (Campbell 영웅 여정)", mythMapResult, "#A78BFA"));
+  if (barthesCodeResult) parts.push(renderResultCard("바르트 코드 (S/Z)", barthesCodeResult, "#4ECCA3"));
+  if (koreanMythResult) parts.push(renderResultCard("한국 신화·미학 공명", koreanMythResult, "#F7A072"));
+  if (themeResult) parts.push(renderResultCard("핵심 테마", themeResult, "#C8A84B"));
+  if (expertPanelResult) parts.push(renderResultCard("전문가 패널 토론", expertPanelResult, "#FFD166"));
 
   return `<div style="page-break-before:always;">${parts.join("")}</div>`;
 }
@@ -813,40 +945,9 @@ function buildStage3SectionHtml(data) {
   const meta = STAGE_META["3"];
   const parts = [sectionHeader(meta.name, `Stage ${meta.num}`, meta.accent)];
 
-  const protagonist = charDevResult?.protagonist;
-  if (protagonist) {
-    parts.push(`
-      <div style="border:1pt solid #FB923C30;border-radius:6pt;padding:12pt 14pt;background:#FB923C06;margin-bottom:10pt;page-break-inside:avoid;">
-        <div style="font-size:8pt;font-weight:700;color:#FB923C;text-transform:uppercase;letter-spacing:1px;margin-bottom:8pt;">주인공</div>
-        ${kv("이름/유형", protagonist.name_suggestion || protagonist.name)}
-        ${kv("외적 목표 (Want)", protagonist.want)}
-        ${kv("내적 욕구 (Need)", protagonist.need)}
-        ${kv("핵심 결함 (Flaw)", protagonist.flaw)}
-        ${kv("변화 호 (Arc)", protagonist.arc_type)}
-        ${kv("직업/배경", protagonist.occupation || protagonist.background)}
-      </div>`);
-    if (charDevResult.moral_argument) parts.push(infoBox("도덕적 논거", escapeHtml(charDevResult.moral_argument), "#FB923C"));
-
-    const supporting = charDevResult.supporting_characters || [];
-    if (supporting.length) {
-      parts.push(subsectionTitle("조연 캐릭터"));
-      parts.push(`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8pt;">`);
-      supporting.slice(0, 6).forEach(c => {
-        parts.push(`<div style="border:1pt solid #e0e0e0;border-radius:5pt;padding:9pt 11pt;background:#f9f9f9;page-break-inside:avoid;">
-          <div style="font-size:9pt;font-weight:700;color:#1a1a2e;margin-bottom:5pt;">${escapeHtml(c.name || "—")}</div>
-          ${c.role ? `<div style="font-size:8pt;color:#888;margin-bottom:3pt;">${escapeHtml(c.role)}</div>` : ""}
-          ${c.relation ? `<div style="font-size:7.5pt;color:#aaa;">${escapeHtml(c.relation)}</div>` : ""}
-        </div>`);
-      });
-      parts.push(`</div>`);
-    }
-  }
-
-  if (shadowResult?.shadow_self) parts.push(infoBox("융 그림자 분석", escapeHtml(shadowResult.shadow_self), "#A78BFA"));
-  if (authenticityResult?.verdict) {
-    const summary = authenticityResult.summary ? " — " + authenticityResult.summary : "";
-    parts.push(infoBox("실존 진정성", escapeHtml(authenticityResult.verdict + summary), "#60A5FA"));
-  }
+  if (charDevResult) parts.push(renderResultCard("캐릭터 종합 개발", charDevResult, "#FB923C"));
+  if (shadowResult) parts.push(renderResultCard("Jung 그림자 분석", shadowResult, "#A78BFA"));
+  if (authenticityResult) parts.push(renderResultCard("실존 진정성 분석", authenticityResult, "#60A5FA"));
 
   return `<div style="page-break-before:always;">${parts.join("")}</div>`;
 }
@@ -855,71 +956,17 @@ function buildStage3SectionHtml(data) {
 function buildStage4SectionHtml(data) {
   const { structureResult, valueChargeResult, pipelineResult, synopsisResults, comparableResult, subtextResult } = data;
   const synopsisText = pipelineResult?.synopsis || synopsisResults?.synopses?.[0]?.synopsis || "";
-  if (!structureResult && !valueChargeResult && !synopsisText && !comparableResult && !subtextResult) return "";
+  if (!structureResult && !valueChargeResult && !synopsisText && !comparableResult && !subtextResult && !pipelineResult && !synopsisResults) return "";
 
   const meta = STAGE_META["4"];
   const parts = [sectionHeader(meta.name, `Stage ${meta.num}`, meta.accent)];
 
-  const dirTitle = pipelineResult?.direction_title || synopsisResults?.synopses?.[0]?.direction_title || "";
-  const theme = pipelineResult?.theme || synopsisResults?.synopses?.[0]?.theme || "";
-  const keyScenes = pipelineResult?.key_scenes || synopsisResults?.synopses?.[0]?.key_scenes || [];
-
-  if (dirTitle) parts.push(`<div style="font-size:11pt;font-weight:700;color:#1a1a2e;margin-bottom:6pt;">${escapeHtml(dirTitle)}</div>`);
-  if (theme) parts.push(`<div style="font-size:9pt;color:#666;margin-bottom:10pt;">테마: ${escapeHtml(theme)}</div>`);
-
-  if (synopsisText) {
-    parts.push(`<div style="border-left:3pt solid #4ECCA3;padding-left:12pt;margin-bottom:12pt;">
-      <div style="font-size:9.5pt;color:#1a1a2e;line-height:1.85;word-break:keep-all;white-space:pre-wrap;">${escapeHtml(synopsisText)}</div>
-    </div>`);
-  }
-
-  if (keyScenes.length) {
-    parts.push(subsectionTitle("핵심 장면"));
-    parts.push(`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6pt;margin-bottom:12pt;">`);
-    keyScenes.slice(0, 9).forEach((sc, i) => {
-      const scName = typeof sc === "string" ? sc : (sc.scene || sc.title || sc.name || "");
-      parts.push(`<div style="border:1pt solid #e0e0e0;border-radius:4pt;padding:7pt 9pt;background:#f9f9f9;page-break-inside:avoid;">
-        <div style="font-size:7pt;font-weight:700;color:#4ECCA3;margin-bottom:3pt;">SCENE ${i + 1}</div>
-        <div style="font-size:8pt;color:#1a1a2e;line-height:1.55;">${escapeHtml(scName)}</div>
-      </div>`);
-    });
-    parts.push(`</div>`);
-  }
-
-  if (structureResult) {
-    parts.push(subsectionTitle("구조 분석"));
-    if (structureResult.act1_summary) parts.push(kv("1막", escapeHtml(structureResult.act1_summary)));
-    if (structureResult.act2_summary) parts.push(kv("2막", escapeHtml(structureResult.act2_summary)));
-    if (structureResult.act3_summary) parts.push(kv("3막", escapeHtml(structureResult.act3_summary)));
-    if (structureResult.midpoint) parts.push(kv("미드포인트", escapeHtml(structureResult.midpoint)));
-    if (structureResult.all_is_lost) parts.push(kv("모든 것을 잃다", escapeHtml(structureResult.all_is_lost)));
-  }
-
-  if (valueChargeResult) {
-    parts.push(subsectionTitle("가치 전하 (Value Charge)", "#C8A84B"));
-    if (valueChargeResult.summary) parts.push(infoBox("", escapeHtml(valueChargeResult.summary), "#C8A84B"));
-  }
-
-  if (subtextResult) {
-    parts.push(subsectionTitle("서브텍스트", "#A78BFA"));
-    if (subtextResult.summary) parts.push(infoBox("", escapeHtml(subtextResult.summary), "#A78BFA"));
-  }
-
-  if (comparableResult) {
-    parts.push(subsectionTitle("유사 작품 분석", "#60A5FA"));
-    const works = comparableResult.works || [];
-    if (works.length) {
-      parts.push(`<div style="display:grid;grid-template-columns:1fr 1fr;gap:7pt;">`);
-      works.slice(0, 6).forEach(w => {
-        parts.push(`<div style="border:1pt solid #60A5FA28;border-radius:5pt;padding:8pt 10pt;background:#60A5FA06;page-break-inside:avoid;">
-          <div style="font-size:9pt;font-weight:700;color:#1a1a2e;margin-bottom:3pt;">${escapeHtml(w.title || "")}</div>
-          ${w.year ? `<div style="font-size:7.5pt;color:#888;margin-bottom:3pt;">${escapeHtml(w.year)}</div>` : ""}
-          ${w.reason ? `<div style="font-size:8pt;color:#1a1a2e;line-height:1.6;">${escapeHtml(w.reason)}</div>` : ""}
-        </div>`);
-      });
-      parts.push(`</div>`);
-    }
-  }
+  if (pipelineResult) parts.push(renderResultCard("선택된 시놉시스", pipelineResult, "#4ECCA3"));
+  if (synopsisResults) parts.push(renderResultCard("생성된 시놉시스 방향들", synopsisResults, "#4ECCA3"));
+  if (structureResult) parts.push(renderResultCard("3막 구조 분석", structureResult, "#45B7D1"));
+  if (valueChargeResult) parts.push(renderResultCard("가치 전하 (McKee)", valueChargeResult, "#C8A84B"));
+  if (subtextResult) parts.push(renderResultCard("서브텍스트 (Chekhov)", subtextResult, "#A78BFA"));
+  if (comparableResult) parts.push(renderResultCard("유사 작품 분석", comparableResult, "#60A5FA"));
 
   return `<div style="page-break-before:always;">${parts.join("")}</div>`;
 }
@@ -933,28 +980,13 @@ function buildStage5SectionHtml(data) {
   const parts = [sectionHeader(meta.name, `Stage ${meta.num}`, meta.accent)];
 
   if (treatmentResult) {
-    parts.push(subsectionTitle("트리트먼트"));
-    parts.push(`<div style="font-size:9pt;color:#1a1a2e;line-height:1.85;white-space:pre-wrap;word-break:keep-all;margin-bottom:10pt;">${escapeHtml(treatmentResult)}</div>`);
+    parts.push(`<div style="border:1pt solid #FFD16630;border-left:3pt solid #FFD166;border-radius:5pt;padding:12pt 14pt;background:#FFD16604;margin-bottom:10pt;page-break-inside:auto;">
+      <div style="font-size:9pt;font-weight:800;color:#FFD166;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10pt;padding-bottom:5pt;border-bottom:1pt solid #FFD16630;">트리트먼트</div>
+      <div style="font-size:9pt;color:#1a1a2e;line-height:1.85;white-space:pre-wrap;word-break:keep-all;">${escapeHtml(treatmentResult)}</div>
+    </div>`);
   }
-
-  if (beatSheetResult?.beats?.length) {
-    parts.push(subsectionTitle("비트 시트", "#FFD166"));
-    beatSheetResult.beats.forEach(b => {
-      parts.push(`<div style="border:1pt solid #FFD16628;border-radius:5pt;padding:8pt 11pt;background:#FFD16606;margin-bottom:6pt;page-break-inside:avoid;">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4pt;">
-          <div style="font-size:9pt;font-weight:700;color:#1a1a2e;">${escapeHtml(b.name_kr || b.name || "")}</div>
-          <div style="font-size:7.5pt;color:#888;font-family:'Courier New',monospace;">p.${escapeHtml(b.page_start || "?")}</div>
-        </div>
-        ${b.summary ? `<div style="font-size:8.5pt;color:#1a1a2e;line-height:1.65;">${escapeHtml(b.summary)}</div>` : ""}
-      </div>`);
-    });
-  }
-
-  if (dialogueDevResult) {
-    parts.push(subsectionTitle("대사 개발", "#A78BFA"));
-    if (dialogueDevResult.voice_analysis) parts.push(infoBox("보이스 분석", escapeHtml(dialogueDevResult.voice_analysis), "#A78BFA"));
-    if (Array.isArray(dialogueDevResult.sample_lines)) parts.push(listBox(dialogueDevResult.sample_lines, "#A78BFA"));
-  }
+  if (beatSheetResult) parts.push(renderResultCard("비트 시트", beatSheetResult, "#FFD166"));
+  if (dialogueDevResult) parts.push(renderResultCard("대사 개발", dialogueDevResult, "#A78BFA"));
 
   return `<div style="page-break-before:always;">${parts.join("")}</div>`;
 }
@@ -981,93 +1013,9 @@ function buildStage7SectionHtml(data) {
   const meta = STAGE_META["7"];
   const parts = [sectionHeader(meta.name, `Stage ${meta.num}`, meta.accent)];
 
-  if (scriptCoverageResult) {
-    const cv = scriptCoverageResult;
-    const verdictColor = cv.verdict === "RECOMMEND" ? "#1a7a4a" : cv.verdict === "CONSIDER" ? "#7a5a1a" : "#7a1a1a";
-    const verdictKr = { RECOMMEND: "추천", CONSIDER: "검토", PASS: "보류" }[cv.verdict] || cv.verdict;
-
-    parts.push(`<div style="border:2pt solid ${verdictColor};border-radius:8pt;padding:14pt 18pt;background:${verdictColor}08;margin-bottom:14pt;display:flex;align-items:center;gap:20pt;page-break-inside:avoid;">
-      <div style="text-align:center;flex-shrink:0;">
-        <div style="font-size:22pt;font-weight:800;color:${verdictColor};font-family:'Courier New',monospace;line-height:1;">${escapeHtml(verdictKr || "")}</div>
-        <div style="font-size:7pt;color:${verdictColor};text-transform:uppercase;letter-spacing:1px;margin-top:3pt;">${escapeHtml(cv.verdict || "")}</div>
-      </div>
-      ${cv.logline_score != null ? `
-      <div style="text-align:center;flex-shrink:0;border-left:1pt solid ${verdictColor}30;padding-left:20pt;">
-        <div style="font-size:22pt;font-weight:800;color:#1a1a2e;font-family:'Courier New',monospace;line-height:1;">${cv.logline_score}</div>
-        <div style="font-size:7pt;color:#999;text-transform:uppercase;letter-spacing:1px;margin-top:3pt;">/ 100</div>
-      </div>` : ""}
-      ${cv.summary ? `<div style="font-size:9pt;color:#333;line-height:1.7;flex:1;">${escapeHtml(cv.summary)}</div>` : ""}
-    </div>`);
-
-    const cvScoreFields = {
-      premise_score: "전제/아이디어", structure_score: "구조", character_score: "캐릭터",
-      dialogue_score: "대사", tone_score: "톤/분위기", marketability_score: "상업성",
-    };
-    const hasScores = Object.entries(cvScoreFields).some(([k]) => cv[k] != null);
-    if (hasScores) {
-      parts.push(subsectionTitle("세부 평가"));
-      parts.push(Object.entries(cvScoreFields).map(([k, label]) =>
-        cv[k] != null ? scoreBar(label, cv[k], 10, "#60A5FA") : ""
-      ).join(""));
-    }
-
-    parts.push(`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10pt;margin-top:10pt;margin-bottom:10pt;">`);
-    if ((cv.strengths || []).length) {
-      parts.push(`<div style="border:1pt solid #4ECCA330;border-radius:5pt;padding:10pt;background:#4ECCA306;">
-        <div style="font-size:7pt;font-weight:700;color:#4ECCA3;text-transform:uppercase;letter-spacing:1px;margin-bottom:6pt;">강점</div>
-        ${cv.strengths.map(s => `<div style="font-size:8.5pt;color:#1a1a2e;margin-bottom:3pt;padding-left:8pt;position:relative;"><span style="position:absolute;left:0;color:#4ECCA3;">✓</span>${escapeHtml(s)}</div>`).join("")}
-      </div>`);
-    }
-    if ((cv.weaknesses || []).length) {
-      parts.push(`<div style="border:1pt solid #E85D7530;border-radius:5pt;padding:10pt;background:#E85D7506;">
-        <div style="font-size:7pt;font-weight:700;color:#E85D75;text-transform:uppercase;letter-spacing:1px;margin-bottom:6pt;">개선 사항</div>
-        ${cv.weaknesses.map(s => `<div style="font-size:8.5pt;color:#1a1a2e;margin-bottom:3pt;padding-left:8pt;position:relative;"><span style="position:absolute;left:0;color:#E85D75;">•</span>${escapeHtml(s)}</div>`).join("")}
-      </div>`);
-    }
-    parts.push(`</div>`);
-
-    if (cv.recommendation) parts.push(infoBox("최종 제언", escapeHtml(cv.recommendation), "#60A5FA"));
-  }
-
-  if (valuationResult) {
-    const vl = valuationResult;
-    parts.push(subsectionTitle("시장 가치 평가", "#C8A84B"));
-    parts.push(`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8pt;margin-bottom:10pt;">
-      ${vl.market_value_score != null ? `
-      <div style="border:1pt solid #e0e0e0;border-radius:6pt;padding:10pt;text-align:center;background:#f9f9f9;">
-        <div style="font-size:7pt;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:4pt;">시장 가치</div>
-        <div style="font-size:22pt;font-weight:800;color:#1a1a2e;font-family:'Courier New',monospace;line-height:1;">${vl.market_value_score}</div>
-        <div style="font-size:7.5pt;color:#aaa;margin-top:3pt;">/ 10</div>
-      </div>` : ""}
-      ${vl.investment_grade ? `
-      <div style="border:1pt solid #e0e0e0;border-radius:6pt;padding:10pt;text-align:center;background:#f9f9f9;">
-        <div style="font-size:7pt;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:4pt;">투자 등급</div>
-        <div style="font-size:16pt;font-weight:800;color:#C8A84B;font-family:'Courier New',monospace;line-height:1.2;margin-top:4pt;">${escapeHtml(vl.investment_grade)}</div>
-      </div>` : ""}
-      ${vl.comparable_budget ? `
-      <div style="border:1pt solid #e0e0e0;border-radius:6pt;padding:10pt;text-align:center;background:#f9f9f9;">
-        <div style="font-size:7pt;color:#999;text-transform:uppercase;letter-spacing:1px;margin-bottom:4pt;">유사 예산 규모</div>
-        <div style="font-size:10pt;font-weight:700;color:#1a1a2e;margin-top:6pt;">${escapeHtml(vl.comparable_budget)}</div>
-      </div>` : ""}
-    </div>`);
-    if (vl.target_platform) parts.push(kv("최적 플랫폼", escapeHtml(vl.target_platform)));
-    if (vl.target_audience) parts.push(kv("핵심 타겟", escapeHtml(vl.target_audience)));
-    if (vl.development_notes) parts.push(infoBox("개발 제언", escapeHtml(vl.development_notes), "#C8A84B"));
-  }
-
-  if (rewriteDiagResult) {
-    parts.push(subsectionTitle("고쳐쓰기 전 진단", "#FB923C"));
-    if (rewriteDiagResult.summary) parts.push(infoBox("", escapeHtml(rewriteDiagResult.summary), "#FB923C"));
-    if (Array.isArray(rewriteDiagResult.priorities)) {
-      rewriteDiagResult.priorities.forEach((p, i) => {
-        parts.push(`<div style="border-left:3pt solid #FB923C;padding:6pt 10pt;margin-bottom:5pt;background:#FB923C06;page-break-inside:avoid;">
-          <div style="font-size:8pt;font-weight:700;color:#FB923C;">우선순위 ${i + 1}${p.area ? " — " + escapeHtml(p.area) : ""}</div>
-          ${p.issue ? `<div style="font-size:8.5pt;color:#555;margin-top:3pt;">문제: ${escapeHtml(p.issue)}</div>` : ""}
-          ${p.action ? `<div style="font-size:8.5pt;color:#1a1a2e;margin-top:3pt;">→ ${escapeHtml(p.action)}</div>` : ""}
-        </div>`);
-      });
-    }
-  }
+  if (scriptCoverageResult) parts.push(renderResultCard("Script Coverage (할리우드 심사)", scriptCoverageResult, "#60A5FA"));
+  if (valuationResult) parts.push(renderResultCard("시장 가치 평가", valuationResult, "#C8A84B"));
+  if (rewriteDiagResult) parts.push(renderResultCard("고쳐쓰기 전 진단", rewriteDiagResult, "#FB923C"));
 
   return `<div style="page-break-before:always;">${parts.join("")}</div>`;
 }
@@ -1080,28 +1028,20 @@ function buildStage8SectionHtml(data) {
   const meta = STAGE_META["8"];
   const parts = [sectionHeader(meta.name, `Stage ${meta.num}`, meta.accent)];
 
-  if (rewriteDiagResult) {
-    parts.push(subsectionTitle("초고 진단", "#FB923C"));
-    if (rewriteDiagResult.summary) parts.push(infoBox("", escapeHtml(rewriteDiagResult.summary), "#FB923C"));
-    if (Array.isArray(rewriteDiagResult.priorities)) {
-      rewriteDiagResult.priorities.forEach((p, i) => {
-        parts.push(`<div style="border-left:3pt solid #FB923C;padding:6pt 10pt;margin-bottom:5pt;background:#FB923C06;page-break-inside:avoid;">
-          <div style="font-size:8pt;font-weight:700;color:#FB923C;">우선순위 ${i + 1}${p.area ? " — " + escapeHtml(p.area) : ""}</div>
-          ${p.issue ? `<div style="font-size:8.5pt;color:#555;margin-top:3pt;">문제: ${escapeHtml(p.issue)}</div>` : ""}
-          ${p.action ? `<div style="font-size:8.5pt;color:#1a1a2e;margin-top:3pt;">→ ${escapeHtml(p.action)}</div>` : ""}
-        </div>`);
-      });
-    }
-  }
+  if (rewriteDiagResult) parts.push(renderResultCard("초고 진단", rewriteDiagResult, "#FB923C"));
 
   if (partialRewriteResult) {
-    parts.push(subsectionTitle("부분 재작성", "#60A5FA"));
-    parts.push(`<div style="font-size:8.5pt;color:#1a1a2e;line-height:1.9;white-space:pre-wrap;word-break:keep-all;font-family:'Courier New',monospace;margin-bottom:10pt;">${escapeHtml(partialRewriteResult)}</div>`);
+    parts.push(`<div style="border:1pt solid #60A5FA30;border-left:3pt solid #60A5FA;border-radius:5pt;padding:12pt 14pt;background:#60A5FA04;margin-bottom:10pt;page-break-inside:auto;">
+      <div style="font-size:9pt;font-weight:800;color:#60A5FA;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10pt;padding-bottom:5pt;border-bottom:1pt solid #60A5FA30;">부분 재작성</div>
+      <div style="font-size:8.5pt;color:#1a1a2e;line-height:1.9;white-space:pre-wrap;word-break:keep-all;font-family:'Courier New',monospace;">${escapeHtml(partialRewriteResult)}</div>
+    </div>`);
   }
 
   if (fullRewriteResult) {
-    parts.push(subsectionTitle("전체 개고", "#A78BFA"));
-    parts.push(`<div style="font-size:8.5pt;color:#1a1a2e;line-height:1.9;white-space:pre-wrap;word-break:keep-all;font-family:'Courier New',monospace;">${escapeHtml(fullRewriteResult)}</div>`);
+    parts.push(`<div style="border:1pt solid #A78BFA30;border-left:3pt solid #A78BFA;border-radius:5pt;padding:12pt 14pt;background:#A78BFA04;margin-bottom:10pt;page-break-inside:auto;">
+      <div style="font-size:9pt;font-weight:800;color:#A78BFA;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10pt;padding-bottom:5pt;border-bottom:1pt solid #A78BFA30;">전체 개고</div>
+      <div style="font-size:8.5pt;color:#1a1a2e;line-height:1.9;white-space:pre-wrap;word-break:keep-all;font-family:'Courier New',monospace;">${escapeHtml(fullRewriteResult)}</div>
+    </div>`);
   }
 
   return `<div style="page-break-before:always;">${parts.join("")}</div>`;
