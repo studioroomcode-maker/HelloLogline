@@ -4012,6 +4012,39 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setCurrentRevisionId(nextId);
   }, [revisions]);
 
+  // Stage별 PDF 저장을 위해 모든 결과 state 를 한 번에 수집하는 헬퍼.
+  // StagePdfButton 이 ctx.getStagePdfData() 로 호출한다.
+  // NOTE: 반드시 아래의 early return 들보다 앞에 둘 것 — hook 순서 보존.
+  const getStagePdfData = useCallback(() => ({
+    // Stage 1
+    result, earlyCoverageResult, insightResult,
+    // Stage 2
+    academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult, expertPanelResult,
+    // Stage 3
+    charDevResult, shadowResult, authenticityResult,
+    // Stage 4
+    structureResult, valueChargeResult, pipelineResult, synopsisResults,
+    comparableResult, subtextResult,
+    // Stage 5
+    treatmentResult, beatSheetResult, dialogueDevResult,
+    // Stage 6
+    scenarioDraftResult,
+    // Stage 7
+    scriptCoverageResult, valuationResult, rewriteDiagResult,
+    // Stage 8
+    partialRewriteResult, fullRewriteResult,
+  }), [
+    result, earlyCoverageResult, insightResult,
+    academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult, expertPanelResult,
+    charDevResult, shadowResult, authenticityResult,
+    structureResult, valueChargeResult, pipelineResult, synopsisResults,
+    comparableResult, subtextResult,
+    treatmentResult, beatSheetResult, dialogueDevResult,
+    scenarioDraftResult,
+    scriptCoverageResult, valuationResult, rewriteDiagResult,
+    partialRewriteResult, fullRewriteResult,
+  ]);
+
   // ── Auth guard ──
   if (authLoading) {
     return (
@@ -4075,38 +4108,6 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     }
     return true;
   };
-
-  // Stage별 PDF 저장을 위해 모든 결과 state 를 한 번에 수집하는 헬퍼.
-  // StagePdfButton 이 ctx.getStagePdfData() 로 호출한다.
-  const getStagePdfData = useCallback(() => ({
-    // Stage 1
-    result, earlyCoverageResult, insightResult,
-    // Stage 2
-    academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult, expertPanelResult,
-    // Stage 3
-    charDevResult, shadowResult, authenticityResult,
-    // Stage 4
-    structureResult, valueChargeResult, pipelineResult, synopsisResults,
-    comparableResult, subtextResult,
-    // Stage 5
-    treatmentResult, beatSheetResult, dialogueDevResult,
-    // Stage 6
-    scenarioDraftResult,
-    // Stage 7
-    scriptCoverageResult, valuationResult, rewriteDiagResult,
-    // Stage 8
-    partialRewriteResult, fullRewriteResult,
-  }), [
-    result, earlyCoverageResult, insightResult,
-    academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult, expertPanelResult,
-    charDevResult, shadowResult, authenticityResult,
-    structureResult, valueChargeResult, pipelineResult, synopsisResults,
-    comparableResult, subtextResult,
-    treatmentResult, beatSheetResult, dialogueDevResult,
-    scenarioDraftResult,
-    scriptCoverageResult, valuationResult, rewriteDiagResult,
-    partialRewriteResult, fullRewriteResult,
-  ]);
 
   const loglineCtxValue = {
     // 입력
