@@ -7,6 +7,7 @@ import SceneNavigator from "../editor/SceneNavigator.jsx";
 import InlineAI from "../editor/InlineAI.jsx";
 import RevisionPanel from "./RevisionPanel.jsx";
 import { parseFountain, calcStats, extractSceneBodies } from "../editor/FountainParser.js";
+import StagePdfButton from "../components/StagePdfButton.jsx";
 
 /** 통계 pill 컴포넌트 */
 function StatPill({ label, value, color = "var(--c-tx-40)" }) {
@@ -109,6 +110,8 @@ export default function Stage6Content({
 
   return (
     <ErrorBoundary><div>
+
+      <StagePdfButton stageId="6" />
 
       {/* ── 안내 배너 ── */}
       <div style={{ marginBottom: 18, padding: "14px 16px", borderRadius: 12, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.2)" }}>

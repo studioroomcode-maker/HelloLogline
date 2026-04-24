@@ -14,6 +14,7 @@ import {
   EduHintChecklist, SelfAssessPanel, ComparePanel, ReflectionBox, ScoreCriteriaModal,
 } from "./EduModePanel.jsx";
 import ClassCompareAnalysis from "./ClassCompareAnalysis.jsx";
+import StagePdfButton from "../components/StagePdfButton.jsx";
 
 /* ─── Tooltip wrapper (simplified — no pop-up, just renders children) ─── */
 function Tooltip({ text, children, maxWidth = 300 }) {
@@ -224,6 +225,8 @@ export default function Stage1Content({
         50% { box-shadow: 0 0 0 5px rgba(200,168,75,0.35), inset 0 0 8px rgba(200,168,75,0.08); }
       }
     `}</style>
+
+    <StagePdfButton stageId="1" />
 
     {/* ── 교육 모드 배너 ── */}
     {eduMode && (

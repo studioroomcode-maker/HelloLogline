@@ -4,6 +4,7 @@ import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import { ExpertPanelSection, MythMapPanel, BarthesCodePanel, KoreanMythPanel, ThemeAnalysisPanel } from "../panels/ConceptPanels.jsx";
 import { AcademicPanel } from "../panels.jsx";
+import StagePdfButton from "../components/StagePdfButton.jsx";
 
 // 서사 이론 분석 완료 개수 계산
 function countNarrativeResults(academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult) {
@@ -58,6 +59,8 @@ export default function Stage2Content({
         50% { box-shadow: 0 0 0 5px rgba(200,168,75,0.4); }
       }
     `}</style>
+
+      <StagePdfButton stageId="2" />
 
       {/* ── 단계 안내 ── */}
       <div style={{ marginBottom: 22, padding: "12px 14px", borderRadius: 10, background: "rgba(69,183,209,0.05)", borderLeft: "2px solid rgba(69,183,209,0.4)" }}>
