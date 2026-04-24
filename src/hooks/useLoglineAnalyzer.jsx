@@ -52,8 +52,7 @@ import {
   uploadLocalProjectsToCloud,
   saveProjectVersion,
 } from "../db.js";
-import { ICON, Spinner } from "../ui.jsx";
-import LoginScreen from "../LoginScreen.jsx";
+import { ICON } from "../ui.jsx";
 import { useStage1 } from "./useStage1.js";
 import { useNetworkStatus } from "./useNetworkStatus.js";
 
@@ -4045,30 +4044,11 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     partialRewriteResult, fullRewriteResult,
   ]);
 
-  // ── Auth guard ──
-  if (authLoading) {
-    return (
-      <div style={{ minHeight: "100vh", background: "var(--bg-page)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Spinner size={28} color="#C8A84B" />
-      </div>
-    );
-  }
-  if (!user && !isDemoMode) {
-    return <LoginScreen onDemo={activateDemo} authError={authError} />;
-  }
-  if (isBlocked) {
-    return (
-      <div style={{ minHeight: "100vh", background: "var(--bg-page)", color: "var(--text-main)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Noto Sans KR', sans-serif", gap: 16 }}>
-        <div style={{ fontSize: 40 }}>🚫</div>
-        <div style={{ fontSize: 20, fontWeight: 700 }}>접근이 차단된 계정입니다</div>
-        <div style={{ fontSize: 13, color: "var(--c-tx-40)" }}>관리자에게 문의하세요.</div>
-        <button onClick={handleLogout} style={{ marginTop: 8, padding: "8px 20px", borderRadius: 10, border: "1px solid var(--c-bd-4)", background: "transparent", color: "var(--c-tx-40)", cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}>
-          로그아웃
-        </button>
-      </div>
-    );
-  }
-
+  // NOTE: 인증 가드(authLoading / !user / isBlocked) 는 이 훅이 아니라
+  // 소비자 컴포넌트 (logline-analyzer.jsx) 가 담당한다.
+  // 훅에서 JSX 로 early return 하면 소비자는 객체 대신 JSX 를 받아
+  // ctx.activateDemo 등이 undefined 가 되므로 버튼이 동작하지 않는다.
+  //
   // 각 스테이지 완료 상태 요약 (사이드바 + 대시보드 표시용)
   const stageResultSummary = {
     "1": result ? `${qualityScore}점` : null,
