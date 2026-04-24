@@ -35,6 +35,6 @@
     { "source": "/api/projects/versions", "destination": "/api/projects?resource=versions" },
 
     { "source": "/share/:path*", "destination": "/index.html" },
-    { "source": "/((?!api/|legal/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|legal/|landing/).*)", "destination": "/index.html" }
   ]
 }

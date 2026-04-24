@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hello Loglines — AI 시나리오 개발 워크스테이션</title>
+  <meta name="description" content="로그라인 한 줄에서 시나리오 초고까지. 한국 드라마·영화 포맷에 최적화된 AI 시나리오 개발 워크스테이션." />
+  <meta name="theme-color" content="#0c0c1c" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta property="og:title" content="Hello Loglines — AI 시나리오 개발 워크스테이션" />
+  <meta property="og:description" content="로그라인 한 줄에서 시나리오 초고까지. 한국 드라마·영화 포맷에 최적화된 AI." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://hellologlines.studioroomkr.com/landing/" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      --bg: #0c0c1c;
+      --bg-alt: #08080f;
+      --bg-card: rgba(255,255,255,0.025);
+      --bg-card-hover: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.07);
+      --border-strong: rgba(255,255,255,0.15);
+      --text: #f0f0f4;
+      --text-mid: rgba(240,240,244,0.7);
+      --text-dim: rgba(240,240,244,0.5);
+      --text-faint: rgba(240,240,244,0.4);
+      --text-ghost: rgba(240,240,244,0.3);
+      --gold: #C8A84B;
+      --violet: #A78BFA;
+      --teal: #4ECCA3;
+      --azure: #60A5FA;
+      --rose: #E85D75;
+      --orange: #FB923C;
+      --yellow: #FFD166;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      scroll-behavior: smooth;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    nav.top {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(12,12,28,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    nav.top .inner {
+      max-width: 1100px; margin: 0 auto;
+      padding: 0 24px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    nav.top .brand {
+      font-size: 15px; font-weight: 800;
+      color: var(--gold); letter-spacing: -0.3px;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 20px; border-radius: 8px;
+      background: var(--gold); color: #0c0c1c;
+      font-size: 13px; font-weight: 800;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(200,168,75,0.35);
+    }
+    .btn-primary.lg {
+      padding: 14px 32px; border-radius: 12px;
+      font-size: 15px;
+      box-shadow: 0 4px 24px rgba(200,168,75,0.35);
+    }
+    .btn-primary.xl {
+      padding: 16px 40px; border-radius: 14px;
+      font-size: 16px; font-weight: 900;
+      box-shadow: 0 6px 32px rgba(200,168,75,0.4);
+    }
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 14px 28px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: var(--text-mid);
+      font-size: 15px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-ghost:hover {
+      border-color: rgba(200,168,75,0.5);
+      color: var(--gold);
+    }
+
+    /* Hero */
+    section.hero {
+      max-width: 820px; margin: 0 auto;
+      padding: 96px 24px 72px;
+      text-align: center;
+    }
+    .hero .chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 20px;
+      border: 1px solid rgba(200,168,75,0.35);
+      background: rgba(200,168,75,0.07);
+      font-size: 12px; color: var(--gold);
+      font-weight: 700; margin-bottom: 24px;
+      letter-spacing: 0.5px;
+    }
+    .hero h1 {
+      font-size: clamp(32px, 5vw, 54px);
+      font-weight: 900; line-height: 1.2;
+      color: var(--text); margin-bottom: 20px;
+      letter-spacing: -1px;
+    }
+    .hero h1 em { color: var(--gold); font-style: normal; }
+    .hero p.sub {
+      font-size: clamp(14px, 2vw, 18px);
+      color: var(--text-dim); line-height: 1.7;
+      max-width: 620px; margin: 0 auto 28px;
+    }
+    .hero p.sub strong { color: var(--text); font-weight: 700; }
+
+    .hero .usp-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px; max-width: 680px; margin: 0 auto 36px;
+    }
+    .hero .usp-grid .card {
+      padding: 12px 14px; border-radius: 10px;
+      border: 1px solid rgba(78,204,163,0.22);
+      background: rgba(78,204,163,0.04);
+      text-align: left;
+    }
+    .hero .usp-grid .card .label {
+      font-size: 12px; font-weight: 800;
+      color: var(--teal); margin-bottom: 3px;
+    }
+    .hero .usp-grid .card .sub {
+      font-size: 11px; color: var(--text-dim);
+    }
+
+    .hero .ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .hero .note {
+      margin-top: 16px; font-size: 12px;
+      color: var(--text-ghost);
+    }
+
+    /* Section common */
+    section.block { max-width: 1100px; margin: 0 auto; padding: 72px 24px; }
+    section.block .heading { text-align: center; margin-bottom: 48px; }
+    section.block .eyebrow {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 2px;
+      margin-bottom: 12px;
+    }
+    section.block .heading h2 {
+      font-size: clamp(22px, 3vw, 34px);
+      font-weight: 800; color: var(--text);
+      letter-spacing: -0.5px;
+    }
+    section.block .heading p {
+      margin-top: 10px; font-size: 12px; color: var(--text-faint);
+    }
+
+    /* Features */
+    .feat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+    .feat-card {
+      padding: 28px 24px; border-radius: 16px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feat-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,0.12);
+    }
+    .feat-card .icon { font-size: 24px; margin-bottom: 14px; }
+    .feat-card .title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+    .feat-card .desc { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
+
+    /* Stages grid */
+    .stage-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .stage-item {
+      padding: 18px 20px; border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .stage-item .num {
+      font-size: 11px; font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      min-width: 24px;
+    }
+    .stage-item .name { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .stage-item .desc { font-size: 11px; color: var(--text-faint); }
+
+    /* Scenarios (testimonials placeholder) */
+    .scenarios-wrap {
+      background: rgba(255,255,255,0.02);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 80px 24px;
+    }
+    .scenarios-wrap .inner { max-width: 1100px; margin: 0 auto; }
+    .scen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .scen-card {
+      padding: 28px 24px; border-radius: 16px;
+      background: var(--bg-card); border: 1px solid var(--border);
+    }
+    .scen-card .quote {
+      font-size: 22px; color: var(--gold);
+      margin-bottom: 14px; font-weight: 800; line-height: 1;
+    }
+    .scen-card p { font-size: 13px; color: var(--text-mid); line-height: 1.8; margin-bottom: 16px; }
+    .scen-card .name { font-size: 13px; font-weight: 700; color: var(--text); }
+    .scen-card .role { font-size: 11px; color: var(--text-faint); }
+
+    /* Pricing */
+    .plan-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      align-items: start;
+    }
+    .plan {
+      padding: 32px 28px; border-radius: 18px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      position: relative;
+    }
+    .plan.highlight {
+      border-width: 2px;
+      border-color: rgba(200,168,75,0.33);
+      background: rgba(200,168,75,0.05);
+    }
+    .plan .badge {
+      position: absolute; top: -12px; left: 50%;
+      transform: translateX(-50%);
+      padding: 3px 14px; border-radius: 20px;
+      background: var(--gold); color: #0c0c1c;
+      font-size: 11px; font-weight: 800;
+      white-space: nowrap;
+    }
+    .plan .name { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+    .plan .price { margin-bottom: 24px; }
+    .plan .price .amount { font-size: 32px; font-weight: 900; color: var(--text); }
+    .plan .price .period { font-size: 13px; color: var(--text-faint); }
+    .plan ul { list-style: none; padding: 0; margin: 0 0 28px; }
+    .plan ul li {
+      display: flex; align-items: flex-start; gap: 8px;
+      font-size: 13px; color: var(--text-mid);
+      margin-bottom: 10px;
+    }
+    .plan ul li .check { flex-shrink: 0; font-weight: 700; }
+    .plan .cta {
+      display: block; padding: 12px 0;
+      border-radius: 10px; text-align: center;
+      font-size: 13px; font-weight: 800;
+      transition: transform 0.15s;
+    }
+    .plan .cta:hover { transform: translateY(-1px); }
+    .plan .cta.solid { background: var(--gold); color: #0c0c1c; }
+    .plan .cta.outline { border: 1.5px solid; background: transparent; }
+
+    /* CTA footer */
+    section.cta-big {
+      background: linear-gradient(135deg, rgba(200,168,75,0.08) 0%, rgba(167,139,250,0.06) 100%);
+      border-top: 1px solid rgba(200,168,75,0.15);
+      padding: 80px 24px;
+      text-align: center;
+    }
+    section.cta-big h2 {
+      font-size: clamp(24px, 4vw, 42px);
+      font-weight: 900; color: var(--text);
+      margin-bottom: 16px;
+    }
+    section.cta-big p {
+      font-size: 15px; color: var(--text-dim);
+      margin-bottom: 36px;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 24px; text-align: center;
+    }
+    footer .brand { font-size: 13px; font-weight: 700; color: var(--gold); margin-bottom: 8px; }
+    footer .copy { font-size: 11px; color: var(--text-ghost); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Nav ── -->
+  <nav class="top">
+    <div class="inner">
+      <a href="/landing/" class="brand">Hello Loglines</a>
+      <a href="/" class="btn-primary">무료로 시작하기 →</a>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="chip">🇰🇷 한국 시나리오·드라마 포맷에 최적화된 AI 워크스테이션</div>
+    <h1>
+      로그라인 한 줄에서<br />
+      <em>시나리오 초고</em>까지
+    </h1>
+    <p class="sub">
+      영문 툴을 억지로 한국어로 쓰던 시대는 끝.
+      <strong>미니시리즈 16부작·8부작·단편·공모전 분량</strong>의 한국형 서사 구조와 대사 톤을 이해하는 AI가
+      <strong>18개 항목 즉시 채점</strong>부터 <strong>8단계 초고 완성</strong>까지 함께합니다.
+    </p>
+
+    <div class="usp-grid">
+      <div class="card">
+        <div class="label">✓ 국내 방송·영화 포맷 프리셋</div>
+        <div class="sub">16부작·미니·단편·공모전</div>
+      </div>
+      <div class="card">
+        <div class="label">✓ 한국어 뉘앙스·대사 톤 학습</div>
+        <div class="sub">번역체 없는 자연스러운 문장</div>
+      </div>
+      <div class="card">
+        <div class="label">✓ Toss 결제·국내 CS</div>
+        <div class="sub">원화 결제·환불·고객지원</div>
+      </div>
+    </div>
+
+    <div class="ctas">
+      <a href="/" class="btn-primary lg">무료로 시작하기</a>
+      <a href="#features" class="btn-ghost">기능 살펴보기 ↓</a>
+    </div>
+    <p class="note">신용카드 불필요 · 무료 크레딧 10개 즉시 지급 · 해외 툴과 달리 원화·세금계산서 가능</p>
+  </section>
+
+  <!-- ── Features ── -->
+  <section id="features" class="block">
+    <div class="heading">
+      <div class="eyebrow" style="color:rgba(200,168,75,0.7);">핵심 기능</div>
+      <h2>전문 시나리오 작가의 도구를<br />누구나 사용할 수 있도록</h2>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="icon" style="color:var(--gold);">◈</div>
+        <div class="title">18개 기준 즉시 점수화</div>
+        <div class="desc">주인공 구체성, 아이러니/훅, 정보 격차 등 학술적으로 검증된 18개 항목을 AI가 0.5초 안에 채점합니다.</div>
+      </div>
+      <div class="feat-card">
+        <div class="icon" style="color:var(--violet);">◉</div>
+        <div class="title">12개 학술 이론 분석</div>
+        <div class="desc">블레이크 스나이더 비트 시트, 융의 그림자 이론, 바르트 서사 코드 등 세계 유수 시나리오 이론을 적용합니다.</div>
+      </div>
+      <div class="feat-card">
+        <div class="icon" style="color:var(--teal);">◎</div>
+        <div class="title">8단계 파이프라인</div>
+        <div class="desc">로그라인 → 개념 분석 → 캐릭터 → 시놉시스 → 트리트먼트 → 초고 → 커버리지 → 고쳐쓰기까지 원스톱.</div>
+      </div>
+      <div class="feat-card">
+        <div class="icon" style="color:var(--azure);">◇</div>
+        <div class="title">전문가 패널 리뷰</div>
+        <div class="desc">PD, 작가, 평론가 등 역할별 AI 전문가 6인의 시각으로 작품의 강점과 약점을 입체적으로 파악합니다.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 8단계 파이프라인 ── -->
+  <section class="block" style="padding-top:0;padding-bottom:80px;">
+    <div class="heading">
+      <div class="eyebrow" style="color:rgba(167,139,250,0.7);">워크플로우</div>
+      <h2>8단계 개발 파이프라인</h2>
+    </div>
+    <div class="stage-grid">
+      <div class="stage-item" style="border:1px solid rgba(200,168,75,0.13);">
+        <span class="num" style="color:var(--gold);">01</span>
+        <div>
+          <div class="name">로그라인 분석</div>
+          <div class="desc">18개 항목 채점 + 개선 제안</div>
+        </div>
+      </div>
+      <div class="stage-item" style="border:1px solid rgba(167,139,250,0.13);">
+        <span class="num" style="color:var(--violet);">02</span>
+        <div>
+          <div class="name">개념·이론 분석</div>
+          <div class="desc">신화 구조 · 바르트 · 학술 분석</div>
+        </div>
+      </div>
+      <div class="stage-item" style="border:1px solid rgba(96,165,250,0.13);">
+        <span class="num" style="color:var(--azure);">03</span>
+        <div>
+          <div class="name">캐릭터 개발</div>
+          <div class="desc">그림자 · 진정성 · 캐릭터 아크</div>
+        </div>
+      </div>
+      <div class="stage-item" style="border:1px solid rgba(78,204,163,0.13);">
+        <span class="num" style="color:var(--teal);">04</span>
+        <div>
+          <div class="name">시놉시스</div>
+          <div class="desc">구조 분석 · 3개 방향 시놉시스</div>
+        </div>
+      </div>
+      <div class="stage-item" style="border:1px solid rgba(255,209,102,0.13);">
+        <span class="num" style="color:var(--yellow);">05</span>
+        <div>
+          <div class="name">트리트먼트</div>
+          <div class="desc">비트 시트 + 장면별 대사 개발</div>
+        </div>
+      </div>
+      <div class="stage-item" style="border:1px solid rgba(232,93,117,0.13);">
+        <span class="num" style="color:var(--rose);">06</span>
+        <div>
+          <div class="name">시나리오 초고</div>
+          <div class="desc">Field · McKee · Snyder 형식</div>
+        </div>
+      </div>
+      <div class="stage-item" style="border:1px solid rgba(69,183,209,0.13);">
+        <span class="num" style="color:#45B7D1;">07</span>
+        <div>
+          <div class="name">Script Coverage</div>
+          <div class="desc">시장 가치 + 커버리지 리포트</div>
+        </div>
+      </div>
+      <div class="stage-item" style="border:1px solid rgba(152,216,200,0.13);">
+        <span class="num" style="color:#98D8C8;">08</span>
+        <div>
+          <div class="name">고쳐쓰기</div>
+          <div class="desc">부분·전체 재작성 + 리라이트 가이드</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 활용 예시 ── -->
+  <div class="scenarios-wrap">
+    <div class="inner">
+      <div class="heading">
+        <div class="eyebrow" style="color:rgba(78,204,163,0.7);">가상 시나리오 예시</div>
+        <h2>이런 방식으로 활용할 수 있어요</h2>
+        <p>※ 아래는 서비스 활용 예시이며 실제 고객 후기가 아닙니다.</p>
+      </div>
+      <div class="scen-grid">
+        <div class="scen-card">
+          <div class="quote">"</div>
+          <p>로그라인 단계에서 '정보 격차' 점수가 낮다는 걸 알고 첫 문장을 수정 — 피칭 통과율 개선을 노리는 시나리오.</p>
+          <div class="name">K 작가</div>
+          <div class="role">드라마 작가 (활용 예시)</div>
+        </div>
+        <div class="scen-card">
+          <div class="quote">"</div>
+          <p>블레이크 스나이더 비트 시트를 AI가 자동 생성 — 개발 기간 단축을 목표로 한 프로젝트 활용 예시.</p>
+          <div class="name">P 감독</div>
+          <div class="role">독립영화 감독 (활용 예시)</div>
+        </div>
+        <div class="scen-card">
+          <div class="quote">"</div>
+          <p>팀원이 각자 로그라인을 분석하고 비교 기능으로 최선안 선택 — 팀 협업 기능을 활용하는 사용 예시.</p>
+          <div class="name">L 팀장</div>
+          <div class="role">제작사 개발팀장 (활용 예시)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 가격표 ── -->
+  <section id="pricing" class="block">
+    <div class="heading">
+      <div class="eyebrow" style="color:rgba(96,165,250,0.7);">가격</div>
+      <h2>투명한 가격, 유연한 플랜</h2>
+    </div>
+    <div class="plan-grid">
+      <div class="plan">
+        <div class="name" style="color:var(--teal);">무료</div>
+        <div class="price">
+          <span class="amount">0원</span>
+        </div>
+        <ul>
+          <li><span class="check" style="color:var(--teal);">✓</span>크레딧 10개</li>
+          <li><span class="check" style="color:var(--teal);">✓</span>Stage 1 로그라인 분석</li>
+          <li><span class="check" style="color:var(--teal);">✓</span>분석 결과 저장 (1개)</li>
+        </ul>
+        <a href="/" class="cta outline" style="color:var(--teal);border-color:rgba(78,204,163,0.33);">무료 시작</a>
+      </div>
+
+      <div class="plan highlight">
+        <div class="badge">가장 인기</div>
+        <div class="name" style="color:var(--gold);">프리미엄</div>
+        <div class="price">
+          <span class="amount">29,900원</span>
+          <span class="period">/월</span>
+        </div>
+        <ul>
+          <li><span class="check" style="color:var(--gold);">✓</span>월 100 크레딧</li>
+          <li><span class="check" style="color:var(--gold);">✓</span>8단계 전체 기능</li>
+          <li><span class="check" style="color:var(--gold);">✓</span>무제한 프로젝트 저장</li>
+          <li><span class="check" style="color:var(--gold);">✓</span>버전 히스토리</li>
+        </ul>
+        <a href="/" class="cta solid">프리미엄 시작</a>
+      </div>
+
+      <div class="plan">
+        <div class="name" style="color:var(--violet);">팀 5인</div>
+        <div class="price">
+          <span class="amount">99,000원</span>
+          <span class="period">/월</span>
+        </div>
+        <ul>
+          <li><span class="check" style="color:var(--violet);">✓</span>월 500 크레딧 공유 풀</li>
+          <li><span class="check" style="color:var(--violet);">✓</span>팀 프로젝트 공유</li>
+          <li><span class="check" style="color:var(--violet);">✓</span>관리자 크레딧 관리</li>
+          <li><span class="check" style="color:var(--violet);">✓</span>비교 분석 대시보드</li>
+          <li><span class="check" style="color:var(--violet);">✓</span>팀 청구서 발행</li>
+        </ul>
+        <a href="mailto:studioroom.skb@gmail.com?subject=Hello%20Loglines%20팀%20문의" class="cta outline" style="color:var(--violet);border-color:rgba(167,139,250,0.33);">팀 문의</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Final CTA ── -->
+  <section class="cta-big">
+    <h2>오늘 로그라인을 입력해보세요</h2>
+    <p>18개 항목 분석 결과를 10초 안에 받아보세요. 신용카드 없이 무료 시작.</p>
+    <a href="/" class="btn-primary xl">무료로 시작하기 →</a>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <div class="brand">Hello Loglines</div>
+    <div class="copy">
+      © <script>document.write(new Date().getFullYear())</script> Studio Room ·
+      <a href="mailto:studioroom.skb@gmail.com">studioroom.skb@gmail.com</a> ·
+      <a href="/legal/terms.html">이용약관</a> ·
+      <a href="/legal/privacy.html">개인정보처리방침</a>
+    </div>
+  </footer>
+
+</body>
+</html>

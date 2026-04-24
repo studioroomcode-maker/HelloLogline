@@ -28,7 +28,7 @@ export default defineConfig({
           },
         ],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//, /^\/auth\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/auth\//, /^\/landing\//, /^\/legal\//],
       },
     }),
   ],
