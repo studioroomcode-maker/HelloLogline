@@ -1866,6 +1866,35 @@ export function useLoglineAnalyzer() {
           ${themeResult?.controlling_idea ? `<p style="margin-top:10pt;"><strong>테마:</strong> ${themeResult.controlling_idea}</p>` : ""}
         </div>
       </section>
+      ${insightResult ? `
+      <section class="allow-break">
+        <h2>종합 인사이트</h2>
+        <div class="section-body">
+          ${insightResult.overall_verdict ? `
+            <div style="padding:10pt 14pt;border-radius:6pt;background:#f5f5f5;border-left:3pt solid #1a1a2e;margin-bottom:8pt;">
+              <div style="font-size:8pt;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4pt;">전체 평가</div>
+              <div style="font-size:10pt;color:#1a1a2e;line-height:1.7;">${insightResult.overall_verdict}</div>
+            </div>` : ""}
+          ${insightResult.strongest_element ? `
+            <div style="padding:10pt 14pt;border-radius:6pt;background:rgba(78,204,163,0.06);border-left:3pt solid #4ECCA3;margin-bottom:12pt;">
+              <div style="font-size:8pt;font-weight:700;color:#2a8a6a;text-transform:uppercase;letter-spacing:1px;margin-bottom:4pt;">가장 강한 요소</div>
+              <div style="font-size:10pt;color:#1a1a2e;line-height:1.7;">${insightResult.strongest_element}</div>
+            </div>` : ""}
+          ${(insightResult.priority_issues || []).map((issue, idx) => {
+            const accent = ["#FF6B6B","#C8A84B","#45B7D1"][idx] || "#C8A84B";
+            return `
+            <div style="border:1pt solid #e0e0e0;border-left:3pt solid ${accent};border-radius:4pt;padding:10pt 12pt;background:#fafafa;margin-bottom:8pt;page-break-inside:avoid;">
+              <div style="display:flex;align-items:baseline;gap:8pt;margin-bottom:6pt;">
+                <span style="font-size:9pt;font-weight:800;color:${accent};font-family:'Courier New',monospace;">0${idx+1}</span>
+                <span style="font-size:11pt;font-weight:700;color:#1a1a2e;">${issue.title || ""}</span>
+              </div>
+              ${issue.problem ? `<div style="font-size:9.5pt;color:#333;line-height:1.7;margin-bottom:5pt;">${issue.problem}</div>` : ""}
+              ${issue.why_matters ? `<div style="font-size:9pt;color:#666;font-style:italic;margin-bottom:6pt;">→ ${issue.why_matters}</div>` : ""}
+              ${issue.action ? `<div style="padding:6pt 10pt;background:#fff;border:1pt solid #e0e0e0;border-radius:4pt;font-size:9pt;color:#1a1a2e;line-height:1.65;"><span style="font-size:7.5pt;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-right:5pt;">개선 방법</span>${issue.action}</div>` : ""}
+            </div>`;
+          }).join("")}
+        </div>
+      </section>` : ""}
       ${storyFixes.length > 0 ? `
       <section class="allow-break">
         <h2>🔧 약점 집중 수정안</h2>

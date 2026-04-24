@@ -718,9 +718,23 @@ function buildStage1SectionHtml(data) {
   }
 
   if (insightResult) {
-    parts.push(subsectionTitle("통찰 분석", "#A78BFA"));
-    if (insightResult.core_insight) parts.push(infoBox("핵심 통찰", escapeHtml(insightResult.core_insight), "#A78BFA"));
-    if (Array.isArray(insightResult.key_points)) parts.push(listBox(insightResult.key_points, "#A78BFA"));
+    parts.push(subsectionTitle("종합 인사이트", "#A78BFA"));
+    if (insightResult.overall_verdict) parts.push(infoBox("전체 평가", escapeHtml(insightResult.overall_verdict), "#A78BFA"));
+    if (insightResult.strongest_element) parts.push(infoBox("가장 강한 요소", escapeHtml(insightResult.strongest_element), "#4ECCA3"));
+    if (Array.isArray(insightResult.priority_issues) && insightResult.priority_issues.length) {
+      insightResult.priority_issues.forEach((issue, i) => {
+        const accent = ["#FF6B6B","#C8A84B","#45B7D1"][i] || "#A78BFA";
+        parts.push(`<div style="border:1pt solid ${accent}28;border-left:3pt solid ${accent};border-radius:4pt;padding:8pt 11pt;background:${accent}06;margin-bottom:6pt;page-break-inside:avoid;">
+          <div style="display:flex;align-items:baseline;gap:6pt;margin-bottom:4pt;">
+            <span style="font-size:8pt;font-weight:800;color:${accent};font-family:'Courier New',monospace;">0${i+1}</span>
+            <span style="font-size:9.5pt;font-weight:700;color:#1a1a2e;">${escapeHtml(issue.title || "")}</span>
+          </div>
+          ${issue.problem ? `<div style="font-size:8.5pt;color:#333;line-height:1.65;margin-bottom:3pt;">${escapeHtml(issue.problem)}</div>` : ""}
+          ${issue.why_matters ? `<div style="font-size:8pt;color:#666;font-style:italic;margin-bottom:4pt;">→ ${escapeHtml(issue.why_matters)}</div>` : ""}
+          ${issue.action ? `<div style="padding:5pt 9pt;background:#fff;border:1pt solid #e0e0e0;border-radius:3pt;font-size:8.5pt;color:#1a1a2e;line-height:1.6;"><span style="font-size:7pt;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-right:4pt;">개선 방법</span>${escapeHtml(issue.action)}</div>` : ""}
+        </div>`);
+      });
+    }
   }
 
   return `<div style="page-break-before:always;">${parts.join("")}</div>`;
