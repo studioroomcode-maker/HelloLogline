@@ -128,27 +128,31 @@ export default function LoglineAnalyzer() {
 
         {/* ─── Progress bar (모바일 전용) ─── */}
         <div style={{
-          display: ctx.isMobile ? "flex" : "none", justifyContent: "center", alignItems: "center",
-          padding: "14px 24px 20px",
+          display: ctx.isMobile ? "flex" : "none", alignItems: "center",
+          // 9개 노드 + 8개 라인이 모바일 너비를 넘김 — 가로 스크롤 허용.
+          // justifyContent center는 스크롤 컨테이너에서 시작이 잘리므로 flex-start.
+          justifyContent: "flex-start",
+          padding: "12px 14px 16px",
           background: "var(--glass-modal)", backdropFilter: "var(--blur-micro)", WebkitBackdropFilter: "var(--blur-micro)",
           borderBottom: "1px solid var(--c-card-2)",
           position: "sticky", top: 56, zIndex: 20,
+          overflowX: "auto", WebkitOverflowScrolling: "touch", scrollbarWidth: "none",
         }}>
           {STAGES.map((s, idx) => {
             const st = ctx.getStageStatus(s.id);
             const isActive = ctx.currentStage === s.id;
             return (
-              <div key={s.id} style={{ display: "flex", alignItems: "center" }}>
+              <div key={s.id} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
                 {idx > 0 && (
                   <div style={{
-                    width: ctx.isMobile ? 20 : 36, height: 2, flexShrink: 0,
+                    width: ctx.isMobile ? 12 : 36, height: 2, flexShrink: 0,
                     background: st === "done" ? "#4ECCA3" : "var(--c-bd-3)",
                     transition: "background 0.4s",
                   }} />
                 )}
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
                   <button onClick={() => { ctx.setCurrentStage(s.id); }} title={s.name} style={{
-                    width: ctx.isMobile ? 28 : 34, height: ctx.isMobile ? 28 : 34, borderRadius: "50%", flexShrink: 0,
+                    width: ctx.isMobile ? 26 : 34, height: ctx.isMobile ? 26 : 34, borderRadius: "50%", flexShrink: 0,
                     border: `2px solid ${isActive ? "#C8A84B" : st === "done" ? "#4ECCA3" : "var(--c-bd-5)"}`,
                     background: isActive ? "rgba(200,168,75,0.18)" : st === "done" ? "rgba(78,204,163,0.12)" : "transparent",
                     color: isActive ? "#C8A84B" : st === "done" ? "#4ECCA3" : "var(--c-tx-28)",
@@ -157,7 +161,7 @@ export default function LoglineAnalyzer() {
                     transition: "all 0.25s",
                   }}>
                     {st === "done" ? (
-                      <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg>
+                      <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg>
                     ) : s.num}
                   </button>
                   {!ctx.isMobile && (
@@ -191,7 +195,7 @@ export default function LoglineAnalyzer() {
                   <span style={{ fontSize: 16 }}>🎬</span>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "#FFD166", marginBottom: 2 }}>데모 모드 — 샘플 분석 결과 체험 중</div>
-                    <div style={{ fontSize: 11, color: "var(--c-tx-45)", fontFamily: "'Noto Sans KR', sans-serif" }}>로그라인: "{DEMO_LOGLINE.slice(0, 40)}…" — 8단계 결과를 자유롭게 둘러보세요.</div>
+                    <div style={{ fontSize: 11, color: "var(--c-tx-45)", fontFamily: "'Noto Sans KR', sans-serif" }}>로그라인: "{DEMO_LOGLINE.slice(0, 40)}…" — 9단계 결과를 자유롭게 둘러보세요.</div>
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
