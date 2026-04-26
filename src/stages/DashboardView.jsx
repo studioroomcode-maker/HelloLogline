@@ -3,6 +3,7 @@ import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import { loadProjects } from "../db.js";
 import { WORK_MODES } from "../workModes.js";
 import { maybeWarnPrereq, STAGE_PREREQUISITES } from "../stagePrereqWarn.js";
+import { ModeProgressBar, ModeProgressDots } from "../components/ModeProgress.jsx";
 
 const ReverseImportModal = lazy(() => import("./ReverseImportModal.jsx"));
 
@@ -538,11 +539,27 @@ export default function DashboardView() {
                     </div>
                   </div>
                   {!mode.optional && (
-                    <div style={{
-                      fontSize: 9, color: doneInMode === stagesInMode.length && doneInMode > 0 ? "#4ECCA3" : "var(--c-tx-30)",
-                      fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0,
-                    }}>
-                      {doneInMode}/{stagesInMode.length}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                      {/* stage 점 시각 (stage 2개 이상일 때만) */}
+                      <ModeProgressDots
+                        stages={stagesInMode}
+                        getStageStatus={getStageStatus}
+                        color={mode.color}
+                      />
+                      <ModeProgressBar
+                        done={doneInMode}
+                        total={stagesInMode.length}
+                        color={mode.color}
+                        width={42}
+                        height={4}
+                      />
+                      <div style={{
+                        fontSize: 9, color: doneInMode === stagesInMode.length && doneInMode > 0 ? "#4ECCA3" : "var(--c-tx-30)",
+                        fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+                        minWidth: 22, textAlign: "right",
+                      }}>
+                        {doneInMode}/{stagesInMode.length}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1051,8 +1068,13 @@ const FLOW_STAGES = [
 function StageFlowMap({ getStageStatus, advanceToStage, isMobile }) {
   return (
     <div style={{ marginTop: 28, marginBottom: 28 }}>
-      <div style={{ fontSize: 11, color: "var(--c-tx-30)", fontWeight: 700, marginBottom: 12, letterSpacing: 0.5 }}>
-        워크플로우 맵
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 12, gap: 10, flexWrap: "wrap" }}>
+        <div style={{ fontSize: 11, color: "var(--c-tx-30)", fontWeight: 700, letterSpacing: 0.5 }}>
+          워크플로우 맵
+        </div>
+        <div style={{ fontSize: 9, color: "var(--c-tx-25)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.3 }}>
+          진척도 ≠ 작품 완성도
+        </div>
       </div>
       <div style={{
         display: "flex", alignItems: "center",

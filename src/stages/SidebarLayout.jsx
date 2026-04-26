@@ -5,6 +5,7 @@ import ErrorBoundary from "../ErrorBoundary.jsx";
 import NotificationPanel from "./NotificationPanel.jsx";
 import OllamaSettings from "./OllamaSettings.jsx";
 import { WORK_MODES, findModeForStage } from "../workModes.js";
+import { ModeProgressBar, ModeProgressDots } from "../components/ModeProgress.jsx";
 
 const StageCommentThread = lazy(() => import("./StageCommentThread.jsx"));
 
@@ -121,12 +122,16 @@ function SidebarModeGroups({ currentStage, stageComments, getStageStatus }) {
                   선택
                 </span>
               ) : (
-                <span style={{
-                  fontSize: 8, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
-                  color: doneInMode === stagesInMode.length && doneInMode > 0 ? "#4ECCA3" : "var(--c-tx-25)",
-                }}>
-                  {doneInMode}/{stagesInMode.length}
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <ModeProgressBar done={doneInMode} total={stagesInMode.length} color={mode.color} width={32} height={3} />
+                  <span style={{
+                    fontSize: 8, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
+                    color: doneInMode === stagesInMode.length && doneInMode > 0 ? "#4ECCA3" : "var(--c-tx-25)",
+                    minWidth: 22, textAlign: "right",
+                  }}>
+                    {doneInMode}/{stagesInMode.length}
+                  </span>
+                </div>
               )}
             </button>
             {isOpen && (
