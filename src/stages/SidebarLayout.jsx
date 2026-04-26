@@ -708,9 +708,23 @@ export default function SidebarLayout({ stageProps, isMobile }) {
     }
   }
 
-  // 스테이지 전환 시 메인 패널 상단으로 스크롤
+  // 스테이지 전환 시 화면 최상단으로 스크롤.
+  // <main>에 overflow가 없어 실제 스크롤은 window에서 발생 — 둘 다 0으로 보낸다.
+  // behavior는 즉각 이동(auto). smooth는 모바일/긴 페이지에서 어색하고 사용자가
+  // "가장 위로 올라가야 한다"고 명시적으로 기대.
   useEffect(() => {
-    mainPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+    mainPanelRef.current?.scrollTo?.({ top: 0, left: 0, behavior: "auto" });
+    // 일부 브라우저에서 첫 paint 전 호출이 무시되는 케이스 — 다음 프레임에서 한 번 더.
+    requestAnimationFrame(() => {
+      if (typeof window !== "undefined") window.scrollTo(0, 0);
+      if (typeof document !== "undefined") {
+        document.documentElement?.scrollTo?.(0, 0);
+        document.body?.scrollTo?.(0, 0);
+      }
+    });
   }, [currentStage]);
 
   const SIDEBAR_W = 210;
