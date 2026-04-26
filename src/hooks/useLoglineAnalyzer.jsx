@@ -47,6 +47,7 @@ import {
   EpisodeSeriesSchema,
   MasterReportSchema,
   CoreDesignSchema,
+  DevelopmentNotesArraySchema, SceneCardsArraySchema,
 } from "../schemas.js";
 import {
   saveProject, loadProject, loadProjects, deleteProject,
@@ -979,32 +980,46 @@ export function useLoglineAnalyzer() {
   });
 
   const _guestSaveCountRef = useRef(0);
+  const _autoSaveTimerRef = useRef(null);
 
-  const autoSave = async () => {
-    setSaveStatus("saving");
-    try {
-      const snapshot = collectProjectSnapshot();
-      if (!currentProjectId) setCurrentProjectId(snapshot.id);
-      await saveProject(snapshot);
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus(""), 2000);
-      // 백그라운드 클라우드 동기화 (실패해도 무시)
-      const token = localStorage.getItem("hll_auth_token");
-      if (token) {
-        syncProjectToCloud(snapshot, token).catch(() => {});
-        saveProjectVersion(snapshot.id, snapshot, token).catch(() => {});
-      } else {
-        // 비로그인 사용자 — 첫 저장과 매 5번째 저장마다 경고
-        _guestSaveCountRef.current++;
-        if (_guestSaveCountRef.current === 1 || _guestSaveCountRef.current % 5 === 0) {
-          showToast("warn", "이 기기에만 저장됩니다. 로그인하면 모든 기기에서 접근 가능합니다.", 6000);
-        }
-      }
-    } catch (e) {
-      console.error("자동 저장 실패:", e);
-      setSaveStatus("");
+  // autoSave 본체 — 호출 측은 await autoSave()로 사용. 실제 IndexedDB 저장은 debounce 적용:
+  // 같은 핸들러 안에서 여러 번 호출되거나, 데모 진입 같은 setX 폭주 후 호출돼도 마지막 1회만 실행.
+  const autoSave = useCallback(async () => {
+    if (_autoSaveTimerRef.current) {
+      clearTimeout(_autoSaveTimerRef.current);
+      _autoSaveTimerRef.current = null;
     }
-  };
+    return new Promise((resolve) => {
+      _autoSaveTimerRef.current = setTimeout(async () => {
+        _autoSaveTimerRef.current = null;
+        setSaveStatus("saving");
+        try {
+          const snapshot = collectProjectSnapshot();
+          if (!currentProjectId) setCurrentProjectId(snapshot.id);
+          await saveProject(snapshot);
+          setSaveStatus("saved");
+          setTimeout(() => setSaveStatus(""), 2000);
+          // 백그라운드 클라우드 동기화 (실패해도 무시)
+          const token = localStorage.getItem("hll_auth_token");
+          if (token) {
+            syncProjectToCloud(snapshot, token).catch(() => {});
+            saveProjectVersion(snapshot.id, snapshot, token).catch(() => {});
+          } else {
+            // 비로그인 사용자 — 첫 저장과 매 5번째 저장마다 경고
+            _guestSaveCountRef.current++;
+            if (_guestSaveCountRef.current === 1 || _guestSaveCountRef.current % 5 === 0) {
+              showToast("warn", "이 기기에만 저장됩니다. 로그인하면 모든 기기에서 접근 가능합니다.", 6000);
+            }
+          }
+        } catch (e) {
+          console.error("자동 저장 실패:", e);
+          setSaveStatus("");
+        }
+        resolve();
+      }, 250); // 250ms debounce — 짧지만 setX 폭주를 한 번으로 묶기에 충분
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProjectId]);
 
   const openProjects = async () => {
     try {
@@ -1081,8 +1096,9 @@ export function useLoglineAnalyzer() {
     setScenarioDraftHistory(proj.scenarioDraftHistory || []);
     setCharDevHistory(proj.charDevHistory || []);
     setPipelineHistory(proj.pipelineHistory || []);
-    setDevelopmentNotes(proj.developmentNotes || []);
-    setSceneCards(proj.sceneCards || []);
+    // 클라우드/로컬에서 온 데이터를 항목별로 검증 — 잘못된 객체 1개가 전체를 깨뜨리지 않도록.
+    setDevelopmentNotes(DevelopmentNotesArraySchema.parse(proj.developmentNotes || []));
+    setSceneCards(SceneCardsArraySchema.parse(proj.sceneCards || []));
     setCurrentProjectId(proj.id);
     setShowProjects(false);
     // Stage 2 핵심 설계 신설(2026-04-27) 마이그레이션 — 캐릭터/시놉시스가 있는데 핵심 설계가 비어 있으면

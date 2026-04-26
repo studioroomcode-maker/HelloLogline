@@ -1,13 +1,6 @@
 import { useState } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
-
-// 스테이지 진입 전제 조건: key 스테이지는 value 스테이지가 완료되어야 진입 가능
-// Stage 9 (Deep Analysis)는 선택형 — Stage 1만 끝났으면 언제든 진입 가능.
-const STAGE_PREREQUISITES = {
-  "2": "1", "3": "2", "4": "3",
-  "5": "4", "6": "5", "7": "6", "8": "7",
-  "9": "1",
-};
+import { maybeWarnPrereq } from "../stagePrereqWarn.js";
 
 export default function SidebarNavItem({ id, title, sub, accentColor, commentCount = 0 }) {
   const { currentStage, setCurrentStage, getStageStatus, getStageDoneCount, STAGE_TOTALS, stageResultSummary, showToast, reverseEntryStage } = useLoglineCtx();
@@ -24,12 +17,7 @@ export default function SidebarNavItem({ id, title, sub, accentColor, commentCou
       setCurrentStage(id);
       return;
     }
-    const prereqId = STAGE_PREREQUISITES[id];
-    // 잠금이 아니라 경고. 작가 워크플로우는 비선형 — 진입 허용 + 정확도 낮을 수 있음 안내.
-    if (prereqId && getStageStatus(prereqId) !== "done") {
-      const labelMap = { "1": "로그라인", "2": "핵심 설계", "3": "캐릭터", "4": "시놉시스", "5": "트리트먼트", "6": "초고", "7": "Coverage" };
-      showToast("info", `${labelMap[prereqId] || `Stage ${prereqId}`} 결과 없이 진행하면 정확도가 낮아질 수 있습니다.`);
-    }
+    maybeWarnPrereq(id, getStageStatus, showToast);
     setCurrentStage(id);
   }
 

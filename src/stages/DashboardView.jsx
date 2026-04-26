@@ -2,6 +2,7 @@ import { useState, useEffect, lazy, Suspense } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import { loadProjects } from "../db.js";
 import { WORK_MODES } from "../workModes.js";
+import { maybeWarnPrereq, STAGE_PREREQUISITES } from "../stagePrereqWarn.js";
 
 const ReverseImportModal = lazy(() => import("./ReverseImportModal.jsx"));
 
@@ -17,7 +18,7 @@ const STAGE_META = [
   { id: "9", name: "Deep Analysis", sub: "신화·학술·전문가",  color: "#45B7D1" },
 ];
 
-function StageCard({ id, name, sub, color, status, doneCount, total, summary, onClick }) {
+function StageCard({ id, name, sub, color, status, doneCount, total, summary, onClick, wide = false }) {
   const [hovered, setHovered] = useState(false);
   const isDone = status === "done";
   const isActive = status === "active";
@@ -28,7 +29,9 @@ function StageCard({ id, name, sub, color, status, doneCount, total, summary, on
       onMouseLeave={() => setHovered(false)}
       style={{
         display: "flex", flexDirection: "column", alignItems: "flex-start",
-        gap: 7, padding: "12px 12px 10px",
+        gap: 7, padding: wide ? "14px 18px 12px" : "12px 12px 10px",
+        minHeight: wide ? 76 : undefined,
+        justifyContent: wide ? "center" : undefined,
         borderRadius: 12,
         border: isDone
           ? `1px solid ${color}35`
@@ -122,15 +125,8 @@ function loadCreditHistory() {
   }
 }
 
-// 스테이지 진입 전제 조건
-// Stage 9 (Deep Analysis)는 선택형 — 1만 끝났으면 언제든 진입 가능.
-const STAGE_PREREQUISITES = {
-  "2": "1", "3": "2", "4": "3",
-  "5": "4", "6": "5", "7": "6", "8": "7",
-  "9": "1",
-};
-
-// WORK_MODES는 src/workModes.js에서 공통 정의 (사이드바·모바일 네비도 동일 사용).
+// STAGE_PREREQUISITES는 src/stagePrereqWarn.js에서 공통 정의 (SidebarNavItem·DashboardView 모두 사용).
+// WORK_MODES는 src/workModes.js에서 공통 정의.
 
 export default function DashboardView() {
   const {
@@ -156,13 +152,7 @@ export default function DashboardView() {
       advanceToStage(id);
       return;
     }
-    const prereqId = STAGE_PREREQUISITES[id];
-    // 잠금이 아니라 경고. 작가 워크플로우는 비선형이므로 진입은 허용하되,
-    // 전제 단계 결과가 없으면 후속 단계 정확도가 낮아질 수 있다고 알린다.
-    if (prereqId && getStageStatus(prereqId) !== "done") {
-      const labelMap = { "1": "로그라인", "2": "핵심 설계", "3": "캐릭터", "4": "시놉시스", "5": "트리트먼트", "6": "초고", "7": "Coverage" };
-      showToast("info", `${labelMap[prereqId] || `Stage ${prereqId}`} 결과 없이 진행하면 정확도가 낮아질 수 있습니다.`);
-    }
+    maybeWarnPrereq(id, getStageStatus, showToast);
     advanceToStage(id);
   }
 
@@ -556,18 +546,29 @@ export default function DashboardView() {
                     </div>
                   )}
                 </div>
+                {/* Stage 1개짜리 모드(발견/심화)는 와이드 카드 한 장으로,
+                    여러 개인 모드는 적절한 그리드로 — 모바일 외로움 해소. */}
                 <div style={{
                   display: "grid",
-                  gridTemplateColumns: isMobile
-                    ? `repeat(${Math.min(stagesInMode.length, 2)}, 1fr)`
-                    : `repeat(${Math.min(stagesInMode.length, 4)}, 1fr)`,
+                  gridTemplateColumns: stagesInMode.length === 1
+                    ? "1fr"
+                    : isMobile
+                      ? "1fr 1fr"
+                      : `repeat(${Math.min(stagesInMode.length, 4)}, 1fr)`,
                   gap: 6,
                   padding: "0 8px 8px",
                 }}>
                   {stagesInMode.map(s => {
                     const isTourTarget = isDemoMode && demoTourStep === 0 && s.id === "1";
+                    const isWide = stagesInMode.length === 1;
                     return (
-                      <div key={s.id} style={isTourTarget ? { borderRadius: 12, animation: "demoPulseRing 1.8s ease-out infinite" } : undefined}>
+                      <div
+                        key={s.id}
+                        style={{
+                          ...(isTourTarget ? { borderRadius: 12, animation: "demoPulseRing 1.8s ease-out infinite" } : {}),
+                          ...(isWide ? { minHeight: isMobile ? 78 : 86 } : {}),
+                        }}
+                      >
                         <StageCard
                           {...s}
                           status={getStageStatus(s.id)}
@@ -575,6 +576,7 @@ export default function DashboardView() {
                           total={STAGE_TOTALS?.[s.id]}
                           summary={stageResultSummary?.[s.id]}
                           onClick={() => handleStageClick(s.id)}
+                          wide={isWide}
                         />
                       </div>
                     );

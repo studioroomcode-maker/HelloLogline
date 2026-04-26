@@ -215,6 +215,72 @@ export const CharacterDevSchema = z
   })
   .passthrough();
 
+// ─── Development Notes (수정 과제 보드 — 모든 분석의 통합 이슈 트래커) ────
+// loadProjectState에서 클라우드/로컬 데이터를 검증할 때 사용.
+// 잘못된 노트 1개가 전체 배열을 깨뜨리지 않도록 항목별로 .catch(null) 후 filter.
+
+export const DevelopmentNoteSchema = z
+  .object({
+    id: z.string(),
+    source: z.string().catch("manual"),
+    area: z.string().catch("general"),
+    title: z.string().min(1),
+    why: z.string().catch(""),
+    action: z.string().catch(""),
+    status: z.enum(["open", "applied", "ignored"]).catch("open"),
+    linkedStage: z.string().nullable().catch(null),
+    linkedSceneId: z.string().nullable().catch(null),
+    createdAt: z.number().catch(() => Date.now()),
+    updatedAt: z.number().catch(() => Date.now()),
+  })
+  .passthrough();
+
+export const DevelopmentNotesArraySchema = z
+  .array(z.unknown())
+  .transform((arr) =>
+    arr
+      .map((item) => {
+        const parsed = DevelopmentNoteSchema.safeParse(item);
+        return parsed.success ? parsed.data : null;
+      })
+      .filter(Boolean)
+  )
+  .catch([]);
+
+// ─── Scene Cards (씬 카드 보드 — 비트 → 씬 → Fountain 중간 통제) ──────────
+
+export const SceneCardSchema = z
+  .object({
+    id: z.string(),
+    beatId: z.union([z.string(), z.number(), z.null()]).catch(null),
+    order: z.number().catch(0),
+    title: z.string().catch(""),
+    location: z.string().catch(""),
+    characters: z.array(z.string()).catch([]),
+    purpose: z.string().catch("정보"),
+    conflict: z.string().catch(""),
+    valueShift: z.string().catch("—"),
+    reveal: z.string().catch(""),
+    subtext: z.string().catch(""),
+    status: z.enum(["outline", "drafted", "revised"]).catch("outline"),
+    fountainText: z.string().catch(""),
+    createdAt: z.number().catch(() => Date.now()),
+    updatedAt: z.number().catch(() => Date.now()),
+  })
+  .passthrough();
+
+export const SceneCardsArraySchema = z
+  .array(z.unknown())
+  .transform((arr) =>
+    arr
+      .map((item) => {
+        const parsed = SceneCardSchema.safeParse(item);
+        return parsed.success ? parsed.data : null;
+      })
+      .filter(Boolean)
+  )
+  .catch([]);
+
 // ─── Stage 2: 핵심 설계 ──────────────────────────────────────────────────────
 
 // 필수 3필드(one_line / want.summary / need.summary)는 fail-fast — 빈 응답이면 사용자에게 에러 표면화.
