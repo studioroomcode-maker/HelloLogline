@@ -64,6 +64,7 @@ import {
   notesFromCoverage,
   notesFromRewriteDiag,
 } from "../developmentNotesAdapters.js";
+import { sceneCardsFromBeatSheet } from "../sceneCardsAdapters.js";
 
 /* ─── Lazy-loaded heavy panels ─── */
 
@@ -409,6 +410,13 @@ export function useLoglineAnalyzer() {
   // status: "open" | "applied" | "ignored"
   const [developmentNotes, setDevelopmentNotes] = useState([]);
   const [showNotesPanel, setShowNotesPanel] = useState(false);
+
+  // ── Scene Cards (씬 카드 보드 — 비트 → 씬 → Fountain 연결의 중간 단계) ──
+  // { id, beatId, order, title, location, characters[], purpose, conflict,
+  //   valueShift, reveal, subtext, status: "outline"|"drafted"|"revised",
+  //   fountainText, createdAt, updatedAt }
+  const [sceneCards, setSceneCards] = useState([]);
+  const [showScenePanel, setShowScenePanel] = useState(false);
 
   // ── Core Design (Stage 2 — Want/Need/적대자/스테이크/테마) ──
   const [coreDesignResult, setCoreDesignResult] = useState(null);
@@ -963,6 +971,7 @@ export function useLoglineAnalyzer() {
     writerEdits,
     treatmentHistory, beatSheetHistory, scenarioDraftHistory, charDevHistory, pipelineHistory,
     developmentNotes,
+    sceneCards,
   });
 
   const _guestSaveCountRef = useRef(0);
@@ -1069,6 +1078,7 @@ export function useLoglineAnalyzer() {
     setCharDevHistory(proj.charDevHistory || []);
     setPipelineHistory(proj.pipelineHistory || []);
     setDevelopmentNotes(proj.developmentNotes || []);
+    setSceneCards(proj.sceneCards || []);
     setCurrentProjectId(proj.id);
     setShowProjects(false);
     // Stage 2 핵심 설계 신설(2026-04-27) 마이그레이션 — 캐릭터/시놉시스가 있는데 핵심 설계가 비어 있으면
@@ -1327,6 +1337,7 @@ export function useLoglineAnalyzer() {
     setWriterEdits({}); setTreatmentHistory([]); setBeatSheetHistory([]);
     setScenarioDraftHistory([]); setCharDevHistory([]); setPipelineHistory([]);
     setDevelopmentNotes([]);
+    setSceneCards([]);
     setCurrentProjectId(null);
     setCurrentStage("1");
     showToast("success", "새 프로젝트가 시작되었습니다.");
@@ -3723,6 +3734,60 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setDevelopmentNotes((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
+  // ── Scene Cards 헬퍼 ──
+  const updateSceneCard = useCallback((id, patch) => {
+    setSceneCards((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch, updatedAt: Date.now() } : c)));
+  }, []);
+
+  const deleteSceneCard = useCallback((id) => {
+    setSceneCards((prev) => prev.filter((c) => c.id !== id));
+  }, []);
+
+  const reorderSceneCards = useCallback((nextOrder) => {
+    // nextOrder: [id, id, ...] 새 순서대로의 id 배열
+    setSceneCards((prev) => {
+      const map = new Map(prev.map((c) => [c.id, c]));
+      const reordered = nextOrder.map((id, i) => {
+        const c = map.get(id);
+        return c ? { ...c, order: i + 1, updatedAt: Date.now() } : null;
+      }).filter(Boolean);
+      return reordered;
+    });
+  }, []);
+
+  const addSceneCard = useCallback((card) => {
+    const now = Date.now();
+    setSceneCards((prev) => [
+      ...prev,
+      {
+        id: card?.id || `scene_${now}_${Math.random().toString(36).slice(2, 7)}`,
+        beatId: card?.beatId || null,
+        order: prev.length + 1,
+        title: card?.title || "새 씬",
+        location: card?.location || "",
+        characters: card?.characters || [],
+        purpose: card?.purpose || "정보",
+        conflict: card?.conflict || "",
+        valueShift: card?.valueShift || "—",
+        reveal: card?.reveal || "",
+        subtext: card?.subtext || "",
+        status: card?.status || "outline",
+        fountainText: card?.fountainText || "",
+        createdAt: now,
+        updatedAt: now,
+      },
+    ]);
+  }, []);
+
+  // 비트 시트가 갱신되면 비어 있는 sceneCards에 한해 자동 시드 (덮어쓰기 안 함).
+  // 작가가 이미 카드를 만들고 편집했다면 보존.
+  const seedSceneCardsFromBeatSheet = useCallback(() => {
+    if (!beatSheetResult) return;
+    if (sceneCards.length > 0) return;
+    const seed = sceneCardsFromBeatSheet(beatSheetResult, charDevResult);
+    if (seed.length) setSceneCards(seed);
+  }, [beatSheetResult, charDevResult, sceneCards.length]);
+
   // ── Core Design (Stage 2 — Want/Need/적대자/스테이크/테마) ──
   const analyzeCoreDesign = async () => {
     if (!logline.trim() || !apiKey) return;
@@ -4373,6 +4438,10 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     developmentNotes, addDevelopmentNote, addDevelopmentNotes,
     updateDevelopmentNote, deleteDevelopmentNote,
     showNotesPanel, setShowNotesPanel,
+    // Scene Cards
+    sceneCards, addSceneCard, updateSceneCard, deleteSceneCard,
+    reorderSceneCards, seedSceneCardsFromBeatSheet,
+    showScenePanel, setShowScenePanel,
   };
 
 
@@ -4457,6 +4526,11 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     addDevelopmentNote, addDevelopmentNotes,
     updateDevelopmentNote, deleteDevelopmentNote,
     showNotesPanel, setShowNotesPanel,
+    // Scene Cards
+    sceneCards, setSceneCards,
+    addSceneCard, updateSceneCard, deleteSceneCard,
+    reorderSceneCards, seedSceneCardsFromBeatSheet,
+    showScenePanel, setShowScenePanel,
     // Character Dev
     charDevResult, setCharDevResult, charDevLoading, charDevError, charDevRef,
     analyzeCharacterDev, refineCharDev,

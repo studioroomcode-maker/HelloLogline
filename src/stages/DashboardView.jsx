@@ -183,6 +183,7 @@ export default function DashboardView() {
     reverseEntryStage,
     isDemoMode, demoTourStep,
     developmentNotes, setShowNotesPanel,
+    sceneCards, setShowScenePanel,
   } = useLoglineCtx();
 
   const [showReverseModal, setShowReverseModal] = useState(false);
@@ -638,6 +639,62 @@ export default function DashboardView() {
         logline={logline}
         stageResultSummary={stageResultSummary}
       />
+
+      {/* ── 씬 카드 보드 카드 (sceneCards) ── */}
+      {logline && (sceneCards?.length > 0 || true) && (() => {
+        const total = (sceneCards || []).length;
+        const drafted = (sceneCards || []).filter(c => c.status === "drafted").length;
+        const revised = (sceneCards || []).filter(c => c.status === "revised").length;
+        const outline = total - drafted - revised;
+        return (
+          <button
+            onClick={() => setShowScenePanel(true)}
+            style={{
+              width: "100%", marginTop: 14, padding: "14px 18px",
+              borderRadius: 14,
+              background: total > 0
+                ? "linear-gradient(135deg, rgba(78,204,163,0.10), var(--glass-micro))"
+                : "var(--glass-micro)",
+              border: total > 0 ? "1px solid rgba(78,204,163,0.30)" : "1px solid var(--glass-bd-nano)",
+              boxShadow: total > 0 ? "inset 0 1px 0 rgba(78,204,163,0.18)" : "inset 0 1px 0 var(--glass-bd-nano)",
+              cursor: "pointer", textAlign: "left",
+              fontFamily: "'Noto Sans KR', sans-serif",
+              display: "flex", alignItems: "center", gap: 14,
+              transition: "transform 0.18s var(--ease-spring)",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ""; }}
+          >
+            <div style={{
+              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+              background: total > 0 ? "rgba(78,204,163,0.16)" : "var(--glass-nano)",
+              border: total > 0 ? "1px solid rgba(78,204,163,0.4)" : "1px solid var(--c-bd-3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={total > 0 ? "#4ECCA3" : "var(--c-tx-40)"} strokeWidth={2} strokeLinecap="round">
+                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+              </svg>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--c-tx-30)", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 2, fontFamily: "'JetBrains Mono', monospace" }}>
+                씬 카드 보드
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-main)" }}>
+                {total === 0 ? "씬 카드 없음" : `씬 ${total}개 — 초안 ${drafted} · 수정 ${revised}`}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginTop: 2, lineHeight: 1.5 }}>
+                {total === 0
+                  ? "비트시트에서 자동 생성하거나 직접 추가해 씬 단위로 작업하세요."
+                  : `아웃라인 ${outline} · 비트시트에서 자동 시드 가능`}
+              </div>
+            </div>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-35)" strokeWidth={2} strokeLinecap="round" style={{ flexShrink: 0 }}>
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        );
+      })()}
 
       {/* ── 수정 과제 보드 카드 (developmentNotes) ── */}
       {logline && (() => {
