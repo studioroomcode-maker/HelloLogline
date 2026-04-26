@@ -1230,6 +1230,12 @@ export function useLoglineAnalyzer() {
       createdAt: Date.now() - i * 60000,
       updatedAt: Date.now() - i * 60000,
     })));
+    // 데모용 씬 카드 시드 — 비트시트에서 자동 변환. 첫 두 개는 상태 다르게 시연.
+    const seedScenes = sceneCardsFromBeatSheet(DEMO_BEAT_SHEET_RESULT, DEMO_CHAR_DEV_RESULT);
+    setSceneCards(seedScenes.map((s, i) => ({
+      ...s,
+      status: i === 0 ? "revised" : i === 1 ? "drafted" : "outline",
+    })));
     setCurrentStage("dashboard");
     setDemoTourStep(0); // 온보딩 투어 시작
     showToast("info", "데모 모드입니다. 9단계 전체 분석 결과를 자유롭게 둘러보세요.");
@@ -1243,6 +1249,8 @@ export function useLoglineAnalyzer() {
     setGenre("auto");
     setResult(null);
     setCoreDesignResult(null);
+    setDevelopmentNotes([]);
+    setSceneCards([]);
     setCharDevResult(null);
     setShadowResult(null);
     setAuthenticityResult(null);
