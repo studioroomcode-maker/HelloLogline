@@ -4,6 +4,7 @@ import SidebarNavItem from "./SidebarNavItem.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import NotificationPanel from "./NotificationPanel.jsx";
 import OllamaSettings from "./OllamaSettings.jsx";
+import { WORK_MODES, findModeForStage } from "../workModes.js";
 
 const StageCommentThread = lazy(() => import("./StageCommentThread.jsx"));
 
@@ -41,6 +42,113 @@ const STAGE_GUIDE = {
   "8": "문제를 진단하고 부분 또는 전체 개고를 진행합니다.",
   "9": "선택 단계 — 신화구조·학술·전문가 패널로 이론적 기반을 점검합니다.",
 };
+
+/* ─── 사이드바 WORK_MODES 그룹 (접기/펴기) ─── */
+function SidebarModeGroups({ currentStage, stageComments, getStageStatus }) {
+  // 현재 stage가 속한 모드는 자동 펼침. 나머지는 접힘.
+  const currentMode = findModeForStage(currentStage);
+  const [openIds, setOpenIds] = useState(() => {
+    const initial = new Set();
+    if (currentMode) initial.add(currentMode.id);
+    return initial;
+  });
+
+  // 현재 stage가 바뀌어 다른 모드로 이동하면 그 모드를 자동으로 펼침.
+  useEffect(() => {
+    if (currentMode && !openIds.has(currentMode.id)) {
+      setOpenIds(prev => new Set(prev).add(currentMode.id));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMode?.id]);
+
+  const toggle = (modeId) => {
+    setOpenIds(prev => {
+      const next = new Set(prev);
+      if (next.has(modeId)) next.delete(modeId);
+      else next.add(modeId);
+      return next;
+    });
+  };
+
+  return (
+    <>
+      {WORK_MODES.map((mode, modeIdx) => {
+        const stagesInMode = mode.stageIds
+          .map(id => STAGE_META.find(s => s.id === id))
+          .filter(Boolean);
+        if (stagesInMode.length === 0) return null;
+        const isOpen = openIds.has(mode.id);
+        const doneInMode = stagesInMode.filter(s => getStageStatus(s.id) === "done").length;
+        const hasOptionalDivider = mode.optional && modeIdx > 0;
+        const isCurrentMode = currentMode?.id === mode.id;
+
+        return (
+          <div key={mode.id} style={{
+            marginTop: hasOptionalDivider ? 8 : 0,
+            paddingTop: hasOptionalDivider ? 8 : 0,
+            borderTop: hasOptionalDivider ? "1px solid var(--c-bd-1)" : undefined,
+          }}>
+            <button
+              onClick={() => toggle(mode.id)}
+              style={{
+                width: "calc(100% - 20px)", margin: "2px 10px",
+                padding: "6px 10px", borderRadius: 7,
+                display: "flex", alignItems: "center", gap: 8,
+                border: isCurrentMode ? `1px solid ${mode.color}40` : "1px solid transparent",
+                background: isCurrentMode ? `${mode.color}10` : "transparent",
+                cursor: "pointer", textAlign: "left",
+                transition: "background 0.15s",
+                fontFamily: "'Noto Sans KR', sans-serif",
+              }}
+              onMouseEnter={e => { if (!isCurrentMode) e.currentTarget.style.background = "var(--glass-nano)"; }}
+              onMouseLeave={e => { if (!isCurrentMode) e.currentTarget.style.background = "transparent"; }}
+            >
+              <span style={{
+                fontSize: 9, color: isOpen ? mode.color : "var(--c-tx-30)",
+                fontFamily: "'JetBrains Mono', monospace", flexShrink: 0,
+                transition: "transform 0.15s",
+                transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
+                display: "inline-block",
+              }}>▶</span>
+              <span style={{
+                fontSize: 10, fontWeight: 800, color: mode.color,
+                letterSpacing: 0.5, flex: 1,
+              }}>
+                {mode.name}
+              </span>
+              {mode.optional ? (
+                <span style={{ fontSize: 8, color: mode.color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>
+                  선택
+                </span>
+              ) : (
+                <span style={{
+                  fontSize: 8, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700,
+                  color: doneInMode === stagesInMode.length && doneInMode > 0 ? "#4ECCA3" : "var(--c-tx-25)",
+                }}>
+                  {doneInMode}/{stagesInMode.length}
+                </span>
+              )}
+            </button>
+            {isOpen && (
+              <div style={{ marginLeft: 10, paddingLeft: 4, borderLeft: `1px solid ${mode.color}26` }}>
+                {stagesInMode.map(s => (
+                  <SidebarNavItem
+                    key={s.id}
+                    id={s.id}
+                    title={s.title}
+                    sub={s.sub}
+                    accentColor={s.color}
+                    commentCount={(stageComments?.[s.id] || []).length}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
 
 /* ─── 다음 단계 CTA ─── */
 function StageNextCTA({ currentStage, isMobile }) {
@@ -187,6 +295,8 @@ function StagePageHeader({ stageId, isMobile, status }) {
   if (!stageId || stageId === "dashboard") return null;
   const meta = STAGE_META.find(s => s.id === stageId);
   if (!meta) return null;
+  // 현재 stage가 속한 모드 — 사용자가 어느 모드 안에 있는지 항상 인지하도록 caption 표시.
+  const mode = findModeForStage(stageId);
 
   return (
     <div style={{
@@ -214,6 +324,22 @@ function StagePageHeader({ stageId, isMobile, status }) {
 
       {/* 제목 + 가이드 */}
       <div style={{ flex: 1, minWidth: 0 }}>
+        {/* 모드 컨텍스트 caption — "지금 어느 모드 안에 있는가?" */}
+        {mode && (
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            fontSize: 9, fontWeight: 800, letterSpacing: 1,
+            color: mode.color, textTransform: "uppercase",
+            fontFamily: "'JetBrains Mono', monospace",
+            marginBottom: 4,
+          }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: mode.color }} />
+            {mode.name} 모드
+            {mode.optional && (
+              <span style={{ fontSize: 8, opacity: 0.65, marginLeft: 4 }}>(선택)</span>
+            )}
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <h2 style={{
             margin: 0,
@@ -255,14 +381,18 @@ function StagePageHeader({ stageId, isMobile, status }) {
 
 /* ─── 모바일 스테이지 드롭다운 (전체 스테이지 직접 이동) ─── */
 function StageDropdown({ currentStage, setCurrentStage, getStageStatus, onClose }) {
-  const mainStages = STAGE_META.filter(s => !s.optional);
-  const optionalStages = STAGE_META.filter(s => s.optional);
-  const stages = [
+  // WORK_MODES 헤더 + 안에 stages, 위에 대시보드 단독 항목.
+  const items = [
     { id: "dashboard", title: "대시보드", color: "#C8A84B" },
-    ...mainStages,
-    ...(optionalStages.length > 0 ? [{ id: "__divider", title: "심화 도구", divider: true }] : []),
-    ...optionalStages,
   ];
+  WORK_MODES.forEach((mode) => {
+    const stagesInMode = mode.stageIds
+      .map(id => STAGE_META.find(s => s.id === id))
+      .filter(Boolean);
+    if (stagesInMode.length === 0) return;
+    items.push({ id: `__mode_${mode.id}`, title: mode.name, color: mode.color, modeHeader: true, optional: mode.optional, total: stagesInMode.length });
+    stagesInMode.forEach(s => items.push(s));
+  });
   return (
     <>
       {/* 오버레이 */}
@@ -296,19 +426,27 @@ function StageDropdown({ currentStage, setCurrentStage, getStageStatus, onClose 
           </button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {stages.map(s => {
-            if (s.divider) {
+          {items.map(s => {
+            if (s.modeHeader) {
               return (
                 <div key={s.id} style={{
-                  margin: "8px 6px 4px", paddingTop: 8,
-                  borderTop: "1px solid var(--c-bd-1)",
-                  fontSize: 9, letterSpacing: 1.2, color: "var(--c-tx-25)",
-                  fontWeight: 700, textTransform: "uppercase",
-                  fontFamily: "'JetBrains Mono', monospace",
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  margin: "10px 6px 2px",
+                  paddingTop: s.optional ? 10 : 4,
+                  borderTop: s.optional ? "1px solid var(--c-bd-1)" : undefined,
+                  display: "flex", alignItems: "center", gap: 6,
                 }}>
-                  <span>{s.title}</span>
-                  <span style={{ fontSize: 8, color: "var(--c-tx-22)" }}>선택</span>
+                  <div style={{
+                    width: 6, height: 6, borderRadius: "50%",
+                    background: s.color, flexShrink: 0,
+                  }} />
+                  <span style={{
+                    fontSize: 9, letterSpacing: 1, color: s.color,
+                    fontWeight: 800, textTransform: "uppercase",
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}>{s.title}</span>
+                  {s.optional && (
+                    <span style={{ fontSize: 8, color: s.color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, opacity: 0.65 }}>선택</span>
+                  )}
                 </div>
               );
             }
@@ -644,45 +782,12 @@ export default function SidebarLayout({ stageProps, isMobile }) {
               );
             })()}
 
-            {/* 메인 워크플로우 1~8 */}
-            {STAGE_META.filter(s => !s.optional).map(s => (
-              <SidebarNavItem
-                key={s.id}
-                id={s.id}
-                title={s.title}
-                sub={s.sub}
-                accentColor={s.color}
-                commentCount={(stageComments?.[s.id] || []).length}
-              />
-            ))}
-
-            {/* 심화 도구 (선택형 — Deep Analysis 등) */}
-            {STAGE_META.filter(s => s.optional).length > 0 && (
-              <>
-                <div style={{
-                  margin: "12px 14px 6px", paddingTop: 12,
-                  borderTop: "1px solid var(--c-bd-1)",
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                }}>
-                  <div style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--c-tx-25)", fontWeight: 700, textTransform: "uppercase" }}>
-                    심화 도구
-                  </div>
-                  <span style={{ fontSize: 8, color: "var(--c-tx-22)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>
-                    선택
-                  </span>
-                </div>
-                {STAGE_META.filter(s => s.optional).map(s => (
-                  <SidebarNavItem
-                    key={s.id}
-                    id={s.id}
-                    title={s.title}
-                    sub={s.sub}
-                    accentColor={s.color}
-                    commentCount={(stageComments?.[s.id] || []).length}
-                  />
-                ))}
-              </>
-            )}
+            {/* WORK_MODES 그룹 — 발견/설계/쓰기/고치기/심화 */}
+            <SidebarModeGroups
+              currentStage={currentStage}
+              stageComments={stageComments}
+              getStageStatus={getStageStatus}
+            />
 
             {/* 작업 모드 (팀원이 있을 때만) */}
             {teamMembers.length > 0 && (

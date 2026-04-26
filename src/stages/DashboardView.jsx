@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import { loadProjects } from "../db.js";
+import { WORK_MODES } from "../workModes.js";
 
 const ReverseImportModal = lazy(() => import("./ReverseImportModal.jsx"));
 
@@ -129,46 +130,7 @@ const STAGE_PREREQUISITES = {
   "9": "1",
 };
 
-// 작가 멘탈 모델에 맞춘 4(+1)모드 그룹. 내부 Stage는 그대로 유지하되,
-// 대시보드에서는 "지금 무엇을 하려는가?" 관점으로 묶어 보여준다.
-const WORK_MODES = [
-  {
-    id: "discover",
-    name: "발견하기",
-    desc: "아이디어·로그라인·방향 탐색",
-    color: "#C8A84B",
-    stageIds: ["1"],
-  },
-  {
-    id: "design",
-    name: "설계하기",
-    desc: "이야기 엔진·인물·구조 확정",
-    color: "#A78BFA",
-    stageIds: ["2", "3", "4"],
-  },
-  {
-    id: "write",
-    name: "쓰기",
-    desc: "트리트먼트·비트시트·초고",
-    color: "#4ECCA3",
-    stageIds: ["5", "6"],
-  },
-  {
-    id: "rewrite",
-    name: "고치기",
-    desc: "Coverage·진단·개고",
-    color: "#FB923C",
-    stageIds: ["7", "8"],
-  },
-  {
-    id: "insight",
-    name: "심화 분석",
-    desc: "이론·신화·전문가 패널 (선택)",
-    color: "#45B7D1",
-    stageIds: ["9"],
-    optional: true,
-  },
-];
+// WORK_MODES는 src/workModes.js에서 공통 정의 (사이드바·모바일 네비도 동일 사용).
 
 export default function DashboardView() {
   const {
