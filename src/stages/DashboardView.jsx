@@ -129,6 +129,47 @@ const STAGE_PREREQUISITES = {
   "9": "1",
 };
 
+// 작가 멘탈 모델에 맞춘 4(+1)모드 그룹. 내부 Stage는 그대로 유지하되,
+// 대시보드에서는 "지금 무엇을 하려는가?" 관점으로 묶어 보여준다.
+const WORK_MODES = [
+  {
+    id: "discover",
+    name: "발견하기",
+    desc: "아이디어·로그라인·방향 탐색",
+    color: "#C8A84B",
+    stageIds: ["1"],
+  },
+  {
+    id: "design",
+    name: "설계하기",
+    desc: "이야기 엔진·인물·구조 확정",
+    color: "#A78BFA",
+    stageIds: ["2", "3", "4"],
+  },
+  {
+    id: "write",
+    name: "쓰기",
+    desc: "트리트먼트·비트시트·초고",
+    color: "#4ECCA3",
+    stageIds: ["5", "6"],
+  },
+  {
+    id: "rewrite",
+    name: "고치기",
+    desc: "Coverage·진단·개고",
+    color: "#FB923C",
+    stageIds: ["7", "8"],
+  },
+  {
+    id: "insight",
+    name: "심화 분석",
+    desc: "이론·신화·전문가 패널 (선택)",
+    color: "#45B7D1",
+    stageIds: ["9"],
+    optional: true,
+  },
+];
+
 export default function DashboardView() {
   const {
     logline, genre,
@@ -493,24 +534,90 @@ export default function DashboardView() {
           </div>
         )}
 
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)",
-          gap: 8,
-        }}>
-          {STAGE_META.map(s => {
-            const isTourTarget = isDemoMode && demoTourStep === 0 && s.id === "1";
+        {/* 작업 모드별 그룹 — "지금 무엇을 하려는가?" 관점 */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {WORK_MODES.map((mode) => {
+            const stagesInMode = mode.stageIds
+              .map(id => STAGE_META.find(s => s.id === id))
+              .filter(Boolean);
+            if (stagesInMode.length === 0) return null;
+            const doneInMode = stagesInMode.filter(s => getStageStatus(s.id) === "done").length;
             return (
-            <div key={s.id} style={isTourTarget ? { borderRadius: 12, animation: "demoPulseRing 1.8s ease-out infinite" } : undefined}>
-            <StageCard
-              {...s}
-              status={getStageStatus(s.id)}
-              doneCount={getStageDoneCount(s.id)}
-              total={STAGE_TOTALS?.[s.id]}
-              summary={stageResultSummary?.[s.id]}
-              onClick={() => handleStageClick(s.id)}
-            />
-            </div>
+              <div key={mode.id} style={{
+                padding: 2, borderRadius: 14,
+                background: mode.optional ? "var(--glass-nano)" : "var(--glass-micro)",
+                border: `1px solid ${mode.color}28`,
+                boxShadow: `inset 0 1px 0 ${mode.color}1a`,
+              }}>
+                <div style={{
+                  padding: "10px 12px 8px",
+                  display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+                }}>
+                  <div style={{
+                    width: 26, height: 26, borderRadius: 8, flexShrink: 0,
+                    background: `${mode.color}1a`, border: `1px solid ${mode.color}40`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 11, fontWeight: 800, color: mode.color,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}>
+                    {mode.id === "discover" ? "1" : mode.id === "design" ? "2" : mode.id === "write" ? "3" : mode.id === "rewrite" ? "4" : "+"}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: 13, fontWeight: 800, color: mode.color,
+                      fontFamily: "'Noto Sans KR', sans-serif",
+                      display: "flex", alignItems: "center", gap: 8,
+                    }}>
+                      {mode.name}
+                      {mode.optional && (
+                        <span style={{
+                          fontSize: 8, fontWeight: 700, color: mode.color,
+                          padding: "1px 6px", borderRadius: 6,
+                          border: `1px solid ${mode.color}40`,
+                          background: `${mode.color}10`,
+                          fontFamily: "'JetBrains Mono', monospace",
+                          letterSpacing: 0.5,
+                        }}>선택</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginTop: 1, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                      {mode.desc}
+                    </div>
+                  </div>
+                  {!mode.optional && (
+                    <div style={{
+                      fontSize: 9, color: doneInMode === stagesInMode.length && doneInMode > 0 ? "#4ECCA3" : "var(--c-tx-30)",
+                      fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0,
+                    }}>
+                      {doneInMode}/{stagesInMode.length}
+                    </div>
+                  )}
+                </div>
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: isMobile
+                    ? `repeat(${Math.min(stagesInMode.length, 2)}, 1fr)`
+                    : `repeat(${Math.min(stagesInMode.length, 4)}, 1fr)`,
+                  gap: 6,
+                  padding: "0 8px 8px",
+                }}>
+                  {stagesInMode.map(s => {
+                    const isTourTarget = isDemoMode && demoTourStep === 0 && s.id === "1";
+                    return (
+                      <div key={s.id} style={isTourTarget ? { borderRadius: 12, animation: "demoPulseRing 1.8s ease-out infinite" } : undefined}>
+                        <StageCard
+                          {...s}
+                          status={getStageStatus(s.id)}
+                          doneCount={getStageDoneCount(s.id)}
+                          total={STAGE_TOTALS?.[s.id]}
+                          summary={stageResultSummary?.[s.id]}
+                          onClick={() => handleStageClick(s.id)}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>
