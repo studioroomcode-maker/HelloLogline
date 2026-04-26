@@ -5,6 +5,7 @@ import ErrorBoundary from "../ErrorBoundary.jsx";
 import FountainEditor from "../editor/FountainEditor.jsx";
 import SceneNavigator from "../editor/SceneNavigator.jsx";
 import InlineAI from "../editor/InlineAI.jsx";
+import SceneCardWorkView from "../editor/SceneCardWorkView.jsx";
 import RevisionPanel from "./RevisionPanel.jsx";
 import { parseFountain, calcStats, extractSceneBodies } from "../editor/FountainParser.js";
 import StagePdfButton from "../components/StagePdfButton.jsx";
@@ -42,8 +43,11 @@ export default function Stage6Content({
     sceneAssignments, teamMembers, isReadOnly, isDemoMode,
     revisions, setRevisions, currentRevisionId, setCurrentRevisionId,
     sceneRevisionMap, setSceneRevisionMap, startNewRevision,
+    sceneCards, updateSceneCard, beatSheetStaleCardIds,
+    rewriteSceneCard, rewriteSceneCardLoadingId,
   } = useLoglineCtx();
-  const [editorMode, setEditorMode] = useState(true);   // true = 편집 모드 / false = 원본 텍스트
+  // viewMode: "editor" | "scenes" | "raw"
+  const [viewMode, setViewMode] = useState(sceneCards?.length > 0 ? "scenes" : "editor");
   const editorContainerRef = useRef(null);
   const prevSceneBodiesRef = useRef(null); // 씬 변경 감지용
 
@@ -198,34 +202,35 @@ export default function Stage6Content({
               <StatPill label="러닝타임" value={`~${stats.runningMinutes}분`} color="#4ECCA3" />
               <StatPill label="단어" value={stats.wordCount.toLocaleString()} />
             </div>
-            {/* 에디터/원본 토글 */}
-            <div style={{ display: "flex", gap: 4 }}>
-              <button
-                onClick={() => setEditorMode(true)}
-                style={{
-                  padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer",
-                  border: editorMode ? "1px solid rgba(167,139,250,0.4)" : "1px solid var(--glass-bd-nano)",
-                  background: editorMode ? "rgba(167,139,250,0.12)" : "var(--glass-nano)",
-                  color: editorMode ? "#A78BFA" : "var(--c-tx-35)",
-                  fontFamily: "'Noto Sans KR', sans-serif",
-                  transition: "all 0.15s",
-                }}
-              >
-                ✏️ 에디터
-              </button>
-              <button
-                onClick={() => setEditorMode(false)}
-                style={{
-                  padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer",
-                  border: !editorMode ? "1px solid rgba(167,139,250,0.4)" : "1px solid var(--glass-bd-nano)",
-                  background: !editorMode ? "rgba(167,139,250,0.12)" : "var(--glass-nano)",
-                  color: !editorMode ? "#A78BFA" : "var(--c-tx-35)",
-                  fontFamily: "'Noto Sans KR', sans-serif",
-                  transition: "all 0.15s",
-                }}
-              >
-                📄 원본
-              </button>
+            {/* 뷰 모드 토글: 씬 카드 / 에디터 / 원본 */}
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {[
+                { key: "scenes", label: "🎬 씬 카드", disabled: !sceneCards || sceneCards.length === 0 },
+                { key: "editor", label: "✏️ 에디터" },
+                { key: "raw", label: "📄 원본" },
+              ].map(opt => {
+                const active = viewMode === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    onClick={() => !opt.disabled && setViewMode(opt.key)}
+                    disabled={opt.disabled}
+                    title={opt.disabled ? "Stage 5에서 비트 시트를 만들면 씬 카드 모드를 쓸 수 있습니다" : undefined}
+                    style={{
+                      padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700,
+                      cursor: opt.disabled ? "not-allowed" : "pointer",
+                      border: active ? "1px solid rgba(167,139,250,0.4)" : "1px solid var(--glass-bd-nano)",
+                      background: active ? "rgba(167,139,250,0.12)" : "var(--glass-nano)",
+                      color: active ? "#A78BFA" : opt.disabled ? "var(--c-tx-22)" : "var(--c-tx-35)",
+                      fontFamily: "'Noto Sans KR', sans-serif",
+                      transition: "all 0.15s",
+                      opacity: opt.disabled ? 0.5 : 1,
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -236,8 +241,22 @@ export default function Stage6Content({
             onCopy={() => navigator.clipboard.writeText(scenarioDraftResult).then(() => showToast("success", "시나리오 초고가 복사되었습니다."))}
           />
 
-          {/* ── 에디터 모드: 씬 네비게이터 + Fountain 에디터 ── */}
-          {editorMode ? (
+          {/* ── 뷰 모드별 렌더 ── */}
+          {viewMode === "scenes" ? (
+            <SceneCardWorkView
+              sceneCards={sceneCards}
+              scenarioDraftResult={scenarioDraftResult}
+              onCardChange={updateSceneCard}
+              onWholeTextChange={setScenarioDraftResult}
+              onRewriteScene={rewriteSceneCard}
+              rewriteLoadingId={rewriteSceneCardLoadingId}
+              isMobile={isMobile}
+              isReadOnly={isReadOnly}
+              apiKey={apiKey}
+              onSeedFromDraft={() => showToast("success", "초고에서 씬별 본문을 분배했습니다.")}
+              beatSheetStaleIds={beatSheetStaleCardIds}
+            />
+          ) : viewMode === "editor" ? (
             <div style={{
               display: "flex",
               flexDirection: isMobile ? "column" : "row",

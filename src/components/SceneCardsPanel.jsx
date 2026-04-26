@@ -8,7 +8,7 @@ const STATUS_META = {
   revised: { label: "수정 완료", color: "#4ECCA3" },
 };
 
-function SceneCard({ card, onUpdate, onDelete, onMoveUp, onMoveDown, onExpand, expanded }) {
+function SceneCard({ card, onUpdate, onDelete, onMoveUp, onMoveDown, onExpand, expanded, isStale }) {
   const [draft, setDraft] = useState(card);
   const [editing, setEditing] = useState(false);
   const status = STATUS_META[card.status] || STATUS_META.outline;
@@ -45,6 +45,15 @@ function SceneCard({ card, onUpdate, onDelete, onMoveUp, onMoveDown, onExpand, e
           <span style={{ fontSize: 9, color: "var(--c-tx-35)" }}>
             · 비트 #{card.beatId}
           </span>
+        )}
+        {isStale && (
+          <span style={{
+            fontSize: 8, color: "#F7A072", fontWeight: 700,
+            padding: "1px 5px", borderRadius: 5,
+            border: "1px solid rgba(247,160,114,0.4)",
+            background: "rgba(247,160,114,0.1)",
+            fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.3,
+          }} title="비트시트가 변경됐습니다 — 위쪽 배너의 '메타만 병합' 또는 '덮어쓰기' 사용">stale</span>
         )}
         <div style={{ flex: 1 }} />
         <button onClick={onMoveUp} title="위로" style={{ fontSize: 11, color: "var(--c-tx-30)", background: "none", border: "none", cursor: "pointer", padding: "0 4px" }}>↑</button>
@@ -164,8 +173,48 @@ export default function SceneCardsPanel({ onClose }) {
   const {
     sceneCards, updateSceneCard, deleteSceneCard, reorderSceneCards,
     addSceneCard, seedSceneCardsFromBeatSheet, beatSheetResult,
+    beatSheetStaleCardIds, clearBeatSheetStale, setSceneCards,
+    charDevResult, showToast,
   } = useLoglineCtx();
   const [expandedId, setExpandedId] = useState(null);
+  const staleCount = (beatSheetStaleCardIds || []).length;
+
+  const reseedFromBeatSheet = (mode) => {
+    // mode: "merge" — beatId가 같은 카드의 메타만 갱신, fountainText는 보존
+    //       "overwrite" — beatId가 같은 카드를 새 메타로 완전 교체 (fountainText 비움)
+    if (!beatSheetResult?.beats) return;
+    import("../sceneCardsAdapters.js").then(({ sceneCardsFromBeatSheet }) => {
+      const fresh = sceneCardsFromBeatSheet(beatSheetResult, charDevResult);
+      setSceneCards(prev => {
+        // 새 카드 우선으로 매칭, 없는 비트는 옛 카드 유지(작가가 직접 만든 것 보존)
+        const byBeat = new Map();
+        fresh.forEach(c => { if (c.beatId != null) byBeat.set(String(c.beatId), c); });
+        const next = prev.map(old => {
+          if (old.beatId == null) return old;
+          const freshOne = byBeat.get(String(old.beatId));
+          if (!freshOne) return old;
+          if (mode === "overwrite") {
+            return { ...freshOne, id: old.id, fountainText: "", status: "outline", createdAt: old.createdAt, updatedAt: Date.now() };
+          }
+          // merge: 메타만 갱신, 본문/상태/작가 편집 보존
+          return {
+            ...old,
+            title: freshOne.title,
+            location: old.location || freshOne.location,
+            characters: old.characters?.length ? old.characters : freshOne.characters,
+            purpose: freshOne.purpose,
+            conflict: old.conflict || freshOne.conflict,
+            valueShift: freshOne.valueShift,
+            reveal: old.reveal || freshOne.reveal,
+            updatedAt: Date.now(),
+          };
+        });
+        return next;
+      });
+      clearBeatSheetStale?.();
+      showToast?.("success", mode === "overwrite" ? "비트시트 기준으로 덮어썼습니다." : "비트시트 메타만 병합했습니다.");
+    });
+  };
 
   const sorted = [...(sceneCards || [])].sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -234,6 +283,36 @@ export default function SceneCardsPanel({ onClose }) {
           )}
         </div>
 
+        {/* Stale 배너 — 비트시트가 변경됐을 때 */}
+        {staleCount > 0 && beatSheetResult?.beats && (
+          <div style={{
+            padding: "10px 24px", borderBottom: "1px solid var(--c-bd-1)",
+            background: "rgba(247,160,114,0.08)",
+            display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
+          }}>
+            <span style={{ fontSize: 14 }}>⚠</span>
+            <div style={{ flex: 1, fontSize: 11, color: "var(--c-tx-65)", lineHeight: 1.5 }}>
+              비트 시트가 변경됐습니다. <strong>{staleCount}개 씬 카드</strong>가 옛 비트 정보를 가지고 있을 수 있습니다.
+            </div>
+            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              <button
+                onClick={() => reseedFromBeatSheet("merge")}
+                title="작가가 채운 본문/장소/갈등은 보존하고 제목·기능·가치 변화만 새 비트 기준으로 갱신"
+                style={{ fontSize: 10, padding: "4px 11px", borderRadius: 6, border: "1px solid rgba(78,204,163,0.4)", background: "rgba(78,204,163,0.1)", color: "#4ECCA3", cursor: "pointer", fontWeight: 700 }}
+              >메타만 병합</button>
+              <button
+                onClick={() => reseedFromBeatSheet("overwrite")}
+                title="비트 시트 기준으로 카드를 완전히 새로 — 작가가 쓴 본문은 사라집니다"
+                style={{ fontSize: 10, padding: "4px 11px", borderRadius: 6, border: "1px solid rgba(232,93,117,0.4)", background: "rgba(232,93,117,0.08)", color: "#E85D75", cursor: "pointer", fontWeight: 700 }}
+              >완전 덮어쓰기</button>
+              <button
+                onClick={() => clearBeatSheetStale?.()}
+                style={{ fontSize: 10, padding: "4px 11px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "transparent", color: "var(--c-tx-40)", cursor: "pointer", fontWeight: 700 }}
+              >무시</button>
+            </div>
+          </div>
+        )}
+
         {/* List */}
         <div style={{ overflowY: "auto", flex: 1, padding: "16px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
           {sorted.length === 0 ? (
@@ -254,6 +333,7 @@ export default function SceneCardsPanel({ onClose }) {
                 onMoveDown={() => moveDown(card.id)}
                 onExpand={() => setExpandedId(expandedId === card.id ? null : card.id)}
                 expanded={expandedId === card.id}
+                isStale={(beatSheetStaleCardIds || []).includes(card.id)}
               />
             ))
           )}

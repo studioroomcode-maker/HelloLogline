@@ -417,6 +417,10 @@ export function useLoglineAnalyzer() {
   //   fountainText, createdAt, updatedAt }
   const [sceneCards, setSceneCards] = useState([]);
   const [showScenePanel, setShowScenePanel] = useState(false);
+  // 비트시트 변경 시 stale로 마킹된 씬 카드 id들 (작가가 무시 또는 재시드까지 유지)
+  const [beatSheetStaleCardIds, setBeatSheetStaleCardIds] = useState([]);
+  const [rewriteSceneCardLoadingId, setRewriteSceneCardLoadingId] = useState(null);
+  const lastBeatSheetSnapshotRef = useRef(null);
 
   // ── Core Design (Stage 2 — Want/Need/적대자/스테이크/테마) ──
   const [coreDesignResult, setCoreDesignResult] = useState(null);
@@ -3796,6 +3800,73 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     if (seed.length) setSceneCards(seed);
   }, [beatSheetResult, charDevResult, sceneCards.length]);
 
+  // 비트 시트가 변경되면 그 비트에서 파생된 씬 카드들을 stale로 마킹.
+  // 작가는 stale 배지를 보고 직접 다시 시드(병합 또는 덮어쓰기) 결정.
+  useEffect(() => {
+    if (!beatSheetResult?.beats || sceneCards.length === 0) return;
+    const beatHash = JSON.stringify(beatSheetResult.beats.map(b => ({ id: b.id, name: b.name_kr || b.name, summary: b.summary })));
+    if (lastBeatSheetSnapshotRef.current == null) {
+      lastBeatSheetSnapshotRef.current = beatHash;
+      return;
+    }
+    if (lastBeatSheetSnapshotRef.current === beatHash) return;
+    lastBeatSheetSnapshotRef.current = beatHash;
+    // 비트와 연결된 카드(beatId 보유) 모두 stale로
+    const staleIds = sceneCards.filter(c => c.beatId).map(c => c.id);
+    if (staleIds.length) setBeatSheetStaleCardIds(staleIds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [beatSheetResult]);
+
+  // stale 마킹 해제 (작가가 무시 또는 다시 시드 후 호출)
+  const clearBeatSheetStale = useCallback((cardIds) => {
+    if (!cardIds) {
+      setBeatSheetStaleCardIds([]);
+      return;
+    }
+    setBeatSheetStaleCardIds(prev => prev.filter(id => !cardIds.includes(id)));
+  }, []);
+
+  // 씬별 AI 재작성 — 카드의 메타(purpose/conflict/valueShift/reveal/subtext)와
+  // 기존 fountainText를 컨텍스트로 받아 해당 씬 본문만 재생성.
+  const rewriteSceneCard = useCallback(async (card) => {
+    if (!card || !apiKey) return;
+    if (rewriteSceneCardLoadingId) return; // 동시 1건만
+    setRewriteSceneCardLoadingId(card.id);
+    const ctrl = makeController(`rewriteScene_${card.id}`);
+    try {
+      const charsLine = (card.characters || []).filter(Boolean).join(", ") || "(미정)";
+      const meta = [
+        card.location ? `장소: ${card.location}` : "",
+        `등장인물: ${charsLine}`,
+        card.purpose ? `씬 기능: ${card.purpose}` : "",
+        card.conflict ? `핵심 갈등: ${card.conflict}` : "",
+        card.valueShift && card.valueShift !== "—" ? `가치 변화: ${card.valueShift}` : "",
+        card.reveal ? `폭로/질문: ${card.reveal}` : "",
+        card.subtext ? `하위텍스트: ${card.subtext}` : "",
+      ].filter(Boolean).join("\n");
+      const existing = (card.fountainText || "").trim();
+      const sysPrompt = `당신은 한국 시나리오 작가입니다. Fountain 포맷으로 단일 씬을 작성합니다.\n\n[규칙]\n- 슬러그라인(INT./EXT.)으로 시작\n- 행동 묘사는 현재형, 시각적 표현 우선\n- 대사는 캐릭터 이름을 대문자/한글 + 줄바꿈 후 들여쓰기 없이 작성\n- 씬 기능과 가치 변화를 본문에 시각적으로 구현\n- 카드의 메타가 명시한 갈등/폭로를 반드시 본문에 녹여낼 것\n- 씬 1개 분량 (대략 0.5~2페이지)\n- 마크다운 코드블록 없이 Fountain 본문만 출력`;
+      const userMsg = `로그라인: "${logline.trim()}"\n장르: ${genre === "auto" ? "자동" : (GENRES.find(g => g.id === genre)?.label || "")}${getStoryBible()}\n\n[이 씬 카드 메타]\n${meta}\n\n${existing ? `[기존 본문 — 이 방향을 참고하되 메타에 맞게 다시 쓰세요]\n${existing.slice(0, 2000)}` : "[기존 본문 없음 — 처음부터 작성]"}\n\n위 메타와 핵심 설계 5축에 부합하도록 이 씬을 Fountain 포맷으로 작성하세요.`;
+      const text = await callClaudeText(apiKey, sysPrompt, userMsg, 2500, "claude-sonnet-4-6", ctrl.signal, "rewriteScene");
+      setSceneCards(prev => prev.map(c =>
+        c.id === card.id
+          ? { ...c, fountainText: text.trim(), status: "drafted", updatedAt: Date.now() }
+          : c
+      ));
+      trackCreditUsage("씬 재작성", 1);
+      await autoSave();
+      showToast("success", `씬 "${card.title}" 재작성 완료`);
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        showToast("error", err.message || "씬 재작성 중 오류가 발생했습니다.");
+      }
+    } finally {
+      setRewriteSceneCardLoadingId(null);
+      clearController(`rewriteScene_${card.id}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey, logline, genre, rewriteSceneCardLoadingId]);
+
   // ── Core Design (Stage 2 — Want/Need/적대자/스테이크/테마) ──
   const analyzeCoreDesign = async () => {
     if (!logline.trim() || !apiKey) return;
@@ -4450,6 +4521,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     sceneCards, addSceneCard, updateSceneCard, deleteSceneCard,
     reorderSceneCards, seedSceneCardsFromBeatSheet,
     showScenePanel, setShowScenePanel,
+    beatSheetStaleCardIds, clearBeatSheetStale,
+    rewriteSceneCard, rewriteSceneCardLoadingId,
   };
 
 
@@ -4539,6 +4612,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     addSceneCard, updateSceneCard, deleteSceneCard,
     reorderSceneCards, seedSceneCardsFromBeatSheet,
     showScenePanel, setShowScenePanel,
+    beatSheetStaleCardIds, setBeatSheetStaleCardIds, clearBeatSheetStale,
+    rewriteSceneCard, rewriteSceneCardLoadingId,
     // Character Dev
     charDevResult, setCharDevResult, charDevLoading, charDevError, charDevRef,
     analyzeCharacterDev, refineCharDev,
