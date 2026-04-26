@@ -15,6 +15,7 @@ import {
 } from "./EduModePanel.jsx";
 import ClassCompareAnalysis from "./ClassCompareAnalysis.jsx";
 import StagePdfButton from "../components/StagePdfButton.jsx";
+import StageNotesBanner from "../components/StageNotesBanner.jsx";
 
 /* ─── Tooltip wrapper (simplified — no pop-up, just renders children) ─── */
 function Tooltip({ text, children, maxWidth = 300 }) {
@@ -227,6 +228,7 @@ export default function Stage1Content({
     `}</style>
 
     <StagePdfButton stageId="1" />
+      <StageNotesBanner stageId="1" />
 
     {/* ── 교육 모드 배너 ── */}
     {eduMode && (

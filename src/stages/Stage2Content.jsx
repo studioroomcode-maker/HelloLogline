@@ -3,6 +3,7 @@ import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON, FeedbackBox } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import StagePdfButton from "../components/StagePdfButton.jsx";
+import StageNotesBanner from "../components/StageNotesBanner.jsx";
 
 const ACCENT = "#A78BFA";
 
@@ -80,6 +81,7 @@ export default function Stage2Content({
   return (
     <ErrorBoundary><div>
       <StagePdfButton stageId="2" />
+      <StageNotesBanner stageId="2" />
 
       {/* ── 단계 안내 ── */}
       <div style={{ marginBottom: 22, padding: "12px 14px", borderRadius: 10, background: `${ACCENT}0d`, borderLeft: `2px solid ${ACCENT}66` }}>

@@ -4,6 +4,7 @@ import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON, Spinner, FeedbackBox }
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import { CharacterDevPanel, ShadowAnalysisPanel, AuthenticityPanel } from "../panels/CharacterPanels.jsx";
 import StagePdfButton from "../components/StagePdfButton.jsx";
+import StageNotesBanner from "../components/StageNotesBanner.jsx";
 
 /* ─── MBTI 데이터 & 말풍선 입력 컴포넌트 ─── */
 const MBTI_INFO = {
@@ -82,6 +83,7 @@ export default function Stage3Content({
     <ErrorBoundary><div>
 
               <StagePdfButton stageId="3" />
+      <StageNotesBanner stageId="3" />
 
               {/* ── 단계 안내 ── */}
               <div style={{ marginBottom: 18, padding: "12px 16px", borderRadius: 10, background: "rgba(251,146,60,0.05)", border: "1px solid rgba(251,146,60,0.15)" }}>

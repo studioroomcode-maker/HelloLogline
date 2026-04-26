@@ -3,6 +3,7 @@ import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import { ToolButton, ResultCard, ErrorMsg, DocButton, SvgIcon, ICON } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import StagePdfButton from "../components/StagePdfButton.jsx";
+import StageNotesBanner from "../components/StageNotesBanner.jsx";
 
 const ScriptCoveragePanel = lazy(() =>
   import("../panels/EvaluationPanels.jsx").then((m) => ({ default: m.ScriptCoveragePanel }))
@@ -27,6 +28,7 @@ export default function Stage7Content({
     <ErrorBoundary><div>
 
       <StagePdfButton stageId="7" />
+      <StageNotesBanner stageId="7" />
 
       {/* ── 단계 안내 ── */}
       <div style={{ marginBottom: 18, padding: "12px 16px", borderRadius: 10, background: "rgba(96,165,250,0.05)", border: "1px solid rgba(96,165,250,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>

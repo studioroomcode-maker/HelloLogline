@@ -7,6 +7,7 @@ import {
   PipelinePanel, SynopsisCard,
 } from "../panels/StoryPanels.jsx";
 import StagePdfButton from "../components/StagePdfButton.jsx";
+import StageNotesBanner from "../components/StageNotesBanner.jsx";
 
 /* ─── Local Tooltip (not exported from ui.jsx) ─── */
 function Tooltip({ text, children, maxWidth = 300, align = "center" }) {
@@ -108,6 +109,7 @@ export default function Stage4Content({
     <ErrorBoundary><div>
 
     <StagePdfButton stageId="4" />
+      <StageNotesBanner stageId="4" />
 
     {/* ── 단계 안내 ── */}
     <div style={{ marginBottom: charDevResult ? 12 : 18, padding: "12px 16px", borderRadius: 10, background: "rgba(78,204,163,0.05)", border: "1px solid rgba(78,204,163,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>

@@ -2,6 +2,7 @@ import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import { ToolButton, ResultCard, ErrorMsg, SvgIcon, ICON, Spinner, ScriptExportPanel } from "../ui.jsx";
 import ErrorBoundary from "../ErrorBoundary.jsx";
 import StagePdfButton from "../components/StagePdfButton.jsx";
+import StageNotesBanner from "../components/StageNotesBanner.jsx";
 
 export default function Stage8Content({
   scriptCoverageResult,
@@ -17,6 +18,7 @@ export default function Stage8Content({
     <ErrorBoundary><div>
 
               <StagePdfButton stageId="8" />
+      <StageNotesBanner stageId="8" />
 
               {/* 안내 배너 */}
               <div style={{ marginBottom: 20, padding: "14px 16px", borderRadius: 12, background: "rgba(251,146,60,0.06)", border: "1px solid rgba(251,146,60,0.2)" }}>

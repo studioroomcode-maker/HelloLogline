@@ -6,6 +6,7 @@ import ErrorBoundary from "../ErrorBoundary.jsx";
 import { TreatmentInputPanel, DialogueDevPanel } from "../panels/TreatmentPanels.jsx";
 import { GENRES } from "../constants.js";
 import StagePdfButton from "../components/StagePdfButton.jsx";
+import StageNotesBanner from "../components/StageNotesBanner.jsx";
 
 const BeatSheetPanel = lazy(() => import("../panels/BeatSheetPanel.jsx"));
 
@@ -58,6 +59,7 @@ export default function Stage5Content({
     <ErrorBoundary><div>
 
               <StagePdfButton stageId="5" />
+      <StageNotesBanner stageId="5" />
 
               {/* ── 단계 안내 ── */}
               <div style={{ marginBottom: (pipelineResult || charDevResult) ? 10 : 18, padding: "12px 16px", borderRadius: 10, background: "rgba(255,209,102,0.05)", border: "1px solid rgba(255,209,102,0.15)", display: "flex", gap: 10, alignItems: "flex-start" }}>
