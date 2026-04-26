@@ -217,16 +217,18 @@ export const CharacterDevSchema = z
 
 // ─── Stage 2: 핵심 설계 ──────────────────────────────────────────────────────
 
+// 필수 3필드(one_line / want.summary / need.summary)는 fail-fast — 빈 응답이면 사용자에게 에러 표면화.
+// 보조 필드는 catch fallback으로 부분 결손 허용.
 export const CoreDesignSchema = z
   .object({
-    one_line: z.string().catch(""),
+    one_line: z.string().min(1, "이야기 엔진 한 줄이 비어 있습니다"),
     want: z.object({
-      summary: z.string().catch(""),
+      summary: z.string().min(1, "Want 요약이 비어 있습니다"),
       external_goal: z.string().catch(""),
       visible_proof: z.string().catch(""),
     }).passthrough(),
     need: z.object({
-      summary: z.string().catch(""),
+      summary: z.string().min(1, "Need 요약이 비어 있습니다"),
       inner_lack: z.string().catch(""),
       moment_of_truth: z.string().catch(""),
     }).passthrough(),

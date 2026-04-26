@@ -1055,6 +1055,25 @@ export function useLoglineAnalyzer() {
     setPipelineHistory(proj.pipelineHistory || []);
     setCurrentProjectId(proj.id);
     setShowProjects(false);
+    // Stage 2 핵심 설계 신설(2026-04-27) 마이그레이션 — 캐릭터/시놉시스가 있는데 핵심 설계가 비어 있으면
+    // Stage 1로 보내지 말고 Stage 2로 직진해서 5축부터 채우도록 안내. 프로젝트당 1회만.
+    const needsCoreDesign = !proj.coreDesignResult && (proj.charDevResult || proj.pipelineResult || proj.synopsisResults);
+    let migrationKey = null;
+    if (needsCoreDesign) {
+      migrationKey = `hll_core_design_migrated_${proj.id}`;
+      const alreadyShown = (() => { try { return localStorage.getItem(migrationKey) === "1"; } catch { return false; } })();
+      if (!alreadyShown) {
+        setTimeout(() => {
+          showToast(
+            "info",
+            "Stage 2 핵심 설계가 새로 추가됐습니다. Want·Need·적대자·스테이크·테마 5축을 먼저 확정하면 후속 단계 결과가 일관됩니다."
+          );
+          try { localStorage.setItem(migrationKey, "1"); } catch {}
+        }, 600);
+        setCurrentStage("2");
+        return;
+      }
+    }
     setCurrentStage("1");
   };
 
@@ -2553,6 +2572,21 @@ export function useLoglineAnalyzer() {
       } else {
         // 요약 없으면 원문 앞부분 사용
         bible += `\n\n━━━ 기존 시나리오/시놉시스 참고 — 이 내용을 바탕으로 분석하고 발전시킬 것 ━━━\n${referenceScenario.trim().slice(0, 12000)}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      }
+    }
+    // Stage 2 핵심 설계 — Want/Need/적대자/스테이크/테마 5축은 후속 단계에 강제 주입.
+    // "이야기 엔진을 단정한다"는 제품 약속을 코드 레벨에서 보장하는 핵심 통합점.
+    if (coreDesignResult) {
+      const cd = coreDesignResult;
+      const lines = [];
+      if (cd.one_line) lines.push(`이야기 엔진 한 줄: ${cd.one_line}`);
+      if (cd.want?.summary) lines.push(`Want (외적 욕망): ${cd.want.summary}${cd.want.external_goal ? ` — 구체적 목표: ${cd.want.external_goal}` : ""}${cd.want.visible_proof ? ` — 시각화 장면: ${cd.want.visible_proof}` : ""}`);
+      if (cd.need?.summary) lines.push(`Need (내적 결핍): ${cd.need.summary}${cd.need.inner_lack ? ` — 거짓 신념: ${cd.need.inner_lack}` : ""}${cd.need.moment_of_truth ? ` — 깨달음 순간: ${cd.need.moment_of_truth}` : ""}`);
+      if (cd.antagonist?.who) lines.push(`적대자: ${cd.antagonist.who}${cd.antagonist.method ? ` — 방식: ${cd.antagonist.method}` : ""}${cd.antagonist.mirror_to_protagonist ? ` — 거울 관계: ${cd.antagonist.mirror_to_protagonist}` : ""}`);
+      if (cd.stakes?.external || cd.stakes?.internal) lines.push(`스테이크: 외적 — ${cd.stakes.external || "—"} / 내적 — ${cd.stakes.internal || "—"}${cd.stakes.worst_case ? ` / 최악: ${cd.stakes.worst_case}` : ""}`);
+      if (cd.theme?.controlling_idea) lines.push(`테마 (Controlling Idea): ${cd.theme.controlling_idea}${cd.theme.thematic_question ? ` — 관객 질문: ${cd.theme.thematic_question}` : ""}${cd.theme.genre_promise ? ` — 장르 약속: ${cd.theme.genre_promise}` : ""}`);
+      if (lines.length) {
+        bible += `\n\n━━━ 확정된 핵심 설계 (Stage 2 — 이야기 엔진) — 반드시 이 5축을 유지하며 발전시킬 것 ━━━\n${lines.join("\n")}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n※ 위 Want/Need/적대자/스테이크/테마는 작가가 확정한 이야기의 엔진입니다. 캐릭터·시놉시스·트리트먼트·초고는 이 5축과 모순되지 않아야 합니다. Want가 시각화되는 장면, 적대자의 거울 기능, 테마의 controlling idea를 모든 산출물에 반영하세요.`;
       }
     }
     const s = pipelineResult
