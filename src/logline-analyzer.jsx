@@ -71,6 +71,7 @@ export default function LoglineAnalyzer() {
             isMobile={ctx.isMobile}
             logline={ctx.logline}
             result={ctx.result}
+            coreDesignResult={ctx.coreDesignResult}
             pipelineResult={ctx.pipelineResult}
             selectedSynopsisIndex={ctx.selectedSynopsisIndex}
             synopsisResults={ctx.synopsisResults}

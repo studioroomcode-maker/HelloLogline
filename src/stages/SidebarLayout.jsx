@@ -18,26 +18,28 @@ function DashboardIcon() {
 
 // 스테이지 메타
 const STAGE_META = [
-  { id: "1", title: "로그라인",      sub: "한 줄 입력 → 분석",      color: "#C8A84B" },
-  { id: "2", title: "개념 분석",     sub: "테마 · 신화구조",          color: "#45B7D1" },
-  { id: "3", title: "캐릭터",        sub: "심리 · 욕구 · 아크",       color: "#FB923C" },
-  { id: "4", title: "스토리 설계",   sub: "구조 · 시놉시스",          color: "#4ECCA3" },
-  { id: "5", title: "트리트먼트",    sub: "씬 구성 · 비트시트",       color: "#C8A84B" },
-  { id: "6", title: "시나리오 초고", sub: "자동 초고 생성",           color: "#A78BFA" },
-  { id: "7", title: "Script Coverage", sub: "심사 · 시장 가치",      color: "#60A5FA" },
-  { id: "8", title: "고쳐쓰기",      sub: "진단 → 수정 → 개고",      color: "#FB923C" },
+  { id: "1", title: "로그라인",       sub: "한 줄 입력 → 분석",        color: "#C8A84B" },
+  { id: "2", title: "핵심 설계",      sub: "Want·Need·적대자·테마",   color: "#A78BFA", optional: false },
+  { id: "3", title: "캐릭터",         sub: "심리 · 욕구 · 아크",       color: "#FB923C" },
+  { id: "4", title: "스토리 설계",    sub: "구조 · 시놉시스",          color: "#4ECCA3" },
+  { id: "5", title: "트리트먼트",     sub: "씬 구성 · 비트시트",       color: "#C8A84B" },
+  { id: "6", title: "시나리오 초고",  sub: "자동 초고 생성",           color: "#A78BFA" },
+  { id: "7", title: "Script Coverage", sub: "심사 · 시장 가치",        color: "#60A5FA" },
+  { id: "8", title: "고쳐쓰기",       sub: "진단 → 수정 → 개고",      color: "#FB923C" },
+  { id: "9", title: "Deep Analysis", sub: "신화·학술·전문가 (선택)",  color: "#45B7D1", optional: true },
 ];
 
 // 스테이지별 핵심 안내 (1줄)
 const STAGE_GUIDE = {
   "1": "로그라인을 입력하고 18개 기준으로 점수를 확인하세요.",
-  "2": "전문가 패널과 신화 구조로 이야기 방향을 잡으세요.",
+  "2": "Want·Need·적대자·스테이크·테마 — 이야기 엔진 5축을 확정하세요.",
   "3": "주인공의 심리·욕구·내적 갈등을 AI로 설계합니다.",
   "4": "3막 구조와 시놉시스를 생성하고 방향을 확정합니다.",
   "5": "씬별 트리트먼트와 15비트 구조를 구체화합니다.",
   "6": "확정된 트리트먼트로 시나리오 초고를 생성합니다.",
   "7": "작품을 심사하고 시장 가치와 배급 가능성을 평가합니다.",
   "8": "문제를 진단하고 부분 또는 전체 개고를 진행합니다.",
+  "9": "선택 단계 — 신화구조·학술·전문가 패널로 이론적 기반을 점검합니다.",
 };
 
 /* ─── 다음 단계 CTA ─── */
@@ -50,11 +52,18 @@ function StageNextCTA({ currentStage, isMobile }) {
   if (currentIdx < 0) return null;
 
   const currentMeta = STAGE_META[currentIdx];
-  const nextMeta = currentIdx < STAGE_META.length - 1 ? STAGE_META[currentIdx + 1] : null;
+  // 메인 파이프라인은 1→8이 끝. Stage 9 (Deep Analysis)는 선택형이라 "다음 단계 CTA"에서 자동 추천 안 함.
+  // Stage 9 자체에서는 다음 단계가 없음.
+  const isOptional = currentMeta.optional;
+  const mainStages = STAGE_META.filter(s => !s.optional);
+  const mainIdx = mainStages.findIndex(s => s.id === currentStage);
+  const nextMeta = isOptional
+    ? null
+    : (mainIdx >= 0 && mainIdx < mainStages.length - 1 ? mainStages[mainIdx + 1] : null);
   const currentStatus = getStageStatus(currentStage);
   const isDone = currentStatus === "done";
 
-  // 마지막 단계 (Stage 8)
+  // 메인 마지막 단계 (Stage 8) 또는 선택형 (Stage 9)
   if (!nextMeta) {
     return isDone ? (
       <div style={{
@@ -436,7 +445,7 @@ function MobileBottomNav({ currentStage, setCurrentStage, getStageStatus }) {
             }}>
               <div style={{ textAlign: "left" }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: currentMeta.color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1, marginBottom: 3 }}>
-                  {String(currentMeta.id).padStart(2, "0")} / 08
+                  {String(currentMeta.id).padStart(2, "0")} / {String(STAGE_META.length).padStart(2, "0")}
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1 }}>
                   {currentMeta.title}

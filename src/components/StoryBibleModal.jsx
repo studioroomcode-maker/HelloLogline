@@ -8,6 +8,7 @@ export default function StoryBibleModal({
   isMobile,
   logline,
   result,
+  coreDesignResult,
   pipelineResult,
   selectedSynopsisIndex,
   synopsisResults,
@@ -27,6 +28,17 @@ export default function StoryBibleModal({
     const sections = [];
     sections.push(`# 스토리 바이블\n`);
     sections.push(`## 로그라인\n${logline}\n`);
+    if (coreDesignResult) {
+      const cd = coreDesignResult;
+      const lines = [];
+      if (cd.one_line) lines.push(`**한 줄:** ${cd.one_line}`);
+      if (cd.want?.summary) lines.push(`**Want:** ${cd.want.summary}`);
+      if (cd.need?.summary) lines.push(`**Need:** ${cd.need.summary}`);
+      if (cd.antagonist?.who) lines.push(`**적대자:** ${cd.antagonist.who}`);
+      if (cd.stakes?.external || cd.stakes?.internal) lines.push(`**스테이크:** 외적 — ${cd.stakes.external || "—"} / 내적 — ${cd.stakes.internal || "—"}`);
+      if (cd.theme?.controlling_idea) lines.push(`**테마:** ${cd.theme.controlling_idea}`);
+      if (lines.length) sections.push(`## 핵심 설계\n${lines.join("\n")}\n`);
+    }
     if (confirmedSynopsis) {
       sections.push(
         `## 시놉시스 방향\n**${confirmedSynopsis.direction_title || ""}**\n${confirmedSynopsis.synopsis_text || confirmedSynopsis.synopsis || ""}\n`
@@ -196,6 +208,57 @@ export default function StoryBibleModal({
               </div>
             )}
           </div>
+
+          {/* 핵심 설계 (Stage 2) */}
+          {coreDesignResult && (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{
+                fontSize: 10, fontWeight: 700, color: "#A78BFA",
+                textTransform: "uppercase", letterSpacing: 1, marginBottom: 8,
+              }}>
+                핵심 설계 — 이야기 엔진
+              </div>
+              {coreDesignResult.one_line && (
+                <div style={{
+                  fontSize: 13, fontWeight: 700, color: "var(--text-main)",
+                  padding: "12px 14px", borderRadius: 10, marginBottom: 8,
+                  background: "rgba(167,139,250,0.07)",
+                  border: "1px solid rgba(167,139,250,0.2)",
+                  lineHeight: 1.6,
+                }}>
+                  {coreDesignResult.one_line}
+                </div>
+              )}
+              <div style={{
+                padding: "12px 14px", borderRadius: 10,
+                background: "rgba(167,139,250,0.04)",
+                border: "1px solid rgba(167,139,250,0.14)",
+                display: "grid",
+                gridTemplateColumns: isMobile ? "1fr" : "auto 1fr",
+                gap: "6px 14px",
+              }}>
+                {[
+                  ["Want", coreDesignResult.want?.summary],
+                  ["Need", coreDesignResult.need?.summary],
+                  ["적대자", coreDesignResult.antagonist?.who],
+                  ["스테이크 (외)", coreDesignResult.stakes?.external],
+                  ["스테이크 (내)", coreDesignResult.stakes?.internal],
+                  ["테마", coreDesignResult.theme?.controlling_idea],
+                  ["장르 약속", coreDesignResult.theme?.genre_promise],
+                ].filter(([, v]) => v).map(([label, value]) => (
+                  <>
+                    <div key={`l-${label}`} style={{
+                      fontSize: 11, color: "rgba(167,139,250,0.7)",
+                      fontWeight: 600, whiteSpace: "nowrap",
+                    }}>{label}</div>
+                    <div key={`v-${label}`} style={{
+                      fontSize: 12, color: "var(--c-tx-70)", lineHeight: 1.55,
+                    }}>{value}</div>
+                  </>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Synopsis */}
           {confirmedSynopsis && (

@@ -68,6 +68,7 @@ function buildPdfHtml({
   logline = "",
   genre = "",
   result,
+  coreDesignResult,
   charDevResult,
   shadowResult,
   authenticityResult,
@@ -224,6 +225,40 @@ function buildPdfHtml({
       </div>
 
       ${result.overall_feedback ? infoBox("종합 피드백", result.overall_feedback) : ""}
+    </div>`;
+  }
+
+  // ── Stage 2: 핵심 설계 ──────────────────────────────────────────────────────
+  let s2 = "";
+  if (coreDesignResult) {
+    const cd = coreDesignResult;
+    const block = (label, val) => val ? `<div style="margin-bottom:5pt;"><span style="font-size:7.5pt;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;">${label}</span><div style="font-size:9pt;color:#1a1a2e;line-height:1.7;margin-top:2pt;">${escapeHtml(val)}</div></div>` : "";
+    const card = (title, color, items) => {
+      const body = items.map(([l, v]) => block(l, v)).filter(Boolean).join("");
+      if (!body) return "";
+      return `<div style="border:1pt solid ${color}30;border-left:3pt solid ${color};border-radius:5pt;padding:10pt 12pt;background:${color}06;margin-bottom:8pt;page-break-inside:avoid;">
+        <div style="font-size:9pt;font-weight:800;color:${color};margin-bottom:7pt;letter-spacing:0.3px;">${title}</div>
+        ${body}
+      </div>`;
+    };
+    s2 = `
+    <div style="page-break-before:always;">
+      ${sectionHeader("핵심 설계 (Want · Need · 적대자 · 스테이크 · 테마)", "Stage 02", "#A78BFA")}
+      ${cd.one_line ? `<div style="border:1pt solid #A78BFA40;border-left:3pt solid #A78BFA;border-radius:5pt;padding:10pt 12pt;background:#A78BFA08;margin-bottom:10pt;">
+        <div style="font-size:7.5pt;font-weight:800;color:#A78BFA;text-transform:uppercase;letter-spacing:1.3px;margin-bottom:5pt;">이야기 엔진 한 줄</div>
+        <div style="font-size:11pt;color:#1a1a2e;line-height:1.7;font-weight:700;">${escapeHtml(cd.one_line)}</div>
+      </div>` : ""}
+      ${card("① Want — 외적 욕망", "#C8A84B", [["Summary", cd.want?.summary], ["External Goal", cd.want?.external_goal], ["Visible Proof", cd.want?.visible_proof]])}
+      ${card("② Need — 내적 결핍", "#4ECCA3", [["Summary", cd.need?.summary], ["Inner Lack", cd.need?.inner_lack], ["Moment of Truth", cd.need?.moment_of_truth]])}
+      ${card("③ Antagonist — 적대자", "#E85D75", [["Who", cd.antagonist?.who], ["Method", cd.antagonist?.method], ["Mirror", cd.antagonist?.mirror_to_protagonist]])}
+      ${card("④ Stakes — 이해관계", "#FB923C", [["External", cd.stakes?.external], ["Internal", cd.stakes?.internal], ["Worst Case", cd.stakes?.worst_case]])}
+      ${card("⑤ Theme — 테마/장르 약속", "#60A5FA", [["Controlling Idea", cd.theme?.controlling_idea], ["Thematic Question", cd.theme?.thematic_question], ["Genre Promise", cd.theme?.genre_promise]])}
+      ${cd.risk_check?.length ? `<div style="border:1pt solid #E85D7530;border-left:3pt solid #E85D75;border-radius:5pt;padding:10pt 12pt;background:#E85D7506;margin-bottom:8pt;">
+        <div style="font-size:9pt;font-weight:800;color:#E85D75;margin-bottom:6pt;">⚠ Risk Check</div>
+        <ul style="margin:0;padding-left:18pt;font-size:8.5pt;color:#1a1a2e;line-height:1.8;">
+          ${cd.risk_check.map(r => `<li style="margin-bottom:2pt;">${escapeHtml(r)}</li>`).join("")}
+        </ul>
+      </div>` : ""}
     </div>`;
   }
 
@@ -435,7 +470,7 @@ function buildPdfHtml({
   }
 
   // ── 전체 조합 ──────────────────────────────────────────────────────────────
-  const sections = [cover, s1, s3, s4, s5, s7, s7v, s6].filter(Boolean).join("\n");
+  const sections = [cover, s1, s2, s3, s4, s5, s7, s7v, s6].filter(Boolean).join("\n");
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -584,13 +619,14 @@ export function exportToMarkdown(data, filename = "hellologline-report") {
 
 const STAGE_META = {
   "1": { num: "01", name: "로그라인 분석", accent: "#C8A84B" },
-  "2": { num: "02", name: "개념 분석", accent: "#45B7D1" },
+  "2": { num: "02", name: "핵심 설계 (Want·Need·적대자·테마)", accent: "#A78BFA" },
   "3": { num: "03", name: "캐릭터", accent: "#FB923C" },
   "4": { num: "04", name: "시놉시스 / 구조", accent: "#4ECCA3" },
   "5": { num: "05", name: "트리트먼트 / 비트", accent: "#FFD166" },
   "6": { num: "06", name: "시나리오 초고", accent: "#A78BFA" },
   "7": { num: "07", name: "Script Coverage / 시장가치", accent: "#60A5FA" },
   "8": { num: "08", name: "시나리오 고쳐쓰기", accent: "#E85D75" },
+  "9": { num: "09", name: "Deep Analysis (선택)", accent: "#45B7D1" },
 };
 
 function escapeHtml(str) {
@@ -919,12 +955,45 @@ function buildStage1SectionHtml(data) {
   return `<div style="page-break-before:always;">${parts.join("")}</div>`;
 }
 
-// ── Stage 2 ────────────────────────────────────────────────────────────────────
+// ── Stage 2 (핵심 설계) ─────────────────────────────────────────────────────
 function buildStage2SectionHtml(data) {
+  const { coreDesignResult } = data;
+  if (!coreDesignResult) return "";
+
+  const meta = STAGE_META["2"];
+  const parts = [sectionHeader(meta.name, `Stage ${meta.num}`, meta.accent)];
+
+  if (coreDesignResult.one_line) {
+    parts.push(`<div style="border:1pt solid ${meta.accent}40;border-left:3pt solid ${meta.accent};border-radius:5pt;padding:12pt 14pt;background:${meta.accent}08;margin-bottom:12pt;">
+      <div style="font-size:8pt;font-weight:800;color:${meta.accent};text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6pt;">이야기 엔진 한 줄</div>
+      <div style="font-size:11pt;color:#1a1a2e;line-height:1.7;font-weight:700;">${escapeHtml(coreDesignResult.one_line)}</div>
+    </div>`);
+  }
+
+  parts.push(renderResultCard("① Want — 외적 욕망", coreDesignResult.want, "#C8A84B"));
+  parts.push(renderResultCard("② Need — 내적 결핍", coreDesignResult.need, "#4ECCA3"));
+  parts.push(renderResultCard("③ Antagonist — 적대자", coreDesignResult.antagonist, "#E85D75"));
+  parts.push(renderResultCard("④ Stakes — 이해관계", coreDesignResult.stakes, "#FB923C"));
+  parts.push(renderResultCard("⑤ Theme — 테마/장르 약속", coreDesignResult.theme, "#60A5FA"));
+
+  if (coreDesignResult.risk_check?.length) {
+    parts.push(`<div style="border:1pt solid #E85D7530;border-left:3pt solid #E85D75;border-radius:5pt;padding:12pt 14pt;background:#E85D7506;margin-bottom:10pt;">
+      <div style="font-size:8pt;font-weight:800;color:#E85D75;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6pt;">⚠ Risk Check — 이 설계의 위험 신호</div>
+      <ul style="margin:0;padding-left:18pt;font-size:9pt;color:#1a1a2e;line-height:1.85;">
+        ${coreDesignResult.risk_check.map(r => `<li style="margin-bottom:3pt;">${escapeHtml(r)}</li>`).join("")}
+      </ul>
+    </div>`);
+  }
+
+  return `<div style="page-break-before:always;">${parts.join("")}</div>`;
+}
+
+// ── Stage 9 (Deep Analysis — 선택) ────────────────────────────────────────────
+function buildStage9SectionHtml(data) {
   const { academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult, expertPanelResult } = data;
   if (!academicResult && !mythMapResult && !barthesCodeResult && !koreanMythResult && !themeResult && !expertPanelResult) return "";
 
-  const meta = STAGE_META["2"];
+  const meta = STAGE_META["9"];
   const parts = [sectionHeader(meta.name, `Stage ${meta.num}`, meta.accent)];
 
   if (academicResult) parts.push(renderResultCard("학술 서사 이론 (Aristotle · Freytag · Syd Field)", academicResult, "#45B7D1"));
@@ -1056,6 +1125,7 @@ const STAGE_BUILDERS = {
   "6": buildStage6SectionHtml,
   "7": buildStage7SectionHtml,
   "8": buildStage8SectionHtml,
+  "9": buildStage9SectionHtml,
 };
 
 function buildStagesDocumentHtml({ logline, genre, stageLabel, stageIds, data }) {

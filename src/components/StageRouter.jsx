@@ -34,6 +34,7 @@ const Stage5Content = lazyWithRetry(() => import("../stages/Stage5Content.jsx"))
 const Stage6Content = lazyWithRetry(() => import("../stages/Stage6Content.jsx"));
 const Stage7Content = lazyWithRetry(() => import("../stages/Stage7Content.jsx"));
 const Stage8Content = lazyWithRetry(() => import("../stages/Stage8Content.jsx"));
+const Stage9Content = lazyWithRetry(() => import("../stages/Stage9Content.jsx"));
 const DashboardView = lazyWithRetry(() => import("../stages/DashboardView.jsx"));
 
 const fallback = (
@@ -52,13 +53,14 @@ const fallback = (
 const STAGE_NAMES = {
   dashboard: "대시보드",
   "1": "Stage 1 · 로그라인",
-  "2": "Stage 2 · 개념 분석",
+  "2": "Stage 2 · 핵심 설계",
   "3": "Stage 3 · 캐릭터",
   "4": "Stage 4 · 시놉시스",
   "5": "Stage 5 · 트리트먼트",
   "6": "Stage 6 · 시나리오 초고",
   "7": "Stage 7 · Script Coverage",
   "8": "Stage 8 · 고쳐쓰기",
+  "9": "Stage 9 · Deep Analysis",
 };
 
 /**
@@ -141,20 +143,15 @@ function StageContent(props) {
       return (
         <Suspense fallback={fallback}>
           <Stage2Content
-            expertPanelResult={props.expertPanelResult}
-            setExpertPanelResult={props.setExpertPanelResult}
-            expertPanelLoading={props.expertPanelLoading}
-            expertPanelError={props.expertPanelError}
-            expertPanelProgress={props.expertPanelProgress}
-            runExpertPanel={props.runExpertPanel}
-            narrativeTheoryDone={props.narrativeTheoryDone}
-            narrativeTheoryLoading={props.narrativeTheoryLoading}
-            analyzeNarrativeTheory={props.analyzeNarrativeTheory}
-            academicResult={props.academicResult}
-            mythMapResult={props.mythMapResult}
-            barthesCodeResult={props.barthesCodeResult}
-            koreanMythResult={props.koreanMythResult}
-            themeResult={props.themeResult}
+            result={props.result}
+            coreDesignResult={props.coreDesignResult}
+            coreDesignLoading={props.coreDesignLoading}
+            coreDesignError={props.coreDesignError}
+            analyzeCoreDesign={props.analyzeCoreDesign}
+            coreDesignFeedback={props.coreDesignFeedback}
+            setCoreDesignFeedback={props.setCoreDesignFeedback}
+            coreDesignRefineLoading={props.coreDesignRefineLoading}
+            refineCoreDesign={props.refineCoreDesign}
           />
         </Suspense>
       );
@@ -440,6 +437,28 @@ function StageContent(props) {
             fullRewriteError={props.fullRewriteError}
             fullRewriteResult={props.fullRewriteResult}
             setFullRewriteResult={props.setFullRewriteResult}
+          />
+        </Suspense>
+      );
+
+    case "9":
+      return (
+        <Suspense fallback={fallback}>
+          <Stage9Content
+            expertPanelResult={props.expertPanelResult}
+            setExpertPanelResult={props.setExpertPanelResult}
+            expertPanelLoading={props.expertPanelLoading}
+            expertPanelError={props.expertPanelError}
+            expertPanelProgress={props.expertPanelProgress}
+            runExpertPanel={props.runExpertPanel}
+            narrativeTheoryDone={props.narrativeTheoryDone}
+            narrativeTheoryLoading={props.narrativeTheoryLoading}
+            analyzeNarrativeTheory={props.analyzeNarrativeTheory}
+            academicResult={props.academicResult}
+            mythMapResult={props.mythMapResult}
+            barthesCodeResult={props.barthesCodeResult}
+            koreanMythResult={props.koreanMythResult}
+            themeResult={props.themeResult}
           />
         </Suspense>
       );

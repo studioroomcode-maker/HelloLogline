@@ -2,9 +2,11 @@ import { useState } from "react";
 import { useLoglineCtx } from "../context/LoglineContext.jsx";
 
 // 스테이지 진입 전제 조건: key 스테이지는 value 스테이지가 완료되어야 진입 가능
+// Stage 9 (Deep Analysis)는 선택형 — Stage 1만 끝났으면 언제든 진입 가능.
 const STAGE_PREREQUISITES = {
-  "2": "1", "3": "1", "4": "2",
+  "2": "1", "3": "2", "4": "3",
   "5": "4", "6": "5", "7": "6", "8": "7",
+  "9": "1",
 };
 
 export default function SidebarNavItem({ id, title, sub, accentColor, commentCount = 0 }) {
@@ -76,7 +78,22 @@ export default function SidebarNavItem({ id, title, sub, accentColor, commentCou
           fontSize: 12, fontWeight: 700,
           color: isActive ? "var(--text-main)" : status === "done" ? "var(--c-tx-65)" : "var(--c-tx-40)",
           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-        }}>{title}</div>
+          display: "flex", alignItems: "center", gap: 6,
+        }}>
+          {title}
+          {id === "9" && (
+            <span style={{
+              fontSize: 8, fontWeight: 700, color: "#45B7D1",
+              padding: "1px 5px", borderRadius: 6,
+              border: "1px solid rgba(69,183,209,0.3)",
+              background: "rgba(69,183,209,0.08)",
+              fontFamily: "'JetBrains Mono', monospace",
+              letterSpacing: 0.5, flexShrink: 0,
+            }}>
+              선택
+            </span>
+          )}
+        </div>
         <div style={{ fontSize: 10, color: "var(--c-tx-28)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub}</div>
       </div>
 

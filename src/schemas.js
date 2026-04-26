@@ -215,6 +215,40 @@ export const CharacterDevSchema = z
   })
   .passthrough();
 
+// ─── Stage 2: 핵심 설계 ──────────────────────────────────────────────────────
+
+export const CoreDesignSchema = z
+  .object({
+    one_line: z.string().catch(""),
+    want: z.object({
+      summary: z.string().catch(""),
+      external_goal: z.string().catch(""),
+      visible_proof: z.string().catch(""),
+    }).passthrough(),
+    need: z.object({
+      summary: z.string().catch(""),
+      inner_lack: z.string().catch(""),
+      moment_of_truth: z.string().catch(""),
+    }).passthrough(),
+    antagonist: z.object({
+      who: z.string().catch(""),
+      method: z.string().catch(""),
+      mirror_to_protagonist: z.string().catch(""),
+    }).passthrough(),
+    stakes: z.object({
+      external: z.string().catch(""),
+      internal: z.string().catch(""),
+      worst_case: z.string().catch(""),
+    }).passthrough(),
+    theme: z.object({
+      controlling_idea: z.string().catch(""),
+      thematic_question: z.string().catch(""),
+      genre_promise: z.string().catch(""),
+    }).passthrough(),
+    risk_check: z.array(z.string()).catch([]),
+  })
+  .passthrough();
+
 // ─── Stage 4: 시놉시스/구조 ───────────────────────────────────────────────────
 
 export const StructureAnalysisSchema = z

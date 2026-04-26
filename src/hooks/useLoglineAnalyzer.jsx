@@ -19,6 +19,7 @@ import {
   CRITERIA_GUIDE, LABELS_KR, GENRES, DURATION_OPTIONS, EXAMPLE_LOGLINES,
   EPISODE_SERIES_SYSTEM_PROMPT,
   MASTER_REPORT_SYSTEM_PROMPT,
+  CORE_DESIGN_SYSTEM_PROMPT, CORE_DESIGN_REFINE_SYSTEM_PROMPT,
 } from "../constants.js";
 import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText, fetchClaudeStream, parseClaudeJson, buildProjectSnapshot } from "../utils.js";
 import { REVISION_COLORS } from "../editor/FountainParser.js";
@@ -34,6 +35,7 @@ import {
   DEMO_SUBTEXT_RESULT, DEMO_THEME_RESULT, DEMO_COMPARABLE_RESULT,
   DEMO_DIALOGUE_DEV_RESULT, DEMO_SCENE_LIST_RESULT,
   DEMO_SCENARIO_DRAFT_RESULT, DEMO_PARTIAL_REWRITE_RESULT, DEMO_FULL_REWRITE_RESULT,
+  DEMO_CORE_DESIGN_RESULT,
 } from "../demo-data.js";
 import {
   LoglineAnalysisSchema, SynopsisSchema, AcademicAnalysisSchema,
@@ -44,6 +46,7 @@ import {
   ComparableWorksSchema, ValuationSchema, EarlyCoverageSchema, InsightSchema,
   EpisodeSeriesSchema,
   MasterReportSchema,
+  CoreDesignSchema,
 } from "../schemas.js";
 import {
   saveProject, loadProject, loadProjects, deleteProject,
@@ -103,13 +106,14 @@ function trackCreditUsage(feature, amount = 1) {
 /* ─── Stage definitions ─── */
 const STAGES = [
   { id: "1", num: "01", name: "로그라인", sub: "입력 / 기본 분석 / 개선", icon: ICON.edit },
-  { id: "2", num: "02", name: "개념 분석", sub: "테마 / 신화구조 / 학술 / 전문가 (선택)", icon: ICON.chart },
+  { id: "2", num: "02", name: "핵심 설계", sub: "Want / Need / 적대자 / 스테이크스 / 테마", icon: ICON.users },
   { id: "3", num: "03", name: "캐릭터", sub: "그림자 / 진정성 / 캐릭터 디벨롭", icon: ICON.users },
   { id: "4", num: "04", name: "시놉시스", sub: "구조분석 / 가치전하 / 하위텍스트 / 시놉시스", icon: ICON.doc },
   { id: "5", num: "05", name: "트리트먼트 비트", sub: "트리트먼트 / 비트시트 / 대사", icon: ICON.film },
   { id: "6", num: "06", name: "시나리오 초고", sub: "시나리오 생성 / Field · McKee · Snyder", icon: ICON.film },
   { id: "7", num: "07", name: "Script Coverage", sub: "커버리지 · 시장가치 · 고쳐쓰기 전 진단", icon: ICON.clipboard },
   { id: "8", num: "08", name: "시나리오 고쳐쓰기", sub: "초고 진단 / 부분 재작성 / 전체 개고", icon: ICON.edit },
+  { id: "9", num: "09", name: "Deep Analysis", sub: "테마 / 신화구조 / 학술 / 전문가 (선택)", icon: ICON.chart },
 ];
 
 /* ─── AI Transition Hint Prompts ─── */
@@ -391,6 +395,15 @@ export function useLoglineAnalyzer() {
   const [revisions, setRevisions] = useState([]); // [{ id, name, shortName, color, snapshot, createdAt }]
   const [currentRevisionId, setCurrentRevisionId] = useState(null); // null = 원고 (흰색)
   const [sceneRevisionMap, setSceneRevisionMap] = useState({}); // { sceneHeading: { id, color, shortName } }
+
+  // ── Core Design (Stage 2 — Want/Need/적대자/스테이크/테마) ──
+  const [coreDesignResult, setCoreDesignResult] = useState(null);
+  const [coreDesignLoading, setCoreDesignLoading] = useState(false);
+  const [coreDesignError, setCoreDesignError] = useState("");
+  const [coreDesignRefineLoading, setCoreDesignRefineLoading] = useState(false);
+  const [coreDesignFeedback, setCoreDesignFeedback] = useState("");
+  const [coreDesignHistory, setCoreDesignHistory] = useState([]);
+  const coreDesignRef = useRef(null);
 
   // ── Character Development ──
   const [charDevResult, setCharDevResult] = useState(null);
@@ -923,7 +936,7 @@ export function useLoglineAnalyzer() {
     result, result2,
     academicResult, mythMapResult, koreanMythResult,
     expertPanelResult, barthesCodeResult,
-    shadowResult, authenticityResult, charDevResult,
+    shadowResult, authenticityResult, coreDesignResult, charDevResult,
     valueChargeResult, subtextResult,
     synopsisResults, pipelineResult, selectedSynopsisIndex,
     treatmentResult, beatSheetResult, beatScenes,
@@ -1004,6 +1017,7 @@ export function useLoglineAnalyzer() {
     setBarthesCodeResult(proj.barthesCodeResult || null);
     setShadowResult(proj.shadowResult || null);
     setAuthenticityResult(proj.authenticityResult || null);
+    setCoreDesignResult(proj.coreDesignResult || null);
     setCharDevResult(proj.charDevResult || null);
     setValueChargeResult(proj.valueChargeResult || null);
     setSubtextResult(proj.subtextResult || null);
@@ -1122,11 +1136,14 @@ export function useLoglineAnalyzer() {
     // 이전 에러 전체 초기화 (데모 데이터가 에러 메시지에 가려지지 않도록)
     setShadowError?.(""); setAuthenticityError?.(""); setCharDevError?.("");
     setExpertPanelError?.(""); setValueChargeError?.(""); setAcademicError?.("");
+    setCoreDesignError?.("");
     // Stage 1
     setResult(DEMO_RESULT);
     setEarlyCoverageResult(DEMO_EARLY_COVERAGE_RESULT);
     setInsightResult(DEMO_INSIGHT_RESULT);
-    // Stage 2
+    // Stage 2 (핵심 설계)
+    setCoreDesignResult(DEMO_CORE_DESIGN_RESULT);
+    // Stage 9 (Deep Analysis — 구 Stage 2 패널)
     setExpertPanelResult(DEMO_EXPERT_PANEL_RESULT);
     setValueChargeResult(DEMO_VALUE_CHARGE_RESULT);
     setAcademicResult(DEMO_ACADEMIC_RESULT);
@@ -1159,7 +1176,7 @@ export function useLoglineAnalyzer() {
     setFullRewriteResult(DEMO_FULL_REWRITE_RESULT);
     setCurrentStage("dashboard");
     setDemoTourStep(0); // 온보딩 투어 시작
-    showToast("info", "데모 모드입니다. 8단계 전체 분석 결과를 자유롭게 둘러보세요.");
+    showToast("info", "데모 모드입니다. 9단계 전체 분석 결과를 자유롭게 둘러보세요.");
   };
 
   // ── 데모 모드 해제 ──
@@ -1169,6 +1186,7 @@ export function useLoglineAnalyzer() {
     setLogline("");
     setGenre("auto");
     setResult(null);
+    setCoreDesignResult(null);
     setCharDevResult(null);
     setShadowResult(null);
     setAuthenticityResult(null);
@@ -1250,6 +1268,7 @@ export function useLoglineAnalyzer() {
     setResult(null); setResult2(null); setEarlyCoverageResult(null); setInsightResult(null);
     setAcademicResult(null); setMythMapResult(null); setKoreanMythResult(null);
     setExpertPanelResult(null); setBarthesCodeResult(null);
+    setCoreDesignResult(null); setCoreDesignFeedback(""); setCoreDesignHistory([]);
     setShadowResult(null); setAuthenticityResult(null); setCharDevResult(null);
     setValueChargeResult(null); setSubtextResult(null);
     setSynopsisResults(null); setSelectedSynopsisIndex(null); setPipelineResult(null);
@@ -1281,7 +1300,7 @@ export function useLoglineAnalyzer() {
     try {
       const safeLogline = logline.slice(0, 20).replace(/\s+/g, "-").replace(/[^\w가-힣-]/g, "");
       await exportToPdf({
-        logline, genre, result, charDevResult, shadowResult, authenticityResult,
+        logline, genre, result, coreDesignResult, charDevResult, shadowResult, authenticityResult,
         synopsisResults, pipelineResult, structureResult, valueChargeResult,
         treatmentResult, beatSheetResult, scenarioDraftResult, rewriteDiagResult,
         scriptCoverageResult, valuationResult, darkMode,
@@ -3576,6 +3595,49 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     finally { setStructureTwistLoading(false); clearController("structureTwist"); }
   };
 
+  // ── Core Design (Stage 2 — Want/Need/적대자/스테이크/테마) ──
+  const analyzeCoreDesign = async () => {
+    if (!logline.trim() || !apiKey) return;
+    const ctrl = makeController("coreDesign");
+    setCoreDesignLoading(true); setCoreDesignError("");
+    pushHistory(setCoreDesignHistory, coreDesignResult, "coreDesign");
+    setCoreDesignResult(null);
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
+    const stage1Hint = result
+      ? `\n\n[Stage 1 분석 요약 — 약점을 보완하는 방향으로 설계할 것]\n${result.overall_feedback || ""}${result.detected_genre ? `\n감지 장르: ${result.detected_genre}` : ""}`
+      : "";
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${stage1Hint}\n\n위 로그라인의 "이야기 엔진"을 확정하세요. Want/Need/적대자/스테이크/테마 5축을 모두 단정적으로 결정하고, JSON 스키마대로만 응답하세요.`;
+    try {
+      const data = await callClaude(apiKey, CORE_DESIGN_SYSTEM_PROMPT, msg, 3500, "claude-sonnet-4-6", ctrl.signal, CoreDesignSchema, "coreDesign");
+      setCoreDesignResult(data);
+      trackCreditUsage("핵심 설계", 1);
+      await autoSave();
+    } catch (err) {
+      if (err.name !== "AbortError") setCoreDesignError(err.message || "핵심 설계 생성 중 오류가 발생했습니다.");
+    } finally {
+      setCoreDesignLoading(false); clearController("coreDesign");
+    }
+  };
+
+  const refineCoreDesign = async () => {
+    if (!logline.trim() || !apiKey || !coreDesignResult || !coreDesignFeedback.trim()) return;
+    const ctrl = makeController("coreDesignRefine");
+    setCoreDesignRefineLoading(true); setCoreDesignError("");
+    pushHistory(setCoreDesignHistory, coreDesignResult, "coreDesign");
+    const msg = `로그라인: "${logline.trim()}"\n\n현재 핵심 설계 (JSON):\n${JSON.stringify(coreDesignResult, null, 2)}\n\n작가 피드백:\n${coreDesignFeedback.trim()}\n\n피드백을 반영해 핵심 설계 JSON을 다시 작성하세요. 변경하지 않은 필드는 원본 값을 유지하세요.`;
+    try {
+      const data = await callClaude(apiKey, CORE_DESIGN_REFINE_SYSTEM_PROMPT, msg, 3500, "claude-sonnet-4-6", ctrl.signal, CoreDesignSchema, "coreDesignRefine");
+      setCoreDesignResult(data);
+      setCoreDesignFeedback("");
+      trackCreditUsage("핵심 설계 다듬기", 1);
+      await autoSave();
+    } catch (err) {
+      if (err.name !== "AbortError") setCoreDesignError(err.message || "핵심 설계 다듬기 중 오류가 발생했습니다.");
+    } finally {
+      setCoreDesignRefineLoading(false); clearController("coreDesignRefine");
+    }
+  };
+
   // ── Character Dev ──
   const analyzeCharacterDev = async () => {
     if (!logline.trim() || !apiKey) return;
@@ -3904,6 +3966,11 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       return "idle";
     }
     if (stageId === "2") {
+      if (coreDesignResult) return "done";
+      if (coreDesignLoading || coreDesignRefineLoading) return "active";
+      return "idle";
+    }
+    if (stageId === "9") {
       if (academicResult || mythMapResult || koreanMythResult || expertPanelResult || barthesCodeResult || themeResult) return "done";
       if (academicLoading || mythMapLoading || koreanMythLoading || expertPanelLoading || barthesCodeLoading || themeLoading) return "active";
       return "idle";
@@ -3949,7 +4016,10 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       return [result, /* improvement done = result exists */].filter(Boolean).length;
     }
     if (stageId === "2") {
-      return [expertPanelResult].filter(Boolean).length;
+      return [coreDesignResult].filter(Boolean).length;
+    }
+    if (stageId === "9") {
+      return [expertPanelResult, academicResult || mythMapResult || koreanMythResult || barthesCodeResult || themeResult].filter(Boolean).length;
     }
     if (stageId === "3") {
       return [shadowResult || authenticityResult || charDevResult].filter(Boolean).length;
@@ -3971,7 +4041,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     }
     return 0;
   }
-  const STAGE_TOTALS = { "1": 1, "2": 1, "3": 1, "4": 2, "5": 3, "6": 1, "8": 2, "7": 1 };
+  const STAGE_TOTALS = { "1": 1, "2": 1, "3": 1, "4": 2, "5": 3, "6": 1, "8": 2, "7": 1, "9": 2 };
 
   // ── Error display helper ──
   function ErrorMsg({ msg, onRetry }) {
@@ -4046,8 +4116,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   const getStagePdfData = useCallback(() => ({
     // Stage 1
     result, earlyCoverageResult, insightResult,
-    // Stage 2
-    academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult, expertPanelResult,
+    // Stage 2 (핵심 설계)
+    coreDesignResult,
     // Stage 3
     charDevResult, shadowResult, authenticityResult,
     // Stage 4
@@ -4061,9 +4131,11 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     scriptCoverageResult, valuationResult, rewriteDiagResult,
     // Stage 8
     partialRewriteResult, fullRewriteResult,
+    // Stage 9 (Deep Analysis)
+    academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult, expertPanelResult,
   }), [
     result, earlyCoverageResult, insightResult,
-    academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult, expertPanelResult,
+    coreDesignResult,
     charDevResult, shadowResult, authenticityResult,
     structureResult, valueChargeResult, pipelineResult, synopsisResults,
     comparableResult, subtextResult,
@@ -4071,6 +4143,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     scenarioDraftResult,
     scriptCoverageResult, valuationResult, rewriteDiagResult,
     partialRewriteResult, fullRewriteResult,
+    academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult, expertPanelResult,
   ]);
 
   // NOTE: 인증 가드(authLoading / !user / isBlocked) 는 이 훅이 아니라
@@ -4081,15 +4154,16 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   // 각 스테이지 완료 상태 요약 (사이드바 + 대시보드 표시용)
   const stageResultSummary = {
     "1": result ? `${qualityScore}점` : null,
-    "2": expertPanelResult ? "패널 완료" : (
-      (mythMapResult || barthesCodeResult || koreanMythResult || academicResult) ? "분석 완료" : null
-    ),
+    "2": coreDesignResult ? (coreDesignResult.one_line ? coreDesignResult.one_line.slice(0, 14) : "핵심 설계 완료") : null,
     "3": charDevResult ? (charDevResult.protagonist?.name ? `${charDevResult.protagonist.name}` : "캐릭터 완료") : null,
     "4": pipelineResult ? (pipelineResult.direction_title ? pipelineResult.direction_title.slice(0, 12) : "시놉시스 완료") : (synopsisResults ? "방향 선택 완료" : null),
     "5": treatmentResult ? "트리트먼트 완료" : (beatSheetResult ? "비트시트 완료" : null),
     "6": scenarioDraftResult ? "초고 완료" : null,
     "7": scriptCoverageResult ? (scriptCoverageResult.recommendation || "커버리지 완료") : null,
     "8": fullRewriteResult ? "전면 개고 완료" : (rewriteDiagResult ? "진단 완료" : null),
+    "9": expertPanelResult ? "패널 완료" : (
+      (mythMapResult || barthesCodeResult || koreanMythResult || academicResult) ? "분석 완료" : null
+    ),
   };
 
   // 공유용 snapshot (logline + stage1 분석 + script coverage)
@@ -4237,6 +4311,11 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     // Revisions
     revisions, setRevisions, currentRevisionId, setCurrentRevisionId,
     sceneRevisionMap, setSceneRevisionMap,
+    // Core Design (Stage 2)
+    coreDesignResult, setCoreDesignResult, coreDesignLoading, coreDesignError, coreDesignRef,
+    coreDesignFeedback, setCoreDesignFeedback, coreDesignRefineLoading,
+    coreDesignHistory, setCoreDesignHistory,
+    analyzeCoreDesign, refineCoreDesign,
     // Character Dev
     charDevResult, setCharDevResult, charDevLoading, charDevError, charDevRef,
     analyzeCharacterDev, refineCharDev,

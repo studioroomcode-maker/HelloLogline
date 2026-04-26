@@ -575,6 +575,7 @@ export function buildProjectSnapshot(state) {
     barthesCodeResult:     state.barthesCodeResult    ?? null,
     shadowResult:          state.shadowResult         ?? null,
     authenticityResult:    state.authenticityResult   ?? null,
+    coreDesignResult:      state.coreDesignResult     ?? null,
     charDevResult:         state.charDevResult        ?? null,
     valueChargeResult:     state.valueChargeResult    ?? null,
     subtextResult:         state.subtextResult        ?? null,

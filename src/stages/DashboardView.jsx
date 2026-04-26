@@ -5,14 +5,15 @@ import { loadProjects } from "../db.js";
 const ReverseImportModal = lazy(() => import("./ReverseImportModal.jsx"));
 
 const STAGE_META = [
-  { id: "1", name: "로그라인",      sub: "점수·분석",      color: "#C8A84B" },
-  { id: "2", name: "개념 분석",     sub: "신화·전문가",    color: "#45B7D1" },
-  { id: "3", name: "캐릭터",        sub: "심리·아크",      color: "#FB923C" },
-  { id: "4", name: "스토리 설계",   sub: "구조·시놉시스",  color: "#4ECCA3" },
-  { id: "5", name: "트리트먼트",    sub: "씬·비트시트",    color: "#C8A84B" },
-  { id: "6", name: "시나리오 초고", sub: "자동 생성",      color: "#A78BFA" },
-  { id: "7", name: "Script Coverage", sub: "심사·시장가치",  color: "#60A5FA" },
-  { id: "8", name: "고쳐쓰기",     sub: "진단·수정·개고", color: "#FB923C" },
+  { id: "1", name: "로그라인",      sub: "점수·분석",         color: "#C8A84B" },
+  { id: "2", name: "핵심 설계",     sub: "Want·Need·적대자",  color: "#A78BFA" },
+  { id: "3", name: "캐릭터",        sub: "심리·아크",         color: "#FB923C" },
+  { id: "4", name: "스토리 설계",   sub: "구조·시놉시스",     color: "#4ECCA3" },
+  { id: "5", name: "트리트먼트",    sub: "씬·비트시트",       color: "#C8A84B" },
+  { id: "6", name: "시나리오 초고", sub: "자동 생성",         color: "#A78BFA" },
+  { id: "7", name: "Script Coverage", sub: "심사·시장가치",   color: "#60A5FA" },
+  { id: "8", name: "고쳐쓰기",     sub: "진단·수정·개고",    color: "#FB923C" },
+  { id: "9", name: "Deep Analysis", sub: "신화·학술·전문가",  color: "#45B7D1" },
 ];
 
 function StageCard({ id, name, sub, color, status, doneCount, total, summary, onClick }) {
@@ -121,9 +122,11 @@ function loadCreditHistory() {
 }
 
 // 스테이지 진입 전제 조건
+// Stage 9 (Deep Analysis)는 선택형 — 1만 끝났으면 언제든 진입 가능.
 const STAGE_PREREQUISITES = {
-  "2": "1", "3": "1", "4": "2",
+  "2": "1", "3": "2", "4": "3",
   "5": "4", "6": "5", "7": "6", "8": "7",
+  "9": "1",
 };
 
 export default function DashboardView() {
@@ -172,7 +175,8 @@ export default function DashboardView() {
     setCreditHistory(loadCreditHistory().slice(0, 10));
   }, []);
 
-  const doneStages = STAGE_META.filter(s => getStageStatus(s.id) === "done").length;
+  // 메인 진행률은 1~8단계 기준 (Stage 9 Deep Analysis는 선택형이라 제외).
+  const doneStages = STAGE_META.filter(s => s.id !== "9" && getStageStatus(s.id) === "done").length;
   const progressPct = Math.round((doneStages / 8) * 100);
 
   // 프로젝트 검색 필터
@@ -842,9 +846,10 @@ function CoachingTips({ getStageStatus, logline, stageResultSummary, doneStages 
 }
 
 // ── 스테이지 연결 맵 ───────────────────────────────
+// 메인 워크플로우 맵: Stage 9 (Deep Analysis)는 선택형이라 워크플로우 맵에서는 제외.
 const FLOW_STAGES = [
   { id: "1", label: "로그라인", color: "#C8A84B" },
-  { id: "2", label: "개념",     color: "#45B7D1" },
+  { id: "2", label: "핵심설계", color: "#A78BFA" },
   { id: "3", label: "캐릭터",   color: "#FB923C" },
   { id: "4", label: "스토리",   color: "#4ECCA3" },
   { id: "5", label: "트리트",   color: "#C8A84B" },
