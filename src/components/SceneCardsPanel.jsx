@@ -283,7 +283,7 @@ export default function SceneCardsPanel({ onClose }) {
           )}
         </div>
 
-        {/* Stale 배너 — 비트시트가 변경됐을 때 */}
+        {/* Stale 배너 — 상위 단계(비트시트/트리트먼트/캐릭터)가 변경됐을 때 */}
         {staleCount > 0 && beatSheetResult?.beats && (
           <div style={{
             padding: "10px 24px", borderBottom: "1px solid var(--c-bd-1)",
@@ -292,7 +292,7 @@ export default function SceneCardsPanel({ onClose }) {
           }}>
             <span style={{ fontSize: 14 }}>⚠</span>
             <div style={{ flex: 1, fontSize: 11, color: "var(--c-tx-65)", lineHeight: 1.5 }}>
-              비트 시트가 변경됐습니다. <strong>{staleCount}개 씬 카드</strong>가 옛 비트 정보를 가지고 있을 수 있습니다.
+              상위 단계(비트시트·트리트먼트·캐릭터)가 변경됐습니다. <strong>{staleCount}개 씬 카드</strong>가 옛 정보를 가지고 있을 수 있습니다.
             </div>
             <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
               <button

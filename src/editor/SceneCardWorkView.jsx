@@ -197,7 +197,7 @@ export default function SceneCardWorkView({
                       border: "1px solid rgba(247,160,114,0.4)",
                       background: "rgba(247,160,114,0.1)",
                       fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.3,
-                    }} title="비트시트가 변경됐습니다">stale</span>
+                    }} title="상위 단계(비트시트/트리트먼트/캐릭터)가 변경됐습니다">stale</span>
                   )}
                 </div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: isActive ? status.color : "var(--c-tx-65)", lineHeight: 1.35 }}>

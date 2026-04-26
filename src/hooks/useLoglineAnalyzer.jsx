@@ -3817,7 +3817,6 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   }, [beatSheetResult, charDevResult, sceneCards.length]);
 
   // 비트 시트가 변경되면 그 비트에서 파생된 씬 카드들을 stale로 마킹.
-  // 작가는 stale 배지를 보고 직접 다시 시드(병합 또는 덮어쓰기) 결정.
   useEffect(() => {
     if (!beatSheetResult?.beats || sceneCards.length === 0) return;
     const beatHash = JSON.stringify(beatSheetResult.beats.map(b => ({ id: b.id, name: b.name_kr || b.name, summary: b.summary })));
@@ -3827,11 +3826,50 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     }
     if (lastBeatSheetSnapshotRef.current === beatHash) return;
     lastBeatSheetSnapshotRef.current = beatHash;
-    // 비트와 연결된 카드(beatId 보유) 모두 stale로
     const staleIds = sceneCards.filter(c => c.beatId).map(c => c.id);
-    if (staleIds.length) setBeatSheetStaleCardIds(staleIds);
+    if (staleIds.length) {
+      setBeatSheetStaleCardIds(prev => Array.from(new Set([...(prev || []), ...staleIds])));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [beatSheetResult]);
+
+  // 트리트먼트가 갱신되면 모든 씬 카드를 stale로 — 트리트먼트는 전체 씬 흐름을 정의.
+  const lastTreatmentSnapshotRef = useRef(null);
+  useEffect(() => {
+    if (!treatmentResult || sceneCards.length === 0) return;
+    if (lastTreatmentSnapshotRef.current == null) {
+      lastTreatmentSnapshotRef.current = treatmentResult;
+      return;
+    }
+    if (lastTreatmentSnapshotRef.current === treatmentResult) return;
+    lastTreatmentSnapshotRef.current = treatmentResult;
+    const allIds = sceneCards.map(c => c.id);
+    if (allIds.length) {
+      setBeatSheetStaleCardIds(prev => Array.from(new Set([...(prev || []), ...allIds])));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [treatmentResult]);
+
+  // 캐릭터 분석이 갱신되면 모든 씬 카드의 characters 필드가 옛 정보일 수 있음 → stale.
+  const lastCharSnapshotRef = useRef(null);
+  useEffect(() => {
+    if (!charDevResult || sceneCards.length === 0) return;
+    const sig = JSON.stringify({
+      p: charDevResult.protagonist?.name_suggestion || charDevResult.protagonist?.name,
+      s: (charDevResult.supporting_characters || []).slice(0, 3).map(s => s.suggested_name || s.role_name || s.name),
+    });
+    if (lastCharSnapshotRef.current == null) {
+      lastCharSnapshotRef.current = sig;
+      return;
+    }
+    if (lastCharSnapshotRef.current === sig) return;
+    lastCharSnapshotRef.current = sig;
+    const allIds = sceneCards.map(c => c.id);
+    if (allIds.length) {
+      setBeatSheetStaleCardIds(prev => Array.from(new Set([...(prev || []), ...allIds])));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [charDevResult]);
 
   // stale 마킹 해제 (작가가 무시 또는 다시 시드 후 호출)
   const clearBeatSheetStale = useCallback((cardIds) => {
