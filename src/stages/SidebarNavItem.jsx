@@ -19,16 +19,16 @@ export default function SidebarNavItem({ id, title, sub, accentColor, commentCou
   const isActive = currentStage === id;
 
   function handleClick() {
-    // 역방향 진입 시 진입 스테이지 이하는 전제조건 우회
+    // 역방향 진입 시 진입 스테이지 이하는 전제조건 경고도 우회
     if (reverseEntryStage && parseInt(id) <= parseInt(reverseEntryStage)) {
       setCurrentStage(id);
       return;
     }
     const prereqId = STAGE_PREREQUISITES[id];
+    // 잠금이 아니라 경고. 작가 워크플로우는 비선형 — 진입 허용 + 정확도 낮을 수 있음 안내.
     if (prereqId && getStageStatus(prereqId) !== "done") {
-      showToast("info", `Stage ${prereqId}을 먼저 완료해야 진입할 수 있습니다.`);
-      setCurrentStage(prereqId);
-      return;
+      const labelMap = { "1": "로그라인", "2": "핵심 설계", "3": "캐릭터", "4": "시놉시스", "5": "트리트먼트", "6": "초고", "7": "Coverage" };
+      showToast("info", `${labelMap[prereqId] || `Stage ${prereqId}`} 결과 없이 진행하면 정확도가 낮아질 수 있습니다.`);
     }
     setCurrentStage(id);
   }
@@ -72,28 +72,13 @@ export default function SidebarNavItem({ id, title, sub, accentColor, commentCou
         }
       </div>
 
-      {/* 제목/부제 */}
+      {/* 제목/부제 — Stage 9는 별도 그룹 헤더("심화 도구")로 분리됐으므로 인라인 배지 불필요 */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontSize: 12, fontWeight: 700,
           color: isActive ? "var(--text-main)" : status === "done" ? "var(--c-tx-65)" : "var(--c-tx-40)",
           whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-          display: "flex", alignItems: "center", gap: 6,
-        }}>
-          {title}
-          {id === "9" && (
-            <span style={{
-              fontSize: 8, fontWeight: 700, color: "#45B7D1",
-              padding: "1px 5px", borderRadius: 6,
-              border: "1px solid rgba(69,183,209,0.3)",
-              background: "rgba(69,183,209,0.08)",
-              fontFamily: "'JetBrains Mono', monospace",
-              letterSpacing: 0.5, flexShrink: 0,
-            }}>
-              선택
-            </span>
-          )}
-        </div>
+        }}>{title}</div>
         <div style={{ fontSize: 10, color: "var(--c-tx-28)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{sub}</div>
       </div>
 

@@ -1056,22 +1056,19 @@ export function useLoglineAnalyzer() {
     setCurrentProjectId(proj.id);
     setShowProjects(false);
     // Stage 2 핵심 설계 신설(2026-04-27) 마이그레이션 — 캐릭터/시놉시스가 있는데 핵심 설계가 비어 있으면
-    // Stage 1로 보내지 말고 Stage 2로 직진해서 5축부터 채우도록 안내. 프로젝트당 1회만.
+    // 첫 진입 시 1회만 안내 toast. 잠금이 아니라 권유 — 작가가 원하는 단계로 자유롭게 이동 가능.
     const needsCoreDesign = !proj.coreDesignResult && (proj.charDevResult || proj.pipelineResult || proj.synopsisResults);
-    let migrationKey = null;
     if (needsCoreDesign) {
-      migrationKey = `hll_core_design_migrated_${proj.id}`;
+      const migrationKey = `hll_core_design_migrated_${proj.id}`;
       const alreadyShown = (() => { try { return localStorage.getItem(migrationKey) === "1"; } catch { return false; } })();
       if (!alreadyShown) {
         setTimeout(() => {
           showToast(
             "info",
-            "Stage 2 핵심 설계가 새로 추가됐습니다. Want·Need·적대자·스테이크·테마 5축을 먼저 확정하면 후속 단계 결과가 일관됩니다."
+            "Stage 2 핵심 설계가 새로 추가됐습니다. 시간 될 때 Want·Need·적대자·스테이크·테마 5축을 채워두면 후속 단계 결과가 일관됩니다."
           );
           try { localStorage.setItem(migrationKey, "1"); } catch {}
         }, 600);
-        setCurrentStage("2");
-        return;
       }
     }
     setCurrentStage("1");

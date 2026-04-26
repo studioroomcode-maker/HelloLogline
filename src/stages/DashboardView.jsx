@@ -146,16 +146,17 @@ export default function DashboardView() {
   const [showReverseModal, setShowReverseModal] = useState(false);
 
   function handleStageClick(id) {
-    // 역방향 진입 시 진입 스테이지 이하는 전제조건 우회
+    // 역방향 진입 시 진입 스테이지 이하는 전제조건 경고도 우회
     if (reverseEntryStage && parseInt(id) <= parseInt(reverseEntryStage)) {
       advanceToStage(id);
       return;
     }
     const prereqId = STAGE_PREREQUISITES[id];
+    // 잠금이 아니라 경고. 작가 워크플로우는 비선형이므로 진입은 허용하되,
+    // 전제 단계 결과가 없으면 후속 단계 정확도가 낮아질 수 있다고 알린다.
     if (prereqId && getStageStatus(prereqId) !== "done") {
-      showToast("info", `Stage ${prereqId}을 먼저 완료해야 진입할 수 있습니다.`);
-      advanceToStage(prereqId);
-      return;
+      const labelMap = { "1": "로그라인", "2": "핵심 설계", "3": "캐릭터", "4": "시놉시스", "5": "트리트먼트", "6": "초고", "7": "Coverage" };
+      showToast("info", `${labelMap[prereqId] || `Stage ${prereqId}`} 결과 없이 진행하면 정확도가 낮아질 수 있습니다.`);
     }
     advanceToStage(id);
   }

@@ -255,9 +255,13 @@ function StagePageHeader({ stageId, isMobile, status }) {
 
 /* ─── 모바일 스테이지 드롭다운 (전체 스테이지 직접 이동) ─── */
 function StageDropdown({ currentStage, setCurrentStage, getStageStatus, onClose }) {
+  const mainStages = STAGE_META.filter(s => !s.optional);
+  const optionalStages = STAGE_META.filter(s => s.optional);
   const stages = [
     { id: "dashboard", title: "대시보드", color: "#C8A84B" },
-    ...STAGE_META,
+    ...mainStages,
+    ...(optionalStages.length > 0 ? [{ id: "__divider", title: "심화 도구", divider: true }] : []),
+    ...optionalStages,
   ];
   return (
     <>
@@ -293,6 +297,21 @@ function StageDropdown({ currentStage, setCurrentStage, getStageStatus, onClose 
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {stages.map(s => {
+            if (s.divider) {
+              return (
+                <div key={s.id} style={{
+                  margin: "8px 6px 4px", paddingTop: 8,
+                  borderTop: "1px solid var(--c-bd-1)",
+                  fontSize: 9, letterSpacing: 1.2, color: "var(--c-tx-25)",
+                  fontWeight: 700, textTransform: "uppercase",
+                  fontFamily: "'JetBrains Mono', monospace",
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                }}>
+                  <span>{s.title}</span>
+                  <span style={{ fontSize: 8, color: "var(--c-tx-22)" }}>선택</span>
+                </div>
+              );
+            }
             const isActive = currentStage === s.id;
             const isDone = s.id !== "dashboard" && getStageStatus(s.id) === "done";
             return (
@@ -352,8 +371,12 @@ function MobileBottomNav({ currentStage, setCurrentStage, getStageStatus }) {
   const isDashboard = currentStage === "dashboard";
   const currentIdx = isDashboard ? -1 : STAGE_META.findIndex(s => s.id === currentStage);
   const currentMeta = currentIdx >= 0 ? STAGE_META[currentIdx] : null;
-  const prevMeta = currentIdx > 0 ? STAGE_META[currentIdx - 1] : null;
-  const nextMeta = currentIdx >= 0 && currentIdx < STAGE_META.length - 1 ? STAGE_META[currentIdx + 1] : null;
+  // prev/next는 메인 워크플로우(1~8)만 순환. 심화 도구(9)에서는 prev/next를 표시하지 않음.
+  const mainStages = STAGE_META.filter(s => !s.optional);
+  const isOptionalCurrent = currentMeta?.optional;
+  const mainIdx = currentMeta && !isOptionalCurrent ? mainStages.findIndex(s => s.id === currentMeta.id) : -1;
+  const prevMeta = !isOptionalCurrent && mainIdx > 0 ? mainStages[mainIdx - 1] : null;
+  const nextMeta = !isOptionalCurrent && mainIdx >= 0 && mainIdx < mainStages.length - 1 ? mainStages[mainIdx + 1] : null;
 
   return (
     <>
@@ -445,7 +468,9 @@ function MobileBottomNav({ currentStage, setCurrentStage, getStageStatus }) {
             }}>
               <div style={{ textAlign: "left" }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: currentMeta.color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1, marginBottom: 3 }}>
-                  {String(currentMeta.id).padStart(2, "0")} / {String(STAGE_META.length).padStart(2, "0")}
+                  {currentMeta.optional
+                    ? "심화 도구"
+                    : `${String(currentMeta.id).padStart(2, "0")} / ${String(mainStages.length).padStart(2, "0")}`}
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-main)", fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1 }}>
                   {currentMeta.title}
@@ -592,23 +617,24 @@ export default function SidebarLayout({ stageProps, isMobile }) {
               </button>
             </div>
 
-            {/* 진행률 바 */}
+            {/* 진행률 바 — 메인 워크플로우 1~8 기준 */}
             {(() => {
-              const doneCount = STAGE_META.filter(s => getStageStatus(s.id) === "done").length;
-              const pct = Math.round((doneCount / STAGE_META.length) * 100);
+              const mainStages = STAGE_META.filter(s => !s.optional);
+              const doneCount = mainStages.filter(s => getStageStatus(s.id) === "done").length;
+              const pct = Math.round((doneCount / mainStages.length) * 100);
               return (
                 <div style={{ padding: "2px 14px 10px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
-                    <div style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--c-tx-25)", fontWeight: 700, textTransform: "uppercase" }}>워크플로우</div>
+                    <div style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--c-tx-25)", fontWeight: 700, textTransform: "uppercase" }}>메인 워크플로우</div>
                     <div style={{ fontSize: 9, color: doneCount > 0 ? "#4ECCA3" : "var(--c-tx-25)", fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>
-                      {doneCount}/{STAGE_META.length}
+                      {doneCount}/{mainStages.length}
                     </div>
                   </div>
                   <div style={{ height: 3, borderRadius: 2, background: "var(--c-bd-2)", overflow: "hidden" }}>
                     <div style={{
                       height: "100%", borderRadius: 2,
                       width: `${pct}%`,
-                      background: doneCount === STAGE_META.length
+                      background: doneCount === mainStages.length
                         ? "linear-gradient(90deg,#4ECCA3,#45B7D1)"
                         : "#4ECCA3",
                       transition: "width 0.4s ease",
@@ -618,8 +644,8 @@ export default function SidebarLayout({ stageProps, isMobile }) {
               );
             })()}
 
-            {/* 스테이지 목록 */}
-            {STAGE_META.map(s => (
+            {/* 메인 워크플로우 1~8 */}
+            {STAGE_META.filter(s => !s.optional).map(s => (
               <SidebarNavItem
                 key={s.id}
                 id={s.id}
@@ -629,6 +655,34 @@ export default function SidebarLayout({ stageProps, isMobile }) {
                 commentCount={(stageComments?.[s.id] || []).length}
               />
             ))}
+
+            {/* 심화 도구 (선택형 — Deep Analysis 등) */}
+            {STAGE_META.filter(s => s.optional).length > 0 && (
+              <>
+                <div style={{
+                  margin: "12px 14px 6px", paddingTop: 12,
+                  borderTop: "1px solid var(--c-bd-1)",
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                }}>
+                  <div style={{ fontSize: 9, letterSpacing: 1.2, color: "var(--c-tx-25)", fontWeight: 700, textTransform: "uppercase" }}>
+                    심화 도구
+                  </div>
+                  <span style={{ fontSize: 8, color: "var(--c-tx-22)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>
+                    선택
+                  </span>
+                </div>
+                {STAGE_META.filter(s => s.optional).map(s => (
+                  <SidebarNavItem
+                    key={s.id}
+                    id={s.id}
+                    title={s.title}
+                    sub={s.sub}
+                    accentColor={s.color}
+                    commentCount={(stageComments?.[s.id] || []).length}
+                  />
+                ))}
+              </>
+            )}
 
             {/* 작업 모드 (팀원이 있을 때만) */}
             {teamMembers.length > 0 && (
