@@ -1077,9 +1077,14 @@ function StageFlowMap({ getStageStatus, advanceToStage, isMobile }) {
         </div>
       </div>
       <div style={{
-        display: "flex", alignItems: "center",
-        overflowX: "auto", WebkitOverflowScrolling: "touch",
-        scrollbarWidth: "none", gap: 0,
+        // 모바일: 그리드 4열, 셀 자동 wrap. 데스크탑: 가로 한 줄 + 가로 스크롤.
+        display: isMobile ? "grid" : "flex",
+        gridTemplateColumns: isMobile ? "repeat(4, 1fr)" : undefined,
+        gap: isMobile ? 6 : 0,
+        alignItems: "center",
+        overflowX: isMobile ? "visible" : "auto",
+        WebkitOverflowScrolling: "touch",
+        scrollbarWidth: "none",
         padding: "4px 0 8px",
       }}>
         {FLOW_STAGES.map((s, i) => {
@@ -1087,17 +1092,19 @@ function StageFlowMap({ getStageStatus, advanceToStage, isMobile }) {
           const isDone = status === "done";
           const isActive = status === "active";
           return (
-            <div key={s.id} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+            <div key={s.id} style={{ display: "flex", alignItems: "center", flexShrink: 0, minWidth: 0 }}>
               {/* 스테이지 노드 */}
               <button
                 onClick={() => advanceToStage(s.id)}
                 title={`Stage ${s.id}: ${s.label}`}
                 style={{
                   display: "flex", flexDirection: "column", alignItems: "center",
-                  gap: 4, padding: "8px 10px", borderRadius: 10,
+                  gap: 4, padding: isMobile ? "6px 4px" : "8px 10px", borderRadius: 10,
                   border: `1px solid ${isDone ? s.color + "50" : isActive ? s.color + "30" : "var(--c-bd-2)"}`,
                   background: isDone ? `${s.color}12` : isActive ? `${s.color}06` : "transparent",
-                  cursor: "pointer", minWidth: isMobile ? 52 : 64,
+                  cursor: "pointer",
+                  width: isMobile ? "100%" : undefined,
+                  minWidth: isMobile ? 0 : 64,
                   transition: "all 0.18s",
                 }}
               >
@@ -1107,6 +1114,7 @@ function StageFlowMap({ getStageStatus, advanceToStage, isMobile }) {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: 9, fontWeight: 800, color: isDone ? "#000" : "var(--c-tx-40)",
                   fontFamily: "'JetBrains Mono', monospace",
+                  flexShrink: 0,
                 }}>
                   {isDone ? "✓" : s.id}
                 </div>
@@ -1114,14 +1122,15 @@ function StageFlowMap({ getStageStatus, advanceToStage, isMobile }) {
                   fontSize: 8, color: isDone ? s.color : isActive ? s.color : "var(--c-tx-30)",
                   fontWeight: isDone ? 700 : 400, fontFamily: "'Noto Sans KR', sans-serif",
                   textAlign: "center", whiteSpace: "nowrap",
+                  maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis",
                 }}>
                   {s.label}
                 </span>
               </button>
-              {/* 연결 화살표 */}
-              {i < FLOW_STAGES.length - 1 && (
+              {/* 연결 화살표 — 데스크탑에서만. 모바일은 그리드 wrap이라 화살표 부적합. */}
+              {!isMobile && i < FLOW_STAGES.length - 1 && (
                 <div style={{
-                  width: isMobile ? 14 : 20, height: 1,
+                  width: 20, height: 1,
                   background: isDone ? `linear-gradient(90deg, ${s.color}60, ${FLOW_STAGES[i+1].color}30)` : "var(--c-bd-2)",
                   position: "relative", flexShrink: 0,
                 }}>
