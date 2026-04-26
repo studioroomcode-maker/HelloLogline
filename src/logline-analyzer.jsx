@@ -1,10 +1,11 @@
-import { Suspense } from "react";
+import { Suspense, useState, lazy } from "react";
 import ConfirmModal from "./ConfirmModal.jsx";
 import LoginScreen from "./LoginScreen.jsx";
 import { LoglineProvider } from "./context/LoglineContext.jsx";
 import WelcomeModal from "./WelcomeModal.jsx";
 import SidebarLayout from "./stages/SidebarLayout.jsx";
 import StoryBibleModal from "./components/StoryBibleModal.jsx";
+const DevelopmentNotesPanel = lazy(() => import("./components/DevelopmentNotesPanel.jsx"));
 import StageRouter from "./components/StageRouter.jsx";
 import HeaderNav from "./components/HeaderNav.jsx";
 import WelcomePanel from "./components/WelcomePanel.jsx";
@@ -62,6 +63,12 @@ export default function LoglineAnalyzer() {
 
         {ctx.showApiKeyModal && (
           <ApiKeyModal initialKey={ctx.apiKey} onSave={ctx.saveApiKey} onCancel={ctx.apiKey ? () => ctx.setShowApiKeyModal(false) : undefined} />
+        )}
+
+        {ctx.showNotesPanel && (
+          <Suspense fallback={null}>
+            <DevelopmentNotesPanel onClose={() => ctx.setShowNotesPanel(false)} />
+          </Suspense>
         )}
 
         {ctx.showStoryBible && (

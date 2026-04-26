@@ -141,6 +141,7 @@ export default function DashboardView() {
     onReverseImport,
     reverseEntryStage,
     isDemoMode, demoTourStep,
+    developmentNotes, setShowNotesPanel,
   } = useLoglineCtx();
 
   const [showReverseModal, setShowReverseModal] = useState(false);
@@ -530,6 +531,66 @@ export default function DashboardView() {
         logline={logline}
         stageResultSummary={stageResultSummary}
       />
+
+      {/* ── 수정 과제 보드 카드 (developmentNotes) ── */}
+      {logline && (() => {
+        const openCount = (developmentNotes || []).filter(n => n.status === "open").length;
+        const appliedCount = (developmentNotes || []).filter(n => n.status === "applied").length;
+        const total = (developmentNotes || []).length;
+        return (
+          <button
+            onClick={() => setShowNotesPanel(true)}
+            style={{
+              width: "100%", marginTop: 22, padding: "14px 18px",
+              borderRadius: 14,
+              background: openCount > 0
+                ? "linear-gradient(135deg, rgba(251,146,60,0.10), var(--glass-micro))"
+                : "var(--glass-micro)",
+              border: openCount > 0
+                ? "1px solid rgba(251,146,60,0.32)"
+                : "1px solid var(--glass-bd-nano)",
+              boxShadow: openCount > 0 ? "inset 0 1px 0 rgba(251,146,60,0.18)" : "inset 0 1px 0 var(--glass-bd-nano)",
+              cursor: "pointer", textAlign: "left",
+              fontFamily: "'Noto Sans KR', sans-serif",
+              display: "flex", alignItems: "center", gap: 14,
+              transition: "transform 0.18s var(--ease-spring), box-shadow 0.18s var(--ease-spring)",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ""; }}
+          >
+            <div style={{
+              width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+              background: openCount > 0 ? "rgba(251,146,60,0.16)" : "var(--glass-nano)",
+              border: openCount > 0 ? "1px solid rgba(251,146,60,0.4)" : "1px solid var(--c-bd-3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={openCount > 0 ? "#FB923C" : "var(--c-tx-40)"} strokeWidth={2} strokeLinecap="round">
+                <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+              </svg>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "var(--c-tx-30)", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 2, fontFamily: "'JetBrains Mono', monospace" }}>
+                수정 과제 보드
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--text-main)" }}>
+                {total === 0
+                  ? "아직 노트가 없습니다"
+                  : openCount > 0
+                    ? `지금 고칠 것 ${openCount}개`
+                    : `모든 과제 처리 완료 (적용 ${appliedCount})`}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginTop: 2, lineHeight: 1.5 }}>
+                {total === 0
+                  ? "Coverage·로그라인 분석·Risk Check가 자동으로 노트를 채웁니다."
+                  : `전체 ${total}개 · 적용 ${appliedCount} · 열림 ${openCount}`}
+              </div>
+            </div>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="var(--c-tx-35)" strokeWidth={2} strokeLinecap="round" style={{ flexShrink: 0 }}>
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
+        );
+      })()}
 
       {/* ── 스테이지 연결 맵 ── */}
       <StageFlowMap getStageStatus={getStageStatus} advanceToStage={advanceToStage} isMobile={isMobile} />

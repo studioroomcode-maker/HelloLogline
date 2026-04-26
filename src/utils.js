@@ -611,5 +611,6 @@ export function buildProjectSnapshot(state) {
     scenarioDraftHistory:  state.scenarioDraftHistory ?? [],
     charDevHistory:        state.charDevHistory       ?? [],
     pipelineHistory:       state.pipelineHistory      ?? [],
+    developmentNotes:      state.developmentNotes     ?? [],
   };
 }

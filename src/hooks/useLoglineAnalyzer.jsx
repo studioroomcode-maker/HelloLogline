@@ -58,6 +58,12 @@ import {
 import { ICON } from "../ui.jsx";
 import { useStage1 } from "./useStage1.js";
 import { useNetworkStatus } from "./useNetworkStatus.js";
+import {
+  notesFromLoglineAnalysis,
+  notesFromCoreDesign,
+  notesFromCoverage,
+  notesFromRewriteDiag,
+} from "../developmentNotesAdapters.js";
 
 /* ─── Lazy-loaded heavy panels ─── */
 
@@ -395,6 +401,14 @@ export function useLoglineAnalyzer() {
   const [revisions, setRevisions] = useState([]); // [{ id, name, shortName, color, snapshot, createdAt }]
   const [currentRevisionId, setCurrentRevisionId] = useState(null); // null = 원고 (흰색)
   const [sceneRevisionMap, setSceneRevisionMap] = useState({}); // { sceneHeading: { id, color, shortName } }
+
+  // ── Development Notes (수정 과제 보드 — 모든 분석 결과의 통합 이슈 트래커) ──
+  // { id, source, area, title, why, action, status, linkedStage, linkedSceneId, createdAt, updatedAt }
+  // source: "coverage" | "logline" | "coreDesign" | "rewriteDiag" | "manual"
+  // area: "logline" | "coreDesign" | "character" | "synopsis" | "structure" | "treatment" | "beat" | "draft" | "theme"
+  // status: "open" | "applied" | "ignored"
+  const [developmentNotes, setDevelopmentNotes] = useState([]);
+  const [showNotesPanel, setShowNotesPanel] = useState(false);
 
   // ── Core Design (Stage 2 — Want/Need/적대자/스테이크/테마) ──
   const [coreDesignResult, setCoreDesignResult] = useState(null);
@@ -948,6 +962,7 @@ export function useLoglineAnalyzer() {
     rewriteDiagResult, partialRewriteResult, fullRewriteResult,
     writerEdits,
     treatmentHistory, beatSheetHistory, scenarioDraftHistory, charDevHistory, pipelineHistory,
+    developmentNotes,
   });
 
   const _guestSaveCountRef = useRef(0);
@@ -1053,6 +1068,7 @@ export function useLoglineAnalyzer() {
     setScenarioDraftHistory(proj.scenarioDraftHistory || []);
     setCharDevHistory(proj.charDevHistory || []);
     setPipelineHistory(proj.pipelineHistory || []);
+    setDevelopmentNotes(proj.developmentNotes || []);
     setCurrentProjectId(proj.id);
     setShowProjects(false);
     // Stage 2 핵심 설계 신설(2026-04-27) 마이그레이션 — 캐릭터/시놉시스가 있는데 핵심 설계가 비어 있으면
@@ -1190,6 +1206,20 @@ export function useLoglineAnalyzer() {
     setRewriteDiagResult(DEMO_REWRITE_DIAG_RESULT);
     setPartialRewriteResult(DEMO_PARTIAL_REWRITE_RESULT);
     setFullRewriteResult(DEMO_FULL_REWRITE_RESULT);
+    // 데모용 수정 과제 노트 시드 — 분석 결과들에서 자동 추출.
+    // (Stage 1 result는 useEffect가 자동 감지하므로 여기서는 나머지만 명시)
+    const seedNotes = [
+      ...notesFromCoreDesign(DEMO_CORE_DESIGN_RESULT),
+      ...notesFromCoverage(DEMO_SCRIPT_COVERAGE_RESULT),
+      ...notesFromRewriteDiag(DEMO_REWRITE_DIAG_RESULT),
+    ];
+    setDevelopmentNotes(seedNotes.map((n, i) => ({
+      ...n,
+      id: `demo_note_${i}_${Date.now()}`,
+      status: i === 0 ? "applied" : i === 1 ? "ignored" : "open",
+      createdAt: Date.now() - i * 60000,
+      updatedAt: Date.now() - i * 60000,
+    })));
     setCurrentStage("dashboard");
     setDemoTourStep(0); // 온보딩 투어 시작
     showToast("info", "데모 모드입니다. 9단계 전체 분석 결과를 자유롭게 둘러보세요.");
@@ -1296,6 +1326,7 @@ export function useLoglineAnalyzer() {
     setValuationResult(null); setEpisodeDesignResult(null); setMasterReportResult(null);
     setWriterEdits({}); setTreatmentHistory([]); setBeatSheetHistory([]);
     setScenarioDraftHistory([]); setCharDevHistory([]); setPipelineHistory([]);
+    setDevelopmentNotes([]);
     setCurrentProjectId(null);
     setCurrentStage("1");
     showToast("success", "새 프로젝트가 시작되었습니다.");
@@ -3153,8 +3184,13 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       ? `\n\n━━━ 이전 단계 분석 결과 (Coverage 평가에 반영할 것) ━━━\n${coverageCtxParts.join("\n\n")}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
       : "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${coverageCtxBlock}\n\n위 로그라인(및 이전 단계 분석 결과)에 대한 할리우드 + 한국 방송사 스타일 Script Coverage를 작성하세요. 이전 단계에서 구축된 캐릭터·테마·시놉시스 정보가 있다면 그것을 기준으로 평가하세요.`;
-    try { const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, ScriptCoverageSchema, "coverage"); setScriptCoverageResult(data); trackCreditUsage("Script Coverage", 2); await autoSave(); }
-    catch (err) { if (err.name !== "AbortError") setScriptCoverageError(err.message || "Script Coverage 생성 중 오류가 발생했습니다."); }
+    try {
+      const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, ScriptCoverageSchema, "coverage");
+      setScriptCoverageResult(data);
+      addDevelopmentNotes(notesFromCoverage(data));
+      trackCreditUsage("Script Coverage", 2);
+      await autoSave();
+    } catch (err) { if (err.name !== "AbortError") setScriptCoverageError(err.message || "Script Coverage 생성 중 오류가 발생했습니다."); }
     finally { setScriptCoverageLoading(false); clearController("scriptCoverage"); }
   };
 
@@ -3626,6 +3662,67 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     finally { setStructureTwistLoading(false); clearController("structureTwist"); }
   };
 
+  // result(Stage 1 로그라인 분석)가 갱신되면 낮은 점수 항목을 자동으로 노트화.
+  // useEffect로 감지 — analyze가 useStage1 내부에 있어 직접 후처리 어려움.
+  const lastLoglineNotedRef = useRef(null);
+  useEffect(() => {
+    if (!result) return;
+    // 동일 result에 대해 중복 처리 방지 — overall_feedback을 키로 사용 (간단한 변별자)
+    const key = result.overall_feedback || JSON.stringify(result).slice(0, 200);
+    if (lastLoglineNotedRef.current === key) return;
+    lastLoglineNotedRef.current = key;
+    const notes = notesFromLoglineAnalysis(result);
+    if (notes.length) addDevelopmentNotes(notes);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result]);
+
+  // ── Development Notes 헬퍼 ──
+  // 노트의 키(중복 방지용 해시): source + area + title 정규화.
+  const noteKey = (note) => `${note.source}|${note.area}|${(note.title || "").trim().toLowerCase()}`;
+
+  const addDevelopmentNote = useCallback((note) => {
+    if (!note || !note.title) return null;
+    const now = Date.now();
+    const newNote = {
+      id: note.id || `note_${now}_${Math.random().toString(36).slice(2, 7)}`,
+      source: note.source || "manual",
+      area: note.area || "general",
+      title: note.title,
+      why: note.why || "",
+      action: note.action || "",
+      status: note.status || "open",
+      linkedStage: note.linkedStage || null,
+      linkedSceneId: note.linkedSceneId || null,
+      createdAt: note.createdAt || now,
+      updatedAt: now,
+    };
+    setDevelopmentNotes((prev) => {
+      // 동일 source+area+title은 중복 추가 방지 (이미 있으면 갱신만)
+      const k = noteKey(newNote);
+      const idx = prev.findIndex((n) => noteKey(n) === k);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...prev[idx], ...newNote, id: prev[idx].id, createdAt: prev[idx].createdAt, updatedAt: now };
+        return next;
+      }
+      return [newNote, ...prev];
+    });
+    return newNote;
+  }, []);
+
+  const addDevelopmentNotes = useCallback((notes) => {
+    if (!Array.isArray(notes) || notes.length === 0) return;
+    notes.forEach((n) => addDevelopmentNote(n));
+  }, [addDevelopmentNote]);
+
+  const updateDevelopmentNote = useCallback((id, patch) => {
+    setDevelopmentNotes((prev) => prev.map((n) => (n.id === id ? { ...n, ...patch, updatedAt: Date.now() } : n)));
+  }, []);
+
+  const deleteDevelopmentNote = useCallback((id) => {
+    setDevelopmentNotes((prev) => prev.filter((n) => n.id !== id));
+  }, []);
+
   // ── Core Design (Stage 2 — Want/Need/적대자/스테이크/테마) ──
   const analyzeCoreDesign = async () => {
     if (!logline.trim() || !apiKey) return;
@@ -3641,6 +3738,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const data = await callClaude(apiKey, CORE_DESIGN_SYSTEM_PROMPT, msg, 3500, "claude-sonnet-4-6", ctrl.signal, CoreDesignSchema, "coreDesign");
       setCoreDesignResult(data);
+      // risk_check 항목을 자동으로 수정 과제 보드에 추가
+      addDevelopmentNotes(notesFromCoreDesign(data));
       trackCreditUsage("핵심 설계", 1);
       await autoSave();
     } catch (err) {
@@ -3659,6 +3758,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const data = await callClaude(apiKey, CORE_DESIGN_REFINE_SYSTEM_PROMPT, msg, 3500, "claude-sonnet-4-6", ctrl.signal, CoreDesignSchema, "coreDesignRefine");
       setCoreDesignResult(data);
+      addDevelopmentNotes(notesFromCoreDesign(data));
       setCoreDesignFeedback("");
       trackCreditUsage("핵심 설계 다듬기", 1);
       await autoSave();
@@ -3846,6 +3946,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const data = await callClaude(apiKey, REWRITE_DIAG_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, null, "rewrite_diag");
       setRewriteDiagResult(data);
+      addDevelopmentNotes(notesFromRewriteDiag(data));
       await autoSave();
     } catch (e) {
       if (e.name !== "AbortError") setRewriteDiagError(e.message || "분석 중 오류가 발생했습니다.");
@@ -4268,6 +4369,10 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     isOnline,
     // Stage별 PDF 저장
     getStagePdfData,
+    // Development Notes (수정 과제 보드)
+    developmentNotes, addDevelopmentNote, addDevelopmentNotes,
+    updateDevelopmentNote, deleteDevelopmentNote,
+    showNotesPanel, setShowNotesPanel,
   };
 
 
@@ -4347,6 +4452,11 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     coreDesignFeedback, setCoreDesignFeedback, coreDesignRefineLoading,
     coreDesignHistory, setCoreDesignHistory,
     analyzeCoreDesign, refineCoreDesign,
+    // Development Notes (수정 과제 보드)
+    developmentNotes, setDevelopmentNotes,
+    addDevelopmentNote, addDevelopmentNotes,
+    updateDevelopmentNote, deleteDevelopmentNote,
+    showNotesPanel, setShowNotesPanel,
     // Character Dev
     charDevResult, setCharDevResult, charDevLoading, charDevError, charDevRef,
     analyzeCharacterDev, refineCharDev,
