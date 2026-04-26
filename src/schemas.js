@@ -230,6 +230,9 @@ export const DevelopmentNoteSchema = z
     status: z.enum(["open", "applied", "ignored"]).catch("open"),
     linkedStage: z.string().nullable().catch(null),
     linkedSceneId: z.string().nullable().catch(null),
+    // C2: 작품의 상위 단계가 변경된 후 이 노트가 여전히 유효한지 재검토 필요 여부.
+    // 자동 트리거 또는 작가가 명시적으로 마킹.
+    mayBeOutdated: z.boolean().catch(false),
     createdAt: z.number().catch(() => Date.now()),
     updatedAt: z.number().catch(() => Date.now()),
   })

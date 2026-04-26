@@ -40,16 +40,17 @@ const AREA_TO_STAGE = {
   draft: "6",
 };
 
-function NoteCard({ note, onUpdate, onDelete, onJump }) {
+function NoteCard({ note, onUpdate, onDelete, onJump, onRevisit, revisitLoading, onDismissOutdated }) {
   const status = STATUS_META[note.status] || STATUS_META.open;
   const stageId = note.linkedStage || AREA_TO_STAGE[note.area];
+  const isOutdated = note.mayBeOutdated && note.status === "open";
 
   return (
     <div style={{
       padding: "12px 14px", borderRadius: 10,
-      background: note.status === "applied" ? "rgba(78,204,163,0.04)" : note.status === "ignored" ? "rgba(156,163,175,0.04)" : "var(--glass-micro)",
-      border: `1px solid ${note.status === "applied" ? "rgba(78,204,163,0.2)" : note.status === "ignored" ? "rgba(156,163,175,0.2)" : "var(--glass-bd-nano)"}`,
-      borderLeft: `3px solid ${status.color}`,
+      background: note.status === "applied" ? "rgba(78,204,163,0.04)" : note.status === "ignored" ? "rgba(156,163,175,0.04)" : isOutdated ? "rgba(96,165,250,0.05)" : "var(--glass-micro)",
+      border: `1px solid ${note.status === "applied" ? "rgba(78,204,163,0.2)" : note.status === "ignored" ? "rgba(156,163,175,0.2)" : isOutdated ? "rgba(96,165,250,0.3)" : "var(--glass-bd-nano)"}`,
+      borderLeft: `3px solid ${isOutdated ? "#60A5FA" : status.color}`,
       opacity: note.status === "ignored" ? 0.6 : 1,
       fontFamily: "'Noto Sans KR', sans-serif",
     }}>
@@ -60,6 +61,18 @@ function NoteCard({ note, onUpdate, onDelete, onJump }) {
           background: `${status.color}14`, border: `1px solid ${status.color}40`,
           fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5,
         }}>{status.label}</span>
+        {isOutdated && (
+          <span
+            title="작품의 상위 단계가 갱신됐습니다 — 이 노트가 여전히 유효한지 재검토하세요"
+            style={{
+              fontSize: 9, fontWeight: 800, color: "#60A5FA",
+              padding: "2px 7px", borderRadius: 6,
+              background: "rgba(96,165,250,0.10)", border: "1px solid rgba(96,165,250,0.4)",
+              fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.3,
+              display: "inline-flex", alignItems: "center", gap: 3,
+            }}
+          >🔄 재검토</span>
+        )}
         <span style={{ fontSize: 9, color: "var(--c-tx-35)", fontFamily: "'JetBrains Mono', monospace" }}>
           {SOURCE_LABEL[note.source] || note.source}
         </span>
@@ -88,6 +101,27 @@ function NoteCard({ note, onUpdate, onDelete, onJump }) {
         </div>
       )}
       <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+        {isOutdated && onRevisit && (
+          <>
+            <button
+              onClick={() => onRevisit(note)}
+              disabled={!!revisitLoading}
+              style={{
+                fontSize: 10, padding: "4px 10px", borderRadius: 6,
+                border: "1px solid rgba(96,165,250,0.4)",
+                background: revisitLoading === note.id ? "rgba(96,165,250,0.18)" : "rgba(96,165,250,0.08)",
+                color: "#60A5FA", cursor: revisitLoading ? "not-allowed" : "pointer", fontWeight: 700,
+                opacity: revisitLoading && revisitLoading !== note.id ? 0.5 : 1,
+              }}
+            >
+              {revisitLoading === note.id ? "AI 검토 중…" : "🤖 AI에게 다시 검토"}
+            </button>
+            <button
+              onClick={() => onDismissOutdated?.(note.id)}
+              style={{ fontSize: 10, padding: "4px 10px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "transparent", color: "var(--c-tx-40)", cursor: "pointer", fontWeight: 700 }}
+            >그대로 유효</button>
+          </>
+        )}
         {note.status !== "applied" && (
           <button
             onClick={() => onUpdate(note.id, { status: "applied" })}
@@ -118,13 +152,18 @@ function NoteCard({ note, onUpdate, onDelete, onJump }) {
 }
 
 export default function DevelopmentNotesPanel({ onClose }) {
-  const { developmentNotes, updateDevelopmentNote, deleteDevelopmentNote, addDevelopmentNote, advanceToStage, isMobile } = useLoglineCtx();
-  const [filter, setFilter] = useState("open"); // open | all | applied | ignored
+  const {
+    developmentNotes, updateDevelopmentNote, deleteDevelopmentNote, addDevelopmentNote,
+    advanceToStage, isMobile,
+    revisitNote, revisitNoteLoadingId, dismissNoteOutdated,
+  } = useLoglineCtx();
+  const [filter, setFilter] = useState("open"); // open | all | applied | ignored | outdated
   const [showAdd, setShowAdd] = useState(false);
   const [draft, setDraft] = useState({ title: "", why: "", action: "", area: "general" });
 
   const filtered = useMemo(() => {
     if (filter === "all") return developmentNotes;
+    if (filter === "outdated") return developmentNotes.filter(n => n.mayBeOutdated && n.status === "open");
     return developmentNotes.filter(n => n.status === filter);
   }, [developmentNotes, filter]);
 
@@ -132,6 +171,7 @@ export default function DevelopmentNotesPanel({ onClose }) {
     open: developmentNotes.filter(n => n.status === "open").length,
     applied: developmentNotes.filter(n => n.status === "applied").length,
     ignored: developmentNotes.filter(n => n.status === "ignored").length,
+    outdated: developmentNotes.filter(n => n.mayBeOutdated && n.status === "open").length,
     all: developmentNotes.length,
   }), [developmentNotes]);
 
@@ -177,6 +217,7 @@ export default function DevelopmentNotesPanel({ onClose }) {
         <div style={{ padding: "10px 24px", borderBottom: "1px solid var(--c-bd-1)", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
           {[
             { key: "open", label: `열림 ${counts.open}`, color: "#FB923C" },
+            ...(counts.outdated > 0 ? [{ key: "outdated", label: `🔄 재검토 ${counts.outdated}`, color: "#60A5FA" }] : []),
             { key: "applied", label: `적용 ${counts.applied}`, color: "#4ECCA3" },
             { key: "ignored", label: `보류 ${counts.ignored}`, color: "#9CA3AF" },
             { key: "all", label: `전체 ${counts.all}`, color: "var(--c-tx-50)" },
@@ -263,6 +304,9 @@ export default function DevelopmentNotesPanel({ onClose }) {
                 onUpdate={updateDevelopmentNote}
                 onDelete={deleteDevelopmentNote}
                 onJump={handleJump}
+                onRevisit={revisitNote}
+                revisitLoading={revisitNoteLoadingId}
+                onDismissOutdated={dismissNoteOutdated}
               />
             ))
           )}

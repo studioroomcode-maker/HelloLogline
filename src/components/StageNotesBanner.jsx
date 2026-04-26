@@ -36,6 +36,7 @@ export default function StageNotesBanner({ stageId }) {
   }, [developmentNotes, areas]);
 
   const open = stageNotes.filter(n => n.status === "open");
+  const outdated = open.filter(n => n.mayBeOutdated);
   const applied = stageNotes.filter(n => n.status === "applied");
 
   if (stageNotes.length === 0) return null;
@@ -58,6 +59,16 @@ export default function StageNotesBanner({ stageId }) {
         <span style={{ fontSize: 11, fontWeight: 800, color: open.length > 0 ? "#FB923C" : "var(--c-tx-50)" }}>
           {open.length > 0 ? `이 단계에서 처리할 과제 ${open.length}개` : "이 단계의 모든 과제 처리 완료"}
         </span>
+        {outdated.length > 0 && (
+          <span style={{
+            fontSize: 9, color: "#60A5FA", fontWeight: 700,
+            padding: "2px 6px", borderRadius: 5,
+            background: "rgba(96,165,250,0.10)", border: "1px solid rgba(96,165,250,0.3)",
+            fontFamily: "'JetBrains Mono', monospace",
+          }} title="작품의 상위 단계가 갱신돼 재검토가 필요한 노트들">
+            🔄 {outdated.length}
+          </span>
+        )}
         {applied.length > 0 && (
           <span style={{ fontSize: 9, color: "#4ECCA3", fontFamily: "'JetBrains Mono', monospace" }}>
             · 적용 {applied.length}

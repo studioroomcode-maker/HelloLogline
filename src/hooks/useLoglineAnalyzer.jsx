@@ -3762,6 +3762,121 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setDevelopmentNotes((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
+  // C2 — 노트 자동 stale 마킹.
+  // 노트는 만든 시점의 분석 결과를 캡처한 스냅샷이므로, 그 source 영역의 작품이
+  // 갱신되면 노트가 여전히 유효한지 재검토할 필요가 있다.
+  // status가 "open"이고 mayBeOutdated가 false인 노트만 마킹 (적용/보류는 제외).
+  const markNotesOutdated = useCallback((sourceFilter) => {
+    setDevelopmentNotes(prev => prev.map(n =>
+      n.status === "open" && !n.mayBeOutdated && sourceFilter(n)
+        ? { ...n, mayBeOutdated: true, updatedAt: Date.now() }
+        : n
+    ));
+  }, []);
+
+  // 트리트먼트가 갱신되면 treatment/beat/draft 영역의 열린 노트 stale.
+  const lastTreatmentNoteSnapshotRef = useRef(null);
+  useEffect(() => {
+    if (!treatmentResult) return;
+    if (lastTreatmentNoteSnapshotRef.current == null) {
+      lastTreatmentNoteSnapshotRef.current = treatmentResult;
+      return;
+    }
+    if (lastTreatmentNoteSnapshotRef.current === treatmentResult) return;
+    lastTreatmentNoteSnapshotRef.current = treatmentResult;
+    markNotesOutdated(n => ["treatment", "beat", "draft"].includes(n.area));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [treatmentResult]);
+
+  // pipelineResult(시놉시스 확정) 갱신 → synopsis/structure/theme/treatment/beat/draft 영역.
+  const lastPipelineNoteSnapshotRef = useRef(null);
+  useEffect(() => {
+    if (!pipelineResult) return;
+    const sig = JSON.stringify({ s: pipelineResult.synopsis, t: pipelineResult.theme, dt: pipelineResult.direction_title });
+    if (lastPipelineNoteSnapshotRef.current == null) {
+      lastPipelineNoteSnapshotRef.current = sig;
+      return;
+    }
+    if (lastPipelineNoteSnapshotRef.current === sig) return;
+    lastPipelineNoteSnapshotRef.current = sig;
+    markNotesOutdated(n => ["synopsis", "structure", "theme", "treatment", "beat", "draft"].includes(n.area));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pipelineResult]);
+
+  // 핵심 설계 갱신 → 모든 후속 영역 노트 stale.
+  const lastCoreDesignNoteSnapshotRef = useRef(null);
+  useEffect(() => {
+    if (!coreDesignResult) return;
+    const sig = coreDesignResult.one_line || JSON.stringify(coreDesignResult).slice(0, 200);
+    if (lastCoreDesignNoteSnapshotRef.current == null) {
+      lastCoreDesignNoteSnapshotRef.current = sig;
+      return;
+    }
+    if (lastCoreDesignNoteSnapshotRef.current === sig) return;
+    lastCoreDesignNoteSnapshotRef.current = sig;
+    markNotesOutdated(n => ["coreDesign", "character", "synopsis", "structure", "theme", "treatment", "beat", "draft"].includes(n.area));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coreDesignResult]);
+
+  // 작가가 노트 1건의 stale 플래그를 명시적으로 해제 (재검토 후 OK 판단).
+  const dismissNoteOutdated = useCallback((id) => {
+    setDevelopmentNotes(prev => prev.map(n =>
+      n.id === id ? { ...n, mayBeOutdated: false, updatedAt: Date.now() } : n
+    ));
+  }, []);
+
+  // 노트를 AI에 다시 검토받기 — 해당 source의 분석을 짧게 재호출해서
+  // 노트의 title/why/action을 갱신하거나 status를 "applied"로 닫음.
+  // 비용 절감을 위해 전체 분석 재실행이 아니라 "이 노트가 여전히 유효한가"만 묻는 짧은 호출.
+  const [revisitNoteLoadingId, setRevisitNoteLoadingId] = useState(null);
+  const revisitNote = useCallback(async (note) => {
+    if (!note || !apiKey) return;
+    if (revisitNoteLoadingId) return;
+    setRevisitNoteLoadingId(note.id);
+    const ctrl = makeController(`revisitNote_${note.id}`);
+    try {
+      const sysPrompt = `당신은 시나리오 개발 컨설턴트입니다. 작가가 받은 과거 피드백 노트가 현재 작품에 여전히 유효한지 재검토합니다.
+
+반드시 아래 JSON 형식으로만 응답하세요:
+{
+  "verdict": "still_valid" | "resolved" | "needs_update",
+  "title": "갱신된 노트 제목 (still_valid면 원본 유지)",
+  "why": "갱신된 영향 설명",
+  "action": "갱신된 수정 제안",
+  "explanation": "왜 이 판단인지 한 줄"
+}`;
+      const ctx = getStoryBible();
+      const userMsg = `[과거 노트]\n제목: ${note.title}\n영향: ${note.why || "(없음)"}\n수정 제안: ${note.action || "(없음)"}\n출처: ${note.source} / 영역: ${note.area}\n\n[현재 작품 상태]\n로그라인: "${logline.trim()}"${ctx}\n\n위 노트가 현재 작품 상태에서 여전히 유효한지 재검토하세요. 작가가 이미 수정해서 문제가 해결됐으면 "resolved", 여전히 유효하면 "still_valid", 일부 갱신 필요하면 "needs_update".`;
+      const data = await callClaude(apiKey, sysPrompt, userMsg, 1500, "claude-haiku-4-5-20251001", ctrl.signal, null, "revisitNote");
+      const verdict = data?.verdict;
+      if (verdict === "resolved") {
+        updateDevelopmentNote(note.id, { status: "applied", mayBeOutdated: false });
+        showToast("success", `"${note.title}" — 작품에서 해결됨으로 처리`);
+      } else if (verdict === "needs_update") {
+        updateDevelopmentNote(note.id, {
+          title: data.title || note.title,
+          why: data.why || note.why,
+          action: data.action || note.action,
+          mayBeOutdated: false,
+        });
+        showToast("info", `"${note.title}" 노트가 갱신됐습니다`);
+      } else {
+        updateDevelopmentNote(note.id, { mayBeOutdated: false });
+        showToast("info", `"${note.title}" — 여전히 유효함`);
+      }
+      trackCreditUsage("노트 재검토", 1);
+      await autoSave();
+    } catch (err) {
+      if (err.name !== "AbortError") {
+        showToast("error", err.message || "노트 재검토 중 오류가 발생했습니다.");
+      }
+    } finally {
+      setRevisitNoteLoadingId(null);
+      clearController(`revisitNote_${note.id}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey, logline, revisitNoteLoadingId, updateDevelopmentNote]);
+
   // ── Scene Cards 헬퍼 ──
   const updateSceneCard = useCallback((id, patch) => {
     setSceneCards((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch, updatedAt: Date.now() } : c)));
@@ -4571,6 +4686,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     developmentNotes, addDevelopmentNote, addDevelopmentNotes,
     updateDevelopmentNote, deleteDevelopmentNote,
     showNotesPanel, setShowNotesPanel,
+    dismissNoteOutdated, revisitNote, revisitNoteLoadingId,
     // Scene Cards
     sceneCards, addSceneCard, updateSceneCard, deleteSceneCard,
     reorderSceneCards, seedSceneCardsFromBeatSheet,
@@ -4661,6 +4777,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     addDevelopmentNote, addDevelopmentNotes,
     updateDevelopmentNote, deleteDevelopmentNote,
     showNotesPanel, setShowNotesPanel,
+    dismissNoteOutdated, revisitNote, revisitNoteLoadingId,
     // Scene Cards
     sceneCards, setSceneCards,
     addSceneCard, updateSceneCard, deleteSceneCard,
