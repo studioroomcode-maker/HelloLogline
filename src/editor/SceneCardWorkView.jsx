@@ -1,12 +1,134 @@
 import { useState, useMemo, useCallback } from "react";
 import FountainEditor from "./FountainEditor.jsx";
 import { extractSceneBodies, parseFountain } from "./FountainParser.js";
+import { useLoglineCtx } from "../context/LoglineContext.jsx";
 
 const STATUS_META = {
   outline: { label: "아웃라인", color: "#9CA3AF" },
   drafted: { label: "초안", color: "#FB923C" },
   revised: { label: "수정 완료", color: "#4ECCA3" },
 };
+
+const KIND_META = {
+  safe:  { label: "안전",   color: "#4ECCA3" },
+  bold:  { label: "모험",   color: "#FB923C" },
+  twist: { label: "예상밖", color: "#A78BFA" },
+};
+
+/**
+ * 페어 라이팅 — 작가가 한 줄 쓴 후 다음 한 줄 후보 3개 받기.
+ * 작가가 채택/거절/수정 트래킹. 60% 초과 채택은 경고.
+ */
+function PairWritingBlock({ activeCard, onCardChange }) {
+  const { askPairSuggestions, pairSuggestions, pairLoading, recordPairChoice, dismissPairSuggestions, pairWritingWarning, apiKey } = useLoglineCtx();
+  const [editingId, setEditingId] = useState(null);
+  const [editDraft, setEditDraft] = useState("");
+
+  const isForCurrent = pairSuggestions?.sceneId === activeCard?.id;
+  const suggestions = isForCurrent ? pairSuggestions.suggestions || [] : [];
+
+  const handleAccept = (text, kind, modified = false) => {
+    const finalText = modified ? editDraft : text;
+    const next = (activeCard.fountainText || "").trim();
+    const merged = next ? `${next}\n\n${finalText}` : finalText;
+    onCardChange(activeCard.id, { fountainText: merged });
+    recordPairChoice("accept", modified);
+    setEditingId(null);
+    setEditDraft("");
+  };
+
+  return (
+    <div style={{
+      borderTop: "1px solid var(--glass-bd-nano)",
+      padding: "10px 14px",
+      background: "var(--glass-micro)",
+      fontFamily: "'Noto Sans KR', sans-serif",
+    }}>
+      {pairWritingWarning && (
+        <div style={{
+          marginBottom: 8, padding: "7px 10px", borderRadius: 7,
+          background: "rgba(232,93,117,0.08)", border: "1px solid rgba(232,93,117,0.3)",
+          fontSize: 10, color: "#E85D75", lineHeight: 1.5,
+        }}>
+          ⚠ {pairWritingWarning}
+        </div>
+      )}
+      {!isForCurrent && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 10, color: "var(--c-tx-35)", lineHeight: 1.5 }}>
+            한 줄 쓰셨나요? 다음 한 줄 후보 3개를 받을 수 있습니다 (안전/모험/예상밖).
+          </div>
+          <button
+            onClick={() => askPairSuggestions(activeCard, activeCard.fountainText || "")}
+            disabled={!apiKey || pairLoading || !(activeCard.fountainText || "").trim()}
+            style={{
+              fontSize: 10, padding: "5px 11px", borderRadius: 6,
+              border: "1px solid rgba(96,165,250,0.4)",
+              background: "rgba(96,165,250,0.08)",
+              color: "#60A5FA", cursor: pairLoading || !apiKey ? "not-allowed" : "pointer",
+              fontWeight: 700, opacity: pairLoading ? 0.6 : 1,
+            }}
+          >
+            {pairLoading ? "다음 줄 후보 생성 중…" : "✍ 다음 줄 후보 3개"}
+          </button>
+        </div>
+      )}
+      {isForCurrent && suggestions.length > 0 && (
+        <>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--c-tx-50)", letterSpacing: 0.4 }}>
+              다음 한 줄 후보
+            </div>
+            <button
+              onClick={() => { dismissPairSuggestions(); recordPairChoice("reject"); }}
+              style={{ fontSize: 10, padding: "3px 9px", borderRadius: 6, border: "1px solid var(--c-bd-3)", background: "transparent", color: "var(--c-tx-40)", cursor: "pointer", fontWeight: 700 }}
+            >전부 거절</button>
+          </div>
+          {suggestions.map((s, i) => {
+            const kindMeta = KIND_META[s.kind] || KIND_META.safe;
+            const isEditing = editingId === i;
+            return (
+              <div key={i} style={{
+                padding: "8px 10px", marginBottom: 6, borderRadius: 7,
+                background: "var(--glass-nano)", border: "1px solid var(--glass-bd-nano)",
+                borderLeft: `3px solid ${kindMeta.color}`,
+              }}>
+                <div style={{ fontSize: 8, fontWeight: 700, color: kindMeta.color, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, marginBottom: 4 }}>
+                  {kindMeta.label}
+                </div>
+                {isEditing ? (
+                  <textarea
+                    value={editDraft}
+                    onChange={e => setEditDraft(e.target.value)}
+                    rows={2}
+                    style={{ width: "100%", padding: "5px 8px", borderRadius: 5, border: "1px solid var(--c-bd-3)", background: "var(--bg-page)", color: "var(--text-main)", fontSize: 11, lineHeight: 1.55, fontFamily: "'JetBrains Mono', 'Courier New', monospace", resize: "vertical", boxSizing: "border-box", marginBottom: 4 }}
+                  />
+                ) : (
+                  <div style={{ fontSize: 12, color: "var(--text-main)", lineHeight: 1.55, marginBottom: 4, fontFamily: "'JetBrains Mono', 'Courier New', monospace" }}>
+                    {s.text}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 4 }}>
+                  {isEditing ? (
+                    <>
+                      <button onClick={() => handleAccept(s.text, s.kind, true)} style={{ fontSize: 10, padding: "3px 9px", borderRadius: 5, border: "none", background: kindMeta.color, color: "#0c0c1c", cursor: "pointer", fontWeight: 800 }}>수정해서 넣기</button>
+                      <button onClick={() => { setEditingId(null); setEditDraft(""); }} style={{ fontSize: 10, padding: "3px 9px", borderRadius: 5, border: "1px solid var(--c-bd-3)", background: "transparent", color: "var(--c-tx-40)", cursor: "pointer", fontWeight: 700 }}>취소</button>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => handleAccept(s.text, s.kind, false)} style={{ fontSize: 10, padding: "3px 9px", borderRadius: 5, border: "none", background: kindMeta.color, color: "#0c0c1c", cursor: "pointer", fontWeight: 800 }}>그대로 넣기</button>
+                      <button onClick={() => { setEditingId(i); setEditDraft(s.text); }} style={{ fontSize: 10, padding: "3px 9px", borderRadius: 5, border: "1px solid var(--c-bd-3)", background: "transparent", color: "var(--c-tx-50)", cursor: "pointer", fontWeight: 700 }}>수정</button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
 
 /**
  * Stage 6의 "씬 카드 모드" 뷰.
@@ -297,6 +419,9 @@ export default function SceneCardWorkView({
                 readOnly={isReadOnly}
               />
             </div>
+
+            {/* 페어 라이팅 영역 */}
+            <PairWritingBlock activeCard={activeCard} onCardChange={onCardChange} />
 
             {/* 본문이 비어있을 때 가이드 */}
             {!activeCard.fountainText && (

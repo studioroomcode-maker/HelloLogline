@@ -613,5 +613,6 @@ export function buildProjectSnapshot(state) {
     pipelineHistory:       state.pipelineHistory      ?? [],
     developmentNotes:      state.developmentNotes     ?? [],
     sceneCards:            state.sceneCards           ?? [],
+    characterVoiceCards:   state.characterVoiceCards  ?? {},
   };
 }

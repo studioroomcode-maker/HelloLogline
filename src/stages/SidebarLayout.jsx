@@ -676,6 +676,7 @@ export default function SidebarLayout({ stageProps, isMobile }) {
     currentWorkingMember,
     isReadOnly, isOwner, isOnline,
     setShowWritersBlock, learningMode, toggleLearningMode,
+    setShowVoiceCards, setShowComparables,
   } = useLoglineCtx();
 
   const mainPanelRef = useRef(null);
@@ -913,6 +914,44 @@ export default function SidebarLayout({ stageProps, isMobile }) {
 
           {/* 하단 고정 영역 */}
           <div style={{ borderTop: "1px solid var(--c-bd-1)", padding: "10px 10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+
+            {/* 보이스 카드 + 비교 작품 (작가 도구 행) */}
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                onClick={() => setShowVoiceCards(true)}
+                title="작가가 직접 쓴 대사에서 캐릭터 말투 추출 — 모든 대사 생성에 자동 주입"
+                style={{
+                  flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                  padding: "7px 8px", borderRadius: 8,
+                  cursor: "pointer",
+                  border: "1px solid rgba(167,139,250,0.25)",
+                  background: "rgba(167,139,250,0.05)",
+                  color: "#A78BFA",
+                  fontSize: 10, fontWeight: 700,
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                }}
+              >
+                🎙 보이스
+              </button>
+              <button
+                onClick={() => setShowComparables(true)}
+                disabled={!apiKey}
+                title="당신 작품과 기능적으로 유사한 한국·할리우드 실재 작품 찾기"
+                style={{
+                  flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                  padding: "7px 8px", borderRadius: 8,
+                  cursor: !apiKey ? "not-allowed" : "pointer",
+                  border: "1px solid rgba(69,183,209,0.25)",
+                  background: "rgba(69,183,209,0.05)",
+                  color: !apiKey ? "rgba(69,183,209,0.3)" : "#45B7D1",
+                  fontSize: 10, fontWeight: 700,
+                  fontFamily: "'Noto Sans KR', sans-serif",
+                  opacity: !apiKey ? 0.5 : 1,
+                }}
+              >
+                🎬 비교 작품
+              </button>
+            </div>
 
             {/* 막힘 풀기 — AI가 답을 주지 않고 5개 좁은 질문으로 풀어줌 */}
             <button

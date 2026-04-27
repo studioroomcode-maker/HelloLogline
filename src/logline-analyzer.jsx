@@ -8,6 +8,8 @@ import StoryBibleModal from "./components/StoryBibleModal.jsx";
 const DevelopmentNotesPanel = lazy(() => import("./components/DevelopmentNotesPanel.jsx"));
 const SceneCardsPanel = lazy(() => import("./components/SceneCardsPanel.jsx"));
 const WritersBlockPanel = lazy(() => import("./components/WritersBlockPanel.jsx"));
+const VoiceCardsPanel = lazy(() => import("./components/VoiceCardsPanel.jsx"));
+const ComparablesPanel = lazy(() => import("./components/ComparablesPanel.jsx"));
 import StageRouter from "./components/StageRouter.jsx";
 import HeaderNav from "./components/HeaderNav.jsx";
 import WelcomePanel from "./components/WelcomePanel.jsx";
@@ -82,6 +84,18 @@ export default function LoglineAnalyzer() {
         {ctx.showWritersBlock && (
           <Suspense fallback={null}>
             <WritersBlockPanel onClose={() => ctx.setShowWritersBlock(false)} />
+          </Suspense>
+        )}
+
+        {ctx.showVoiceCards && (
+          <Suspense fallback={null}>
+            <VoiceCardsPanel onClose={() => ctx.setShowVoiceCards(false)} />
+          </Suspense>
+        )}
+
+        {ctx.showComparables && (
+          <Suspense fallback={null}>
+            <ComparablesPanel onClose={() => ctx.setShowComparables(false)} />
           </Suspense>
         )}
 

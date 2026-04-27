@@ -24,6 +24,8 @@ import {
   WRITERS_BLOCK_QUESTIONS_SYSTEM_PROMPT,
   WRITERS_BLOCK_SYNTHESIS_SYSTEM_PROMPT,
   WRITERS_BLOCK_DEEPER_QUESTION_SYSTEM_PROMPT,
+  VOICE_CARD_EXTRACT_SYSTEM_PROMPT,
+  serializeVoiceCardForPrompt,
 } from "../constants.js";
 import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText, fetchClaudeStream, parseClaudeJson, buildProjectSnapshot } from "../utils.js";
 import { REVISION_COLORS } from "../editor/FountainParser.js";
@@ -426,6 +428,56 @@ export function useLoglineAnalyzer() {
   const [writersBlockError, setWritersBlockError] = useState("");
   const [writersBlockDeeperLoadingType, setWritersBlockDeeperLoadingType] = useState(null);
   const [showWritersBlock, setShowWritersBlock] = useState(false);
+
+  // ── 캐릭터 보이스 카드 ──
+  // characterName → card 객체 매핑. Stage 5/6 대사 생성 시 자동 주입.
+  const [characterVoiceCards, setCharacterVoiceCards] = useState({});
+  const [voiceCardLoadingFor, setVoiceCardLoadingFor] = useState(null);
+  const [voiceCardError, setVoiceCardError] = useState("");
+  const [showVoiceCards, setShowVoiceCards] = useState(false);
+
+  const extractVoiceCard = useCallback(async (characterName, sampleDialogue) => {
+    if (!apiKey || !characterName?.trim() || !sampleDialogue?.trim()) return;
+    setVoiceCardLoadingFor(characterName);
+    setVoiceCardError("");
+    const ctrl = makeController(`voiceCard_${characterName}`);
+    try {
+      const userMsg = `[캐릭터 이름]\n${characterName}\n\n[작가가 직접 쓴 대사 샘플]\n${sampleDialogue.trim().slice(0, 4000)}\n\n위 샘플에서 이 캐릭터의 고유한 말투를 객관적으로 추출하세요.`;
+      const data = await callClaude(apiKey, VOICE_CARD_EXTRACT_SYSTEM_PROMPT, userMsg, 1500, "claude-sonnet-4-6", ctrl.signal, null, "voiceCard");
+      setCharacterVoiceCards(prev => ({
+        ...prev,
+        [characterName]: { ...data, character_name: characterName, createdAt: Date.now(), updatedAt: Date.now() },
+      }));
+      trackCreditUsage("보이스 카드 추출", 1);
+      await autoSave();
+    } catch (err) {
+      if (err.name !== "AbortError") setVoiceCardError(err.message || "보이스 카드 추출 중 오류가 발생했습니다.");
+    } finally {
+      setVoiceCardLoadingFor(null); clearController(`voiceCard_${characterName}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey]);
+
+  const updateVoiceCard = useCallback((characterName, patch) => {
+    setCharacterVoiceCards(prev => prev[characterName]
+      ? { ...prev, [characterName]: { ...prev[characterName], ...patch, updatedAt: Date.now() } }
+      : prev);
+  }, []);
+
+  const deleteVoiceCard = useCallback((characterName) => {
+    setCharacterVoiceCards(prev => {
+      const next = { ...prev };
+      delete next[characterName];
+      return next;
+    });
+  }, []);
+
+  // 모든 보이스 카드를 프롬프트 텍스트로 직렬화 — 대사 생성 시 컨텍스트로 주입.
+  const getVoiceCardsBlock = useCallback(() => {
+    const entries = Object.values(characterVoiceCards || {});
+    if (entries.length === 0) return "";
+    return `\n\n━━━ 캐릭터 보이스 카드 (작가가 직접 쓴 대사에서 추출) — 반드시 이 말투를 따를 것 ━━━\n${entries.map(serializeVoiceCardForPrompt).join("\n\n")}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  }, [characterVoiceCards]);
 
   // ── 학습 모드 (작가 사고력 훈련 — AI 답 대신 질문) ──
   // localStorage 영구 저장. 활성 시 Stage 1·2 분석이 답 대신 질문 5개 반환.
@@ -1007,6 +1059,7 @@ export function useLoglineAnalyzer() {
     treatmentHistory, beatSheetHistory, scenarioDraftHistory, charDevHistory, pipelineHistory,
     developmentNotes,
     sceneCards,
+    characterVoiceCards,
   });
 
   const _guestSaveCountRef = useRef(0);
@@ -1129,6 +1182,7 @@ export function useLoglineAnalyzer() {
     // 클라우드/로컬에서 온 데이터를 항목별로 검증 — 잘못된 객체 1개가 전체를 깨뜨리지 않도록.
     setDevelopmentNotes(DevelopmentNotesArraySchema.parse(proj.developmentNotes || []));
     setSceneCards(SceneCardsArraySchema.parse(proj.sceneCards || []));
+    setCharacterVoiceCards(proj.characterVoiceCards && typeof proj.characterVoiceCards === "object" ? proj.characterVoiceCards : {});
     setCurrentProjectId(proj.id);
     setShowProjects(false);
     // Stage 2 핵심 설계 신설(2026-04-27) 마이그레이션 — 캐릭터/시놉시스가 있는데 핵심 설계가 비어 있으면
@@ -1396,6 +1450,7 @@ export function useLoglineAnalyzer() {
     setScenarioDraftHistory([]); setCharDevHistory([]); setPipelineHistory([]);
     setDevelopmentNotes([]);
     setSceneCards([]);
+    setCharacterVoiceCards({});
     setCurrentProjectId(null);
     setCurrentStage("1");
     showToast("success", "새 프로젝트가 시작되었습니다.");
@@ -2686,6 +2741,13 @@ export function useLoglineAnalyzer() {
         bible += `\n\n━━━ 확정된 핵심 설계 (Stage 2 — 이야기 엔진) — 반드시 이 5축을 유지하며 발전시킬 것 ━━━\n${lines.join("\n")}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n※ 위 Want/Need/적대자/스테이크/테마는 작가가 확정한 이야기의 엔진입니다. 캐릭터·시놉시스·트리트먼트·초고는 이 5축과 모순되지 않아야 합니다. Want가 시각화되는 장면, 적대자의 거울 기능, 테마의 controlling idea를 모든 산출물에 반영하세요.`;
       }
     }
+    // 캐릭터 보이스 카드 — 작가의 목소리 보존을 위해 모든 대사 생성에 주입.
+    const voiceBlock = (() => {
+      const entries = Object.values(characterVoiceCards || {});
+      if (entries.length === 0) return "";
+      return `\n\n━━━ 캐릭터 보이스 카드 (작가가 직접 쓴 대사에서 추출) — 반드시 이 말투를 따를 것 ━━━\n${entries.map(serializeVoiceCardForPrompt).join("\n\n")}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+    })();
+    bible += voiceBlock;
     const s = pipelineResult
       || (selectedSynopsisIndex !== null ? synopsisResults?.synopses?.[selectedSynopsisIndex] : null);
     if (!s) return bible;
@@ -4025,6 +4087,142 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setBeatSheetStaleCardIds(prev => prev.filter(id => !cardIds.includes(id)));
   }, []);
 
+  // 페어 라이팅 통계 — AI 채택률 트래킹.
+  // localStorage 영구. { totalSuggestions, accepted, rejected, modified }
+  const [pairWritingStats, setPairWritingStats] = useState(() => {
+    try {
+      const raw = localStorage.getItem("hll_pair_stats");
+      return raw ? JSON.parse(raw) : { totalSuggestions: 0, accepted: 0, rejected: 0, modified: 0 };
+    } catch { return { totalSuggestions: 0, accepted: 0, rejected: 0, modified: 0 }; }
+  });
+  const [pairSuggestions, setPairSuggestions] = useState(null); // { sceneId, suggestions: [{ text }] }
+  const [pairLoading, setPairLoading] = useState(false);
+
+  const persistPairStats = useCallback((next) => {
+    try { localStorage.setItem("hll_pair_stats", JSON.stringify(next)); } catch {}
+  }, []);
+
+  // 페어 라이팅 — 작가가 한 줄 쓰면 다음 한 줄 후보 3개.
+  const askPairSuggestions = useCallback(async (sceneCard, contextBefore) => {
+    if (!apiKey || !sceneCard) return;
+    if (pairLoading) return;
+    setPairLoading(true);
+    const ctrl = makeController(`pair_${sceneCard.id}`);
+    try {
+      const sysPrompt = `당신은 시나리오 페어 라이터입니다. 작가가 *옆에* 있고 작가가 막 쓴 본문 직후에 올 수 있는 다음 한 줄 후보 3개를 제시합니다.
+
+## 핵심 원칙
+- 작가의 문체와 톤을 *그대로 따라* 갈 것 — 작가가 자기 작품이라 느끼게.
+- 후보는 *서로 달라야* 함 — 안전한 선택, 모험적 선택, 예상 밖의 선택 3가지.
+- 각 후보는 한 줄 — 슬러그라인 X. 액션이거나 대사 1줄.
+- 절대 설명/이유 추가 금지 — 작가는 라인만 본다.
+
+## 응답 형식 (JSON만)
+{
+  "suggestions": [
+    { "text": "1번 — 안전한 다음 줄", "kind": "safe" },
+    { "text": "2번 — 모험적 다음 줄", "kind": "bold" },
+    { "text": "3번 — 예상 밖의 다음 줄", "kind": "twist" }
+  ]
+}`;
+      const meta = [
+        sceneCard.location ? `장소: ${sceneCard.location}` : "",
+        sceneCard.purpose ? `씬 기능: ${sceneCard.purpose}` : "",
+        sceneCard.conflict ? `핵심 갈등: ${sceneCard.conflict}` : "",
+        sceneCard.valueShift && sceneCard.valueShift !== "—" ? `가치 변화: ${sceneCard.valueShift}` : "",
+      ].filter(Boolean).join("\n");
+      const userMsg = `[작품 컨텍스트]\n로그라인: "${logline.trim()}"${getStoryBible()}\n\n[현재 씬]\n${meta}\n\n[작가가 막 쓴 본문]\n${(contextBefore || "").slice(-1500)}\n\n위 본문 직후에 올 수 있는 다음 한 줄 후보 3개를 작가의 문체와 5축에 맞게 제시.`;
+      const data = await callClaude(apiKey, sysPrompt, userMsg, 600, "claude-haiku-4-5-20251001", ctrl.signal, null, "pairWriting");
+      setPairSuggestions({ sceneId: sceneCard.id, suggestions: data.suggestions || [] });
+      const next = { ...pairWritingStats, totalSuggestions: pairWritingStats.totalSuggestions + (data.suggestions?.length || 0) };
+      setPairWritingStats(next);
+      persistPairStats(next);
+    } catch (err) {
+      if (err.name !== "AbortError") showToast("error", err.message || "페어 제안 생성 중 오류가 발생했습니다.");
+    } finally {
+      setPairLoading(false); clearController(`pair_${sceneCard.id}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey, logline, pairLoading, pairWritingStats]);
+
+  // 작가가 후보를 채택하면 호출. modified=true면 작가가 받아 수정한 것.
+  const recordPairChoice = useCallback((kind, modified = false) => {
+    setPairWritingStats(prev => {
+      const next = {
+        ...prev,
+        accepted: prev.accepted + (kind === "accept" && !modified ? 1 : 0),
+        modified: prev.modified + (kind === "accept" && modified ? 1 : 0),
+        rejected: prev.rejected + (kind === "reject" ? 1 : 0),
+      };
+      persistPairStats(next);
+      return next;
+    });
+    setPairSuggestions(null);
+  }, [persistPairStats]);
+
+  // 채택률 60% 초과 시 경고 (Story Analyst 처방).
+  const pairWritingWarning = (() => {
+    const total = pairWritingStats.accepted + pairWritingStats.modified + pairWritingStats.rejected;
+    if (total < 10) return null;
+    const acceptanceRate = (pairWritingStats.accepted) / total;
+    if (acceptanceRate > 0.6) {
+      return `AI 제안을 ${Math.round(acceptanceRate * 100)}% 그대로 받고 있습니다. 이 작품이 당신 작품인지 점검해보세요.`;
+    }
+    return null;
+  })();
+
+  const dismissPairSuggestions = useCallback(() => setPairSuggestions(null), []);
+
+  // ── 비교 작품 라이브러리 (Comparable Beats) ──
+  const [comparablesResult, setComparablesResult] = useState(null);
+  const [comparablesLoading, setComparablesLoading] = useState(false);
+  const [comparablesError, setComparablesError] = useState("");
+  const [showComparables, setShowComparables] = useState(false);
+  const [comparablesContext, setComparablesContext] = useState(null); // { kind, label, content }
+
+  const askComparables = useCallback(async (kind, label, content) => {
+    if (!apiKey || !content?.trim()) return;
+    if (comparablesLoading) return;
+    setComparablesLoading(true);
+    setComparablesError("");
+    setComparablesContext({ kind, label, content });
+    const ctrl = makeController(`comparables_${kind}`);
+    try {
+      const sysPrompt = `당신은 한국·할리우드 영상 시나리오 큐레이터입니다. 작가가 보여준 ${label}과 가장 유사한 실제 작품(영화·드라마) 사례 3건을 매칭합니다.
+
+## 핵심 원칙
+- 추측한 가짜 작품 금지. 실재한 작품만.
+- 한국 작품 1~2건 + 할리우드/세계 작품 1~2건 균형.
+- 단순 줄거리 유사가 아니라 *기능적/구조적* 유사 (이 ${label}이 작품에서 *맡은 역할*).
+- 각 사례마다 작가가 *바로 적용할 수 있는* 차별화 포인트 제안.
+
+## 응답 형식 (JSON만)
+{
+  "summary": "작가의 ${label}을 한 줄로 요약 (이해 확인용)",
+  "comparables": [
+    {
+      "title": "작품 제목 (한국어)",
+      "year": "연도",
+      "country": "국가",
+      "writer_director": "작가/감독 1명",
+      "similarity": "어떤 점에서 비슷한가 — 기능적/구조적 한 줄",
+      "how_they_solved": "그 작품이 같은 자리를 어떻게 처리했는가",
+      "differentiation_hint": "당신 작품이 이것과 어떻게 달라질 수 있는가 한 줄"
+    }
+  ]
+}`;
+      const userMsg = `[비교할 ${label}]\n${content.slice(0, 3000)}\n\n[작품 컨텍스트]\n로그라인: "${logline.trim() || "(아직 없음)"}"${getStoryBible()}\n\n위 ${label}과 기능적으로 유사한 실재 작품 3건을 매칭하세요. 한국 1~2 + 해외 1~2 균형. 가짜 작품 금지.`;
+      const data = await callClaude(apiKey, sysPrompt, userMsg, 2000, "claude-sonnet-4-6", ctrl.signal, null, "comparables");
+      setComparablesResult(data);
+      trackCreditUsage("비교 작품 매칭", 1);
+    } catch (err) {
+      if (err.name !== "AbortError") setComparablesError(err.message || "비교 작품 매칭 중 오류가 발생했습니다.");
+    } finally {
+      setComparablesLoading(false); clearController(`comparables_${kind}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey, logline, comparablesLoading]);
+
   // 씬별 AI 재작성 — 카드의 메타(purpose/conflict/valueShift/reveal/subtext)와
   // 기존 fountainText를 컨텍스트로 받아 해당 씬 본문만 재생성.
   const rewriteSceneCard = useCallback(async (card) => {
@@ -4859,6 +5057,17 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     askWritersBlock, synthesizeWritersBlock, askDeeperWritersBlock,
     updateWritersBlockAnswer, updateWritersBlockDeeperAnswer,
     saveWritersBlockAsNote, resetWritersBlock,
+    // 캐릭터 보이스 카드
+    characterVoiceCards, voiceCardLoadingFor, voiceCardError,
+    showVoiceCards, setShowVoiceCards,
+    extractVoiceCard, updateVoiceCard, deleteVoiceCard, getVoiceCardsBlock,
+    // 페어 라이팅
+    pairWritingStats, pairSuggestions, pairLoading, pairWritingWarning,
+    askPairSuggestions, recordPairChoice, dismissPairSuggestions,
+    // 비교 작품 라이브러리
+    comparablesResult, comparablesLoading, comparablesError, comparablesContext,
+    showComparables, setShowComparables,
+    askComparables, setComparablesResult,
     // 학습 모드
     learningMode, toggleLearningMode,
     // Scene Cards
@@ -4959,6 +5168,17 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     askWritersBlock, synthesizeWritersBlock, askDeeperWritersBlock,
     updateWritersBlockAnswer, updateWritersBlockDeeperAnswer,
     saveWritersBlockAsNote, resetWritersBlock,
+    // 캐릭터 보이스 카드
+    characterVoiceCards, voiceCardLoadingFor, voiceCardError,
+    showVoiceCards, setShowVoiceCards,
+    extractVoiceCard, updateVoiceCard, deleteVoiceCard, getVoiceCardsBlock,
+    // 페어 라이팅
+    pairWritingStats, pairSuggestions, pairLoading, pairWritingWarning,
+    askPairSuggestions, recordPairChoice, dismissPairSuggestions,
+    // 비교 작품 라이브러리
+    comparablesResult, comparablesLoading, comparablesError, comparablesContext,
+    showComparables, setShowComparables,
+    askComparables, setComparablesResult,
     // 학습 모드
     learningMode, toggleLearningMode,
     // Scene Cards
