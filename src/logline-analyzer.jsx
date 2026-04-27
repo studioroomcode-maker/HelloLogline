@@ -7,6 +7,7 @@ import SidebarLayout from "./stages/SidebarLayout.jsx";
 import StoryBibleModal from "./components/StoryBibleModal.jsx";
 const DevelopmentNotesPanel = lazy(() => import("./components/DevelopmentNotesPanel.jsx"));
 const SceneCardsPanel = lazy(() => import("./components/SceneCardsPanel.jsx"));
+const WritersBlockPanel = lazy(() => import("./components/WritersBlockPanel.jsx"));
 import StageRouter from "./components/StageRouter.jsx";
 import HeaderNav from "./components/HeaderNav.jsx";
 import WelcomePanel from "./components/WelcomePanel.jsx";
@@ -75,6 +76,12 @@ export default function LoglineAnalyzer() {
         {ctx.showScenePanel && (
           <Suspense fallback={null}>
             <SceneCardsPanel onClose={() => ctx.setShowScenePanel(false)} />
+          </Suspense>
+        )}
+
+        {ctx.showWritersBlock && (
+          <Suspense fallback={null}>
+            <WritersBlockPanel onClose={() => ctx.setShowWritersBlock(false)} />
           </Suspense>
         )}
 

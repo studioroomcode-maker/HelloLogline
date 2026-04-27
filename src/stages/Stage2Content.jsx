@@ -73,10 +73,11 @@ export default function Stage2Content({
   refineCoreDesign,
   result, // Stage 1 logline analysis (for weakness hint display)
 }) {
-  const { logline, isMobile, cc, advanceToStage, isDemoMode } = useLoglineCtx();
+  const { logline, isMobile, cc, advanceToStage, isDemoMode, learningMode, coreDesignLearningResult } = useLoglineCtx();
 
   const disabled = !logline.trim();
   const cd = coreDesignResult;
+  const learn = coreDesignLearningResult;
 
   return (
     <ErrorBoundary><div>
@@ -127,6 +128,54 @@ export default function Stage2Content({
         />
         <ErrorMsg msg={coreDesignError} />
       </div>
+
+      {/* ── 학습 모드 결과 — 답 대신 질문 ── */}
+      {learningMode && learn && (
+        <div style={{
+          marginBottom: 14, padding: "14px 16px", borderRadius: 12,
+          background: "rgba(78,204,163,0.05)", border: "1px solid rgba(78,204,163,0.25)",
+          fontFamily: "'Noto Sans KR', sans-serif",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 14 }}>📚</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: "#4ECCA3", letterSpacing: 0.5, fontFamily: "'JetBrains Mono', monospace" }}>학습 모드 — 답 대신 질문</span>
+          </div>
+          {learn.intro && (
+            <div style={{ fontSize: 12, color: "var(--c-tx-65)", lineHeight: 1.6, marginBottom: 12 }}>
+              {learn.intro}
+            </div>
+          )}
+          {[
+            { key: "want_questions", label: "Want — 외적 욕망", color: "#C8A84B" },
+            { key: "need_questions", label: "Need — 내적 결핍", color: "#4ECCA3" },
+            { key: "antagonist_questions", label: "Antagonist — 적대자", color: "#E85D75" },
+            { key: "stakes_questions", label: "Stakes — 이해관계", color: "#FB923C" },
+            { key: "theme_questions", label: "Theme — 테마", color: "#60A5FA" },
+          ].map(g => {
+            const qs = learn[g.key] || [];
+            if (qs.length === 0) return null;
+            return (
+              <div key={g.key} style={{
+                marginBottom: 8, padding: "10px 12px", borderRadius: 8,
+                background: "var(--glass-nano)", border: "1px solid var(--glass-bd-nano)",
+                borderLeft: `3px solid ${g.color}`,
+              }}>
+                <div style={{ fontSize: 9, fontWeight: 800, color: g.color, letterSpacing: 0.5, marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>
+                  {g.label}
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: "var(--text-main)", lineHeight: 1.65 }}>
+                  {qs.map((q, i) => <li key={i} style={{ marginBottom: 3 }}>{q}</li>)}
+                </ul>
+              </div>
+            );
+          })}
+          {learn.after_you_answer && (
+            <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 7, background: "rgba(78,204,163,0.08)", border: "1px solid rgba(78,204,163,0.2)", fontSize: 11, color: "var(--c-tx-65)", lineHeight: 1.55 }}>
+              💡 {learn.after_you_answer}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── 결과 ── */}
       {cd && (

@@ -20,6 +20,10 @@ import {
   EPISODE_SERIES_SYSTEM_PROMPT,
   MASTER_REPORT_SYSTEM_PROMPT,
   CORE_DESIGN_SYSTEM_PROMPT, CORE_DESIGN_REFINE_SYSTEM_PROMPT,
+  CORE_DESIGN_LEARNING_SYSTEM_PROMPT,
+  WRITERS_BLOCK_QUESTIONS_SYSTEM_PROMPT,
+  WRITERS_BLOCK_SYNTHESIS_SYSTEM_PROMPT,
+  WRITERS_BLOCK_DEEPER_QUESTION_SYSTEM_PROMPT,
 } from "../constants.js";
 import { getGrade, getInterestLevel, formatDate, calcSectionTotal, callClaude, callClaudeText, fetchClaudeStream, parseClaudeJson, buildProjectSnapshot } from "../utils.js";
 import { REVISION_COLORS } from "../editor/FountainParser.js";
@@ -412,6 +416,30 @@ export function useLoglineAnalyzer() {
   const [developmentNotes, setDevelopmentNotes] = useState([]);
   const [showNotesPanel, setShowNotesPanel] = useState(false);
 
+  // ── Writer's Block Toolkit (막힘 풀기 — 답 대신 질문) ──
+  // 세션 1건당 객체:
+  //   { situationText, questionsResult, answers: { [type]: text },
+  //     synthesisResult, deeperQuestions: { [type]: { q, hint, answer } },
+  //     createdAt }
+  const [writersBlockSession, setWritersBlockSession] = useState(null);
+  const [writersBlockLoading, setWritersBlockLoading] = useState(false);
+  const [writersBlockError, setWritersBlockError] = useState("");
+  const [writersBlockDeeperLoadingType, setWritersBlockDeeperLoadingType] = useState(null);
+  const [showWritersBlock, setShowWritersBlock] = useState(false);
+
+  // ── 학습 모드 (작가 사고력 훈련 — AI 답 대신 질문) ──
+  // localStorage 영구 저장. 활성 시 Stage 1·2 분석이 답 대신 질문 5개 반환.
+  const [learningMode, setLearningMode] = useState(() => {
+    try { return localStorage.getItem("hll_learning_mode") === "1"; } catch { return false; }
+  });
+  const toggleLearningMode = useCallback(() => {
+    setLearningMode(prev => {
+      const next = !prev;
+      try { localStorage.setItem("hll_learning_mode", next ? "1" : "0"); } catch {}
+      return next;
+    });
+  }, []);
+
   // ── Scene Cards (씬 카드 보드 — 비트 → 씬 → Fountain 연결의 중간 단계) ──
   // { id, beatId, order, title, location, characters[], purpose, conflict,
   //   valueShift, reveal, subtext, status: "outline"|"drafted"|"revised",
@@ -425,6 +453,8 @@ export function useLoglineAnalyzer() {
 
   // ── Core Design (Stage 2 — Want/Need/적대자/스테이크/테마) ──
   const [coreDesignResult, setCoreDesignResult] = useState(null);
+  // 학습 모드용 — 답 대신 질문들. coreDesignResult와 별개 (둘 다 보존 가능).
+  const [coreDesignLearningResult, setCoreDesignLearningResult] = useState(null);
   const [coreDesignLoading, setCoreDesignLoading] = useState(false);
   const [coreDesignError, setCoreDesignError] = useState("");
   const [coreDesignRefineLoading, setCoreDesignRefineLoading] = useState(false);
@@ -4036,22 +4066,157 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiKey, logline, genre, rewriteSceneCardLoadingId]);
 
+  // ── Writer's Block Toolkit ──
+  // 작가의 막힘 상황을 받아 5개 좁은 질문 생성. 답을 주지 않음.
+  const askWritersBlock = useCallback(async (situationText) => {
+    if (!apiKey || !situationText?.trim()) return;
+    const ctrl = makeController("writersBlock");
+    setWritersBlockLoading(true); setWritersBlockError("");
+    try {
+      const ctx = getStoryBible();
+      const userMsg = `[작가가 막힌 상황]\n${situationText.trim()}\n\n[작품 컨텍스트]\n로그라인: "${logline.trim() || "(아직 없음)"}"${ctx}\n\n위 막힘을 풀기 위한 5개의 좁은 질문을 던지세요. 답은 절대 주지 마세요.`;
+      const data = await callClaude(apiKey, WRITERS_BLOCK_QUESTIONS_SYSTEM_PROMPT, userMsg, 2000, "claude-sonnet-4-6", ctrl.signal, null, "writersBlock");
+      setWritersBlockSession({
+        situationText: situationText.trim(),
+        questionsResult: data,
+        answers: {},
+        synthesisResult: null,
+        deeperQuestions: {},
+        createdAt: Date.now(),
+      });
+      trackCreditUsage("막힘 풀기 시작", 1);
+      await autoSave();
+    } catch (err) {
+      if (err.name !== "AbortError") setWritersBlockError(err.message || "막힘 풀기 질문 생성 중 오류가 발생했습니다.");
+    } finally {
+      setWritersBlockLoading(false); clearController("writersBlock");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey, logline]);
+
+  // 작가가 5개 답을 모두 작성한 후 호출 — 작가가 *이미 알고 있던 것* 정리.
+  const synthesizeWritersBlock = useCallback(async () => {
+    if (!apiKey || !writersBlockSession) return;
+    const allAnswered = (writersBlockSession.questionsResult?.questions || [])
+      .every(q => writersBlockSession.answers?.[q.type]?.trim());
+    if (!allAnswered) {
+      setWritersBlockError("5개 질문에 모두 답을 적어주세요.");
+      return;
+    }
+    const ctrl = makeController("writersBlockSynthesis");
+    setWritersBlockLoading(true); setWritersBlockError("");
+    try {
+      const qa = writersBlockSession.questionsResult.questions
+        .map(q => `Q (${q.type}): ${q.q}\nA: ${writersBlockSession.answers[q.type]?.trim() || ""}`)
+        .join("\n\n");
+      const userMsg = `[원래 막힘]\n${writersBlockSession.situationText}\n\n[5개 질문과 작가의 답변]\n${qa}\n\n위 답변에서 작가가 *스스로 도달한 결론*을 정리하세요. 새로운 답을 추가하지 마세요.`;
+      const data = await callClaude(apiKey, WRITERS_BLOCK_SYNTHESIS_SYSTEM_PROMPT, userMsg, 1500, "claude-haiku-4-5-20251001", ctrl.signal, null, "writersBlockSynth");
+      setWritersBlockSession(prev => prev ? { ...prev, synthesisResult: data } : prev);
+      trackCreditUsage("막힘 풀기 종합", 1);
+      await autoSave();
+    } catch (err) {
+      if (err.name !== "AbortError") setWritersBlockError(err.message || "정리 중 오류가 발생했습니다.");
+    } finally {
+      setWritersBlockLoading(false); clearController("writersBlockSynthesis");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey, writersBlockSession]);
+
+  // 한 질문에 답했는데도 여전히 막혔을 때 — 더 좁은 후속 질문 1개.
+  const askDeeperWritersBlock = useCallback(async (questionType) => {
+    if (!apiKey || !writersBlockSession) return;
+    const original = writersBlockSession.questionsResult?.questions?.find(q => q.type === questionType);
+    const answer = writersBlockSession.answers?.[questionType];
+    if (!original || !answer?.trim()) return;
+    setWritersBlockDeeperLoadingType(questionType);
+    const ctrl = makeController(`writersBlockDeeper_${questionType}`);
+    try {
+      const userMsg = `[원래 질문]\n${original.q}\n\n[작가의 답변]\n${answer.trim()}\n\n[작가의 막힘 상황]\n${writersBlockSession.situationText}\n\n작가가 답했지만 여전히 막혀 있다고 표현했습니다. 답을 주지 말고 더 좁은 후속 질문 1개만 던지세요.`;
+      const data = await callClaude(apiKey, WRITERS_BLOCK_DEEPER_QUESTION_SYSTEM_PROMPT, userMsg, 700, "claude-haiku-4-5-20251001", ctrl.signal, null, "writersBlockDeeper");
+      setWritersBlockSession(prev => prev ? {
+        ...prev,
+        deeperQuestions: { ...prev.deeperQuestions, [questionType]: { q: data.deeper_question, hint: data.why_this_question, answer: "" } },
+      } : prev);
+      trackCreditUsage("막힘 풀기 후속", 1);
+    } catch (err) {
+      if (err.name !== "AbortError") setWritersBlockError(err.message || "후속 질문 생성 중 오류가 발생했습니다.");
+    } finally {
+      setWritersBlockDeeperLoadingType(null); clearController(`writersBlockDeeper_${questionType}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiKey, writersBlockSession]);
+
+  // 작가 답변 갱신
+  const updateWritersBlockAnswer = useCallback((questionType, text) => {
+    setWritersBlockSession(prev => prev
+      ? { ...prev, answers: { ...prev.answers, [questionType]: text } }
+      : prev);
+  }, []);
+
+  const updateWritersBlockDeeperAnswer = useCallback((questionType, text) => {
+    setWritersBlockSession(prev => {
+      if (!prev?.deeperQuestions?.[questionType]) return prev;
+      return {
+        ...prev,
+        deeperQuestions: { ...prev.deeperQuestions, [questionType]: { ...prev.deeperQuestions[questionType], answer: text } },
+      };
+    });
+  }, []);
+
+  // 종합 결과를 노트로 저장
+  const saveWritersBlockAsNote = useCallback(() => {
+    const session = writersBlockSession;
+    if (!session?.synthesisResult) return;
+    addDevelopmentNote({
+      source: "manual",
+      area: "general",
+      title: session.synthesisResult.save_as_note_suggestion || `막힘: ${session.situationText.slice(0, 30)}…`,
+      why: session.synthesisResult.what_was_blocking || "",
+      action: session.synthesisResult.next_small_action || "",
+      status: "open",
+    });
+    showToast("success", "수정 과제 보드에 노트로 저장됐습니다");
+  }, [writersBlockSession, addDevelopmentNote, showToast]);
+
+  // 세션 닫고 새로 시작
+  const resetWritersBlock = useCallback(() => {
+    setWritersBlockSession(null);
+    setWritersBlockError("");
+  }, []);
+
   // ── Core Design (Stage 2 — Want/Need/적대자/스테이크/테마) ──
   const analyzeCoreDesign = async () => {
     if (!logline.trim() || !apiKey) return;
     const ctrl = makeController("coreDesign");
     setCoreDesignLoading(true); setCoreDesignError("");
-    pushHistory(setCoreDesignHistory, coreDesignResult, "coreDesign");
-    setCoreDesignResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const stage1Hint = result
       ? `\n\n[Stage 1 분석 요약 — 약점을 보완하는 방향으로 설계할 것]\n${result.overall_feedback || ""}${result.detected_genre ? `\n감지 장르: ${result.detected_genre}` : ""}`
       : "";
+
+    // 학습 모드 분기 — 답 대신 5축 각각에 대한 질문 2개씩 받기.
+    if (learningMode) {
+      const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${stage1Hint}\n\n위 로그라인을 보고 작가가 5축(Want/Need/적대자/스테이크/테마)을 직접 결정할 수 있게 좁은 질문 2개씩 던지세요. 답은 절대 주지 마세요.`;
+      try {
+        const data = await callClaude(apiKey, CORE_DESIGN_LEARNING_SYSTEM_PROMPT, msg, 1800, "claude-haiku-4-5-20251001", ctrl.signal, null, "coreDesignLearning");
+        setCoreDesignLearningResult(data);
+        trackCreditUsage("핵심 설계 (학습 모드)", 1);
+        await autoSave();
+      } catch (err) {
+        if (err.name !== "AbortError") setCoreDesignError(err.message || "학습 모드 질문 생성 중 오류가 발생했습니다.");
+      } finally {
+        setCoreDesignLoading(false); clearController("coreDesign");
+      }
+      return;
+    }
+
+    // 작업 모드 — 기존 동작.
+    pushHistory(setCoreDesignHistory, coreDesignResult, "coreDesign");
+    setCoreDesignResult(null);
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${stage1Hint}\n\n위 로그라인의 "이야기 엔진"을 확정하세요. Want/Need/적대자/스테이크/테마 5축을 모두 단정적으로 결정하고, JSON 스키마대로만 응답하세요.`;
     try {
       const data = await callClaude(apiKey, CORE_DESIGN_SYSTEM_PROMPT, msg, 3500, "claude-sonnet-4-6", ctrl.signal, CoreDesignSchema, "coreDesign");
       setCoreDesignResult(data);
-      // risk_check 항목을 자동으로 수정 과제 보드에 추가
       addDevelopmentNotes(notesFromCoreDesign(data));
       trackCreditUsage("핵심 설계", 1);
       await autoSave();
@@ -4687,6 +4852,15 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     updateDevelopmentNote, deleteDevelopmentNote,
     showNotesPanel, setShowNotesPanel,
     dismissNoteOutdated, revisitNote, revisitNoteLoadingId,
+    // Writer's Block Toolkit
+    writersBlockSession, writersBlockLoading, writersBlockError,
+    writersBlockDeeperLoadingType,
+    showWritersBlock, setShowWritersBlock,
+    askWritersBlock, synthesizeWritersBlock, askDeeperWritersBlock,
+    updateWritersBlockAnswer, updateWritersBlockDeeperAnswer,
+    saveWritersBlockAsNote, resetWritersBlock,
+    // 학습 모드
+    learningMode, toggleLearningMode,
     // Scene Cards
     sceneCards, addSceneCard, updateSceneCard, deleteSceneCard,
     reorderSceneCards, seedSceneCardsFromBeatSheet,
@@ -4768,7 +4942,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     revisions, setRevisions, currentRevisionId, setCurrentRevisionId,
     sceneRevisionMap, setSceneRevisionMap,
     // Core Design (Stage 2)
-    coreDesignResult, setCoreDesignResult, coreDesignLoading, coreDesignError, coreDesignRef,
+    coreDesignResult, setCoreDesignResult, coreDesignLearningResult, setCoreDesignLearningResult, coreDesignLoading, coreDesignError, coreDesignRef,
     coreDesignFeedback, setCoreDesignFeedback, coreDesignRefineLoading,
     coreDesignHistory, setCoreDesignHistory,
     analyzeCoreDesign, refineCoreDesign,
@@ -4778,6 +4952,15 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     updateDevelopmentNote, deleteDevelopmentNote,
     showNotesPanel, setShowNotesPanel,
     dismissNoteOutdated, revisitNote, revisitNoteLoadingId,
+    // Writer's Block Toolkit
+    writersBlockSession, writersBlockLoading, writersBlockError,
+    writersBlockDeeperLoadingType,
+    showWritersBlock, setShowWritersBlock,
+    askWritersBlock, synthesizeWritersBlock, askDeeperWritersBlock,
+    updateWritersBlockAnswer, updateWritersBlockDeeperAnswer,
+    saveWritersBlockAsNote, resetWritersBlock,
+    // 학습 모드
+    learningMode, toggleLearningMode,
     // Scene Cards
     sceneCards, setSceneCards,
     addSceneCard, updateSceneCard, deleteSceneCard,

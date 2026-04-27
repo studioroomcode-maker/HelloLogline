@@ -675,6 +675,7 @@ export default function SidebarLayout({ stageProps, isMobile }) {
     currentWorkingAs, setCurrentWorkingAs,
     currentWorkingMember,
     isReadOnly, isOwner, isOnline,
+    setShowWritersBlock, learningMode, toggleLearningMode,
   } = useLoglineCtx();
 
   const mainPanelRef = useRef(null);
@@ -912,6 +913,53 @@ export default function SidebarLayout({ stageProps, isMobile }) {
 
           {/* 하단 고정 영역 */}
           <div style={{ borderTop: "1px solid var(--c-bd-1)", padding: "10px 10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+
+            {/* 막힘 풀기 — AI가 답을 주지 않고 5개 좁은 질문으로 풀어줌 */}
+            <button
+              onClick={() => setShowWritersBlock(true)}
+              disabled={!apiKey}
+              title="작가가 막혔을 때 — AI가 답을 주지 않고 5개 좁은 질문으로 작가가 직접 풀게 함"
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 8,
+                padding: "8px 10px", borderRadius: 8,
+                cursor: !apiKey ? "not-allowed" : "pointer",
+                border: "1px solid rgba(96,165,250,0.25)",
+                background: "rgba(96,165,250,0.05)",
+                color: !apiKey ? "rgba(96,165,250,0.3)" : "#60A5FA",
+                fontSize: 11, fontWeight: 700, transition: "all 0.18s",
+                fontFamily: "'Noto Sans KR', sans-serif",
+                opacity: !apiKey ? 0.5 : 1,
+              }}
+            >
+              <span style={{ fontSize: 14, lineHeight: 1 }}>🧠</span>
+              막힘 풀기
+            </button>
+
+            {/* 학습 모드 토글 */}
+            <button
+              onClick={toggleLearningMode}
+              title={learningMode
+                ? "학습 모드 ON — AI 분석에서 답 대신 질문을 받습니다. 작가 사고력 훈련용. 클릭해서 끄기."
+                : "학습 모드 OFF — AI가 평소대로 답을 줍니다. 클릭해서 작가 사고력 훈련 모드로."}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6,
+                padding: "6px 10px", borderRadius: 8,
+                cursor: "pointer",
+                border: learningMode ? "1px solid rgba(78,204,163,0.45)" : "1px solid var(--c-bd-2)",
+                background: learningMode ? "rgba(78,204,163,0.06)" : "transparent",
+                color: learningMode ? "#4ECCA3" : "var(--c-tx-35)",
+                fontSize: 10, fontWeight: 700, transition: "all 0.18s",
+                fontFamily: "'Noto Sans KR', sans-serif",
+              }}
+            >
+              <span>📚 학습 모드</span>
+              <span style={{
+                fontSize: 8, padding: "2px 6px", borderRadius: 6,
+                background: learningMode ? "rgba(78,204,163,0.18)" : "var(--glass-nano)",
+                color: learningMode ? "#4ECCA3" : "var(--c-tx-30)",
+                fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5,
+              }}>{learningMode ? "ON" : "OFF"}</span>
+            </button>
 
             {/* 스토리 닥터 */}
             <button
