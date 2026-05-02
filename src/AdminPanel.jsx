@@ -1,7 +1,198 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { SvgIcon, ICON, Spinner } from "./ui.jsx";
 
 const TIER_COLOR = { admin: "#C8A84B", pro: "#60A5FA", basic: "var(--c-tx-35)", blocked: "#E85D75" };
+
+const fmt = (n) => Number(n || 0).toLocaleString("ko-KR");
+const fmtCompact = (n) => {
+  const v = Number(n || 0);
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (v >= 1_000) return (v / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+  return String(v);
+};
+
+function ApiUsageSection() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [days, setDays] = useState(30);
+  const [expanded, setExpanded] = useState(null);
+  const [recentByEmail, setRecentByEmail] = useState({});
+
+  const load = (d = days) => {
+    setLoading(true);
+    const token = localStorage.getItem("hll_auth_token");
+    fetch(`/api/admin/usage?days=${d}`, { headers: { "x-auth-token": token || "" } })
+      .then(r => r.json())
+      .then(d => setData(d))
+      .catch(() => setData({ configured: false, summary: [] }))
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { load(days); /* eslint-disable-next-line */ }, [days]);
+
+  const loadRecent = (email) => {
+    if (recentByEmail[email]) return;
+    const token = localStorage.getItem("hll_auth_token");
+    fetch(`/api/admin/usage?email=${encodeURIComponent(email)}&days=${days}`, { headers: { "x-auth-token": token || "" } })
+      .then(r => r.json())
+      .then(d => setRecentByEmail(prev => ({ ...prev, [email]: d.recent || [] })))
+      .catch(() => setRecentByEmail(prev => ({ ...prev, [email]: [] })));
+  };
+
+  const summary = Array.isArray(data?.summary) ? data.summary : [];
+  const totals = summary.reduce((acc, r) => ({
+    requests: acc.requests + r.requests,
+    input: acc.input + r.input_tokens,
+    output: acc.output + r.output_tokens,
+    cache_creation: acc.cache_creation + (r.cache_creation || 0),
+    cache_read: acc.cache_read + (r.cache_read || 0),
+    credits: acc.credits + r.credits,
+  }), { requests: 0, input: 0, output: 0, cache_creation: 0, cache_read: 0, credits: 0 });
+
+  return (
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, gap: 8, flexWrap: "wrap" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-tx-35)", textTransform: "uppercase", letterSpacing: 1 }}>
+          API 사용량 (사용자별)
+        </div>
+        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          {[7, 30, 90, 0].map(d => (
+            <button
+              key={d}
+              onClick={() => setDays(d)}
+              style={{
+                fontSize: 10, fontWeight: 700,
+                color: days === d ? "#C8A84B" : "var(--c-tx-35)",
+                background: days === d ? "rgba(200,168,75,0.1)" : "transparent",
+                border: `1px solid ${days === d ? "rgba(200,168,75,0.4)" : "var(--c-bd-3)"}`,
+                borderRadius: 6, padding: "3px 8px", cursor: "pointer",
+                fontFamily: "'JetBrains Mono', monospace",
+              }}
+            >
+              {d === 0 ? "전체" : `${d}일`}
+            </button>
+          ))}
+          <button
+            onClick={() => load(days)}
+            aria-label="사용량 새로고침"
+            style={{ fontSize: 10, color: "var(--c-tx-35)", background: "transparent", border: "1px solid var(--c-bd-3)", borderRadius: 6, padding: "3px 8px", cursor: "pointer", marginLeft: 4 }}
+          >
+            새로고침
+          </button>
+        </div>
+      </div>
+
+      {loading && <Spinner size={14} color="#C8A84B" />}
+
+      {!loading && data && data.configured === false && (
+        <div style={{ fontSize: 11, color: "var(--c-tx-30)", padding: "10px 12px", background: "rgba(var(--tw),0.02)", borderRadius: 8 }}>
+          Supabase 미연결 — 사용량 추적이 비활성화되어 있습니다.
+        </div>
+      )}
+
+      {!loading && data?.configured && summary.length === 0 && (
+        <div style={{ fontSize: 11, color: "var(--c-tx-30)", padding: "10px 12px", background: "rgba(var(--tw),0.02)", borderRadius: 8 }}>
+          기간 내 기록이 없거나 hll_api_usage 테이블이 생성되지 않았습니다.
+        </div>
+      )}
+
+      {!loading && data?.configured && summary.length > 0 && (
+        <>
+          {/* 합계 카드 */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 6, marginBottom: 10 }}>
+            {[
+              { label: "사용자", value: summary.length, color: "#60A5FA" },
+              { label: "요청수", value: fmt(totals.requests), color: "#C8A84B" },
+              { label: "입력 토큰", value: fmtCompact(totals.input), color: "var(--c-tx-65)" },
+              { label: "출력 토큰", value: fmtCompact(totals.output), color: "var(--c-tx-65)" },
+              { label: "캐시 읽기", value: fmtCompact(totals.cache_read), color: "#4ECCA3" },
+              { label: "차감 크레딧", value: fmt(totals.credits), color: "#E85D75" },
+            ].map(c => (
+              <div key={c.label} style={{ background: "rgba(var(--tw),0.02)", border: "1px solid var(--c-bd-2)", borderRadius: 8, padding: "8px 10px" }}>
+                <div style={{ fontSize: 9, color: "var(--c-tx-35)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 }}>{c.label}</div>
+                <div style={{ fontSize: 14, color: c.color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{c.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* 사용자별 표 */}
+          <div style={{ border: "1px solid var(--c-bd-2)", borderRadius: 10, overflow: "hidden", maxHeight: 360, overflowY: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, fontFamily: "'Noto Sans KR', sans-serif" }}>
+              <thead style={{ position: "sticky", top: 0, background: "var(--bg-surface)", zIndex: 1 }}>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "7px 10px", color: "var(--c-tx-35)", fontWeight: 700, borderBottom: "1px solid var(--c-bd-2)" }}>사용자</th>
+                  <th style={{ textAlign: "right", padding: "7px 10px", color: "var(--c-tx-35)", fontWeight: 700, borderBottom: "1px solid var(--c-bd-2)" }}>요청</th>
+                  <th style={{ textAlign: "right", padding: "7px 10px", color: "var(--c-tx-35)", fontWeight: 700, borderBottom: "1px solid var(--c-bd-2)" }}>입력</th>
+                  <th style={{ textAlign: "right", padding: "7px 10px", color: "var(--c-tx-35)", fontWeight: 700, borderBottom: "1px solid var(--c-bd-2)" }}>출력</th>
+                  <th style={{ textAlign: "right", padding: "7px 10px", color: "var(--c-tx-35)", fontWeight: 700, borderBottom: "1px solid var(--c-bd-2)" }}>캐시R</th>
+                  <th style={{ textAlign: "right", padding: "7px 10px", color: "var(--c-tx-35)", fontWeight: 700, borderBottom: "1px solid var(--c-bd-2)" }}>크레딧</th>
+                  <th style={{ textAlign: "right", padding: "7px 10px", color: "var(--c-tx-35)", fontWeight: 700, borderBottom: "1px solid var(--c-bd-2)", whiteSpace: "nowrap" }}>최근</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.map((r) => {
+                  const isOpen = expanded === r.email;
+                  const recent = recentByEmail[r.email];
+                  return (
+                    <Fragment key={r.email}>
+                      <tr
+                        style={{ borderBottom: "1px solid var(--c-bd-1)", cursor: "pointer", background: isOpen ? "rgba(200,168,75,0.04)" : "transparent" }}
+                        onClick={() => {
+                          const next = isOpen ? null : r.email;
+                          setExpanded(next);
+                          if (next) loadRecent(next);
+                        }}
+                      >
+                        <td style={{ padding: "6px 10px", color: "var(--c-tx-65)", wordBreak: "break-all" }}>
+                          <span style={{ color: "var(--c-tx-35)", marginRight: 6 }}>{isOpen ? "▾" : "▸"}</span>
+                          {r.email}
+                        </td>
+                        <td style={{ padding: "6px 10px", color: "#C8A84B", fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{fmt(r.requests)}</td>
+                        <td style={{ padding: "6px 10px", color: "var(--c-tx-55)", fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{fmtCompact(r.input_tokens)}</td>
+                        <td style={{ padding: "6px 10px", color: "var(--c-tx-55)", fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{fmtCompact(r.output_tokens)}</td>
+                        <td style={{ padding: "6px 10px", color: "#4ECCA3", fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{fmtCompact(r.cache_read)}</td>
+                        <td style={{ padding: "6px 10px", color: "#E85D75", fontFamily: "'JetBrains Mono', monospace", textAlign: "right" }}>{fmt(r.credits)}</td>
+                        <td style={{ padding: "6px 10px", color: "var(--c-tx-40)", fontFamily: "'JetBrains Mono', monospace", textAlign: "right", whiteSpace: "nowrap" }}>
+                          {r.last_at ? new Date(r.last_at).toLocaleDateString("ko-KR") : "-"}
+                        </td>
+                      </tr>
+                      {isOpen && (
+                        <tr style={{ background: "rgba(0,0,0,0.15)" }}>
+                          <td colSpan={7} style={{ padding: "8px 14px" }}>
+                            {!recent && <Spinner size={12} color="#C8A84B" />}
+                            {recent && recent.length === 0 && (
+                              <div style={{ fontSize: 10, color: "var(--c-tx-30)" }}>최근 호출 기록이 없습니다.</div>
+                            )}
+                            {recent && recent.length > 0 && (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 3, maxHeight: 200, overflowY: "auto" }}>
+                                {recent.map((row, i) => (
+                                  <div key={row.id || i} style={{ display: "flex", gap: 10, fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: "var(--c-tx-50)", padding: "3px 0" }}>
+                                    <span style={{ color: "var(--c-tx-35)", minWidth: 130 }}>
+                                      {row.created_at ? new Date(Number(row.created_at)).toLocaleString("ko-KR", { hour12: false }) : "-"}
+                                    </span>
+                                    <span style={{ color: "#C8A84B", minWidth: 90 }}>{row.feature || "-"}</span>
+                                    <span>in {fmt(row.input_tokens)}</span>
+                                    <span>out {fmt(row.output_tokens)}</span>
+                                    {row.cache_read_input_tokens > 0 && <span style={{ color: "#4ECCA3" }}>cache {fmt(row.cache_read_input_tokens)}</span>}
+                                    {row.credits > 0 && <span style={{ color: "#E85D75" }}>-{row.credits}cr</span>}
+                                    {row.stream && <span style={{ color: "var(--c-tx-30)" }}>stream</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 function AuditLogSection() {
   const [logs, setLogs] = useState(null);
@@ -229,6 +420,9 @@ export default function AdminPanel({
               </div>
             )}
           </div>
+
+          {/* API 사용량 */}
+          <ApiUsageSection />
 
           {/* 감사 로그 */}
           <AuditLogSection />

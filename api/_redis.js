@@ -357,3 +357,94 @@ export async function writeAuditLog(actor, action, target, detail) {
     });
   } catch { return null; }
 }
+
+// ─── API 사용량 로그 (사용자별 토큰/요청 추적) ─────────────────────
+// 테이블 생성 SQL (Supabase SQL Editor에서 실행):
+//   CREATE TABLE hll_api_usage (
+//     id            bigserial PRIMARY KEY,
+//     email         text NOT NULL,
+//     feature       text,
+//     model         text,
+//     input_tokens  bigint DEFAULT 0,
+//     output_tokens bigint DEFAULT 0,
+//     cache_creation_input_tokens bigint DEFAULT 0,
+//     cache_read_input_tokens     bigint DEFAULT 0,
+//     credits       bigint DEFAULT 0,
+//     status        text,
+//     stream        boolean DEFAULT false,
+//     created_at    bigint
+//   );
+//   CREATE INDEX hll_api_usage_email_idx      ON hll_api_usage(email);
+//   CREATE INDEX hll_api_usage_created_at_idx ON hll_api_usage(created_at);
+
+/** API 사용량 1건 기록. 실패해도 호출자에게 예외를 던지지 않음 */
+export async function recordApiUsage(email, data) {
+  if (!usingSupa() || !email) return null;
+  try {
+    return await supaReq("hll_api_usage", {
+      method: "POST",
+      body: {
+        email: String(email).toLowerCase(),
+        feature: data?.feature || null,
+        model: data?.model || null,
+        input_tokens: Number(data?.input_tokens || 0),
+        output_tokens: Number(data?.output_tokens || 0),
+        cache_creation_input_tokens: Number(data?.cache_creation_input_tokens || 0),
+        cache_read_input_tokens: Number(data?.cache_read_input_tokens || 0),
+        credits: Number(data?.credits || 0),
+        status: data?.status || "ok",
+        stream: !!data?.stream,
+        created_at: Date.now(),
+      },
+    });
+  } catch { return null; }
+}
+
+/**
+ * 사용자별 사용량 집계.
+ *   email  — 특정 사용자만 (옵션)
+ *   sinceMs — 시작 시각 (옵션, 0이면 전체)
+ * 반환: [{ email, requests, input_tokens, output_tokens, cache_creation, cache_read, credits, last_at }]
+ */
+export async function getUsageSummary({ email = null, sinceMs = 0, limit = 5000 } = {}) {
+  if (!usingSupa()) return [];
+  const filters = [];
+  if (email) filters.push(`email=eq.${encodeURIComponent(String(email).toLowerCase())}`);
+  if (sinceMs > 0) filters.push(`created_at=gte.${sinceMs}`);
+  const qs = filters.length ? `&${filters.join("&")}` : "";
+  const rows = await supaReq(
+    `hll_api_usage?select=email,input_tokens,output_tokens,cache_creation_input_tokens,cache_read_input_tokens,credits,created_at&order=created_at.desc&limit=${limit}${qs}`
+  );
+  if (!Array.isArray(rows)) return [];
+  const map = new Map();
+  for (const r of rows) {
+    const key = (r.email || "").toLowerCase();
+    if (!key) continue;
+    const cur = map.get(key) || {
+      email: key, requests: 0,
+      input_tokens: 0, output_tokens: 0,
+      cache_creation: 0, cache_read: 0,
+      credits: 0, last_at: 0,
+    };
+    cur.requests += 1;
+    cur.input_tokens  += Number(r.input_tokens  || 0);
+    cur.output_tokens += Number(r.output_tokens || 0);
+    cur.cache_creation += Number(r.cache_creation_input_tokens || 0);
+    cur.cache_read     += Number(r.cache_read_input_tokens || 0);
+    cur.credits        += Number(r.credits || 0);
+    if (r.created_at && Number(r.created_at) > cur.last_at) cur.last_at = Number(r.created_at);
+    map.set(key, cur);
+  }
+  return Array.from(map.values()).sort((a, b) =>
+    (b.input_tokens + b.output_tokens) - (a.input_tokens + a.output_tokens)
+  );
+}
+
+/** 단일 사용자의 최근 호출 N건. 상세 화면용 */
+export async function getUsageRecent(email, limit = 50) {
+  if (!usingSupa() || !email) return [];
+  const rows = await supaReq(
+    `hll_api_usage?email=eq.${encodeURIComponent(String(email).toLowerCase())}&select=*&order=created_at.desc&limit=${limit}`
+  );
+  return Array.isArray(rows) ? rows : [];
+}

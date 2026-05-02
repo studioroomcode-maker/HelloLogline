@@ -1,4 +1,4 @@
-import { rcall, deductCredits, getCredits, redisConfigured, checkRateLimit } from "./_redis.js";
+import { rcall, deductCredits, getCredits, redisConfigured, checkRateLimit, recordApiUsage } from "./_redis.js";
 import { verifyToken, getTokenFromRequest } from "./auth/_jwt.js";
 import { ensureEnv } from "./_env.js";
 import { captureServerException } from "./_sentry.js";
@@ -155,6 +155,8 @@ export default async function handler(req, res) {
     const decoder = new TextDecoder();
     let buffer = "";
     let success = false;
+    let streamModel = body?.model || null;
+    const streamUsage = { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 };
 
     try {
       while (true) {
@@ -171,6 +173,20 @@ export default async function handler(req, res) {
           try { evt = JSON.parse(raw); } catch { continue; }
           if (evt.type === "content_block_delta" && evt.delta?.type === "text_delta") {
             res.write(`data: ${JSON.stringify({ t: evt.delta.text })}\n\n`);
+          } else if (evt.type === "message_start") {
+            const u = evt.message?.usage;
+            if (u) {
+              streamUsage.input_tokens  += Number(u.input_tokens  || 0);
+              streamUsage.cache_creation_input_tokens += Number(u.cache_creation_input_tokens || 0);
+              streamUsage.cache_read_input_tokens     += Number(u.cache_read_input_tokens     || 0);
+              if (u.output_tokens) streamUsage.output_tokens += Number(u.output_tokens);
+            }
+            if (evt.message?.model) streamModel = evt.message.model;
+          } else if (evt.type === "message_delta") {
+            const u = evt.usage;
+            if (u && typeof u.output_tokens === "number") {
+              streamUsage.output_tokens = u.output_tokens; // anthropic은 누적값을 보냄
+            }
           } else if (evt.type === "message_stop") {
             success = true;
           } else if (evt.type === "error") {
@@ -191,6 +207,17 @@ export default async function handler(req, res) {
       const newBalance = await deductCredits(creditEmail, creditCost);
       if (newBalance === null) console.error(`[Credits] 스트림 차감 실패: ${creditEmail}`);
       else if (newBalance === -1) console.warn(`[Credits] 스트림 경합 조건: ${creditEmail}, cost: ${creditCost}`);
+    }
+
+    if (success && userEmail) {
+      recordApiUsage(userEmail, {
+        feature: body?._feature || null,
+        model: streamModel,
+        ...streamUsage,
+        credits: creditEmail ? creditCost : 0,
+        status: "ok",
+        stream: true,
+      }).catch(() => {});
     }
 
     res.write(`event: done\ndata: ${JSON.stringify({ ok: true })}\n\n`);
@@ -227,6 +254,22 @@ export default async function handler(req, res) {
       // 사전 확인과 실제 차감 사이 경합 조건 (극히 드묾)
       console.warn(`[Credits] 경합 조건 감지: ${creditEmail}, cost: ${creditCost}`);
     }
+  }
+
+  // ── API 사용량 로그 (성공 시에만) ──
+  if (upstream.ok && userEmail) {
+    const u = data?.usage || {};
+    recordApiUsage(userEmail, {
+      feature: body?._feature || null,
+      model: data?.model || body?.model || null,
+      input_tokens: u.input_tokens,
+      output_tokens: u.output_tokens,
+      cache_creation_input_tokens: u.cache_creation_input_tokens,
+      cache_read_input_tokens: u.cache_read_input_tokens,
+      credits: creditEmail ? creditCost : 0,
+      status: "ok",
+      stream: false,
+    }).catch(() => {});
   }
 
   res.status(upstream.status).json(data);

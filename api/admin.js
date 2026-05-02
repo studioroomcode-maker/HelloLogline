@@ -3,7 +3,7 @@
  *   /api/admin?resource=audit  — GET  — 감사 로그 조회
  *   /api/admin?resource=users  — GET  — 사용자 목록 / POST — 등급 변경
  */
-import { rcall, redisConfigured, writeAuditLog } from "./_redis.js";
+import { rcall, redisConfigured, writeAuditLog, getUsageSummary, getUsageRecent } from "./_redis.js";
 import { verifyToken, getTokenFromRequest } from "./auth/_jwt.js";
 
 const SUPA_URL = (process.env.SUPABASE_URL || "").trim();
@@ -92,6 +92,27 @@ async function handleUsers(req, res, payload) {
   return res.status(405).json({ error: "Method not allowed" });
 }
 
+// ── resource: usage ──────────────────────────────────────────────────────
+async function handleUsage(req, res, payload) {
+  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+  if (!SUPA_URL || !SUPA_KEY) return res.json({ configured: false, summary: [], recent: [] });
+
+  const days = Math.max(0, Math.min(parseInt(req.query?.days) || 30, 365));
+  const sinceMs = days > 0 ? Date.now() - days * 86400_000 : 0;
+  const targetEmail = (req.query?.email || "").toLowerCase() || null;
+
+  if (targetEmail) {
+    const [summary, recent] = await Promise.all([
+      getUsageSummary({ email: targetEmail, sinceMs, limit: 5000 }),
+      getUsageRecent(targetEmail, 50),
+    ]);
+    return res.json({ configured: true, days, email: targetEmail, summary, recent });
+  }
+
+  const summary = await getUsageSummary({ sinceMs, limit: 5000 });
+  return res.json({ configured: true, days, summary });
+}
+
 // ── Main dispatcher ──────────────────────────────────────────────────────
 export default async function handler(req, res) {
   const auth = getTokenFromRequest(req);
@@ -109,6 +130,7 @@ export default async function handler(req, res) {
   switch (resource) {
     case "audit": return handleAudit(req, res, payload);
     case "users": return handleUsers(req, res, payload);
-    default:      return res.status(400).json({ error: "Invalid resource. Use ?resource=audit|users" });
+    case "usage": return handleUsage(req, res, payload);
+    default:      return res.status(400).json({ error: "Invalid resource. Use ?resource=audit|users|usage" });
   }
 }

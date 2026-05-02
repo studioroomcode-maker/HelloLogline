@@ -30,6 +30,7 @@
 
     { "source": "/api/admin/audit", "destination": "/api/admin?resource=audit" },
     { "source": "/api/admin/users", "destination": "/api/admin?resource=users" },
+    { "source": "/api/admin/usage", "destination": "/api/admin?resource=usage" },
 
     { "source": "/api/teams/members", "destination": "/api/teams?resource=members" },
     { "source": "/api/projects/versions", "destination": "/api/projects?resource=versions" },
