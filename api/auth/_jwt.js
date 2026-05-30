@@ -1,10 +1,13 @@
 import { createHmac } from "crypto";
 
-// ── JWT_SECRET must be set — no fallback allowed ──────────────────────────
+// ── JWT_SECRET must be set (no fallback) and strong (≥32자) ───────────────
 if (!process.env.JWT_SECRET) {
   throw new Error("[FATAL] JWT_SECRET 환경변수가 설정되지 않았습니다. Vercel 환경변수를 확인하세요.");
 }
 const SECRET = process.env.JWT_SECRET.trim();
+if (SECRET.length < 32) {
+  throw new Error("[FATAL] JWT_SECRET 길이 부족(<32자) — 강한 랜덤 시크릿(64자 hex 권장)을 설정하세요.");
+}
 const EXP_SEC = 30 * 24 * 3600; // 30일
 const COOKIE_NAME = "hll_auth";
 

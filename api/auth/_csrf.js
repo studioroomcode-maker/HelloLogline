@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 
 if (!process.env.JWT_SECRET) throw new Error("[FATAL] JWT_SECRET not set");
 const SECRET = process.env.JWT_SECRET.trim();
+if (SECRET.length < 32) throw new Error("[FATAL] JWT_SECRET 길이 부족(<32자) — 강한 랜덤 시크릿(64자 hex 권장)을 설정하세요.");
 const COOKIE_NAME = "hll_oauth_state";
 const MAX_AGE_MS = 600_000; // 10분
 

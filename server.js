@@ -29,6 +29,14 @@ try {
   const advisory = ["TOSS_SECRET_KEY", "CRON_SECRET", "RESEND_API_KEY", "VITE_TOSS_CLIENT_KEY"];
   const missingReq = required.filter(k => !(process.env[k] || "").trim());
   const missingAdv = advisory.filter(k => !(process.env[k] || "").trim());
+  if (missingReq.includes("JWT_SECRET")) {
+    console.error("[env] JWT_SECRET 누락 — 보안상 부팅을 중단합니다. 강한 랜덤 시크릿을 .env에 설정하세요.");
+    process.exit(1);
+  }
+  if ((process.env.JWT_SECRET || "").trim().length < 32) {
+    console.error("[env] JWT_SECRET 길이 부족(<32자) — 강한 랜덤 시크릿(64자 hex 권장)을 설정하세요.");
+    process.exit(1);
+  }
   if (missingReq.length) console.warn(`[env] 필수 환경변수 누락: ${missingReq.join(", ")} — 해당 기능 비활성화됨`);
   if (missingAdv.length) console.warn(`[env] 권장 환경변수 누락: ${missingAdv.join(", ")}`);
 }
@@ -90,7 +98,7 @@ app.post("/api/claude", async (req, res) => {
 });
 
 // ── OAuth helpers ──
-const JWT_SECRET = process.env.JWT_SECRET || "hll-jwt-fallback-secret";
+const JWT_SECRET = process.env.JWT_SECRET.trim();
 
 function b64url(obj) {
   return Buffer.from(JSON.stringify(obj)).toString("base64url");
