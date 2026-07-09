@@ -107,10 +107,10 @@ export default async function handler(req, res) {
   }
 
   // ── 요청 본문 검증 — 서버 키가 임의의 모델/토큰으로 남용되는 것을 막는다 ──
+  // _feature 는 거부하지 않는다. CREDIT_COSTS 에 없는 기능은 아래에서 1크레딧을
+  // 차감하므로(fail-closed) 비용 측면에서 안전하고, 목록에 없는 기능명을 쓰는
+  // 호출부가 다수 있어(voiceCard, beat_sheet, master_report 등) 거부하면 기능이 죽는다.
   const feature = body._feature || "logline";
-  if (!Object.prototype.hasOwnProperty.call(CREDIT_COSTS, feature)) {
-    return res.status(400).json({ error: { message: "알 수 없는 기능입니다." } });
-  }
   if (!ALLOWED_MODELS.has(body.model)) {
     return res.status(400).json({ error: { message: "지원하지 않는 모델입니다." } });
   }
@@ -125,7 +125,8 @@ export default async function handler(req, res) {
   let creditCost = 0;
 
   if (usingServerKey && tier === "basic") {
-    creditCost = CREDIT_COSTS[feature];
+    // 목록에 없는 기능은 1크레딧 — 무료로 새 나가지 않도록 fail-closed
+    creditCost = CREDIT_COSTS[feature] ?? 1;
 
     // 0크레딧 기능도 무제한은 아니다 — 사용자별 일일 상한 적용
     if (creditCost === 0 && userEmail) {

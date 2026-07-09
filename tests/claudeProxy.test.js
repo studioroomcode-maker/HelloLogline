@@ -132,12 +132,27 @@ describe("/api/claude 보안 검증", () => {
       expect(res.statusCode).toBe(400);
     });
 
-    it("알 수 없는 _feature 는 400", async () => {
+    it("CREDIT_COSTS 에 없는 _feature 는 거부하지 않고 1크레딧을 차감한다 (fail-closed)", async () => {
       const res = makeRes();
       await handler(makeReq(validBody({ _feature: "무료로_다_주세요" })), res);
 
-      expect(res.statusCode).toBe(400);
-      expect(global.fetch).not.toHaveBeenCalled();
+      expect(res.statusCode).toBe(200);
+      expect(deductCredits).toHaveBeenCalledWith("user@test.com", 1);
+    });
+
+    it("목록에 없지만 실제로 쓰이는 기능들이 400 되지 않는다", async () => {
+      // CREDIT_COSTS 에 없으나 클라이언트가 보내는 실제 기능명들.
+      // 엄격 검증을 넣었다가 이 기능들을 통째로 죽인 적이 있다.
+      const realFeatures = [
+        "voiceCard", "beat_sheet", "master_report", "pairWriting",
+        "writersBlock", "episode", "coreDesign", "rewriteScene",
+        "comparables", "char_guide", "rewrite_guide", "reverse_extract",
+      ];
+      for (const f of realFeatures) {
+        const res = makeRes();
+        await handler(makeReq(validBody({ _feature: f })), res);
+        expect(res.statusCode, `_feature: ${f}`).toBe(200);
+      }
     });
 
     it("정상 요청은 통과한다", async () => {
