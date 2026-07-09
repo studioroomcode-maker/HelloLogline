@@ -13,6 +13,20 @@ import { rcall, grantInitialCredits } from "./_redis.js";
 import { generateState, stateCookieHeader, verifyState, clearStateCookieHeader } from "./auth/_csrf.js";
 import { issueToken, setAuthCookie, clearAuthCookie, frontendBase, verifyToken, getTokenFromRequest } from "./auth/_jwt.js";
 
+/**
+ * 안정적 사용자 식별자.
+ * 이 서비스는 email 을 사용자 키로 쓴다(프로젝트·크레딧·클라우드 동기화).
+ * 카카오/네이버는 이메일 제공 동의를 거부할 수 있어 email 이 빈 문자열이 될 수 있고,
+ * 그러면 프로젝트 저장 등이 401 로 막힌다. 이메일이 없으면 provider+id 로
+ * 대체 식별자를 만들어 email 기반 로직이 일관되게 동작하게 한다.
+ * @kakao.local / @naver.local 은 실제 발송되지 않도록 _email.js 가 걸러낸다.
+ */
+function stableEmail(provider, providerId, email) {
+  const e = (email || "").trim().toLowerCase();
+  if (e) return e;
+  return `${provider}_${providerId}@${provider}.local`;
+}
+
 function isWebView(ua = "") {
   return (
     /FBAN|FBAV|Instagram|Twitter|Line\/|KakaoTalk|NaverApp|Electron/i.test(ua) ||
@@ -261,12 +275,12 @@ async function handleKakaoCallback(req, res) {
     });
     const ud = await userRes.json();
 
-    const email = ud.kakao_account?.email || "";
     const nickname = ud.kakao_account?.profile?.nickname || "";
+    const email = stableEmail("kakao", ud.id, ud.kakao_account?.email);
     const user = {
       id: `kakao_${ud.id}`,
       provider: "kakao",
-      name: nickname || email || "카카오 사용자",
+      name: nickname || ud.kakao_account?.email || "카카오 사용자",
       email,
       avatar: ud.kakao_account?.profile?.profile_image_url || "",
     };
@@ -323,7 +337,7 @@ async function handleNaverCallback(req, res) {
       id: `naver_${profile.id}`,
       provider: "naver",
       name: profile.name || profile.nickname || "네이버 사용자",
-      email: profile.email || "",
+      email: stableEmail("naver", profile.id, profile.email),
       avatar: profile.profile_image || "",
     };
 

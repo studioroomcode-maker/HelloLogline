@@ -7,6 +7,10 @@ const RESEND_KEY = (process.env.RESEND_API_KEY || "").trim();
 const FROM = process.env.EMAIL_FROM || "Hello Loglines <noreply@hellologlines.com>";
 
 export async function sendEmail({ to, subject, html }) {
+  // 카카오/네이버 이메일 미동의 사용자의 대체 식별자는 실제 주소가 아니다 — 발송하면 바운스된다.
+  if (typeof to === "string" && /@(kakao|naver)\.local$/i.test(to)) {
+    return { ok: false, reason: "synthetic_address" };
+  }
   if (!RESEND_KEY) {
     console.log(`[email:skip] to=${to} subject="${subject}"`);
     return { ok: false, reason: "no_api_key" };
