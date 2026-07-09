@@ -1468,6 +1468,40 @@ export function useLoglineAnalyzer() {
     setIsDemoMode(false);
   };
 
+  // ── 회원 탈퇴 ──
+  const handleDeleteAccount = () => {
+    setConfirmModal({
+      title: "회원 탈퇴",
+      message: "계정과 저장된 모든 작업물이 영구히 삭제되며 복구할 수 없습니다.\n남은 크레딧도 함께 사라집니다.\n\n정말 탈퇴하시겠습니까?",
+      confirmLabel: "영구 삭제",
+      confirmColor: "var(--accent-rose)",
+      onConfirm: async () => {
+        setConfirmModal(null);
+        try {
+          const token = localStorage.getItem("hll_auth_token");
+          const res = await fetch("/api/auth/delete-account", {
+            method: "POST",
+            credentials: "include",
+            headers: token ? { "x-auth-token": token } : {},
+          });
+          if (!res.ok) {
+            const j = await res.json().catch(() => ({}));
+            showToast("error", j.error || "탈퇴 처리에 실패했습니다. 잠시 후 다시 시도해주세요.");
+            return;
+          }
+        } catch {
+          showToast("error", "네트워크 오류로 탈퇴하지 못했습니다.");
+          return;
+        }
+        // 성공: 로컬 상태·저장소 정리 후 첫 화면으로
+        localStorage.removeItem("hll_auth_token");
+        setUser(null);
+        setIsDemoMode(false);
+        showToast("info", "탈퇴가 완료되었습니다. 이용해 주셔서 감사합니다.");
+      },
+    });
+  };
+
   // ── PDF 분석 리포트 내보내기 ──
   const handleExportPdf = async () => {
     if (pdfLoading) return;
@@ -5360,6 +5394,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     adminUsers, setAdminUsers, adminUsersLoading, setAdminUsersLoading,
     adminRedisOk, setAdminRedisOk, tierSaving, handleSetTier,
     handleLogout,
+    handleDeleteAccount,
     // Credits
     credits, setCredits, showCreditModal, setShowCreditModal,
     creditPurchasing, setCreditPurchasing, subscription, setSubscription,

@@ -36,6 +36,7 @@
 
     { "source": "/api/auth/me", "destination": "/api/auth?action=me" },
     { "source": "/api/auth/logout", "destination": "/api/auth?action=logout" },
+    { "source": "/api/auth/delete-account", "destination": "/api/auth?action=delete-account" },
     { "source": "/api/auth/google", "destination": "/api/auth?action=google" },
     { "source": "/api/auth/kakao", "destination": "/api/auth?action=kakao" },
     { "source": "/api/auth/naver", "destination": "/api/auth?action=naver" },

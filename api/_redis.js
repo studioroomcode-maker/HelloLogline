@@ -159,6 +159,48 @@ export async function rcall(command, ...args) {
 /** 어떤 DB를 사용 중인지 반환 (관리자 패널 안내용) */
 export const dbProvider = () => usingSupa() ? "supabase" : usingRedis() ? "upstash" : "none";
 
+// ─── 회원 탈퇴: 개인정보·창작물 삭제 ──────────────────────────────
+/**
+ * 사용자의 개인정보와 창작물을 삭제한다.
+ *
+ * 삭제 대상: hll_users, hll_projects, hll_project_versions,
+ *           hll_subscriptions, hll_api_usage, hll:tier:{email}, hll:sub-notify
+ * 보존 대상(법적 의무): hll_payment_events(전자상거래법상 거래 기록 5년),
+ *           hll_audit_logs(감사 추적) — 삭제하지 않는다.
+ *
+ * 반환: { ok, failed: [테이블명...] } — 하나라도 실패하면 ok=false
+ */
+export async function deleteUserData(email) {
+  if (!usingSupa()) return { ok: false, failed: ["db_not_configured"] };
+  const e = String(email).toLowerCase();
+  const enc = encodeURIComponent(e);
+  const failed = [];
+
+  async function del(path) {
+    try {
+      const r = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
+        method: "DELETE",
+        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
+      });
+      return r.ok || r.status === 404 || r.status === 204;
+    } catch { return false; }
+  }
+
+  // 자식 → 부모 순서로 삭제 (참조 무결성)
+  if (!(await del(`hll_project_versions?user_email=eq.${enc}`))) failed.push("hll_project_versions");
+  if (!(await del(`hll_projects?user_email=eq.${enc}`)))         failed.push("hll_projects");
+  if (!(await del(`hll_api_usage?email=eq.${enc}`)))             failed.push("hll_api_usage");
+  if (!(await del(`hll_subscriptions?email=eq.${enc}`)))         failed.push("hll_subscriptions");
+  if (!(await del(`hll_users?email=eq.${enc}`)))                 failed.push("hll_users");
+
+  // Redis 쪽 흔적 (Supabase 모드에선 tier override 만 해당)
+  await rcall("del", `hll:tier:${e}`).catch(() => {});
+  await rcall("srem", "hll:sub-notify", e).catch(() => {});
+  await rcall("srem", "hll:users", e).catch(() => {});
+
+  return { ok: failed.length === 0, failed };
+}
+
 // ─── 크레딧 함수 (Supabase 전용) ────────────────────────────────
 /** 크레딧 조회. DB 없으면 0 반환 (기능 무제한 허용) */
 export async function getCredits(email) {

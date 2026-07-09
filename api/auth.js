@@ -9,7 +9,7 @@
  *   /api/auth?action=me                — GET  — 현재 로그인 사용자 정보
  *   /api/auth?action=logout            — POST — 세션 종료
  */
-import { rcall, grantInitialCredits } from "./_redis.js";
+import { rcall, grantInitialCredits, deleteUserData, writeAuditLog } from "./_redis.js";
 import { generateState, stateCookieHeader, verifyState, clearStateCookieHeader } from "./auth/_csrf.js";
 import { issueToken, setAuthCookie, clearAuthCookie, frontendBase, verifyToken, getTokenFromRequest } from "./auth/_jwt.js";
 
@@ -379,6 +379,40 @@ function handleLogout(req, res) {
   res.json({ ok: true });
 }
 
+// ── /delete-account (회원 탈퇴) ────────────────────────────────────────────
+// 개인정보·창작물을 삭제하고 세션을 종료한다.
+// 결제·거래 기록(hll_payment_events)과 감사 로그는 전자상거래법상 보존 의무가 있어
+// 삭제하지 않는다. 삭제 사실 자체는 감사 로그에 남긴다.
+async function handleDeleteAccount(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const rawToken = getTokenFromRequest(req);
+  if (!rawToken) return res.status(401).json({ error: "로그인이 필요합니다." });
+
+  let email;
+  try {
+    email = (verifyToken(rawToken).email || "").toLowerCase();
+    if (!email) throw new Error("no email");
+  } catch {
+    return res.status(401).json({ error: "인증 토큰이 유효하지 않습니다." });
+  }
+
+  const result = await deleteUserData(email);
+
+  // 삭제 실패 시: 일부만 지워졌을 수 있으므로 추적 가능하게 감사 로그를 남기고 500
+  if (!result.ok) {
+    await writeAuditLog("api:auth", "account.delete_failed", email, { failed: result.failed });
+    console.error("[delete-account] 일부 삭제 실패", { email, failed: result.failed });
+    return res.status(500).json({
+      error: "탈퇴 처리 중 일부 데이터를 삭제하지 못했습니다. 고객센터로 문의해 주세요 (contact@studioroomkr.com).",
+    });
+  }
+
+  await writeAuditLog("api:auth", "account.deleted", email, {});
+  clearAuthCookie(res);
+  return res.status(200).json({ ok: true });
+}
+
 // ── Main dispatcher ──────────────────────────────────────────────────────
 export default async function handler(req, res) {
   const action = req.query?.action || "";
@@ -391,6 +425,7 @@ export default async function handler(req, res) {
     case "naver-callback":  return handleNaverCallback(req, res);
     case "me":              return handleMe(req, res);
     case "logout":          return handleLogout(req, res);
+    case "delete-account":  return handleDeleteAccount(req, res);
     default:                return res.status(400).json({ error: "Invalid action" });
   }
 }

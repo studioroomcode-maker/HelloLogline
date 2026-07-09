@@ -58,6 +58,8 @@ export default function LoglineAnalyzer() {
         <ConfirmModal
           title={ctx.confirmModal.title}
           message={ctx.confirmModal.message}
+          confirmLabel={ctx.confirmModal.confirmLabel}
+          confirmColor={ctx.confirmModal.confirmColor}
           onConfirm={ctx.confirmModal.onConfirm}
           onCancel={() => ctx.setConfirmModal(null)}
         />

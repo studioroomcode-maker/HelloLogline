@@ -28,7 +28,7 @@ export default function HeaderNav(props) {
     savedProjects, history, logline, genre, charDevResult, synopsisResults,
     pipelineResult, treatmentResult, beatSheetResult, scenarioDraftResult,
     scriptCoverageResult, valuationResult, showToast,
-    eduMode, setEduMode, isAdmin, handleLogout,
+    eduMode, setEduMode, isAdmin, handleLogout, handleDeleteAccount,
     startNewProject,
     TIER_COLOR, TIER_LABEL,
   } = props;
@@ -291,6 +291,9 @@ export default function HeaderNav(props) {
                     )}
                     <button onClick={() => { handleLogout(); setShowUserMenu(false); }} style={{ width: "100%", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--c-tx-45)", display: "flex", alignItems: "center", gap: 8, fontFamily: "'Noto Sans KR', sans-serif", textAlign: "left" }}>
                       로그아웃
+                    </button>
+                    <button onClick={() => { handleDeleteAccount(); setShowUserMenu(false); }} style={{ width: "100%", padding: "9px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--c-tx-30)", display: "flex", alignItems: "center", gap: 8, fontFamily: "'Noto Sans KR', sans-serif", textAlign: "left" }}>
+                      회원 탈퇴
                     </button>
                   </div>
                 </>
