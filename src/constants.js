@@ -1,3 +1,15 @@
+/**
+ * 팀 기능 활성화 여부.
+ *
+ * false 인 이유: 프로덕션 Supabase 에 hll_teams / hll_team_members / hll_team_invites
+ * 테이블이 없다. 그 상태로 진입점을 열어두면 "팀 생성 완료" 라고 응답만 하고
+ * 실제로는 아무것도 저장되지 않는다 (api/projects.js 의 supaFetch 가 404 를 null 로 삼킴).
+ *
+ * 켜려면: supabase/migrations 에 hll_teams 3종 DDL 을 추가해 실행한 뒤 true 로 바꾼다.
+ * api/teams.js 의 접근 제어는 이미 수정되어 있다.
+ */
+export const TEAMS_ENABLED = false;
+
 // ─────────────────────────────────────────────
 // Stage 파일에서 프롬프트 re-export (하위 호환성 유지)
 // ─────────────────────────────────────────────
