@@ -18,7 +18,7 @@ import { issueToken } from "../api/auth/_jwt.js";
 vi.mock("../api/_redis.js", () => ({
   rcall: vi.fn(),
   getCredits: vi.fn().mockResolvedValue(50),
-  addCreditsDb: vi.fn().mockResolvedValue(80), // 50 + 30 = 80
+  applyPaymentCredits: vi.fn().mockResolvedValue({ applied: true, balance: 80 }), // 50 + 30 = 80
   deductCredits: vi.fn(),
   checkRateLimit: vi.fn(() => ({ ok: true, remaining: 20, reset: 60 })),
   grantInitialCredits: vi.fn(),
@@ -28,7 +28,7 @@ vi.mock("../api/_redis.js", () => ({
   writeAuditLog: vi.fn().mockResolvedValue(null),
 }));
 
-import { getCredits, addCreditsDb } from "../api/_redis.js";
+import { getCredits, applyPaymentCredits } from "../api/_redis.js";
 
 // ── TossPayments fetch mock ─────────────────────────────────────────────────
 const mockFetch = vi.fn();
@@ -83,7 +83,7 @@ function tossNetworkFail() {
 beforeEach(() => {
   vi.clearAllMocks();
   getCredits.mockResolvedValue(50);
-  addCreditsDb.mockResolvedValue(80);
+  applyPaymentCredits.mockResolvedValue({ applied: true, balance: 80 });
 });
 
 describe("결제→크레딧 플로우", () => {
@@ -134,7 +134,9 @@ describe("결제→크레딧 플로우", () => {
       expect(res._status).toBe(200);
       expect(res._body?.success).toBe(true);
       expect(res._body?.credits_added).toBe(30);
-      expect(addCreditsDb).toHaveBeenCalledWith(USER_EMAIL, 30);
+      expect(applyPaymentCredits).toHaveBeenCalledWith(
+        expect.objectContaining({ email: USER_EMAIL, credits: 30 })
+      );
     });
 
     it("c70 패키지(7000원) → 70크레딧 적립", async () => {
@@ -144,7 +146,9 @@ describe("결제→크레딧 플로우", () => {
         body: { paymentKey: "pk_test_123", orderId: "hll-c70-1700000000", amount: 7000 },
       }), res);
       expect(res._body?.credits_added).toBe(70);
-      expect(addCreditsDb).toHaveBeenCalledWith(USER_EMAIL, 70);
+      expect(applyPaymentCredits).toHaveBeenCalledWith(
+        expect.objectContaining({ email: USER_EMAIL, credits: 70 })
+      );
     });
 
     it("c230 패키지(20000원) → 230크레딧 적립", async () => {
@@ -167,7 +171,7 @@ describe("결제→크레딧 플로우", () => {
 
     it("적립 후 new_balance를 반환한다", async () => {
       tossOk();
-      addCreditsDb.mockResolvedValueOnce(80);
+      applyPaymentCredits.mockResolvedValueOnce({ applied: true, balance: 80 });
       const res = makeRes();
       await handler(makeReq({
         body: { paymentKey: "pk_test_123", orderId: "hll-c30-1700000000", amount: 3000 },
@@ -184,7 +188,7 @@ describe("결제→크레딧 플로우", () => {
         body: { paymentKey: "pk_test_123", orderId: "hll-c30-123", amount: 1 },
       }), res);
       expect(res._status).toBe(400);
-      expect(addCreditsDb).not.toHaveBeenCalled();
+      expect(applyPaymentCredits).not.toHaveBeenCalled();
     });
 
     it("잘못된 packageKey → 400", async () => {
@@ -193,7 +197,7 @@ describe("결제→크레딧 플로우", () => {
         body: { paymentKey: "pk_test_123", orderId: "hll-c999-123", amount: 9999 },
       }), res);
       expect(res._status).toBe(400);
-      expect(addCreditsDb).not.toHaveBeenCalled();
+      expect(applyPaymentCredits).not.toHaveBeenCalled();
     });
 
     it("필수 파라미터 누락 → 400", async () => {
@@ -212,7 +216,7 @@ describe("결제→크레딧 플로우", () => {
         body: { paymentKey: "pk_test_123", orderId: "hll-c30-123", amount: 3000 },
       }), res);
       expect(res._status).toBe(402);
-      expect(addCreditsDb).not.toHaveBeenCalled();
+      expect(applyPaymentCredits).not.toHaveBeenCalled();
     });
 
     it("TossPayments 네트워크 장애 → 500, 크레딧 미적립", async () => {
@@ -222,7 +226,7 @@ describe("결제→크레딧 플로우", () => {
         body: { paymentKey: "pk_test_123", orderId: "hll-c30-123", amount: 3000 },
       }), res);
       expect(res._status).toBe(500);
-      expect(addCreditsDb).not.toHaveBeenCalled();
+      expect(applyPaymentCredits).not.toHaveBeenCalled();
     });
   });
 });

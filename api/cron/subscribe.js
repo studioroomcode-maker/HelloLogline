@@ -5,7 +5,7 @@
  * Vercel Cron은 Authorization: Bearer ${CRON_SECRET} 헤더를 자동 추가하지 않으므로
  * vercel.json의 crons.path에서 호출 시 CRON_SECRET 환경변수로 검증.
  */
-import { listDueSubscriptions, upsertSubscription, addCreditsDb } from "../_redis.js";
+import { listDueSubscriptions, upsertSubscription, applyPaymentCredits, writeAuditLog } from "../_redis.js";
 import { sendEmail, subscriptionRenewedHtml, subscriptionFailedHtml } from "../_email.js";
 import { captureServerException } from "../_sentry.js";
 
@@ -19,6 +19,18 @@ const PLANS = {
   sub_basic: { credits: 100, amount: 9900,  label: "Basic" },
   sub_pro:   { credits: 250, amount: 19900, label: "Pro"   },
 };
+
+/** 결제 취소(보상 환불). 실패해도 예외를 던지지 않는다. */
+async function tossCancel(paymentKey, reason, tossAuth) {
+  try {
+    const r = await fetch(`https://api.tosspayments.com/v1/payments/${encodeURIComponent(paymentKey)}/cancel`, {
+      method: "POST",
+      headers: { Authorization: `Basic ${tossAuth}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ cancelReason: reason }),
+    });
+    return r.ok;
+  } catch { return false; }
+}
 
 function timingSafeEqual(a, b) {
   const ab = Buffer.from(a || "");
@@ -92,8 +104,29 @@ export default async function handler(req, res) {
         continue;
       }
 
-      // ── 결제 성공: 크레딧 적립 + 갱신일 업데이트 ──
-      await addCreditsDb(sub.email, pkg.credits);
+      // ── 결제 성공: 크레딧 적립 + 결제 이벤트 기록을 한 트랜잭션으로 ──
+      // 이벤트를 기록해야 토스 웹훅이 같은 결제로 크레딧을 또 넣지 않는다.
+      const applied = await applyPaymentCredits({
+        paymentKey: d.paymentKey,
+        orderId, email: sub.email,
+        amount: pkg.amount,
+        credits: pkg.credits,
+        status: "DONE", event: "cron:subscribe", raw: d,
+      });
+
+      // ── 결제는 됐는데 적립 실패: 보상 환불 시도 (예전에는 조용히 넘어갔다) ──
+      if (applied === null) {
+        const cancelled = await tossCancel(d.paymentKey, "크레딧 적립 실패 보상 환불", tossAuth);
+        await writeAuditLog("cron:subscribe", cancelled ? "payment.auto_refund" : "payment.refund_failed", sub.email, {
+          paymentKey: d.paymentKey, orderId, amount: pkg.amount, reason: "credit_add_failed",
+        });
+        captureServerException(new Error("구독 갱신 크레딧 적립 실패"), {
+          where: "cron:subscribe", email: sub.email, paymentKey: d.paymentKey, cancelled,
+        });
+        results.push({ email: sub.email, ok: false, reason: cancelled ? "credit_failed_refunded" : "credit_failed_refund_failed" });
+        continue;
+      }
+
       const nextBillingAt = sub.next_billing_at + 30 * 24 * 60 * 60 * 1000;
       await upsertSubscription(sub.email, { ...sub, status: "active", next_billing_at: nextBillingAt });
 

@@ -4,7 +4,7 @@
  */
 import {
   getCredits,
-  addCreditsDb,
+  applyPaymentCredits,
   getPaymentEvent,
   savePaymentEvent,
   writeAuditLog,
@@ -120,25 +120,24 @@ export default async function handler(req, res) {
         return res.status(402).json({ error: tossData.message || "결제 확인에 실패했습니다." });
       }
 
-      // ── 결제 확정 기록을 먼저 남김 (크레딧 적립 실패 시 추적용) ──
-      await savePaymentEvent(paymentKey, {
-        order_id: orderId, email, amount: parseInt(amount),
-        status: "CONFIRMED", event: "api/credits", credits_added: 0, raw: tossData,
+      // ── 이벤트 기록 + 크레딧 적립을 한 트랜잭션으로 (웹훅과의 이중 적립 방지) ──
+      // 선기록 후 적립하는 2단계 방식은 그 사이에 웹훅이 끼어들 수 있었다.
+      const applied = await applyPaymentCredits({
+        paymentKey, orderId, email,
+        amount: parseInt(amount),
+        credits: pkg.credits,
+        status: "DONE", event: "api/credits", raw: tossData,
       });
 
-      // ── 크레딧 적립. 실패 시 보상 트랜잭션으로 자동 환불 시도 ──
-      let newBalance = null;
-      try {
-        newBalance = await addCreditsDb(email, pkg.credits);
-        if (newBalance === null) throw new Error("DB 미연결");
-      } catch (addErr) {
-        console.error("[credit add failed after payment]", addErr?.message);
+      // ── 적립 실패(DB 오류). 보상 트랜잭션으로 자동 환불 시도 ──
+      if (applied === null) {
+        console.error("[credit add failed after payment]", { paymentKey, email });
         const cancelled = await tossCancel("크레딧 적립 실패 보상 환불");
         await savePaymentEvent(paymentKey, {
           order_id: orderId, email, amount: parseInt(amount),
           status: cancelled ? "COMPENSATED_REFUND" : "REFUND_FAILED",
           event: "api/credits",
-          raw: { error: addErr?.message || String(addErr), cancelled },
+          raw: { error: "apply_payment_credits 실패", cancelled },
         });
         await writeAuditLog("api:credits", cancelled ? "payment.auto_refund" : "payment.refund_failed", email, {
           paymentKey, orderId, amount: parseInt(amount), reason: "credit_add_failed",
@@ -150,20 +149,25 @@ export default async function handler(req, res) {
         });
       }
 
-      // ── 성공 — 이벤트 로그 업데이트 ──
-      await savePaymentEvent(paymentKey, {
-        order_id: orderId, email, amount: parseInt(amount),
-        status: "DONE", event: "api/credits",
-        credits_added: pkg.credits, raw: tossData,
-      });
+      // ── 이미 적립되어 있었다면(웹훅이 먼저 처리) 중복 지급하지 않는다 ──
+      if (!applied.applied) {
+        return res.status(200).json({
+          success: true,
+          credits_added: pkg.credits,
+          new_balance: applied.balance,
+          orderId,
+          idempotent: true,
+        });
+      }
+
       await writeAuditLog("api:credits", "credits.add", email, {
-        paymentKey, orderId, amount: parseInt(amount), credits: pkg.credits, newBalance,
+        paymentKey, orderId, amount: parseInt(amount), credits: pkg.credits, newBalance: applied.balance,
       });
 
       return res.status(200).json({
         success: true,
         credits_added: pkg.credits,
-        new_balance: newBalance,
+        new_balance: applied.balance,
         orderId,
       });
     } catch (err) {

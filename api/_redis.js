@@ -178,16 +178,6 @@ export async function deductCredits(email, amount) {
   return result ?? -1;
 }
 
-/** 크레딧 추가. 반환값: 새 잔액 */
-export async function addCreditsDb(email, amount) {
-  if (!usingSupa()) return null;
-  const result = await supaReq("rpc/add_credits", {
-    method: "POST",
-    body: { user_email: email, amount },
-  });
-  return result;
-}
-
 /**
  * 신규 가입자에게 초기 크레딧 지급.
  * credits 컬럼이 null(한 번도 충전/차감된 적 없음)인 경우에만 지급.
@@ -372,6 +362,34 @@ export async function getPaymentEvent(paymentKey) {
   );
   if (!Array.isArray(rows) || rows.length === 0) return null;
   return rows[0];
+}
+
+/**
+ * 결제 크레딧을 원자적·멱등적으로 적립한다 (supabase/migrations/005_*.sql).
+ *
+ * 반환:
+ *   { applied: true,  balance }  이번 호출이 적립함
+ *   { applied: false, balance }  이미 적립되어 있었음 — 아무것도 하지 않음
+ *   null                          DB 오류. 적립되지 않았다. 호출부가 보상 처리해야 한다.
+ *
+ * 이걸 쓰면 /api/credits 와 토스 웹훅이 동시에 들어와도 크레딧은 한 번만 늘어난다.
+ */
+export async function applyPaymentCredits({ paymentKey, orderId, email, amount, credits, status, event, raw }) {
+  if (!usingSupa()) return null;
+  const result = await supaReq("rpc/apply_payment_credits", {
+    method: "POST",
+    body: {
+      p_payment_key: paymentKey,
+      p_order_id: orderId ?? null,
+      p_email: email,
+      p_amount: amount ?? null,
+      p_credits: credits,
+      p_status: status,
+      p_event: event,
+      p_raw: raw ?? null,
+    },
+  });
+  return (result && typeof result.applied === "boolean") ? result : null;
 }
 
 /** 결제 이벤트 저장 — merge-duplicates로 upsert */

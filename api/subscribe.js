@@ -5,7 +5,7 @@
  *   /api/subscribe?action=status        — GET   — 구독 상태 조회
  */
 import { verifyToken, getTokenFromRequest } from "./auth/_jwt.js";
-import { redisConfigured, addCreditsDb, getSubscription, upsertSubscription } from "./_redis.js";
+import { redisConfigured, applyPaymentCredits, getSubscription, upsertSubscription } from "./_redis.js";
 import { sendEmail, subscriptionCreatedHtml } from "./_email.js";
 
 const TOSS_SECRET_KEY = (process.env.TOSS_SECRET_KEY || "").trim();
@@ -49,6 +49,7 @@ async function handleBillingAuth(req, res, email) {
   }
 
   const orderId = `hll-${plan}-${Date.now()}`;
+  let payment;
   try {
     const r = await fetch(`https://api.tosspayments.com/v1/billing/${billingKey}`, {
       method: "POST",
@@ -60,17 +61,31 @@ async function handleBillingAuth(req, res, email) {
         orderName: `Hello Loglines ${pkg.label} 구독 ${pkg.credits}cr`,
       }),
     });
-    const d = await r.json();
+    payment = await r.json();
     if (!r.ok) {
-      console.error("[billing-auth] 첫 결제 실패", d);
-      return res.status(402).json({ error: d.message || "첫 달 결제에 실패했습니다." });
+      console.error("[billing-auth] 첫 결제 실패", payment);
+      return res.status(402).json({ error: payment.message || "첫 달 결제에 실패했습니다." });
     }
   } catch (e) {
     console.error("[billing-auth] 첫 결제 오류", e.message);
     return res.status(500).json({ error: "결제 처리 중 오류가 발생했습니다." });
   }
 
-  const newBalance = await addCreditsDb(email, pkg.credits);
+  // 결제 이벤트를 함께 기록해야 토스 웹훅이 같은 결제로 크레딧을 또 넣지 않는다.
+  const applied = await applyPaymentCredits({
+    paymentKey: payment.paymentKey,
+    orderId, email,
+    amount: pkg.amount,
+    credits: pkg.credits,
+    status: "DONE", event: "api/subscribe", raw: payment,
+  });
+  if (applied === null) {
+    console.error("[billing-auth] 크레딧 적립 실패 — 결제는 완료됨", { orderId, email });
+    return res.status(500).json({
+      error: "결제는 완료되었으나 크레딧 적립에 실패했습니다. 고객센터로 문의해 주세요 (contact@studioroomkr.com).",
+    });
+  }
+  const newBalance = applied.balance;
 
   const nextBillingAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
   await upsertSubscription(email, {

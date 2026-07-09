@@ -12,7 +12,7 @@
 import {
   getPaymentEvent,
   savePaymentEvent,
-  addCreditsDb,
+  applyPaymentCredits,
   getSubscription,
   upsertSubscription,
   writeAuditLog,
@@ -95,14 +95,33 @@ export default async function handler(req, res) {
 
     let creditsAdded = existing?.credits_added || 0;
     let finalStatus = status;
+    let creditsHandled = false; // apply_payment_credits 가 이벤트 행을 이미 기록했는가
 
-    if (status === "DONE" && !existing?.credits_added && pkg && email) {
+    if (status === "DONE" && pkg && email) {
       if (pkg.amount === totalAmount) {
-        const added = await addCreditsDb(email, pkg.credits);
-        creditsAdded = pkg.credits;
-        await writeAuditLog("webhook:toss", "credits.add", email, {
-          paymentKey, orderId, amount: totalAmount, credits: pkg.credits, newBalance: added,
+        // 이벤트 기록 + 적립을 한 트랜잭션으로. /api/credits 가 이미 적립했으면
+        // applied=false 가 돌아오고 크레딧은 늘어나지 않는다.
+        const applied = await applyPaymentCredits({
+          paymentKey, orderId, email,
+          amount: totalAmount,
+          credits: pkg.credits,
+          status: "DONE", event: eventType, raw: p,
         });
+
+        if (applied === null) {
+          // DB 오류 — 적립 안 됨. 토스가 재시도하도록 5xx 를 준다.
+          console.error("[webhook:toss] apply_payment_credits 실패", { paymentKey, email });
+          return res.status(500).json({ ok: false, error: "credit_apply_failed" });
+        }
+
+        creditsHandled = true;
+        creditsAdded = pkg.credits;
+
+        if (applied.applied) {
+          await writeAuditLog("webhook:toss", "credits.add", email, {
+            paymentKey, orderId, amount: totalAmount, credits: pkg.credits, newBalance: applied.balance,
+          });
+        }
 
         if (pkg.kind === "subscription") {
           const existingSub = await getSubscription(email);
@@ -131,15 +150,18 @@ export default async function handler(req, res) {
       }
     }
 
-    await savePaymentEvent(paymentKey, {
-      order_id: orderId,
-      email,
-      amount: totalAmount,
-      status: finalStatus,
-      event: eventType,
-      credits_added: creditsAdded,
-      raw: p,
-    });
+    // 적립 경로에서는 apply_payment_credits 가 이미 행을 기록했다.
+    // 여기서 credits_added 를 다시 쓰면 0 으로 덮어써 중복 적립 문을 다시 열게 된다.
+    if (!creditsHandled) {
+      await savePaymentEvent(paymentKey, {
+        order_id: orderId,
+        email,
+        amount: totalAmount,
+        status: finalStatus,
+        event: eventType,
+        raw: p,
+      });
+    }
 
     return res.status(200).json({ ok: true, status: finalStatus, credits_added: creditsAdded });
   } catch (err) {
@@ -152,6 +174,8 @@ export default async function handler(req, res) {
         raw: { error: String(err?.message || err), body },
       });
     } catch { /* noop */ }
-    return res.status(200).json({ ok: false, error: "internal" });
+    // 5xx 를 반환해 토스가 재시도하게 한다. 200 을 주면 실패한 결제 이벤트가 영영 유실된다.
+    // 적립은 apply_payment_credits 가 멱등이므로 재시도해도 중복되지 않는다.
+    return res.status(500).json({ ok: false, error: "internal" });
   }
 }

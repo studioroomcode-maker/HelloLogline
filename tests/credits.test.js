@@ -5,11 +5,10 @@ vi.mock("../api/_redis.js", () => ({
   rcall: vi.fn(),
   getCredits: vi.fn(),
   deductCredits: vi.fn(),
-  addCreditsDb: vi.fn(),
   checkRateLimit: vi.fn(() => ({ ok: true, remaining: 20, reset: 60 })),
 }));
 
-import { getCredits, deductCredits, addCreditsDb } from "../api/_redis.js";
+import { getCredits, deductCredits } from "../api/_redis.js";
 
 describe("크레딧 시스템", () => {
   beforeEach(() => vi.clearAllMocks());
@@ -86,30 +85,6 @@ describe("크레딧 시스템", () => {
     });
   });
 
-  // ─── addCreditsDb ──────────────────────────────────────────────
-  describe("addCreditsDb", () => {
-    it("크레딧 적립 후 새 잔액을 반환한다", async () => {
-      addCreditsDb.mockResolvedValue(130); // 100 + 30 = 130
-      const result = await addCreditsDb("user@test.com", 30);
-      expect(result).toBe(130);
-    });
-
-    it("기존 잔액 0에 적립하면 적립 금액을 반환한다", async () => {
-      addCreditsDb.mockResolvedValue(50);
-      const result = await addCreditsDb("user@test.com", 50);
-      expect(result).toBe(50);
-    });
-
-    it("DB/네트워크 오류 시 null을 반환한다", async () => {
-      addCreditsDb.mockResolvedValue(null);
-      const result = await addCreditsDb("user@test.com", 30);
-      expect(result).toBeNull();
-    });
-
-    it("이메일과 금액을 인자로 전달한다", async () => {
-      addCreditsDb.mockResolvedValue(130);
-      await addCreditsDb("user@test.com", 30);
-      expect(addCreditsDb).toHaveBeenCalledWith("user@test.com", 30);
-    });
-  });
+  // addCreditsDb 는 apply_payment_credits RPC 로 대체되어 제거됨.
+  // 이중 적립 방지 동작은 tests/paymentIdempotency.test.js 가 검증한다.
 });
