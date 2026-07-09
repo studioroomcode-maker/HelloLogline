@@ -3,6 +3,7 @@
  *   /api/teams                          — GET/POST/PATCH/DELETE — 팀 CRUD
  *   /api/teams?resource=members         — GET/POST/DELETE       — 멤버/초대 관리
  */
+import { randomUUID } from "crypto";
 import { verifyToken, getTokenFromRequest } from "./auth/_jwt.js";
 
 const SUPA_URL = (process.env.SUPABASE_URL         || "").trim();
@@ -30,11 +31,16 @@ async function supaFetch(path, { method = "GET", body, prefer } = {}) {
   return res.json().catch(() => null);
 }
 
-async function assertAdmin(teamId, email) {
+/** 팀 내 역할 반환. 멤버가 아니면 null */
+async function getRole(teamId, email) {
   const rows = await supaFetch(
     `hll_team_members?team_id=eq.${encodeURIComponent(teamId)}&email=eq.${encodeURIComponent(email)}&select=role`
   );
-  if (!rows?.length || rows[0].role !== "admin") throw new Error("admin_required");
+  return rows?.length ? rows[0].role : null;
+}
+
+async function assertAdmin(teamId, email) {
+  if ((await getRole(teamId, email)) !== "admin") throw new Error("admin_required");
 }
 
 // ── resource: teams (default) ────────────────────────────────────────────
@@ -66,7 +72,8 @@ async function handleTeams(req, res, email) {
     if (!name) return res.status(400).json({ error: "팀 이름이 필요합니다." });
     if (!PLAN_LIMITS[plan]) return res.status(400).json({ error: "유효하지 않은 플랜입니다." });
 
-    const teamId = `team_${Date.now()}`;
+    // 타임스탬프 기반 id는 추측 가능하므로 난수를 쓴다
+    const teamId = `team_${randomUUID()}`;
     await supaFetch("hll_teams", {
       method: "POST",
       prefer: "return=minimal",
@@ -129,11 +136,22 @@ async function handleMembers(req, res, email) {
     const { teamId } = req.query;
     if (!teamId) return res.status(400).json({ error: "teamId가 필요합니다." });
 
-    const [members, invites] = await Promise.all([
-      supaFetch(`hll_team_members?team_id=eq.${encodeURIComponent(teamId)}&select=email,role,joined_at`) ?? [],
-      supaFetch(`hll_team_invites?team_id=eq.${encodeURIComponent(teamId)}&accepted_at=is.null&select=id,invited_email,token,expires_at&order=expires_at.desc`) ?? [],
-    ]);
-    return res.json({ members: members ?? [], invites: invites ?? [] });
+    // 멤버만 조회할 수 있다. 이 확인이 없으면 아무나 teamId를 넣어
+    // 팀 전원의 이메일과 미사용 초대 토큰을 가져갈 수 있다.
+    const role = await getRole(teamId, email);
+    if (!role) return res.status(403).json({ error: "이 팀에 접근할 권한이 없습니다." });
+
+    const members = await supaFetch(
+      `hll_team_members?team_id=eq.${encodeURIComponent(teamId)}&select=email,role,joined_at`
+    ) ?? [];
+
+    // 초대 토큰은 관리자에게만 노출한다
+    if (role !== "admin") return res.json({ members, invites: [] });
+
+    const invites = await supaFetch(
+      `hll_team_invites?team_id=eq.${encodeURIComponent(teamId)}&accepted_at=is.null&select=id,invited_email,token,expires_at&order=expires_at.desc`
+    ) ?? [];
+    return res.json({ members, invites });
   }
 
   if (req.method === "POST") {
@@ -149,6 +167,11 @@ async function handleMembers(req, res, email) {
       if (!invite?.length) return res.status(400).json({ error: "유효하지 않거나 만료된 초대입니다." });
       const inv = invite[0];
       if (new Date(inv.expires_at) < new Date()) return res.status(400).json({ error: "초대가 만료되었습니다." });
+
+      // 특정 이메일 앞으로 발급된 초대는 그 사람만 수락할 수 있다
+      if (inv.invited_email && inv.invited_email.toLowerCase() !== email.toLowerCase()) {
+        return res.status(403).json({ error: "본인에게 발급된 초대가 아닙니다." });
+      }
 
       const team = await supaFetch(`hll_teams?id=eq.${encodeURIComponent(inv.team_id)}&select=monthly_limit`);
       const memberCount = await supaFetch(`hll_team_members?team_id=eq.${encodeURIComponent(inv.team_id)}&select=email`);

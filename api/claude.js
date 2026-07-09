@@ -15,6 +15,18 @@ const CREDIT_COSTS = {
   scenario: 5,
 };
 
+// 서버 키로 호출 가능한 모델 — 클라이언트가 임의 모델을 지정하지 못하게 한다.
+const ALLOWED_MODELS = new Set([
+  "claude-sonnet-4-6",
+  "claude-haiku-4-5-20251001",
+]);
+
+// 클라이언트가 요청 가능한 출력 토큰 상한 (앱 내 최대 사용값은 10000)
+const MAX_OUTPUT_TOKENS = 16000;
+
+// 0크레딧 기능의 사용자별 일일 호출 상한
+const FREE_FEATURE_DAILY_LIMIT = 200;
+
 export const config = { api: { bodyParser: { sizeLimit: "4mb" } } };
 
 
@@ -87,16 +99,42 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: { message: "API 키가 설정되지 않았습니다." } });
   }
 
-  const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+  let body;
+  try {
+    body = (typeof req.body === "string" ? JSON.parse(req.body) : req.body) || {};
+  } catch {
+    return res.status(400).json({ error: { message: "잘못된 요청 본문입니다." } });
+  }
+
+  // ── 요청 본문 검증 — 서버 키가 임의의 모델/토큰으로 남용되는 것을 막는다 ──
+  const feature = body._feature || "logline";
+  if (!Object.prototype.hasOwnProperty.call(CREDIT_COSTS, feature)) {
+    return res.status(400).json({ error: { message: "알 수 없는 기능입니다." } });
+  }
+  if (!ALLOWED_MODELS.has(body.model)) {
+    return res.status(400).json({ error: { message: "지원하지 않는 모델입니다." } });
+  }
+  const maxTokens = Number(body.max_tokens);
+  if (!Number.isInteger(maxTokens) || maxTokens < 1 || maxTokens > MAX_OUTPUT_TOKENS) {
+    return res.status(400).json({ error: { message: `max_tokens는 1~${MAX_OUTPUT_TOKENS} 사이여야 합니다.` } });
+  }
 
   // ── 크레딧 사전 확인 (차감은 AI 성공 후에 실행) ──
   const usingServerKey = !clientApiKey && !!serverApiKey;
   let creditEmail = null;
   let creditCost = 0;
 
-  if (usingServerKey && tier === "basic" && !body._retry) {
-    const feature = body._feature || "logline";
-    creditCost = CREDIT_COSTS[feature] ?? 1;
+  if (usingServerKey && tier === "basic") {
+    creditCost = CREDIT_COSTS[feature];
+
+    // 0크레딧 기능도 무제한은 아니다 — 사용자별 일일 상한 적용
+    if (creditCost === 0 && userEmail) {
+      const freeLimit = await checkRateLimit(`rl:free:${userEmail}`, FREE_FEATURE_DAILY_LIMIT, 86400);
+      if (!freeLimit.ok) {
+        return res.status(429).json({ error: { message: "무료 기능의 일일 사용 한도를 초과했습니다. 내일 다시 시도해 주세요." } });
+      }
+    }
+
     if (creditCost > 0) {
       creditEmail = userEmail || null;
       if (creditEmail) {
@@ -114,8 +152,12 @@ export default async function handler(req, res) {
     }
   }
 
-  // _feature, _retry, _stream 필드는 내부 라우팅용이므로 Anthropic에 전달하지 않음
-  const { _feature: _f, _retry: _r, _stream, ...anthropicBody } = body;
+  // 밑줄로 시작하는 필드는 모두 내부 라우팅용이므로 Anthropic에 전달하지 않음.
+  // (구버전 클라이언트가 캐시된 채로 보내는 _retry 등도 여기서 걸러진다)
+  const _stream = body._stream;
+  const anthropicBody = Object.fromEntries(
+    Object.entries(body).filter(([k]) => !k.startsWith("_"))
+  );
 
   // ── 스트리밍 모드 (expertpanel 등 긴 응답용) — SSE로 파이프 ──
   if (_stream) {

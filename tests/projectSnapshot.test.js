@@ -2,7 +2,7 @@
  * buildProjectSnapshot 단위 테스트 하네스
  *
  * 검증 목표:
- *  1. id: currentProjectId가 있으면 사용, 없으면 숫자(timestamp)
+ *  1. id: currentProjectId가 있으면 사용, 없으면 추측 불가능한 새 id
  *  2. title: logline 60자 슬라이스 적용
  *  3. logline 비어있으면 title은 "제목 없음"
  *  4. 모든 분석 결과 필드가 state에서 그대로 복사됨
@@ -45,18 +45,22 @@ describe("buildProjectSnapshot", () => {
       expect(snap.id).toBe("my-id-123");
     });
 
-    it("currentProjectId가 없으면 숫자(timestamp)를 할당한다", () => {
-      const before = Date.now();
+    it("currentProjectId가 없으면 추측 불가능한 id를 할당한다", () => {
       const snap = buildProjectSnapshot({});
-      const after = Date.now();
-      expect(typeof snap.id).toBe("number");
-      expect(snap.id).toBeGreaterThanOrEqual(before);
-      expect(snap.id).toBeLessThanOrEqual(after);
+      expect(typeof snap.id).toBe("string");
+      expect(snap.id.length).toBeGreaterThanOrEqual(16);
+      // 타임스탬프만으로 이루어진 id는 남이 맞힐 수 있으므로 금지
+      expect(snap.id).not.toMatch(/^\d+$/);
     });
 
-    it("currentProjectId가 null이면 숫자를 할당한다", () => {
+    it("currentProjectId가 null이면 새 id를 할당한다", () => {
       const snap = buildProjectSnapshot({ currentProjectId: null });
-      expect(typeof snap.id).toBe("number");
+      expect(typeof snap.id).toBe("string");
+    });
+
+    it("연속 생성한 id는 서로 겹치지 않는다", () => {
+      const ids = new Set(Array.from({ length: 500 }, () => buildProjectSnapshot({}).id));
+      expect(ids.size).toBe(500);
     });
   });
 

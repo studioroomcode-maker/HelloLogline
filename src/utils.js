@@ -1,4 +1,5 @@
 import { jsonrepair } from "jsonrepair";
+import { newProjectId } from "./ids.js";
 
 export function getGrade(score) {
   if (score >= 90) return { grade: "S", color: "#FFD700", label: "프로 수준" };
@@ -185,13 +186,6 @@ function koreanizeError(errData, httpStatus) {
 }
 
 /**
- * 다음 N번의 API 호출을 무료 재시도로 표시 (크레딧 미차감).
- * ErrorMsg "다시 시도" 버튼 또는 내부 자동 재시도에서 사용.
- */
-let _retryCredits = 0;
-export function markNextCallsAsRetry(n = 2) { _retryCredits = n; }
-
-/**
  * Fetch one Claude response (raw text returned from API).
  */
 // ── Ollama 로컬 AI 호출 ────────────────────────────────────────────────────
@@ -249,9 +243,6 @@ async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, 
   const authToken = localStorage.getItem("hll_auth_token");
   if (authToken) headers["x-auth-token"] = authToken;
 
-  const isRetry = _retryCredits > 0;
-  if (isRetry) _retryCredits--;
-
   let response;
   try {
     response = await fetch("/api/claude", {
@@ -265,7 +256,6 @@ async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, 
         system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
         messages: [{ role: "user", content: userMessage }],
         _feature: feature,
-        ...(isRetry ? { _retry: true } : {}),
       }),
       signal,
     });
@@ -347,8 +337,6 @@ export async function callClaude(
   });
 
   // Retry (same prompt — Claude responses are non-deterministic, retry often fixes it)
-  // 내부 자동 재시도는 크레딧 미차감
-  markNextCallsAsRetry(1);
   const retryText = await fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature);
   const retryParsed = parseClaudeJson(retryText);
   const second = schema.safeParse(retryParsed);
@@ -555,7 +543,7 @@ export async function fetchClaudeStream(
  * 분리된 형태로 유지해 단위 테스트 가능.
  */
 export function buildProjectSnapshot(state) {
-  const id = state.currentProjectId || Date.now();
+  const id = state.currentProjectId || newProjectId();
   const title = (state.logline || "").slice(0, 60) || "제목 없음";
   return {
     id,

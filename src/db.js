@@ -6,6 +6,8 @@
  * is kept under "hll_bk_<id>" so data is recoverable after browser storage clears.
  */
 
+import { newProjectId } from "./ids.js";
+
 const DB_NAME = "hellologlines_v1";
 const DB_VERSION = 1;
 const STORE = "projects";
@@ -208,7 +210,7 @@ export async function deleteProjectFromCloud(id, token) {
 export async function forkProject(original) {
   const forked = {
     ...original,
-    id: Date.now().toString(),
+    id: newProjectId(),
     parentId: original.id,
     title: `[분기] ${original.title || "프로젝트"}`,
     createdAt: new Date().toISOString(),

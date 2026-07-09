@@ -77,6 +77,15 @@ async function handleProjects(req, res, email) {
 
     if (!id) return res.status(400).json({ error: "id가 필요합니다." });
 
+    // 소유권 검증 — merge-duplicates 업서트는 기존 행의 user_email까지 덮어쓰므로,
+    // 이 확인이 없으면 남의 프로젝트 id로 PUT 하는 것만으로 소유권을 빼앗을 수 있다.
+    const owner = await supaFetch(
+      `hll_projects?id=eq.${encodeURIComponent(id)}&select=user_email`
+    );
+    if (owner?.length && owner[0].user_email !== email) {
+      return res.status(403).json({ error: "이 프로젝트에 접근할 권한이 없습니다." });
+    }
+
     const data = { title, logline, genre, updatedAt, ...rest };
 
     await supaFetch("hll_projects", {
@@ -153,6 +162,14 @@ async function handleVersions(req, res, email) {
     const { projectId, snapshot } = body;
 
     if (!projectId || !snapshot) return res.status(400).json({ error: "projectId와 snapshot이 필요합니다." });
+
+    // 버전은 본인 소유 프로젝트에만 추가할 수 있다
+    const owner = await supaFetch(
+      `hll_projects?id=eq.${encodeURIComponent(projectId)}&select=user_email`
+    );
+    if (owner?.length && owner[0].user_email !== email) {
+      return res.status(403).json({ error: "이 프로젝트에 접근할 권한이 없습니다." });
+    }
 
     const existing = await supaFetch(
       `hll_project_versions?project_id=eq.${encodeURIComponent(projectId)}&user_email=eq.${encodeURIComponent(email)}&select=id,version_num&order=version_num.desc&limit=1`

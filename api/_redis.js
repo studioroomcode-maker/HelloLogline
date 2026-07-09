@@ -212,6 +212,12 @@ const _memStore = new Map();
 
 function memRateCheck(key, limit, windowSec) {
   const now = Date.now();
+
+  // 만료 항목 정리 — 웜 인스턴스에서 Map이 무한히 커지지 않도록
+  if (_memStore.size > 5000) {
+    for (const [k, v] of _memStore) if (v.resetAt <= now) _memStore.delete(k);
+  }
+
   const entry = _memStore.get(key);
   if (!entry || entry.resetAt <= now) {
     _memStore.set(key, { count: 1, resetAt: now + windowSec * 1000 });
@@ -225,29 +231,77 @@ function memRateCheck(key, limit, windowSec) {
   };
 }
 
+let _warnedMemFallback = false;
+function memFallback(key, limit, windowSec, reason) {
+  if (!_warnedMemFallback) {
+    _warnedMemFallback = true;
+    console.error(
+      `[RateLimit] 영속 저장소를 쓸 수 없어 인메모리 폴백으로 동작합니다 (${reason}). ` +
+      `서버리스 인스턴스 간에 공유되지 않으므로 방어력이 크게 떨어집니다. ` +
+      `UPSTASH_REDIS_REST_URL을 설정하거나 supabase/migrations/001_rate_limits.sql을 실행하세요.`
+    );
+  }
+  return memRateCheck(key, limit, windowSec);
+}
+
+/** Upstash Redis — incr/expire/ttl 네이티브 지원 */
+async function redisRateCheck(key, limit, windowSec) {
+  const count = await redisRcall("incr", key);
+  if (typeof count !== "number") return null;
+  if (count === 1) await redisRcall("expire", key, windowSec);
+  const ttl = await redisRcall("ttl", key);
+  return {
+    ok: count <= limit,
+    remaining: Math.max(0, limit - count),
+    reset: typeof ttl === "number" && ttl > 0 ? ttl : windowSec,
+  };
+}
+
+/** Supabase — incr_rate_limit RPC (supabase/migrations/001_rate_limits.sql) */
+async function supaRateCheck(key, limit, windowSec) {
+  const rows = await supaReq("rpc/incr_rate_limit", {
+    method: "POST",
+    body: { p_key: key, p_window: windowSec },
+  });
+  const row = Array.isArray(rows) ? rows[0] : rows;
+  if (!row || typeof row.count !== "number") return null;
+  return {
+    ok: row.count <= limit,
+    remaining: Math.max(0, limit - row.count),
+    reset: Math.max(0, Math.ceil((Number(row.reset_at) - Date.now()) / 1000)),
+  };
+}
+
 /**
- * 레이트 리미팅 체크
+ * 레이트 리미팅 체크.
+ *
+ * rcall()을 거치지 않는다 — supaRcall에는 incr/expire/ttl 분기가 없어
+ * 항상 null을 반환했고, `null <= limit`이 true라서 리미팅이 조용히 무력화됐다.
+ * 여기서는 저장소를 직접 고르고, 실패하면 시끄럽게 인메모리로 폴백한다.
+ *
  * @param {string} key - 리미팅 키 (예: "rl:ip:1.2.3.4" 또는 "rl:user:email@a.com")
  * @param {number} limit - 허용 최대 요청 수
  * @param {number} windowSec - 윈도우 초 (예: 60)
  * @returns {Promise<{ok: boolean, remaining: number, reset: number}>}
  */
 export async function checkRateLimit(key, limit, windowSec) {
-  try {
-    const count = await rcall("incr", key);
-    if (count === 1) {
-      await rcall("expire", key, windowSec);
-    }
-    const ttl = await rcall("ttl", key);
-    return {
-      ok: count <= limit,
-      remaining: Math.max(0, limit - count),
-      reset: ttl,
-    };
-  } catch {
-    // Redis/Supabase 불가 — 인스턴스 내 in-memory 폴백으로 최소한의 버스트 방어
-    return memRateCheck(key, limit, windowSec);
+  if (usingRedis()) {
+    try {
+      const r = await redisRateCheck(key, limit, windowSec);
+      if (r) return r;
+    } catch { /* 아래 폴백 */ }
+    return memFallback(key, limit, windowSec, "Upstash Redis 응답 없음");
   }
+
+  if (usingSupa()) {
+    try {
+      const r = await supaRateCheck(key, limit, windowSec);
+      if (r) return r;
+    } catch { /* 아래 폴백 */ }
+    return memFallback(key, limit, windowSec, "incr_rate_limit RPC 없음 또는 실패");
+  }
+
+  return memFallback(key, limit, windowSec, "DB 환경변수 미설정");
 }
 
 // ─── 구독 관리 (Supabase 전용) ─────────────────────────────────────
