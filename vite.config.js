@@ -54,7 +54,15 @@ export default defineConfig({
     },
   },
   build: {
-    sourcemap: true, // Sentry source map 업로드용
+    // true 였을 때 dist/assets/*.js.map 32개가 공개 배포되어 전체 소스가 노출됐다.
+    // 주석 "Sentry source map 업로드용" 과 달리 @sentry/vite-plugin 이 없어
+    // 업로드되지도 않고 있었다.
+    //
+    // Sentry 에서 원본 스택트레이스를 보려면:
+    //   npm i -D @sentry/vite-plugin
+    //   플러그인 추가 후 sourcemap: "hidden" 으로 바꾸고
+    //   sourcemaps.filesToDeleteAfterUpload 로 dist 에서 지운다.
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {

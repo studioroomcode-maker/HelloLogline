@@ -1,0 +1,24 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /auth/
+Disallow: /share/
+
+# AI 검색 노출(AEO/GEO)을 위해 LLM 크롤러를 명시적으로 허용한다.
+# 서비스가 AI 답변에 인용되기를 원하지 않으면 아래를 Disallow: / 로 바꾼다.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://hellologlines.studioroomkr.com/sitemap.xml

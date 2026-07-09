@@ -16,6 +16,8 @@
  */
 
 import { randomBytes } from "crypto";
+import { verifyToken, getTokenFromRequest } from "./auth/_jwt.js";
+import { checkRateLimit } from "./_redis.js";
 
 const SUPA_URL    = (process.env.SUPABASE_URL              || "").trim();
 const SUPA_KEY    = (process.env.SUPABASE_SERVICE_KEY      || "").trim();
@@ -102,11 +104,8 @@ async function loadShare(id) {
 
 // ── Handler ───────────────────────────────────────────────────────
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(200).end();
-
+  // CORS 헤더 없음 — 공유 페이지(/share/:id)는 같은 오리진의 SPA가 읽는다.
+  // 예전에는 Access-Control-Allow-Origin: * 라서 아무 사이트나 읽을 수 있었다.
   const configured = usingSupa || usingRedis;
 
   // ── GET ──
@@ -136,6 +135,25 @@ export default async function handler(req, res) {
 
   // ── POST ──
   if (req.method === "POST") {
+    // 인증 필수 — 예전에는 누구나 무제한으로 DB에 데이터를 밀어넣을 수 있었다.
+    const token = getTokenFromRequest(req);
+    if (!token) return res.status(401).json({ error: "로그인이 필요합니다." });
+
+    let email;
+    try {
+      email = verifyToken(token).email || "";
+    } catch {
+      return res.status(401).json({ error: "인증 토큰이 유효하지 않습니다." });
+    }
+
+    // 사용자당 시간당 20개
+    if (email) {
+      const limit = await checkRateLimit(`rl:share:${email}`, 20, 3600);
+      if (!limit.ok) {
+        return res.status(429).json({ error: "공유 링크를 너무 많이 만들었습니다. 잠시 후 다시 시도해주세요." });
+      }
+    }
+
     if (!configured) {
       return res.status(503).json({
         error: "공유 기능 미설정. Vercel 대시보드 → Settings → Environment Variables에서 SUPABASE_URL + SUPABASE_SERVICE_KEY 또는 UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN을 추가하세요.",
@@ -154,7 +172,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "logline과 data가 필요합니다." });
     }
 
-    const id = randomBytes(4).toString("hex");
+    // 4바이트(32비트)는 열거·충돌이 가능한 크기였다. 공유 문서에는 비공개 시나리오가 담긴다.
+    const id = randomBytes(12).toString("hex"); // 24자
     const now = Date.now();
     const payload = {
       id, logline, genre: genre || "", data,

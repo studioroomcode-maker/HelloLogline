@@ -1492,9 +1492,10 @@ export function useLoglineAnalyzer() {
     if (!logline.trim() || shareLinkLoading) return;
     setShareLinkLoading(true);
     try {
-      const token = localStorage.getItem("hll_token");
+      const token = localStorage.getItem("hll_auth_token");
       const res = await fetch("/api/share", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { "x-auth-token": token } : {}),

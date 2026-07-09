@@ -688,9 +688,14 @@ export default function SidebarLayout({ stageProps, isMobile }) {
     if (!logline) { showToast?.("warn", "로그라인을 먼저 입력하세요."); return; }
     setShareLoading(true);
     try {
+      const token = localStorage.getItem("hll_auth_token");
       const res = await fetch("/api/share", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "x-auth-token": token } : {}),
+        },
         body: JSON.stringify({ logline, genre, data: shareSnapshot || {} }),
       });
       const json = await res.json();

@@ -34,8 +34,9 @@ if ('serviceWorker' in navigator) {
 }
 // ────────────────────────────────────────────────────────────────
 
-// 공유 링크 라우팅: /share/<8자리 hex>
-const _sharePath = window.location.pathname.match(/^\/share\/([a-f0-9]{8})$/)
+// 공유 링크 라우팅: /share/<hex>
+// 신규 id는 24자. 8자는 예전에 발급된 링크와의 하위 호환.
+const _sharePath = window.location.pathname.match(/^\/share\/([a-f0-9]{8}|[a-f0-9]{24})$/)
 
 if (_sharePath) {
   createRoot(document.getElementById('root')).render(
