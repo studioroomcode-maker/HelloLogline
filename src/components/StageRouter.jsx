@@ -343,6 +343,10 @@ function StageContent(props) {
             structureTwistError={props.structureTwistError}
             structureTwistResult={props.structureTwistResult}
             analyzeStructureTwist={props.analyzeStructureTwist}
+            declicheResult={props.declicheResult}
+            declicheLoading={props.declicheLoading}
+            declicheError={props.declicheError}
+            analyzeDecliche={props.analyzeDecliche}
             GENRE_BEAT_HINTS={GENRE_BEAT_HINTS}
             undoHistory={props.undoHistory}
             beatSheetFeedback={props.beatSheetFeedback}

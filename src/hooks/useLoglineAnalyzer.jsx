@@ -662,6 +662,10 @@ export function useLoglineAnalyzer() {
   const [structureTwistLoading, setStructureTwistLoading] = useState(false);
   const [structureTwistError, setStructureTwistError] = useState("");
 
+  const [declicheResult, setDeclicheResult] = useState(null);
+  const [declicheLoading, setDeclicheLoading] = useState(false);
+  const [declicheError, setDeclicheError] = useState("");
+
   const [editingTreatment, setEditingTreatment] = useState(false);
   const [treatmentEditDraft, setTreatmentEditDraft] = useState("");
   const [editingCharacter, setEditingCharacter] = useState(false);
@@ -4535,6 +4539,56 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     } finally { setTreatmentLoading(false); clearController("treatment"); }
   };
 
+  // ── 탈클리셰 적대적 패스 ──
+  // 생성된 트리트먼트는 장르 평균값으로 수렴하는 경향이 있다. 같은 모델을
+  // "장르 평균 파괴자" 자세로 다시 태워, 가장 뻔한 선택 3개와 각각의 구체적
+  // 비틀기를 뽑아낸다. 대신 써주지 않고 작가가 결정하도록 선택지를 제공한다.
+  const DECLICHE_PROMPT = `당신은 부산·전주 영화제 프로그래머 출신의 냉정한 개발 프로듀서입니다. 당신의 유일한 임무는 "장르 평균값"을 파괴하는 것입니다.
+
+당신은 트리트먼트를 읽을 때 관객이 이미 100편에서 본 선택을 즉시 알아챕니다. 매끄러운 완성도에 속지 않습니다 — 매끄러움이야말로 평범함의 증거인 경우가 많습니다.
+
+기준: 봉준호의 디테일, 〈벌새〉의 말해지지 않음, 홍상수의 반복과 어긋남. "그건 생각 못 했다"가 나와야 합격입니다. "따뜻하다/잔잔하다/치유"는 실격 신호입니다.
+
+절대 원칙:
+1. 로그라인의 핵심 전제(누가/어디서/무슨 상황)는 유지 — 다른 이야기로 교체 금지
+2. 비틀기는 "더 자극적으로"가 아니라 "더 구체적이고 예측 불가능하게" — 반전을 위한 반전 금지
+3. 각 대안은 한 문장으로 재현 가능할 만큼 구체적이어야 함 — 추상적 방향 제시 금지
+4. 클리셰 지적은 잔인할 만큼 정확하게. 변명 금지.
+5. "rewrite" 필드는 필수입니다 — cliches 중 첫 번째(가장 뻔한) 비트를 위 비틀기 방향으로 실제 재작성한 산문을 반드시 포함하세요. 진단만 하고 끝내지 마세요.
+
+반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.
+{
+  "cliches": [
+    {
+      "name": "클리셰 이름 (예: 치유하는 노인)",
+      "where": "트리트먼트의 어느 비트·장면인가",
+      "why_cliche": "왜 뻔한가 — 관객이 몇 초 만에 예측하는지, 어떤 작품들에서 봤는지 (구체적 작품명)",
+      "subversion": "전제를 유지하면서 이 선택을 깨는 구체적 대안 (한 문장, 재현 가능)",
+      "why_better": "이 비틀기가 여는 새로운 드라마"
+    }
+  ],
+  "rewrite": {
+    "target": "재작성한 부분 이름 (가장 뻔했던 비트)",
+    "text": "위 비틀기 방향으로 실제 재작성한 산문 300~400자. 장르 표준 금지."
+  }
+}`;
+  const analyzeDecliche = async () => {
+    const effectiveTreatment = writerEdits.treatment || treatmentResult;
+    if (!effectiveTreatment?.trim() || !apiKey) return;
+    const ctrl = makeController("decliche");
+    setDeclicheLoading(true); setDeclicheError(""); setDeclicheResult(null);
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find(g => g.id === genre)?.label || "";
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n\n아래는 생성된 트리트먼트입니다. 장르 평균에 수렴한 선택들을 찾아 파괴하세요.\n──────────\n${effectiveTreatment.slice(0, 6000)}\n──────────`;
+    try {
+      const data = await callClaude(apiKey, DECLICHE_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, null, "decliche");
+      setDeclicheResult(data);
+      trackCreditUsage("탈클리셰 분석", 1);
+      await autoSave();
+    } catch (err) {
+      if (err.name !== "AbortError") setDeclicheError(err.message || "탈클리셰 분석 중 오류가 발생했습니다.");
+    } finally { setDeclicheLoading(false); clearController("decliche"); }
+  };
+
   // ── Pipeline refine ──
   const refinePipelineSynopsis = async () => {
     if (!pipelineResult || !pipelineFeedback.trim() || !apiKey) return;
@@ -5265,6 +5319,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     generateRewriteDiag, generatePartialRewrite, generateFullRewrite,
     // Structure Twist
     structureTwistResult, structureTwistLoading, structureTwistError, analyzeStructureTwist,
+    // De-cliché (탈클리셰 적대적 패스)
+    declicheResult, declicheLoading, declicheError, analyzeDecliche,
     // Editing
     editingTreatment, setEditingTreatment, treatmentEditDraft, setTreatmentEditDraft,
     editingCharacter, setEditingCharacter, charEditDraft, setCharEditDraft,

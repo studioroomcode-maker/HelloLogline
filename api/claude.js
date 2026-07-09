@@ -6,7 +6,7 @@ import { captureServerException } from "./_sentry.js";
 const CREDIT_COSTS = {
   logline: 0, improve: 0,
   character: 0, shadow: 0, authenticity: 0, chardev: 0,
-  synopsis: 1, structure: 1, valuecharge: 1, subtext: 1,
+  synopsis: 1, structure: 1, valuecharge: 1, subtext: 1, decliche: 1,
   academic: 1, mythmap: 1, barthes: 1, koreantmyth: 1,
   expertpanel: 1, theme: 1, dialoguedev: 1, scenelist: 1,
   comparable: 1, rewrite_diag: 1,

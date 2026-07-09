@@ -42,6 +42,7 @@ export default function Stage5Content({
   beatEditDrafts, setBeatEditDrafts,
   structureTwistLoading, structureTwistError, structureTwistResult,
   analyzeStructureTwist,
+  declicheResult, declicheLoading, declicheError, analyzeDecliche,
   GENRE_BEAT_HINTS,
   undoHistory,
   beatSheetFeedback, setBeatSheetFeedback,
@@ -259,6 +260,52 @@ export default function Stage5Content({
                       </>
                     )}
                   </ResultCard>
+                )}
+                {treatmentResult && (
+                  <div style={{ marginTop: 10, padding: "14px 16px", borderRadius: 10, border: "1px solid rgba(232,93,117,0.22)", background: "rgba(232,93,117,0.04)" }}>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10, marginBottom: declicheResult ? 12 : 0 }}>
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#E85D75" }}>가장 뻔한 선택 파괴하기</div>
+                        <div style={{ fontSize: 10.5, color: "var(--c-tx-45)", marginTop: 2 }}>이 트리트먼트가 장르 평균으로 수렴한 지점을 찾아 비틀기를 제안합니다 — 대신 쓰지 않고, 작가가 고를 선택지를 줍니다.</div>
+                      </div>
+                      <button
+                        onClick={analyzeDecliche}
+                        disabled={declicheLoading}
+                        style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 8, border: "1px solid rgba(232,93,117,0.4)", background: declicheLoading ? "rgba(232,93,117,0.05)" : "rgba(232,93,117,0.1)", color: "#E85D75", fontSize: 11.5, fontWeight: 700, cursor: declicheLoading ? "not-allowed" : "pointer", opacity: declicheLoading ? 0.7 : 1, whiteSpace: "nowrap" }}
+                      >
+                        {declicheLoading ? <Spinner size={11} color="#E85D75" /> : <span style={{ fontSize: 13 }}>✂</span>}
+                        {declicheLoading ? "분석 중…" : declicheResult ? "다시 분석" : "클리셰 진단 (1cr)"}
+                      </button>
+                    </div>
+                    <ErrorMsg msg={declicheError} onRetry={declicheError ? analyzeDecliche : undefined} />
+                    {declicheResult?.cliches?.length > 0 && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {declicheResult.cliches.map((c, i) => (
+                          <div key={i} style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(var(--tw),0.03)", border: "1px solid var(--c-bd-2)" }}>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: "#E85D75" }}>#{i + 1}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(var(--tw),0.9)" }}>{c.name}</span>
+                              {c.where && <span style={{ fontSize: 10, color: "var(--c-tx-40)" }}>· {c.where}</span>}
+                            </div>
+                            {c.why_cliche && <div style={{ fontSize: 12, color: "var(--c-tx-55)", lineHeight: 1.7, marginBottom: 8 }}>{c.why_cliche}</div>}
+                            {c.subversion && (
+                              <div style={{ padding: "9px 12px", borderRadius: 7, background: "rgba(78,204,163,0.07)", border: "1px solid rgba(78,204,163,0.2)", marginBottom: c.why_better ? 6 : 0 }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", marginRight: 6 }}>비틀기</span>
+                                <span style={{ fontSize: 12.5, color: "rgba(var(--tw),0.85)", lineHeight: 1.7 }}>{c.subversion}</span>
+                              </div>
+                            )}
+                            {c.why_better && <div style={{ fontSize: 11, color: "var(--c-tx-45)", lineHeight: 1.6, fontStyle: "italic" }}>→ {c.why_better}</div>}
+                          </div>
+                        ))}
+                        {declicheResult.rewrite?.text && (
+                          <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(200,168,75,0.05)", border: "1px solid rgba(200,168,75,0.2)" }}>
+                            <div style={{ fontSize: 10.5, fontWeight: 700, color: "#C8A84B", marginBottom: 6, fontFamily: "'JetBrains Mono', monospace" }}>재작성 — {declicheResult.rewrite.target || "가장 뻔한 비트"}</div>
+                            <div style={{ fontSize: 12.5, color: "rgba(var(--tw),0.82)", lineHeight: 1.8, fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "pre-wrap" }}>{declicheResult.rewrite.text}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
                 {treatmentResult && (
                   <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
