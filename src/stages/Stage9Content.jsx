@@ -40,12 +40,20 @@ export default function Stage9Content({
   narrativeTheoryDone, narrativeTheoryLoading,
   analyzeNarrativeTheory,
   academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult,
+  setCoreDesignFeedback,
 }) {
-  const { logline, isMobile, cc, getStageStatus, advanceToStage, isDemoMode } = useLoglineCtx();
+  const { logline, isMobile, cc, getStageStatus, advanceToStage, isDemoMode, showToast } = useLoglineCtx();
 
   const narrativeCount = countNarrativeResults(academicResult, mythMapResult, barthesCodeResult, koreanMythResult, themeResult);
   const disabled = !logline.trim();
   const [r1Opened, setR1Opened] = useState(false);
+
+  // 2-2: 패널 인사이트를 핵심 설계 피드백란으로 보냄 — 작가가 Stage 2에서 확인 후 반영(1cr) 결정.
+  const applyInsightToCoreDesign = (text) => {
+    if (!setCoreDesignFeedback || !text) return;
+    setCoreDesignFeedback((prev) => (prev?.trim() ? `${prev.trim()}\n• ${text}` : `• ${text}`));
+    showToast("success", "핵심 설계 피드백란에 담았습니다 — Stage 2에서 '피드백 반영해 다시 생성'을 누르면 적용됩니다.");
+  };
 
   return (
     <ErrorBoundary><div>
@@ -176,7 +184,7 @@ export default function Stage9Content({
         <ErrorMsg msg={expertPanelError} />
         {expertPanelResult && (
           <ResultCard title="전문가 패널 토론" onClose={() => setExpertPanelResult(null)} color="rgba(255,209,102,0.15)">
-            <ErrorBoundary><ExpertPanelSection data={expertPanelResult} isMobile={isMobile} onR1Open={() => setR1Opened(true)} /></ErrorBoundary>
+            <ErrorBoundary><ExpertPanelSection data={expertPanelResult} isMobile={isMobile} onR1Open={() => setR1Opened(true)} onApplyInsight={applyInsightToCoreDesign} /></ErrorBoundary>
           </ResultCard>
         )}
       </div>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PANEL_EXPERTS } from "../constants.js";
 
-export function ExpertPanelSection({ data, isMobile, onR1Open }) {
+export function ExpertPanelSection({ data, isMobile, onR1Open, onApplyInsight }) {
   const [openRound, setOpenRound] = useState(2); // 0=모두접기, 1=R1, 2=R2, 3=종합
   const [r1EverOpened, setR1EverOpened] = useState(false);
 
@@ -177,7 +177,14 @@ export function ExpertPanelSection({ data, isMobile, onR1Open }) {
                   {(synthesis.improvements || []).map((imp, i) => (
                     <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
                       <span style={{ fontSize: 10, fontWeight: 700, color: "#4ECCA3", background: "rgba(78,204,163,0.15)", padding: "1px 6px", borderRadius: 4, flexShrink: 0, fontFamily: "'JetBrains Mono', monospace" }}>{i + 1}</span>
-                      <span style={{ fontSize: 12, color: "var(--c-tx-60)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{imp}</span>
+                      <span style={{ flex: 1, fontSize: 12, color: "var(--c-tx-60)", lineHeight: 1.7, fontFamily: "'Noto Sans KR', sans-serif" }}>{imp}</span>
+                      {onApplyInsight && (
+                        <button
+                          onClick={() => onApplyInsight(imp)}
+                          title="이 제안을 Stage 2 핵심 설계 피드백란에 담습니다"
+                          style={{ flexShrink: 0, padding: "2px 9px", borderRadius: 6, border: "1px solid rgba(167,139,250,0.3)", background: "rgba(167,139,250,0.07)", color: "#A78BFA", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "nowrap" }}
+                        >설계에 반영</button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -195,6 +202,13 @@ export function ExpertPanelSection({ data, isMobile, onR1Open }) {
                     <div style={{ padding: "12px 14px", borderRadius: 9, background: "rgba(232,93,117,0.05)", border: "1px solid rgba(232,93,117,0.18)" }}>
                       <div style={{ fontSize: 9, fontWeight: 700, color: "#E85D75", marginBottom: 5, fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5 }}>CRITICAL GAP</div>
                       <p style={{ fontSize: 11, color: "var(--c-tx-55)", lineHeight: 1.6, fontFamily: "'Noto Sans KR', sans-serif", margin: 0 }}>{synthesis.critical_gap}</p>
+                      {onApplyInsight && (
+                        <button
+                          onClick={() => onApplyInsight(`(패널이 지적한 결정적 공백) ${synthesis.critical_gap}`)}
+                          title="이 공백을 Stage 2 핵심 설계 피드백란에 담습니다"
+                          style={{ marginTop: 8, padding: "3px 10px", borderRadius: 6, border: "1px solid rgba(167,139,250,0.3)", background: "rgba(167,139,250,0.07)", color: "#A78BFA", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif" }}
+                        >설계에 반영</button>
+                      )}
                     </div>
                   )}
                 </div>

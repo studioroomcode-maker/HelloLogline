@@ -666,6 +666,20 @@ export function useLoglineAnalyzer() {
   const [declicheLoading, setDeclicheLoading] = useState(false);
   const [declicheError, setDeclicheError] = useState("");
 
+  // 클리셰 지도 — 로그라인+장르만으로 "평균 작가가 떠올릴 뻔한 선택"을 미리 뽑아
+  // 상설 금지 목록으로 저장. getStoryBible()이 모든 생성에 주입(사전 회피).
+  const [clicheMapResult, setClicheMapResult] = useState(null);
+  const [clicheMapLoading, setClicheMapLoading] = useState(false);
+  const [clicheMapError, setClicheMapError] = useState("");
+
+  // 작가 헌장 — 작가가 직접 쓰는 불가침 원칙(쓰는 이유·타협 불가·기존 작품과의 차이).
+  // AI가 생성하지 않으며, getStoryBible() 최상단에 5축보다 높은 우선순위로 주입된다.
+  const [authorCharter, setAuthorCharter] = useState("");
+
+  // 결정 장부 — 작가가 검토 후 버린 방향 + 이유의 축적. getStoryBible()에 금지 목록으로
+  // 주입되어 AI가 이미 거부된 종류의 아이디어를 다시 제안하지 못하게 한다(취향 좌표 축적).
+  const [decisionLedger, setDecisionLedger] = useState([]);
+
   const [editingTreatment, setEditingTreatment] = useState(false);
   const [treatmentEditDraft, setTreatmentEditDraft] = useState("");
   const [editingCharacter, setEditingCharacter] = useState(false);
@@ -1050,6 +1064,7 @@ export function useLoglineAnalyzer() {
     academicResult, mythMapResult, koreanMythResult,
     expertPanelResult, barthesCodeResult,
     shadowResult, authenticityResult, coreDesignResult, charDevResult,
+    clicheMapResult, authorCharter, decisionLedger,
     valueChargeResult, subtextResult,
     synopsisResults, pipelineResult, selectedSynopsisIndex,
     treatmentResult, beatSheetResult, beatScenes,
@@ -1157,6 +1172,9 @@ export function useLoglineAnalyzer() {
     setTreatmentResult(proj.treatmentResult || "");
     setBeatSheetResult(proj.beatSheetResult || null);
     setBeatScenes(proj.beatScenes || {});
+    setClicheMapResult(proj.clicheMapResult || null);
+    setAuthorCharter(proj.authorCharter || "");
+    setDecisionLedger(Array.isArray(proj.decisionLedger) ? proj.decisionLedger : []);
     setTeamMembers(proj.teamMembers || []);
     setSceneAssignments(proj.sceneAssignments || {});
     setStageComments(proj.stageComments || {});
@@ -1357,6 +1375,9 @@ export function useLoglineAnalyzer() {
     setGenre("auto");
     setResult(null);
     setCoreDesignResult(null);
+    setClicheMapResult(null);
+    setAuthorCharter("");
+    setDecisionLedger([]);
     setDevelopmentNotes([]);
     setSceneCards([]);
     setCharDevResult(null);
@@ -1441,6 +1462,7 @@ export function useLoglineAnalyzer() {
     setAcademicResult(null); setMythMapResult(null); setKoreanMythResult(null);
     setExpertPanelResult(null); setBarthesCodeResult(null);
     setCoreDesignResult(null); setCoreDesignFeedback(""); setCoreDesignHistory([]);
+    setClicheMapResult(null); setClicheMapError(""); setAuthorCharter(""); setDecisionLedger([]);
     setShadowResult(null); setAuthenticityResult(null); setCharDevResult(null);
     setValueChargeResult(null); setSubtextResult(null);
     setSynopsisResults(null); setSelectedSynopsisIndex(null); setPipelineResult(null);
@@ -2718,10 +2740,30 @@ export function useLoglineAnalyzer() {
   }
   function setWriterEdit(key, value) {
     setWriterEdits(prev => ({ ...prev, [key]: value }));
+    // 1-4: 수동 편집도 하류 산출물을 stale 처리 — 이전엔 AI 재생성 때만 켜졌다.
+    // 작가가 상류(시놉시스·캐릭터·트리트먼트·비트)를 손으로 고치면 하류에 "낡음" 경고를 띄운다.
+    if (key === "synopsis" || key === "character") {
+      if (treatmentResult) setTreatmentStale(true);
+      if (beatSheetResult) setBeatSheetStale(true);
+      if (scenarioDraftResult) setScenarioDraftStale(true);
+    } else if (key === "treatment") {
+      if (beatSheetResult) setBeatSheetStale(true);
+      if (scenarioDraftResult) setScenarioDraftStale(true);
+    } else if (key === "beats") {
+      if (scenarioDraftResult) setScenarioDraftStale(true);
+    }
   }
   function clearWriterEdit(key) {
     setWriterEdits(prev => { const n = { ...prev }; delete n[key]; return n; });
   }
+
+  // ── 결정 장부 (3-3) — 거부한 방향 축적 ──
+  const addLedgerEntry = (rejected, reason) => {
+    const r = (rejected || "").trim();
+    if (!r) return;
+    setDecisionLedger(prev => [...prev, { id: Date.now(), rejected: r, reason: (reason || "").trim() }]);
+  };
+  const removeLedgerEntry = (id) => setDecisionLedger(prev => prev.filter(e => e.id !== id));
 
   // ── HTML 엔티티 디코더 (AI가 &nbsp; 등을 출력할 때 정리) ──
   function decodeHtmlEntities(str) {
@@ -2755,6 +2797,11 @@ export function useLoglineAnalyzer() {
   // 파이프라인 결과 > 사용자가 선택한 시놉시스 방향 > 빈 문자열 순으로 우선순위 결정
   const getStoryBible = () => {
     let bible = "";
+    // 작가 헌장 — 인간이 직접 쓴 불가침 블록. 5축·시놉시스보다 상위 우선순위로 최상단 주입.
+    // AI는 이 텍스트를 재해석·완화·삭제하지 않으며, 제안이 헌장과 충돌하면 제안을 버린다.
+    if (authorCharter.trim()) {
+      bible += `\n\n━━━ 작가 헌장 — 절대 원칙 (그 무엇보다 우선) ━━━\n${authorCharter.trim()}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n※ 위는 작가가 직접 확정한 이 작품의 불가침 원칙입니다. 아래의 어떤 설계·제안·생성물도 이 원칙과 충돌해서는 안 됩니다. 매끄러움·장르 관습·평균값이 헌장과 부딪히면, 헌장을 지키고 나머지를 버리세요.`;
+    }
     // 기존 시나리오/시놉시스 참고 (체크 시 모든 단계에 주입)
     if (referenceScenarioEnabled && referenceScenario.trim()) {
       if (referenceScenarioSummary.trim()) {
@@ -2779,6 +2826,20 @@ export function useLoglineAnalyzer() {
       if (lines.length) {
         bible += `\n\n━━━ 확정된 핵심 설계 (Stage 2 — 이야기 엔진) — 반드시 이 5축을 유지하며 발전시킬 것 ━━━\n${lines.join("\n")}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n※ 위 Want/Need/적대자/스테이크/테마는 작가가 확정한 이야기의 엔진입니다. 캐릭터·시놉시스·트리트먼트·초고는 이 5축과 모순되지 않아야 합니다. Want가 시각화되는 장면, 적대자의 거울 기능, 테마의 controlling idea를 모든 산출물에 반영하세요.`;
       }
+    }
+    // 클리셰 지도 — 평균값 회피. 모든 생성 단계에 금지 목록으로 주입해 AI가 뻔한 선택을 사전 차단.
+    if (clicheMapResult?.traps?.length) {
+      const traps = clicheMapResult.traps
+        .map((t, i) => `${i + 1}. ${t.trap || ""}${t.why ? ` (뻔한 이유: ${t.why})` : ""}`)
+        .join("\n");
+      bible += `\n\n━━━ 클리셰 지도 — 아래는 이 소재에서 평범한 작가가 떠올릴 뻔한 선택들이다. 반드시 피할 것 ━━━\n${traps}${clicheMapResult.fresh_territory ? `\n\n▸ 미개척 방향: ${clicheMapResult.fresh_territory}` : ""}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n※ 위 목록의 선택을 그대로 답습하지 마세요. 같은 전제(누가/어디서/무슨 상황)는 유지하되, 더 구체적이고 예측 불가능한 선택을 하세요. "반전을 위한 반전"이 아니라 "더 정확한 디테일"로 평균값을 벗어나세요. 무언가를 생성할 때 가장 먼저 떠오르는 전개는 통계적 평균이므로 일단 버리고, 그다음에 떠오르는 더 구체적인 선택으로 쓰세요.`;
+    }
+    // 결정 장부 — 작가가 이미 거부한 방향. 취향 좌표로서 모든 생성에 주입해 재제안을 막는다.
+    if (decisionLedger.length) {
+      const entries = decisionLedger
+        .map((d, i) => `${i + 1}. ${d.rejected}${d.reason ? ` — 이유: ${d.reason}` : ""}`)
+        .join("\n");
+      bible += `\n\n━━━ 결정 장부 — 작가가 검토 후 이미 거부한 방향 (다시 제안하지 말 것) ━━━\n${entries}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n※ 위는 작가가 의식적으로 버린 선택입니다. 이 방향들을 다시 제안하거나 비슷한 변형으로 되살리지 마세요.`;
     }
     // 캐릭터 보이스 카드 — 작가의 목소리 보존을 위해 모든 대사 생성에 주입.
     const voiceBlock = (() => {
@@ -3654,6 +3715,49 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     }
     catch (err) { if (err.name !== "AbortError") setScenarioDraftError(err.message || "시나리오 생성 중 오류가 발생했습니다."); }
     finally { setScenarioDraftLoading(false); clearController("scenarioDraft"); }
+  };
+
+  // ── Assemble draft from written scenes (AI 호출 없음 · 무료) ──
+  // 집필된 씬(beatScenes)을 비트 순서대로 이어 붙여 Fountain 초고로 조립한다.
+  // 씬 생성 때 이미 과금됐으므로 조립은 무료. 작가가 쓴 씬을 원문 그대로 보존하며,
+  // 단일 호출 8000토큰 상한이 없어 장편 완본이 가능하다. 미집필 비트는 노트로 표시.
+  const assembleDraftFromScenes = async () => {
+    const beats = beatSheetResult?.beats;
+    if (!beats?.length) return;
+    const writtenCount = beats.filter((b) => beatScenes[b.id]?.trim()).length;
+    if (writtenCount === 0) return;
+
+    pushHistory(setScenarioDraftHistory, scenarioDraftResult, null);
+
+    const parts = ["FADE IN:"];
+    let lastAct = null;
+    let missing = 0;
+    for (const beat of beats) {
+      if (beat.act != null && beat.act !== lastAct) {
+        lastAct = beat.act;
+        parts.push(/^\d+$/.test(String(beat.act)) ? `${beat.act}막` : String(beat.act));
+      }
+      const scene = beatScenes[beat.id]?.trim();
+      if (scene) {
+        parts.push(scene);
+      } else {
+        missing++;
+        const summary = (writerEdits.beats?.[beat.id] || beat.summary || "").replace(/\s+/g, " ").trim();
+        parts.push(`[[비트 #${beat.id} ${beat.name_kr || ""} — 미집필${summary ? `: ${summary}` : ""}]]`);
+      }
+    }
+    parts.push("FADE OUT.");
+
+    setScenarioDraftResult(parts.join("\n\n"));
+    setScenarioDraftStale(false);
+    setScenarioDraftCtx({
+      assembled: true,
+      writtenScenes: writtenCount,
+      missingScenes: missing,
+      beats: true,
+      genre: genre !== "auto" ? (GENRES.find((g) => g.id === genre)?.label || null) : null,
+    });
+    await autoSave();
   };
 
   // ── Beat Sheet ──
@@ -4624,6 +4728,49 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     } finally { setDeclicheLoading(false); clearController("decliche"); }
   };
 
+  // ── 클리셰 지도 (사전 회피 패스) ──
+  // decliche가 생성된 트리트먼트를 사후에 진단한다면, 이 함수는 로그라인+장르만으로
+  // 개발 시작 전에 "이 소재의 뻔한 함정"을 미리 지도화한다. 결과는 getStoryBible()을
+  // 통해 이후 모든 생성(시놉시스·트리트먼트·비트·씬·초고)에 금지 목록으로 주입된다.
+  const CLICHE_MAP_PROMPT = `당신은 부산·전주 영화제 프로그래머 출신의 냉정한 개발 프로듀서입니다. 아직 한 글자도 쓰이지 않은 이 소재를 보고, 평범한 작가 100명이 이 로그라인으로 쓸 때 가장 많이 나올 "장르 평균값" 선택들을 미리 지도로 그립니다.
+
+기준: 봉준호의 디테일, 〈벌새〉의 말해지지 않음, 홍상수의 반복과 어긋남. "따뜻하다/잔잔하다/치유/성장"으로 요약되는 선택은 전부 함정 신호입니다.
+
+절대 원칙:
+1. 이 소재에 **구체적으로** 뻔한 것을 짚을 것 — 아무 작품에나 해당하는 일반론 금지
+2. 각 함정은 한 문장으로 재현 가능할 만큼 구체적이어야 함
+3. 왜 뻔한지는 관객이 몇 초 만에 예측하는 이유 + 실제로 그렇게 한 작품을 근거로
+4. 대신 써주지 말 것 — 함정을 표시만 하고, 어디가 미개척지인지 방향만 제시
+
+반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.
+{
+  "traps": [
+    {
+      "trap": "뻔한 선택 (한 문장, 재현 가능)",
+      "why": "왜 뻔한가 — 관객이 예측하는 이유, 어떤 작품들에서 봤는지 (구체적 작품명)",
+      "where": "보통 어느 단계에서 나오는가 (도입/1막/미드포인트/3막/결말 등)"
+    }
+  ],
+  "fresh_territory": "이 소재에서 아직 아무도 제대로 안 간 방향 — 한 문장, 구체적으로"
+}
+
+함정은 8~10개. 흔한 순서(가장 먼저 떠오르는 것)부터 나열하세요.`;
+  const generateClicheMap = async () => {
+    if (!logline.trim() || !apiKey) return;
+    const ctrl = makeController("clicheMap");
+    setClicheMapLoading(true); setClicheMapError("");
+    const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find(g => g.id === genre)?.label || "";
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n이 소재로 평범한 작가 100명이 쓸 때 가장 많이 나올 뻔한 선택들을 지도로 그리세요. 아직 쓰이지 않은 이야기에 대한 사전 경고입니다.`;
+    try {
+      const data = await callClaude(apiKey, CLICHE_MAP_PROMPT, msg, 2500, "claude-sonnet-4-6", ctrl.signal, null, "clichemap");
+      setClicheMapResult(data);
+      trackCreditUsage("클리셰 지도", 1);
+      await autoSave();
+    } catch (err) {
+      if (err.name !== "AbortError") setClicheMapError(err.message || "클리셰 지도 생성 중 오류가 발생했습니다.");
+    } finally { setClicheMapLoading(false); clearController("clicheMap"); }
+  };
+
   // ── Pipeline refine ──
   const refinePipelineSynopsis = async () => {
     if (!pipelineResult || !pipelineFeedback.trim() || !apiKey) return;
@@ -4700,6 +4847,37 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     } finally { setScenarioDraftRefineLoading(false); clearController("scenarioRefine"); }
   };
 
+  // ── 개고 컨텍스트 빌더 — 커버리지(Stage 7)·진단(Stage 8)을 개고 프롬프트에 구조적으로 주입.
+  // "진단받고 → 반영해서 고쳐쓰기"라는 킬러 루프를 닫는다. 이전에는 힌트 수준으로만 연결됐다.
+  const buildCoverageBlock = () => {
+    const c = scriptCoverageResult;
+    if (!c) return "";
+    const labels = { premise: "전제", story: "이야기", character: "인물", dialogue_potential: "대사", setting: "세계관", marketability: "시장성" };
+    const parts = [];
+    if (c.recommendation) parts.push(`판정: ${c.recommendation}${c.overall_score ? ` (${c.overall_score}/10)` : ""}`);
+    if (c.verdict_rationale) parts.push(`판정 사유: ${c.verdict_rationale}`);
+    const weak = Object.entries(c.scores || {})
+      .filter(([, v]) => v && /[CDF]/.test(v.grade || ""))
+      .map(([k, v]) => `- ${labels[k] || k} [${v.grade}]: ${v.comment || ""}`);
+    if (weak.length) parts.push(`개선 필요 항목 (등급 C 이하):\n${weak.join("\n")}`);
+    if (c.weaknesses?.length) parts.push(`지적된 약점: ${c.weaknesses.join(" / ")}`);
+    if (parts.length === 0) return "";
+    return `\n\n── 커버리지 진단 (Stage 7 · 이 지적을 반영해 고칠 것) ──\n${parts.join("\n")}`;
+  };
+  const buildDiagBlock = () => rewriteDiagResult
+    ? `\n\n── 초고 진단 결과 (반영 필수) ──\n${(rewriteDiagResult.priority_fixes || []).slice(0, 3).map((f) => `• ${f.category}: ${f.issue} → ${f.fix_direction}`).join("\n")}`
+    : "";
+
+  // 개고 계열의 초고 입력 — 이전의 slice(0, 8000)은 장편 초고(씬 조립 시 ~6만 자)의
+  // 뒷부분을 침묵 속에 버렸다. 상한을 조립 장편 전체가 들어가는 크기로 올리고,
+  // 그래도 넘치면 잘렸음을 AI에게 명시해 "전체를 봤다"는 착각을 막는다.
+  const DRAFT_INPUT_CAP = 60000;
+  const buildDraftInput = () => {
+    const t = scenarioDraftResult || "";
+    if (t.length <= DRAFT_INPUT_CAP) return t;
+    return `${t.slice(0, DRAFT_INPUT_CAP)}\n\n[주의: 초고 전체 ${t.length}자 중 앞 ${DRAFT_INPUT_CAP}자만 포함됨 — 이후 내용은 이 분석·개고에 반영되지 않았음을 결과에 명시할 것]`;
+  };
+
   // ── 시나리오 고쳐쓰기: 초고 진단 ──
   const generateRewriteDiag = async () => {
     if (!scenarioDraftResult || !apiKey) return;
@@ -4707,7 +4885,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setRewriteDiagLoading(true);
     setRewriteDiagError("");
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n\n── 시나리오 초고 ──\n${scenarioDraftResult.slice(0, 8000)}\n\n위 초고를 분석하고 고쳐쓰기 우선순위를 제시하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}${buildCoverageBlock()}\n\n── 시나리오 초고 ──\n${buildDraftInput()}\n\n위 초고를 분석하고 고쳐쓰기 우선순위를 제시하세요.${scriptCoverageResult ? " 커버리지에서 지적된 약점을 우선 반영하세요." : ""}`;
     try {
       const data = await callClaude(apiKey, REWRITE_DIAG_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, null, "rewrite_diag");
       setRewriteDiagResult(data);
@@ -4724,7 +4902,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const ctrl = makeController("partialRewrite");
     setPartialRewriteLoading(true);
     setPartialRewriteError("");
-    const msg = `로그라인: "${logline.trim()}"\n\n── 시나리오 초고 ──\n${scenarioDraftResult.slice(0, 8000)}\n\n── 재작성 지시 ──\n${partialRewriteInstruction.trim()}\n\n위 지시에 따라 해당 부분을 재작성하세요.`;
+    const msg = `로그라인: "${logline.trim()}"${buildCoverageBlock()}${buildDiagBlock()}\n\n── 시나리오 초고 ──\n${buildDraftInput()}\n\n── 재작성 지시 ──\n${partialRewriteInstruction.trim()}\n\n위 지시에 따라 해당 부분을 재작성하세요. 위에 커버리지·진단이 있다면 그 지적과 모순되지 않게 고치세요.`;
     try {
       const text = await callClaudeText(apiKey, PARTIAL_REWRITE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, "partial_rewrite");
       setPartialRewriteResult(text);
@@ -4742,11 +4920,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setFullRewriteLoading(true);
     setFullRewriteError("");
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
-    const diagSummary = rewriteDiagResult
-      ? `\n\n── 진단 결과 (반영 필수) ──\n${(rewriteDiagResult.priority_fixes || []).slice(0, 3).map((f) => `• ${f.category}: ${f.issue} → ${f.fix_direction}`).join("\n")}`
-      : "";
     const notes = fullRewriteNotes.trim() ? `\n\n── 작가 메모 ──\n${fullRewriteNotes.trim()}` : "";
-    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}${diagSummary}${notes}\n\n── 개고할 초고 ──\n${scenarioDraftResult.slice(0, 8000)}\n\n위 초고를 전체적으로 개고하세요.`;
+    const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}${buildCoverageBlock()}${buildDiagBlock()}${notes}\n\n── 개고할 초고 ──\n${buildDraftInput()}\n\n위 초고를 전체적으로 개고하세요. 커버리지·진단에서 지적된 약점을 실제로 해결하세요.`;
     try {
       const text = await callClaudeText(apiKey, FULL_REWRITE_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal, "full_rewrite");
       setFullRewriteResult(text);
@@ -5092,6 +5267,10 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   const loglineCtxValue = {
     // 입력
     logline, setLogline, genre, setGenre,
+    // 작가 헌장 (불가침 블록) + 저장
+    authorCharter, setAuthorCharter, autoSave,
+    // 결정 장부 (거부 이력 축적)
+    decisionLedger, addLedgerEntry, removeLedgerEntry,
     // 인증/API
     apiKey, isDemoMode, demoTourStep, setDemoTourStep, hasOwnApiKey, canUseAllStages,
     user, credits, cc,
@@ -5324,7 +5503,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     generateSceneList,
     // Scenario Draft
     scenarioDraftResult, setScenarioDraftResult, scenarioDraftLoading, scenarioDraftError,
-    generateScenarioDraft,
+    generateScenarioDraft, assembleDraftFromScenes,
     // Writer Edits
     writerEdits, setWriterEdits, getEffective, setWriterEdit, clearWriterEdit,
     // Ctx badges
@@ -5356,6 +5535,8 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     structureTwistResult, structureTwistLoading, structureTwistError, analyzeStructureTwist,
     // De-cliché (탈클리셰 적대적 패스)
     declicheResult, declicheLoading, declicheError, analyzeDecliche,
+    // 클리셰 지도 (사전 회피 패스)
+    clicheMapResult, clicheMapLoading, clicheMapError, generateClicheMap,
     // Editing
     editingTreatment, setEditingTreatment, treatmentEditDraft, setTreatmentEditDraft,
     editingCharacter, setEditingCharacter, charEditDraft, setCharEditDraft,

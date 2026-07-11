@@ -152,6 +152,10 @@ function StageContent(props) {
             setCoreDesignFeedback={props.setCoreDesignFeedback}
             coreDesignRefineLoading={props.coreDesignRefineLoading}
             refineCoreDesign={props.refineCoreDesign}
+            clicheMapResult={props.clicheMapResult}
+            clicheMapLoading={props.clicheMapLoading}
+            clicheMapError={props.clicheMapError}
+            generateClicheMap={props.generateClicheMap}
           />
         </Suspense>
       );
@@ -376,6 +380,9 @@ function StageContent(props) {
             scenarioDraftLoading={props.scenarioDraftLoading}
             scenarioDraftError={props.scenarioDraftError}
             generateScenarioDraft={props.generateScenarioDraft}
+            assembleDraftFromScenes={props.assembleDraftFromScenes}
+            beatScenes={props.beatScenes}
+            beatSheetResult={props.beatSheetResult}
             scenarioDraftStale={props.scenarioDraftStale}
             setScenarioDraftStale={props.setScenarioDraftStale}
             scenarioDraftHistory={props.scenarioDraftHistory}
@@ -463,6 +470,7 @@ function StageContent(props) {
             barthesCodeResult={props.barthesCodeResult}
             koreanMythResult={props.koreanMythResult}
             themeResult={props.themeResult}
+            setCoreDesignFeedback={props.setCoreDesignFeedback}
           />
         </Suspense>
       );

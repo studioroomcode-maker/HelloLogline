@@ -29,6 +29,20 @@ export default function Stage8Content({
                 </div>
               </div>
 
+              {/* ── 개고 입력 반영 상태 (2-1: 진단→개고 루프) ── */}
+              {(scriptCoverageResult || rewriteDiagResult) && (
+                <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 10, background: "rgba(78,204,163,0.06)", border: "1px solid rgba(78,204,163,0.22)", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <SvgIcon d={ICON.check} size={14} color="#4ECCA3" />
+                  <span style={{ fontSize: 11.5, color: "var(--c-tx-60)", lineHeight: 1.5 }}>
+                    부분 재작성·전체 개고에{" "}
+                    {scriptCoverageResult && <strong style={{ color: "#4ECCA3" }}>커버리지 진단</strong>}
+                    {scriptCoverageResult && rewriteDiagResult && " · "}
+                    {rewriteDiagResult && <strong style={{ color: "#4ECCA3" }}>초고 진단</strong>}
+                    {" "}이 자동 반영됩니다.
+                  </span>
+                </div>
+              )}
+
               {/* ── AI 고쳐쓰기 우선순위 ── */}
               {scriptCoverageResult && (
                 <div style={{ marginBottom: 20 }}>
@@ -159,6 +173,11 @@ export default function Stage8Content({
                 <div style={{ fontSize: 11, color: "var(--c-tx-40)", marginBottom: 10, fontFamily: "'Noto Sans KR', sans-serif", lineHeight: 1.6 }}>
                   초고 진단 결과를 자동 반영하여 전체를 다시 씁니다. 추가 메모가 있으면 아래에 입력하세요.
                 </div>
+                {(scenarioDraftResult?.length || 0) > 15000 && (
+                  <div style={{ marginBottom: 10, padding: "8px 12px", borderRadius: 8, background: "rgba(251,146,60,0.06)", borderLeft: "2px solid rgba(251,146,60,0.4)", fontSize: 11, color: "var(--c-tx-50)", lineHeight: 1.55 }}>
+                    초고가 깁니다({Math.round(scenarioDraftResult.length / 1000)}천 자). 전체 개고는 한 번에 다시 쓰는 방식이라 긴 초고는 압축될 수 있습니다 — 유지할 부분이 많다면 <strong style={{ color: "#FB923C" }}>부분 재작성</strong>으로 씬 단위 수정을 권장합니다.
+                  </div>
+                )}
                 <textarea
                   value={fullRewriteNotes}
                   onChange={(e) => setFullRewriteNotes(e.target.value)}

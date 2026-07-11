@@ -31,6 +31,7 @@ export default function Stage6Content({
   scenarioDraftResult, setScenarioDraftResult,
   scenarioDraftLoading, scenarioDraftError,
   generateScenarioDraft,
+  assembleDraftFromScenes, beatScenes = {}, beatSheetResult,
   scenarioDraftStale, setScenarioDraftStale,
   scenarioDraftHistory, setScenarioDraftHistory,
   refineScenarioDraft, scenarioDraftRefineLoading,
@@ -150,6 +151,25 @@ export default function Stage6Content({
       />
       <ErrorMsg msg={scenarioDraftError} onRetry={scenarioDraftError ? generateScenarioDraft : undefined} />
 
+      {/* ── 집필한 씬으로 조립 (AI 호출 없음 · 무료) ── */}
+      {(() => {
+        const beats = beatSheetResult?.beats || [];
+        const written = beats.filter((b) => beatScenes[b.id]?.trim()).length;
+        if (written === 0) return null;
+        return (
+          <ToolButton
+            icon={<SvgIcon d={ICON.clipboard} size={16} />}
+            label="집필한 씬으로 초고 조립"
+            sub={`${written}/${beats.length} 씬 집필됨 · 무료${written < beats.length ? ` · 미집필 ${beats.length - written}개는 표시만` : ""}`}
+            loading={false}
+            color="#4ECCA3"
+            onClick={assembleDraftFromScenes}
+            disabled={!logline.trim() || isReadOnly}
+            tooltip={"Stage 5에서 집필한 씬들을 비트 순서대로 이어 붙여 초고로 조립합니다.\n\n· 작가가 쓴 씬을 원문 그대로 보존합니다\n· 8000토큰 상한이 없어 장편 완본이 가능합니다\n· AI를 다시 호출하지 않으므로 크레딧이 들지 않습니다\n· 미집필 비트는 [[ ]] 노트로 표시됩니다"}
+          />
+        );
+      })()}
+
       {/* ── Stale 경고 ── */}
       {scenarioDraftStale && scenarioDraftResult && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, marginTop: 8, background: "rgba(247,160,114,0.07)", border: "1px solid rgba(247,160,114,0.25)" }}>
@@ -176,6 +196,7 @@ export default function Stage6Content({
           {/* 컨텍스트 배지 */}
           {scenarioDraftCtx && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
+              {scenarioDraftCtx.assembled && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(78,204,163,0.12)", color: "#4ECCA3", border: "1px solid rgba(78,204,163,0.25)" }}>집필 씬 조립 ({scenarioDraftCtx.writtenScenes}씬{scenarioDraftCtx.missingScenes ? ` · 미집필 ${scenarioDraftCtx.missingScenes}` : ""})</span>}
               {scenarioDraftCtx.genre && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(167,139,250,0.1)", color: "#A78BFA", border: "1px solid rgba(167,139,250,0.2)" }}>{scenarioDraftCtx.genre}</span>}
               {scenarioDraftCtx.char && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(251,146,60,0.1)", color: "#FB923C", border: "1px solid rgba(251,146,60,0.2)" }}>캐릭터 반영</span>}
               {scenarioDraftCtx.synopsis && <span style={{ fontSize: 10, padding: "1px 7px", borderRadius: 8, background: "rgba(78,204,163,0.1)", color: "#4ECCA3", border: "1px solid rgba(78,204,163,0.2)" }}>시놉시스 반영</span>}
