@@ -1140,7 +1140,8 @@ export default function SidebarLayout({ stageProps, isMobile }) {
             width: "100%",
             padding: isMobile ? "20px 16px" : "28px 32px",
             paddingBottom: isMobile ? "80px" : undefined,
-            maxWidth: isMobile ? "100%" : 780,
+            // 대시보드는 파이프라인 다열 레이아웃을 위해 넓게, 스테이지는 가독폭 780 유지
+            maxWidth: isMobile ? "100%" : (currentStage === "dashboard" ? 1180 : 780),
           }}
         >
           {/* 스테이지 페이지 헤더 */}

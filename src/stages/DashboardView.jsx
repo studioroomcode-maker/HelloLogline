@@ -3,7 +3,6 @@ import { useLoglineCtx } from "../context/LoglineContext.jsx";
 import { loadProjects } from "../db.js";
 import { WORK_MODES } from "../workModes.js";
 import { maybeWarnPrereq, STAGE_PREREQUISITES } from "../stagePrereqWarn.js";
-import { ModeProgressBar, ModeProgressDots } from "../components/ModeProgress.jsx";
 
 const ReverseImportModal = lazy(() => import("./ReverseImportModal.jsx"));
 
@@ -18,104 +17,6 @@ const STAGE_META = [
   { id: "8", name: "고쳐쓰기",     sub: "진단·수정·개고",    color: "#FB923C" },
   { id: "9", name: "Deep Analysis", sub: "신화·학술·전문가",  color: "#45B7D1" },
 ];
-
-function StageCard({ id, name, sub, color, status, doneCount, total, summary, onClick, wide = false }) {
-  const [hovered, setHovered] = useState(false);
-  const isDone = status === "done";
-  const isActive = status === "active";
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: "flex", flexDirection: "column", alignItems: "flex-start",
-        gap: 7, padding: wide ? "14px 18px 12px" : "12px 12px 10px",
-        minHeight: wide ? 76 : undefined,
-        justifyContent: wide ? "center" : undefined,
-        borderRadius: 12,
-        border: isDone
-          ? `1px solid ${color}35`
-          : hovered
-          ? "1px solid var(--glass-bd-base)"
-          : "1px solid var(--glass-bd-micro)",
-        background: isDone
-          ? `linear-gradient(135deg, ${color}09 0%, var(--glass-micro) 70%)`
-          : hovered
-          ? "var(--glass-raised)"
-          : "var(--glass-micro)",
-        boxShadow: isDone
-          ? `inset 0 1px 0 ${color}18, 0 2px 8px ${color}08`
-          : hovered
-          ? "inset 0 1px 0 var(--glass-bd-top), 0 6px 20px rgba(0,0,0,0.18)"
-          : "inset 0 1px 0 var(--glass-bd-nano)",
-        cursor: "pointer", textAlign: "left",
-        transition: "background 0.22s var(--ease-spring), border-color 0.22s var(--ease-spring), box-shadow 0.22s var(--ease-spring), transform 0.18s var(--ease-spring)",
-        transform: hovered ? "translateY(-2px)" : "translateY(0)",
-        fontFamily: "'Noto Sans KR', sans-serif", width: "100%",
-        position: "relative", overflow: "hidden",
-      }}
-    >
-      {isDone && (
-        <div style={{
-          position: "absolute", top: 0, left: 0, right: 0, height: 2,
-          background: `linear-gradient(90deg, ${color}bb, ${color}33)`,
-        }} />
-      )}
-      {/* 상단 행: 번호 배지 + 이름 + 상태 */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-          {/* 숫자 배지 — 이모지 대신 */}
-          <div style={{
-            width: 20, height: 20, borderRadius: 5, flexShrink: 0,
-            background: isDone ? `${color}18` : "var(--glass-raised)",
-            border: `1px solid ${isDone ? color + "28" : "var(--c-bd-2)"}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <span style={{
-              fontSize: 8, fontWeight: 800,
-              fontFamily: "'JetBrains Mono', monospace",
-              color: isDone ? color : "var(--c-tx-30)",
-              lineHeight: 1,
-            }}>
-              {String(id).padStart(2, "0")}
-            </span>
-          </div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: isDone ? color : "var(--c-tx-55)" }}>
-            {name}
-          </span>
-        </div>
-        {isDone
-          ? <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.5} strokeLinecap="round"><path d="M5 13l4 4L19 7" /></svg>
-          : isActive
-          ? <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#FFD166", animation: "glowPulse 2s ease infinite" }} />
-          : <div style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--glass-bd-raised)" }} />
-        }
-      </div>
-      {/* 서브텍스트 */}
-      <div style={{ fontSize: 9, color: "var(--c-tx-30)", letterSpacing: 0.2 }}>{sub}</div>
-      {/* 결과 배지 */}
-      {summary && (
-        <div style={{
-          fontSize: 9, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-          color: id === "7"
-            ? (summary === "RECOMMEND" ? "#4ECCA3" : summary === "PASS" ? "#E85D75" : "#FFD166")
-            : color,
-          padding: "2px 6px", borderRadius: 4,
-          background: `${color}10`, border: `1px solid ${color}22`,
-          maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-        }}>
-          {summary}
-        </div>
-      )}
-      {!summary && doneCount > 0 && total > 0 && (
-        <div style={{ fontSize: 9, color: "var(--c-tx-28)", fontFamily: "'JetBrains Mono', monospace" }}>
-          {doneCount}/{total}
-        </div>
-      )}
-    </button>
-  );
-}
 
 // ── 크레딧 사용 내역 로드 ──────────────────────────
 function loadCreditHistory() {
@@ -191,11 +92,11 @@ export default function DashboardView() {
   const coverage7 = stageResultSummary?.["7"];
   const coverageColor = coverage7 === "RECOMMEND" ? "#4ECCA3" : coverage7 === "PASS" ? "#E85D75" : "#FFD166";
 
-  const totalItems = Object.values(STAGE_TOTALS || {}).reduce((a, v) => a + v, 0);
-  const doneItems = STAGE_META.reduce((a, s) => a + (getStageDoneCount(s.id) || 0), 0);
+  // 이어서 작업할 첫 미완 스테이지 (1~8)
+  const activeStageId = ["1","2","3","4","5","6","7","8"].find(id => getStageStatus(id) !== "done") || "8";
 
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto" }}>
+    <div style={{ maxWidth: 1120, margin: "0 auto", display: "flex", flexDirection: "column", gap: "var(--s6)" }}>
 
       {/* ── 역방향 임포트 모달 ── */}
       {showReverseModal && (
@@ -204,202 +105,85 @@ export default function DashboardView() {
         </Suspense>
       )}
 
-      {/* ── 신규 사용자 CTA ── */}
-      {!logline && (
-        <div style={{
-          marginBottom: 28, padding: 2, borderRadius: 18,
-          background: "var(--glass-nano)",
-          border: "1px solid var(--glass-bd-nano)",
-        }}>
+      {/* ── 이어서 작업하기 / 신규 히어로 ── */}
+      <ResumeHero
+        logline={logline}
+        genre={genre}
+        isMobile={isMobile}
+        activeStageId={activeStageId}
+        advanceToStage={advanceToStage}
+        onImport={() => setShowReverseModal(true)}
+        openPitchDeck={openPitchDeck}
+        openStoryBibleDoc={openStoryBibleDoc}
+        credits={credits}
+      />
+
+      {/* ── 현황 지표 스트립 ── */}
+      <div>
+        <SectionLabel hint="이번 프로젝트 기준">현황</SectionLabel>
+        <MetricStrip
+          score1={score1}
+          coverage7={coverage7}
+          coverageColor={coverageColor}
+          credits={credits}
+          doneStages={doneStages}
+          progressPct={progressPct}
+        />
+      </div>
+
+      {/* ── 파이프라인 ── */}
+      <div>
+        <SectionLabel hint={logline ? `${doneStages}/8 완료 · ${STAGE_META.find(s=>s.id===activeStageId)?.name} 진행` : "로그라인부터 순서대로"}>파이프라인</SectionLabel>
+        {/* ── 데모 투어 Step 0 안내 ── */}
+        {isDemoMode && demoTourStep === 0 && (
           <div style={{
-            padding: "28px 24px", borderRadius: 16, textAlign: "center",
-            background: "linear-gradient(135deg, rgba(200,168,75,0.10) 0%, var(--glass-micro) 60%)",
-            border: "1px solid rgba(200,168,75,0.22)",
-            boxShadow: "inset 0 1px 0 rgba(200,168,75,0.15)",
+            marginBottom: 14, padding: "16px 18px",
+            borderRadius: 14, animation: "fadeSlideUp 0.35s var(--ease-spring)",
+            background: "linear-gradient(135deg, rgba(200,168,75,0.13) 0%, rgba(200,168,75,0.06) 100%)",
+            border: "1px solid rgba(200,168,75,0.45)",
+            boxShadow: "0 4px 20px rgba(200,168,75,0.12)",
+            display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
           }}>
-            <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "var(--text-main)", marginBottom: 8 }}>
-              새 시나리오를 시작해보세요
+            <div style={{ flexShrink: 0, animation: "demoBounceArrow 1.4s ease-in-out infinite" }}>
+              <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#C8A84B" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+              </svg>
             </div>
-            <div style={{ fontSize: 13, color: "var(--c-tx-45)", marginBottom: 22, lineHeight: 1.6 }}>
-              로그라인 한 줄을 입력하면 AI가<br />8단계 시나리오 개발 파이프라인을 가동합니다.
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "#C8A84B", marginBottom: 5, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                여기서 시작해보세요! (1/3)
+              </div>
+              <div style={{ fontSize: 12, color: "var(--c-tx-50)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>
+                샘플 시나리오의 분석 결과가 준비됐어요.
+                아래 <strong style={{ color: "#C8A84B" }}>로그라인</strong> 카드를 눌러보세요.
+              </div>
             </div>
-            <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
-              <button
-                onClick={() => advanceToStage("1")}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 10,
-                  padding: "12px 24px", borderRadius: 10,
-                  border: "none", background: "var(--accent-gold)",
-                  color: "#0c0c1c", fontSize: 14, fontWeight: 800,
-                  cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
-                  boxShadow: "0 4px 24px var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.2)",
-                  transition: "transform 0.18s var(--ease-spring), box-shadow 0.18s var(--ease-spring)",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.25)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 24px var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.2)"; }}
-              >
-                Stage 1 — 로그라인 입력하기
-                <span style={{
-                  width: 26, height: 26, borderRadius: "50%",
-                  background: "rgba(0,0,0,0.15)",
-                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 13, transition: "transform 0.18s var(--ease-spring)",
-                }}>→</span>
-              </button>
-              <button
-                onClick={() => setShowReverseModal(true)}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 8,
-                  padding: "12px 20px", borderRadius: 10,
-                  border: "1px solid rgba(96,165,250,0.35)",
-                  background: "rgba(96,165,250,0.08)",
-                  color: "#60A5FA", fontSize: 13, fontWeight: 700,
-                  cursor: "pointer", fontFamily: "'Noto Sans KR', sans-serif",
-                  transition: "all 0.18s var(--ease-spring)",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = "rgba(96,165,250,0.14)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "rgba(96,165,250,0.08)"; e.currentTarget.style.transform = ""; }}
-              >
-                <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                기존 글 가져오기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── 헤더 ── */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{
-          fontSize: 11, letterSpacing: 1.4, color: "var(--c-tx-30)",
-          fontWeight: 700, textTransform: "uppercase", marginBottom: 8,
-          fontFamily: "'JetBrains Mono', monospace",
-        }}>
-          PROJECT OVERVIEW
-        </div>
-        <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: "var(--text-main)", lineHeight: 1.3 }}>
-          {logline ? logline : (
-            <span style={{ color: "var(--c-tx-30)", fontStyle: "italic", fontWeight: 400, fontSize: 15 }}>
-              로그라인 없음
-            </span>
-          )}
-        </div>
-        {genre && genre !== "auto" && (
-          <div style={{ marginTop: 6, fontSize: 11, color: "var(--c-tx-40)" }}>장르: {genre}</div>
-        )}
-        {logline && (
-          <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
             <button
-              onClick={openPitchDeck}
+              onClick={() => advanceToStage("1")}
               style={{
-                display: "flex", alignItems: "center", gap: 5, padding: "7px 14px",
-                borderRadius: 8, border: "1px solid rgba(200,168,75,0.3)",
-                background: "rgba(200,168,75,0.07)", color: "#C8A84B",
-                fontSize: 11, fontWeight: 700, cursor: "pointer",
-                fontFamily: "'Noto Sans KR', sans-serif",
+                flexShrink: 0, padding: "10px 18px", borderRadius: 10,
+                border: "none", background: "#C8A84B", color: "#0c0c1c",
+                fontSize: 12, fontWeight: 800, cursor: "pointer",
+                fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "nowrap",
+                boxShadow: "0 4px 14px rgba(200,168,75,0.45)",
               }}
             >
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
-              </svg>
-              피치 덱
-            </button>
-            <button
-              onClick={openStoryBibleDoc}
-              style={{
-                display: "flex", alignItems: "center", gap: 5, padding: "7px 14px",
-                borderRadius: 8, border: "1px solid rgba(78,204,163,0.3)",
-                background: "rgba(78,204,163,0.07)", color: "#4ECCA3",
-                fontSize: 11, fontWeight: 700, cursor: "pointer",
-                fontFamily: "'Noto Sans KR', sans-serif",
-              }}
-            >
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-              </svg>
-              스토리 바이블
-            </button>
-            <button
-              onClick={() => setShowReverseModal(true)}
-              style={{
-                display: "flex", alignItems: "center", gap: 5, padding: "7px 14px",
-                borderRadius: 8, border: "1px solid rgba(96,165,250,0.3)",
-                background: "rgba(96,165,250,0.07)", color: "#60A5FA",
-                fontSize: 11, fontWeight: 700, cursor: "pointer",
-                fontFamily: "'Noto Sans KR', sans-serif",
-              }}
-            >
-              <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
-              </svg>
-              기존 글 가져오기
+              로그라인 보기 →
             </button>
           </div>
         )}
+        <PipelineBoard
+          isMobile={isMobile}
+          activeStageId={activeStageId}
+          getStageStatus={getStageStatus}
+          getStageDoneCount={getStageDoneCount}
+          STAGE_TOTALS={STAGE_TOTALS}
+          stageResultSummary={stageResultSummary}
+          onStageClick={handleStageClick}
+          isDemoMode={isDemoMode}
+          demoTourStep={demoTourStep}
+        />
       </div>
-
-      {/* ── 진행률 바 ── */}
-      <div style={{
-        marginBottom: 28, padding: "16px 20px", borderRadius: 12,
-        border: "1px solid var(--c-bd-1)", background: "rgba(255,255,255,0.015)",
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--c-tx-60)" }}>전체 진행률</span>
-          <span style={{ fontSize: 13, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", color: progressPct === 100 ? "#4ECCA3" : "#C8A84B" }}>
-            {progressPct}%
-          </span>
-        </div>
-        <div style={{ height: 6, borderRadius: 3, background: "var(--c-bd-2)", overflow: "hidden" }}>
-          <div style={{
-            height: "100%", borderRadius: 3,
-            width: `${progressPct}%`,
-            background: progressPct === 100
-              ? "linear-gradient(90deg, #4ECCA3, #2DD4BF)"
-              : "linear-gradient(90deg, #C8A84B, #E8C86A)",
-            transition: "width 0.4s ease",
-          }} />
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 10, color: "var(--c-tx-30)" }}>
-          <span>{doneStages}/8 스테이지 완료</span>
-          <span>{doneItems}/{totalItems} 분석 항목</span>
-        </div>
-      </div>
-
-      {/* ── 핵심 지표 ── */}
-      {(score1 || coverage7 || credits != null) && (
-        <div style={{
-          marginBottom: 28, display: "grid",
-          gridTemplateColumns: `repeat(${[score1, coverage7, credits != null].filter(Boolean).length}, 1fr)`,
-          gap: 12,
-        }}>
-          {score1 && (
-            <MetricCard
-              label="로그라인 점수"
-              value={score1}
-              color="#C8A84B"
-              sub="구조 + 표현 + 기술"
-            />
-          )}
-          {coverage7 && (
-            <MetricCard
-              label="Script Coverage"
-              value={coverage7}
-              color={coverageColor}
-              sub="방송사/제작사 판정"
-            />
-          )}
-          {credits != null && (
-            <MetricCard
-              label="크레딧 잔액"
-              value={`${credits}cr`}
-              color="#60A5FA"
-              sub={`≈ ₩${(credits * 15).toLocaleString()} 상당`}
-            />
-          )}
-        </div>
-      )}
 
       {/* ── 통합 마스터 리포트 ── */}
       {logline && (
@@ -436,174 +220,6 @@ export default function DashboardView() {
           {masterReportResult && <MasterReportPanel result={masterReportResult} />}
         </div>
       )}
-
-      {/* ── 스테이지 그리드 ── */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 11, color: "var(--c-tx-30)", fontWeight: 700, marginBottom: 12, letterSpacing: 0.5 }}>
-          워크플로우 현황
-        </div>
-
-        {/* ── 데모 투어 Step 0 안내 ── */}
-        {isDemoMode && demoTourStep === 0 && (
-          <div style={{
-            marginBottom: 14, padding: "16px 18px",
-            borderRadius: 14, animation: "fadeSlideUp 0.35s var(--ease-spring)",
-            background: "linear-gradient(135deg, rgba(200,168,75,0.13) 0%, rgba(200,168,75,0.06) 100%)",
-            border: "1px solid rgba(200,168,75,0.45)",
-            boxShadow: "0 4px 20px rgba(200,168,75,0.12)",
-            display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
-          }}>
-            <div style={{ flexShrink: 0, animation: "demoBounceArrow 1.4s ease-in-out infinite" }}>
-              <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#C8A84B" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
-              </svg>
-            </div>
-            <div style={{ flex: 1, minWidth: 160 }}>
-              <div style={{
-                fontSize: 13, fontWeight: 800, color: "#C8A84B", marginBottom: 5,
-                fontFamily: "'Noto Sans KR', sans-serif",
-              }}>
-                여기서 시작해보세요! (1/3)
-              </div>
-              <div style={{ fontSize: 12, color: "var(--c-tx-50)", lineHeight: 1.65, fontFamily: "'Noto Sans KR', sans-serif" }}>
-                샘플 시나리오의 분석 결과가 준비됐어요.
-                아래 <strong style={{ color: "#C8A84B" }}>로그라인</strong> 카드를 눌러보세요.
-              </div>
-            </div>
-            <button
-              onClick={() => advanceToStage("1")}
-              style={{
-                flexShrink: 0, padding: "10px 18px", borderRadius: 10,
-                border: "none", background: "#C8A84B", color: "#0c0c1c",
-                fontSize: 12, fontWeight: 800, cursor: "pointer",
-                fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "nowrap",
-                boxShadow: "0 4px 14px rgba(200,168,75,0.45)",
-                transition: "transform 0.15s, box-shadow 0.15s",
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 18px rgba(200,168,75,0.55)"; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 14px rgba(200,168,75,0.45)"; }}
-            >
-              로그라인 보기 →
-            </button>
-          </div>
-        )}
-
-        {/* 작업 모드별 그룹 — "지금 무엇을 하려는가?" 관점 */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {WORK_MODES.map((mode) => {
-            const stagesInMode = mode.stageIds
-              .map(id => STAGE_META.find(s => s.id === id))
-              .filter(Boolean);
-            if (stagesInMode.length === 0) return null;
-            const doneInMode = stagesInMode.filter(s => getStageStatus(s.id) === "done").length;
-            return (
-              <div key={mode.id} style={{
-                padding: 2, borderRadius: 14,
-                background: mode.optional ? "var(--glass-nano)" : "var(--glass-micro)",
-                border: `1px solid ${mode.color}28`,
-                boxShadow: `inset 0 1px 0 ${mode.color}1a`,
-              }}>
-                <div style={{
-                  padding: "10px 12px 8px",
-                  display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
-                }}>
-                  <div style={{
-                    width: 26, height: 26, borderRadius: 8, flexShrink: 0,
-                    background: `${mode.color}1a`, border: `1px solid ${mode.color}40`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 11, fontWeight: 800, color: mode.color,
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}>
-                    {mode.id === "discover" ? "1" : mode.id === "design" ? "2" : mode.id === "write" ? "3" : mode.id === "rewrite" ? "4" : "+"}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontSize: 13, fontWeight: 800, color: mode.color,
-                      fontFamily: "'Noto Sans KR', sans-serif",
-                      display: "flex", alignItems: "center", gap: 8,
-                    }}>
-                      {mode.name}
-                      {mode.optional && (
-                        <span style={{
-                          fontSize: 8, fontWeight: 700, color: mode.color,
-                          padding: "1px 6px", borderRadius: 6,
-                          border: `1px solid ${mode.color}40`,
-                          background: `${mode.color}10`,
-                          fontFamily: "'JetBrains Mono', monospace",
-                          letterSpacing: 0.5,
-                        }}>선택</span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginTop: 1, fontFamily: "'Noto Sans KR', sans-serif" }}>
-                      {mode.desc}
-                    </div>
-                  </div>
-                  {!mode.optional && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                      {/* stage 점 시각 (stage 2개 이상일 때만) */}
-                      <ModeProgressDots
-                        stages={stagesInMode}
-                        getStageStatus={getStageStatus}
-                        color={mode.color}
-                      />
-                      <ModeProgressBar
-                        done={doneInMode}
-                        total={stagesInMode.length}
-                        color={mode.color}
-                        width={42}
-                        height={4}
-                      />
-                      <div style={{
-                        fontSize: 9, color: doneInMode === stagesInMode.length && doneInMode > 0 ? "#4ECCA3" : "var(--c-tx-30)",
-                        fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
-                        minWidth: 22, textAlign: "right",
-                      }}>
-                        {doneInMode}/{stagesInMode.length}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {/* Stage 1개짜리 모드(발견/심화)는 와이드 카드 한 장으로,
-                    여러 개인 모드는 적절한 그리드로 — 모바일 외로움 해소. */}
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: stagesInMode.length === 1
-                    ? "1fr"
-                    : isMobile
-                      ? "1fr 1fr"
-                      : `repeat(${Math.min(stagesInMode.length, 4)}, 1fr)`,
-                  gap: 6,
-                  padding: "0 8px 8px",
-                }}>
-                  {stagesInMode.map(s => {
-                    const isTourTarget = isDemoMode && demoTourStep === 0 && s.id === "1";
-                    const isWide = stagesInMode.length === 1;
-                    return (
-                      <div
-                        key={s.id}
-                        style={{
-                          ...(isTourTarget ? { borderRadius: 12, animation: "demoPulseRing 1.8s ease-out infinite" } : {}),
-                          ...(isWide ? { minHeight: isMobile ? 78 : 86 } : {}),
-                        }}
-                      >
-                        <StageCard
-                          {...s}
-                          status={getStageStatus(s.id)}
-                          doneCount={getStageDoneCount(s.id)}
-                          total={STAGE_TOTALS?.[s.id]}
-                          summary={stageResultSummary?.[s.id]}
-                          onClick={() => handleStageClick(s.id)}
-                          wide={isWide}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
 
       {/* ── AI 코칭 메시지 ── */}
       <CoachingTips
@@ -866,22 +482,6 @@ export default function DashboardView() {
         </div>
       )}
 
-    </div>
-  );
-}
-
-function MetricCard({ label, value, color, sub }) {
-  return (
-    <div style={{
-      padding: "14px 16px", borderRadius: 12,
-      border: `1px solid ${color}25`,
-      background: `${color}06`,
-    }}>
-      <div style={{ fontSize: 10, color: "var(--c-tx-35)", marginBottom: 6, fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 800, color, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>
-        {value}
-      </div>
-      {sub && <div style={{ fontSize: 9, color: "var(--c-tx-25)", marginTop: 5 }}>{sub}</div>}
     </div>
   );
 }
@@ -1250,5 +850,280 @@ function NextStepSuggestion({ getStageStatus, advanceToStage, logline, stageResu
         </svg>
       </button>
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  대시보드 재설계 컴포넌트 (2026-07 — 파이프라인 중심 IA)
+// ═══════════════════════════════════════════════════════════════
+
+// 섹션 라벨 — mono 대문자 + 구분선 (일관된 헤더)
+function SectionLabel({ children, hint }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+      <div style={{
+        fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase",
+        color: "var(--c-tx-30)", fontFamily: "'JetBrains Mono', monospace", whiteSpace: "nowrap",
+      }}>{children}</div>
+      <div style={{ flex: 1, height: 1, background: "var(--c-bd-1)" }} />
+      {hint && <div style={{ fontSize: 11, color: "var(--c-tx-25)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{hint}</div>}
+    </div>
+  );
+}
+
+// 골드 기본 CTA 스타일
+function goldCTA(isMobile) {
+  return {
+    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+    padding: "13px 22px", borderRadius: 12, border: "none",
+    background: "linear-gradient(135deg, var(--accent-gold), #e6c766)",
+    color: "#181203", fontSize: 14, fontWeight: 800, cursor: "pointer",
+    fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "nowrap",
+    boxShadow: "0 10px 30px -8px var(--glow-gold), inset 0 1px 0 rgba(255,255,255,0.4)",
+    transition: "transform 0.18s var(--ease-spring), box-shadow 0.18s var(--ease-spring)",
+  };
+}
+function ghostBtn() {
+  return {
+    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+    padding: "13px 20px", borderRadius: 12, cursor: "pointer",
+    border: "1px solid var(--glass-bd-base)", background: "var(--glass-micro)",
+    color: "var(--text-main)", fontSize: 13, fontWeight: 700,
+    fontFamily: "'Noto Sans KR', sans-serif", whiteSpace: "nowrap",
+    transition: "background 0.18s var(--ease-spring)",
+  };
+}
+function actionPill(color) {
+  return {
+    display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 12px",
+    borderRadius: 8, border: `1px solid ${color}44`, background: `${color}12`,
+    color, fontSize: 11, fontWeight: 700, cursor: "pointer",
+    fontFamily: "'Noto Sans KR', sans-serif",
+  };
+}
+const liftIn = e => { e.currentTarget.style.transform = "translateY(-2px)"; };
+const liftOut = e => { e.currentTarget.style.transform = ""; };
+
+// 이어서 작업하기 바 (진행 중) / 신규 히어로
+function ResumeHero({ logline, genre, isMobile, activeStageId, advanceToStage, onImport, openPitchDeck, openStoryBibleDoc }) {
+  // 신규: 로그라인 없음
+  if (!logline) {
+    return (
+      <div style={{
+        padding: isMobile ? "26px 20px" : "34px 32px", borderRadius: 22, position: "relative", overflow: "hidden",
+        background: "linear-gradient(135deg, rgba(200,168,75,0.12) 0%, var(--glass-micro) 60%)",
+        border: "1px solid rgba(200,168,75,0.22)", boxShadow: "inset 0 1px 0 rgba(200,168,75,0.15)",
+      }}>
+        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#C8A84B", fontFamily: "'JetBrains Mono', monospace", marginBottom: 10 }}>시작하기</div>
+        <div style={{ fontSize: isMobile ? 21 : 27, fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 8 }}>
+          새 시나리오를 시작해보세요
+        </div>
+        <div style={{ fontSize: 13, color: "var(--c-tx-45)", lineHeight: 1.65, maxWidth: 520, marginBottom: 22 }}>
+          로그라인 한 줄을 입력하면 AI가 8단계 시나리오 개발 파이프라인을 가동합니다. 점수·분석부터 초고·개고까지.
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button onClick={() => advanceToStage("1")} style={goldCTA(isMobile)} onMouseEnter={liftIn} onMouseLeave={liftOut}>
+            Stage 1 — 로그라인 입력하기 →
+          </button>
+          <button onClick={onImport} style={ghostBtn()}
+            onMouseEnter={e => { e.currentTarget.style.background = "var(--glass-base)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "var(--glass-micro)"; }}>
+            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            기존 글 가져오기
+          </button>
+        </div>
+      </div>
+    );
+  }
+  // 진행 중: 이어서 작업하기 바
+  const meta = STAGE_META.find(s => s.id === activeStageId) || STAGE_META[0];
+  return (
+    <div style={{
+      display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr auto", gap: isMobile ? 18 : 28, alignItems: "center",
+      padding: isMobile ? "20px" : "24px 32px", borderRadius: 22, position: "relative", overflow: "hidden",
+      background: "linear-gradient(120deg, rgba(200,168,75,0.10), rgba(200,168,75,0.02) 55%), var(--glass-nano)",
+      border: "1px solid rgba(200,168,75,0.22)",
+    }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#C8A84B", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8 }}>
+          이어서 작업하기
+        </div>
+        <div style={{ fontSize: isMobile ? 18 : 23, fontWeight: 800, color: "var(--text-main)", letterSpacing: "-0.02em", marginBottom: 7 }}>
+          {String(meta.id).padStart(2, "0")} — {meta.name}
+        </div>
+        <div style={{ fontSize: 13, color: "var(--c-tx-50)", lineHeight: 1.55, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+          {logline}
+        </div>
+        {genre && genre !== "auto" && (
+          <div style={{ marginTop: 8, fontSize: 11, color: "var(--c-tx-35)" }}>장르: {genre}</div>
+        )}
+        <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+          <button onClick={openPitchDeck} style={actionPill("#C8A84B")}>
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
+            피치 덱
+          </button>
+          <button onClick={openStoryBibleDoc} style={actionPill("#4ECCA3")}>
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            스토리 바이블
+          </button>
+          <button onClick={onImport} style={actionPill("#60A5FA")}>
+            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+            기존 글 가져오기
+          </button>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", gap: 10, flexShrink: 0 }}>
+        <button onClick={() => advanceToStage(activeStageId)} style={{ ...goldCTA(isMobile), flex: isMobile ? 1 : undefined }} onMouseEnter={liftIn} onMouseLeave={liftOut}>
+          이어서 작업하기 →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 현황 지표 스트립
+function MetricStrip({ score1, coverage7, coverageColor, credits, doneStages, progressPct }) {
+  const tiles = [
+    { k: "진행률", v: String(progressPct), unit: "%", sub: `${doneStages}/8 스테이지`, color: "#C8A84B" },
+    { k: "로그라인 점수", v: score1 ? String(score1) : "—", unit: score1 ? "/100" : "", sub: "Stage 1 분석", color: score1 ? "#C8A84B" : "var(--c-tx-40)" },
+    { k: "커버리지", v: coverage7 || "—", unit: "", sub: "Stage 7 판정", color: coverage7 ? coverageColor : "var(--c-tx-40)", small: !!coverage7 },
+    { k: "크레딧", v: credits != null ? String(credits) : "—", unit: credits != null ? "cr" : "", sub: credits != null ? `≈ ₩${(credits * 15).toLocaleString()} 상당` : "잔액 정보 없음", color: credits != null ? "#60A5FA" : "var(--c-tx-40)" },
+  ];
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12 }}>
+      {tiles.map(t => (
+        <div key={t.k} style={{ padding: "16px 18px", borderRadius: 16, background: "var(--glass-nano)", border: "1px solid var(--glass-bd-nano)", display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-tx-30)" }}>{t.k}</div>
+          <div style={{ fontSize: t.small ? 16 : 26, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "-0.02em", color: t.color, lineHeight: 1.1, display: "flex", alignItems: "baseline", gap: 5 }}>
+            {t.v}{t.unit && <span style={{ fontSize: 12, color: "var(--c-tx-30)", fontWeight: 600 }}>{t.unit}</span>}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--c-tx-30)" }}>{t.sub}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// 파이프라인 보드 — 4개 페이즈(발견/설계/쓰기/고치기) 컬럼 + Deep Analysis
+function PipelineBoard({ isMobile, activeStageId, getStageStatus, getStageDoneCount, STAGE_TOTALS, stageResultSummary, onStageClick, isDemoMode, demoTourStep }) {
+  const mainModes = WORK_MODES.filter(m => !m.optional);
+  const insight = WORK_MODES.find(m => m.optional);
+  return (
+    <div style={{ borderRadius: 22, background: "var(--glass-nano)", border: "1px solid var(--glass-bd-nano)", padding: isMobile ? "18px 14px 14px" : "28px 24px 22px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : `repeat(${mainModes.length}, 1fr)`, gap: isMobile ? 20 : 16, alignItems: "start" }}>
+        {mainModes.map(mode => {
+          const stages = mode.stageIds.map(id => STAGE_META.find(s => s.id === id)).filter(Boolean);
+          if (stages.length === 0) return null;
+          const done = stages.filter(s => getStageStatus(s.id) === "done").length;
+          return (
+            <div key={mode.id} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 2 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 3, background: mode.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 11.5, fontWeight: 800, color: mode.color, fontFamily: "'Noto Sans KR', sans-serif" }}>{mode.name}</span>
+                <span style={{ marginLeft: "auto", fontSize: 10.5, color: done === stages.length && done > 0 ? "#4ECCA3" : "var(--c-tx-25)", fontFamily: "'JetBrains Mono', monospace" }}>{done}/{stages.length}</span>
+              </div>
+              {stages.map(s => (
+                <PipelineNode
+                  key={s.id}
+                  stage={s}
+                  status={getStageStatus(s.id)}
+                  isActive={s.id === activeStageId}
+                  doneCount={getStageDoneCount(s.id)}
+                  total={STAGE_TOTALS?.[s.id]}
+                  summary={stageResultSummary?.[s.id]}
+                  onClick={() => onStageClick(s.id)}
+                  isTourTarget={isDemoMode && demoTourStep === 0 && s.id === "1"}
+                />
+              ))}
+            </div>
+          );
+        })}
+      </div>
+      {insight && (() => {
+        const s = STAGE_META.find(st => st.id === insight.stageIds[0]);
+        if (!s) return null;
+        const isDone = getStageStatus(s.id) === "done";
+        return (
+          <button onClick={() => onStageClick(s.id)} style={{
+            width: "100%", marginTop: 16, display: "flex", alignItems: "center", gap: 14,
+            padding: "14px 20px", borderRadius: 12, textAlign: "left", cursor: "pointer",
+            background: "linear-gradient(120deg, rgba(167,139,250,0.10), transparent 60%)",
+            border: "1px dashed rgba(167,139,250,0.35)", fontFamily: "'Noto Sans KR', sans-serif",
+          }}>
+            <span style={{ width: 30, height: 30, borderRadius: 9, background: "rgba(167,139,250,0.16)", color: "#A78BFA", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>09</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--text-main)" }}>{s.name}</div>
+              <div style={{ fontSize: 11.5, color: "var(--c-tx-35)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.sub} — 언제든 실행 가능한 심화 분석</div>
+            </div>
+            <span style={{ fontSize: 10, color: "#A78BFA", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, border: "1px solid rgba(167,139,250,0.4)", padding: "4px 10px", borderRadius: 999, flexShrink: 0, whiteSpace: "nowrap" }}>{isDone ? "완료" : "선택·심화"}</span>
+          </button>
+        );
+      })()}
+    </div>
+  );
+}
+
+// 파이프라인 단계 노드
+function PipelineNode({ stage, status, isActive, doneCount, total, summary, onClick, isTourTarget }) {
+  const [hover, setHover] = useState(false);
+  const isDone = status === "done";
+  const active = isActive && !isDone;
+  const color = stage.color;
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 12,
+        textAlign: "left", cursor: "pointer", width: "100%", position: "relative", overflow: "hidden",
+        fontFamily: "'Noto Sans KR', sans-serif",
+        transition: "transform 0.16s var(--ease-spring), border-color 0.16s, background 0.16s",
+        transform: hover ? "translateY(-1px)" : "none",
+        border: active ? "1px solid rgba(200,168,75,0.5)"
+          : isDone ? `1px solid ${color}35`
+          : hover ? "1px solid var(--glass-bd-base)" : "1px solid var(--glass-bd-nano)",
+        background: active ? "linear-gradient(160deg, rgba(200,168,75,0.12), transparent 70%)"
+          : isDone ? `linear-gradient(135deg, ${color}0d, var(--glass-nano) 70%)`
+          : hover ? "var(--glass-micro)" : "var(--glass-nano)",
+        boxShadow: active ? "0 0 0 1px rgba(200,168,75,0.4), 0 0 24px -6px rgba(200,168,75,0.35)" : "none",
+        ...(isTourTarget ? { animation: "demoPulseRing 1.8s ease-out infinite" } : {}),
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
+        <span style={{
+          width: 26, height: 26, borderRadius: 8, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+          fontFamily: "'JetBrains Mono', monospace", fontWeight: 800, fontSize: 11,
+          background: active ? "#C8A84B" : isDone ? `${color}1f` : "var(--glass-raised)",
+          color: active ? "#181203" : isDone ? color : "var(--c-tx-40)",
+        }}>{isDone ? "✓" : String(stage.id).padStart(2, "0")}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: isDone || active ? "var(--text-main)" : "var(--c-tx-55)", lineHeight: 1.25 }}>{stage.name}</div>
+          <div style={{ fontSize: 11, color: "var(--c-tx-30)" }}>{stage.sub}</div>
+        </div>
+        {(isDone || active) && (
+          <span style={{
+            marginLeft: "auto", flexShrink: 0, fontSize: 9.5, fontWeight: 800, fontFamily: "'JetBrains Mono', monospace",
+            padding: "3px 7px", borderRadius: 999, letterSpacing: "0.04em", whiteSpace: "nowrap",
+            background: active ? "#C8A84B" : `${color}1f`, color: active ? "#181203" : color,
+          }}>{active ? "진행" : "완료"}</span>
+        )}
+      </div>
+      {summary && (
+        <div style={{
+          fontSize: 9.5, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace",
+          color: stage.id === "7" ? (summary === "RECOMMEND" ? "#4ECCA3" : summary === "PASS" ? "#E85D75" : "#FFD166") : color,
+          padding: "2px 7px", borderRadius: 5, background: `${color}12`, border: `1px solid ${color}22`,
+          maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>{summary}</div>
+      )}
+      {active && total > 0 && (
+        <div style={{ height: 4, borderRadius: 999, background: "var(--c-bd-2)", overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${Math.round((doneCount / total) * 100)}%`, background: "#C8A84B" }} />
+        </div>
+      )}
+    </button>
   );
 }
