@@ -18,14 +18,14 @@ vi.mock("../api/_redis.js", () => ({
 }));
 
 // ── 핸들러 import는 mock 이후에 ──────────────────────────────────────────────
-const { default: handler } = await import("../api/admin/users.js");
+const { default: handler } = await import("../api/admin.js");
 
 // ── 가짜 req/res 팩토리 ────────────────────────────────────────────────────
-function makeReq({ method = "GET", token = null, cookie = null } = {}) {
+function makeReq({ method = "GET", token = null, cookie = null, resource = "users" } = {}) {
   const headers = {};
   if (token) headers["x-auth-token"] = token;
   if (cookie) headers["cookie"] = `hll_auth=${cookie}`;
-  return { method, headers, query: {} };
+  return { method, headers, query: { resource } };
 }
 
 function makeRes() {
