@@ -42,6 +42,7 @@ import {
   DEMO_DIALOGUE_DEV_RESULT, DEMO_SCENE_LIST_RESULT,
   DEMO_SCENARIO_DRAFT_RESULT, DEMO_PARTIAL_REWRITE_RESULT, DEMO_FULL_REWRITE_RESULT,
   DEMO_CORE_DESIGN_RESULT,
+  DEMO_AUTHOR_CHARTER, DEMO_CLICHE_MAP_RESULT, DEMO_DECISION_LEDGER,
 } from "../demo-data.js";
 import {
   LoglineAnalysisSchema, SynopsisSchema, AcademicAnalysisSchema,
@@ -1311,6 +1312,10 @@ export function useLoglineAnalyzer() {
     setInsightResult(DEMO_INSIGHT_RESULT);
     // Stage 2 (핵심 설계)
     setCoreDesignResult(DEMO_CORE_DESIGN_RESULT);
+    // Stage 2 (작가 좌표 — 헌장·클리셰지도·결정장부)
+    setAuthorCharter(DEMO_AUTHOR_CHARTER);
+    setClicheMapResult(DEMO_CLICHE_MAP_RESULT);
+    setDecisionLedger(DEMO_DECISION_LEDGER);
     // Stage 9 (Deep Analysis — 구 Stage 2 패널)
     setExpertPanelResult(DEMO_EXPERT_PANEL_RESULT);
     setValueChargeResult(DEMO_VALUE_CHARGE_RESULT);
