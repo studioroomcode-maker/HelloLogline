@@ -52,7 +52,7 @@ async function getUserTier(email, userId) {
 
 async function persistUser(user) {
   if (!user.email) return;
-  const info = JSON.stringify({ name: user.name, provider: user.provider, avatar: user.avatar, lastSeen: Date.now() });
+  const info = JSON.stringify({ name: user.name, provider: user.provider, avatar: user.avatar, last_seen: Date.now() });
   await Promise.all([
     rcall("sadd", "hll:users", user.email.toLowerCase()),
     rcall("set", `hll:user:${user.email.toLowerCase()}`, info),

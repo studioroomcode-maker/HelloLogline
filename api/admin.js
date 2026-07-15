@@ -23,6 +23,17 @@ function envTier(email) {
   return tiers[e] || "basic";
 }
 
+// admin 권한 판정 — 로그인 시 getUserTier(api/auth.js)와 동일한 순서로 서버에서 재확인.
+// ADMIN_EMAILS 뿐 아니라 redis 등급(hll:tier)·USER_TIERS로 부여된 admin도 인정한다.
+// JWT의 tier 클레임을 신뢰하지 않고 매 요청마다 재도출하므로 강등이 즉시 반영된다.
+async function isAdminUser(email) {
+  const e = (email || "").toLowerCase();
+  if (adminEmails().includes(e)) return true;
+  const redisTier = await rcall("get", `hll:tier:${e}`);
+  if (redisTier) return redisTier === "admin";
+  return envTier(e) === "admin";
+}
+
 async function supaGet(path) {
   try {
     const r = await fetch(`${SUPA_URL}/rest/v1/${path}`, {
@@ -68,7 +79,7 @@ async function handleUsers(req, res, payload) {
           name: info.name || "",
           provider: info.provider || "",
           avatar: info.avatar || "",
-          lastSeen: info.lastSeen || null,
+          lastSeen: info.last_seen || null,
           tier: redisTier || envTier(email),
         };
       })
@@ -122,7 +133,7 @@ export default async function handler(req, res) {
   try { payload = verifyToken(auth); }
   catch { return res.status(401).json({ error: "유효하지 않은 토큰입니다." }); }
 
-  if (!adminEmails().includes((payload.email || "").toLowerCase())) {
+  if (!(await isAdminUser(payload.email))) {
     return res.status(403).json({ error: "관리자 권한이 필요합니다." });
   }
 
