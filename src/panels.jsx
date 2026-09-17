@@ -927,7 +927,7 @@ export function HistoryPanel({ history, onSelect, onDelete, onClear, onClose }) 
 // ─────────────────────────────────────────────
 // AI 개선안 패널
 // ─────────────────────────────────────────────
-export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze, onImprovementChange }) {
+export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze, onImprovementChange, endpoint, extraHeaders }) {
   const [loading, setLoading] = useState(false);
   const [improvement, setImprovement] = useState(null);
   const [error, setError] = useState("");
@@ -953,7 +953,7 @@ export function ImprovementPanel({ logline, genre, apiKey, result, onReanalyze, 
 
       const msg = `원본 로그라인:\n"${logline}"\n\n장르: ${genreLabel}\n\n⚠️ 핵심 전제 유지 필수: 위 로그라인의 인물·사건·배경은 바꾸지 말고, 아래 분석을 바탕으로 표현만 강화하세요.\n\n종합 피드백:\n${result?.overall_feedback || "-"}\n\n취약 항목: ${weakPoints || "없음"}\n\n위 분석을 바탕으로 개선된 로그라인을 작성해주세요.`;
 
-      const data = await callClaude(apiKey, IMPROVEMENT_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", null, ImprovementSchema);
+      const data = await callClaude(apiKey, IMPROVEMENT_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-5", null, ImprovementSchema, undefined, endpoint, extraHeaders);
       setImprovement(data);
       onImprovementChange?.(data);
     } catch (err) {
@@ -1213,7 +1213,7 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply, onFixes
     setFixError("");
     try {
       const msg = `원본 로그라인: "${logline}"\n장르: ${genreLabel}\n\n⚠️ 핵심 전제 유지 필수: 위 로그라인의 인물·사건·배경은 바꾸지 말고 아래 취약점만 개선하세요.\n\n취약 항목 (점수 낮은 순): ${weakItems}\n\n종합 피드백: ${result?.overall_feedback || "-"}`;
-      const data = await callClaude(apiKey, WEAKNESS_FIX_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-4-6", null, WeaknessFixSchema);
+      const data = await callClaude(apiKey, WEAKNESS_FIX_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-5", null, WeaknessFixSchema);
       const newFixes = data.fixes || [];
       setFixes(newFixes);
       setFixState("done");
@@ -1229,7 +1229,7 @@ export function StoryDevPanel({ logline, genre, result, apiKey, onApply, onFixes
     setPivotError("");
     try {
       const msg = `원본 로그라인: "${logline}"\n장르: ${genreLabel}\n\n⚠️ 핵심 전제 유지 필수: 위 로그라인의 핵심 상황(인물·사건·배경)은 그대로 두고, 장르·톤·관점만 바꿔서 3가지 버전을 제시하세요.\n\n현재 분석 요약:\n- 종합 피드백: ${result?.overall_feedback || "-"}\n- 주요 강점: ${result?.strengths?.join(", ") || "-"}\n- 주요 약점: ${result?.weaknesses?.join(", ") || "-"}`;
-      const data = await callClaude(apiKey, STORY_PIVOT_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-4-6", null, StoryPivotSchema);
+      const data = await callClaude(apiKey, STORY_PIVOT_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-5", null, StoryPivotSchema);
       const newPivots = data.pivots || [];
       setPivots(newPivots);
       setPivotState("done");

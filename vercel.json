@@ -3,6 +3,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/claude.js":           { "maxDuration": 60 },
+    "api/student-claude.js":   { "maxDuration": 60 },
     "api/cron/subscribe.js":   { "maxDuration": 60 }
   },
   "crons": [
@@ -53,6 +54,6 @@
     { "source": "/api/projects/versions", "destination": "/api/projects?resource=versions" },
 
     { "source": "/share/:path*", "destination": "/index.html" },
-    { "source": "/((?!api/|legal/|landing/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|legal/|landing/|student\\.html).*)", "destination": "/index.html" }
   ]
 }

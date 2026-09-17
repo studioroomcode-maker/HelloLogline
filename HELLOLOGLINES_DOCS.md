@@ -121,7 +121,7 @@ HelloLoglines/
 
 **분석 함수:** `analyze(overrideLogline?)`
 - **프롬프트:** `SYSTEM_PROMPT`
-- **모델:** claude-sonnet-4-6
+- **모델:** claude-sonnet-5
 - **max_tokens:** 4,000
 - **응답 형식:** JSON (구조/표현/기술/흥미 섹션별 점수)
 
@@ -161,7 +161,7 @@ HelloLoglines/
 #### 2-1. 학술 분석
 - **함수:** `analyzeAcademic()`
 - **프롬프트:** `ACADEMIC_ANALYSIS_SYSTEM_PROMPT`
-- **모델:** claude-sonnet-4-6 / max_tokens: 6,000
+- **모델:** claude-sonnet-5 / max_tokens: 6,000
 - **이론 12개:** 아리스토텔레스 시학, 프롭 민담형태론, 캠벨 영웅여정, 토도로프 서사론, 롤랑 바르트 S/Z, 프라이탁 피라미드, 질만 흥분전이이론, 머레이스미스 관객참여, 한국 서사미학, 헤겔 변증법, 베르토프 키노글라즈, 브레히트 소격효과
 - **패널:** `AcademicPanel`
 
@@ -182,7 +182,7 @@ HelloLoglines/
 #### 2-4. 전문가 패널
 - **함수:** `runExpertPanel()`
 - **프롬프트:** `EXPERT_PANEL_SYSTEM_PROMPT`
-- **모델:** claude-sonnet-4-6 / max_tokens: 8,000
+- **모델:** claude-sonnet-5 / max_tokens: 8,000
 - **전문가 7명:** 할리우드 제작자, 한국 방송 PD, 독립영화 감독, 문학 평론가, 시청자 대표, 마케터, 국제 바이어
 - **패널:** `ExpertPanelSection`
 
@@ -196,7 +196,7 @@ HelloLoglines/
 #### 2-6. 테마 & 감정선
 - **함수:** `analyzeTheme()`
 - **프롬프트:** `THEME_ANALYSIS_SYSTEM_PROMPT`
-- **모델:** claude-sonnet-4-6 / max_tokens: 6,000
+- **모델:** claude-sonnet-5 / max_tokens: 6,000
 - **이론:** Egri 도덕적 전제, McKee 컨트롤링 아이디어, Truby 도덕 논증
 - **응답:** `controlling_idea`, `moral_premise`, `thematic_question`, `protagonist_inner_journey`, `emotional_arc`, `thematic_layers[]`
 - **패널:** `ThemeAnalysisPanel`
@@ -255,7 +255,7 @@ HelloLoglines/
 #### 4-1. 구조 분석
 - **함수:** `analyzeStructure()`
 - **프롬프트:** `STRUCTURE_ANALYSIS_SYSTEM_PROMPT`
-- **모델:** claude-sonnet-4-6 / max_tokens: 6,000
+- **모델:** claude-sonnet-5 / max_tokens: 6,000
 - **이론:** Field 3막, Snyder 15비트, McKee 가치전하, Hauge 5전환점, Truby 22단계
 - **응답:** `acts[]`, `plot_points{}`, `emotional_arc[]`, `structural_strengths[]`, `structural_gaps[]`
 - **패널:** `StructureAnalysisPanel` (SVG 감정선 그래프, 플롯포인트 아코디언)
@@ -277,7 +277,7 @@ HelloLoglines/
 #### 4-4. 시놉시스 생성
 - **함수:** `generateSynopsis()`
 - **프롬프트:** `SYNOPSIS_SYSTEM_PROMPT`
-- **모델:** claude-sonnet-4-6 / max_tokens: 8,000
+- **모델:** claude-sonnet-5 / max_tokens: 8,000
 - **서사 프레임워크 선택:**
   - 3막 구조 (Syd Field)
   - 영웅의 여정 (Joseph Campbell)
@@ -307,7 +307,7 @@ HelloLoglines/
 #### 5-1. 트리트먼트
 - **함수:** `generateTreatment()`
 - **프롬프트:** `TREATMENT_SYSTEM_PROMPT`
-- **모델:** claude-sonnet-4-6 / **max_tokens: 32,000** (최대치)
+- **모델:** claude-sonnet-5 / **max_tokens: 32,000** (최대치)
 - **입력 폼 (TreatmentInputPanel):**
   - 주인공 이름, 역할, 핵심 특성, 내적 갈등
   - 조력/적대 인물 최대 3명
@@ -320,7 +320,7 @@ HelloLoglines/
 #### 5-2. 씬 리스트 (스텝 아웃라인)
 - **함수:** `generateSceneList()`
 - **프롬프트:** `SCENE_LIST_SYSTEM_PROMPT`
-- **모델:** claude-sonnet-4-6 / max_tokens: 12,000
+- **모델:** claude-sonnet-5 / max_tokens: 12,000
 - **포맷별 씬 수:**
   - 초단편: 3~5씬 / 숏폼: 5~8씬 / 단편: 10~15씬
   - 웹드라마: 8~12씬 / TV드라마: 15~25씬
@@ -332,14 +332,14 @@ HelloLoglines/
 #### 5-3. 비트 시트
 - **함수:** `generateBeatSheet()`
 - **프롬프트:** `BEAT_SHEET_SYSTEM_PROMPT`
-- **모델:** claude-sonnet-4-6 / max_tokens: 8,000
+- **모델:** claude-sonnet-5 / max_tokens: 8,000
 - **이론:** Blake Snyder Save the Cat — 15비트 시스템
   1. Opening Image, 2. Theme Stated, 3. Set-up, 4. Catalyst, 5. Debate, 6. Break into Two, 7. B Story, 8. Fun and Games, 9. Midpoint, 10. Bad Guys Close In, 11. All is Lost, 12. Dark Night of the Soul, 13. Break into Three, 14. Finale, 15. Final Image
 - **각 비트 응답:** `id`, `name_kr`, `name_en`, `act`, `page_range`, `location`, `characters[]`, `function`, `summary`, `tone`, `key_element`
 - **패널:** `BeatSheetPanel`
 - **씬 생성 기능:** 각 비트별 `generateScene(beatId)` — Claude로 실제 씬 스크립트 생성
   - 프롬프트: `SCENE_GEN_SYSTEM_PROMPT`
-  - 모델: claude-sonnet-4-6 / max_tokens: 4,000
+  - 모델: claude-sonnet-5 / max_tokens: 4,000
   - 결과: 씬별 저장(beatScenes 딕셔너리), 펼침/접힘 토글
 
 #### 5-4. 대사 디벨롭
@@ -357,7 +357,7 @@ HelloLoglines/
 
 - **함수:** `analyzeScriptCoverage()`
 - **프롬프트:** `SCRIPT_COVERAGE_SYSTEM_PROMPT`
-- **모델:** claude-sonnet-4-6 / max_tokens: 6,000
+- **모델:** claude-sonnet-5 / max_tokens: 6,000
 - **형식:** 할리우드 스튜디오 + 한국 방송사 Coverage 혼합
 - **판정:** RECOMMEND / CONSIDER / PASS
 - **항목:** 전제, 구조, 캐릭터, 대화, 시장성, 독창성, 위험요소, 최종의견
@@ -471,11 +471,11 @@ callClaudeText(apiKey, systemPrompt, userMessage, maxTokens, model, signal)
 
 | 작업 | 모델 | max_tokens |
 |------|------|-----------|
-| 기본 분석, 시놉시스, 학술분석 | claude-sonnet-4-6 | 4,000~8,000 |
-| 구조분석, 테마, Script Coverage | claude-sonnet-4-6 | 6,000 |
-| 비트시트, 씬 생성 | claude-sonnet-4-6 | 4,000~8,000 |
-| **트리트먼트** | claude-sonnet-4-6 | **32,000** |
-| 씬 리스트 | claude-sonnet-4-6 | 12,000 |
+| 기본 분석, 시놉시스, 학술분석 | claude-sonnet-5 | 4,000~8,000 |
+| 구조분석, 테마, Script Coverage | claude-sonnet-5 | 6,000 |
+| 비트시트, 씬 생성 | claude-sonnet-5 | 4,000~8,000 |
+| **트리트먼트** | claude-sonnet-5 | **32,000** |
+| 씬 리스트 | claude-sonnet-5 | 12,000 |
 | 가치전하, 진정성, 그림자, 하위텍스트 | claude-haiku-4-5-20251001 | 8,000 |
 | 캐릭터 디벨롭, 신화, 바르트, 대사 | claude-haiku-4-5-20251001 | 8,000 |
 

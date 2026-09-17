@@ -17,7 +17,8 @@ const CREDIT_COSTS = {
 
 // 서버 키로 호출 가능한 모델 — 클라이언트가 임의 모델을 지정하지 못하게 한다.
 const ALLOWED_MODELS = new Set([
-  "claude-sonnet-4-6",
+  "claude-sonnet-5",
+  "claude-sonnet-4-6", // 구버전 번들 호환 — 캐시된 클라이언트가 아직 이 모델명을 보낸다
   "claude-haiku-4-5-20251001",
 ]);
 

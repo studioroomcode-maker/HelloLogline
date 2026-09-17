@@ -106,7 +106,7 @@ export default function StoryDoctorPanel({ apiKey, storyContext, onClose, isMobi
         buildChatSystem(storyContext),
         userMsg,
         1500,
-        "claude-sonnet-4-6"
+        "claude-sonnet-5"
       );
       setChatMessages(prev => [...prev, { role: "assistant", content: reply }]);
     } catch (err) {
@@ -128,7 +128,7 @@ export default function StoryDoctorPanel({ apiKey, storyContext, onClose, isMobi
         DIAGNOSTIC_SYSTEM,
         `다음 작품을 전체 진단해주세요:\n\n${storyContext}`,
         1200,
-        "claude-sonnet-4-6"
+        "claude-sonnet-5"
       );
       setDiagResult(result);
     } catch {
@@ -150,7 +150,7 @@ export default function StoryDoctorPanel({ apiKey, storyContext, onClose, isMobi
         buildClinicSystem(storyContext),
         `다음 씬/상황을 분석해주세요:\n\n${clinicInput.trim()}`,
         1500,
-        "claude-sonnet-4-6"
+        "claude-sonnet-5"
       );
       setClinicResult(result);
     } catch {

@@ -170,12 +170,14 @@ function koreanizeError(errData, httpStatus) {
     return "API 요청 한도(Rate Limit)에 도달했습니다. 잠시 기다린 후 다시 시도해주세요.";
   if (type === "authentication_error" || httpStatus === 401)
     return "API 키가 올바르지 않습니다. 설정에서 키를 다시 확인해주세요.";
-  if (type === "invalid_request_error")
-    return "요청 형식 오류가 발생했습니다. 입력 내용을 줄이거나 다시 시도해주세요.";
-  if (type === "permission_error" || msg.includes("permission"))
-    return "이 API 키에 해당 기능 사용 권한이 없습니다.";
+  // 크레딧 부족은 Anthropic이 invalid_request_error(400)로 내려준다 —
+  // 아래 일반 invalid_request_error 분기보다 반드시 먼저 검사해야 한다.
   if (msg.includes("credit") || msg.includes("billing") || msg.includes("balance"))
     return "Anthropic 계정 크레딧이 부족합니다. anthropic.com에서 크레딧을 충전해주세요.";
+  if (type === "permission_error" || msg.includes("permission"))
+    return "이 API 키에 해당 기능 사용 권한이 없습니다.";
+  if (type === "invalid_request_error")
+    return `요청 형식 오류가 발생했습니다. 입력 내용을 줄이거나 다시 시도해주세요.${msg ? ` (${msg})` : ""}`;
   if (httpStatus === 529)
     return "Claude API가 현재 혼잡합니다. 잠시 후 재시도해주세요.";
   if (httpStatus === 500 && (msg.includes("Redis") || msg.includes("크레딧") || msg.includes("credit")))
@@ -223,7 +225,7 @@ async function callOllamaText(baseUrl, model, systemPrompt, userMessage, maxToke
   return data.choices?.[0]?.message?.content || "";
 }
 
-async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature = null) {
+async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature = null, endpoint = "/api/claude", extraHeaders = null) {
   // 오프라인: Ollama 설정 있으면 폴백, 없으면 차단
   if (!navigator.onLine) {
     const ollamaEnabled = localStorage.getItem("hll_ollama_enabled") === "true";
@@ -242,10 +244,11 @@ async function fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, 
   if (apiKey && apiKey !== "__server__") headers["x-client-api-key"] = apiKey;
   const authToken = localStorage.getItem("hll_auth_token");
   if (authToken) headers["x-auth-token"] = authToken;
+  if (extraHeaders) Object.assign(headers, extraHeaders);
 
   let response;
   try {
-    response = await fetch("/api/claude", {
+    response = await fetch(endpoint, {
       method: "POST",
       credentials: "include",
       headers,
@@ -318,9 +321,11 @@ export async function callClaude(
   model = "claude-haiku-4-5-20251001",
   signal = null,
   schema = null,
-  feature = null
+  feature = null,
+  endpoint = "/api/claude",
+  extraHeaders = null
 ) {
-  const text = await fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature);
+  const text = await fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature, endpoint, extraHeaders);
   const parsed = parseClaudeJson(text);
 
   if (!schema) return parsed;
@@ -337,7 +342,7 @@ export async function callClaude(
   });
 
   // Retry (same prompt — Claude responses are non-deterministic, retry often fixes it)
-  const retryText = await fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature);
+  const retryText = await fetchClaude(apiKey, systemPrompt, userMessage, maxTokens, model, signal, feature, endpoint, extraHeaders);
   const retryParsed = parseClaudeJson(retryText);
   const second = schema.safeParse(retryParsed);
 
@@ -385,7 +390,7 @@ export async function callClaudeText(
   systemPrompt,
   userMessage,
   maxTokens = 8000,
-  model = "claude-sonnet-4-6",
+  model = "claude-sonnet-5",
   signal = null,
   feature = null
 ) {

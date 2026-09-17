@@ -72,6 +72,12 @@ app.post("/api/claude", async (req, res) => {
   const controller = new AbortController();
   req.socket.on("close", () => { if (!res.headersSent) controller.abort(); });
 
+  // 밑줄로 시작하는 필드(_feature, _stream 등)는 내부 라우팅용이므로 Anthropic에 전달하지 않는다.
+  // (api/claude.js의 프로덕션 프록시와 동일한 처리 — 없으면 Anthropic이 invalid_request_error로 거부한다.)
+  const anthropicBody = Object.fromEntries(
+    Object.entries(req.body).filter(([k]) => !k.startsWith("_"))
+  );
+
   try {
     const upstream = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -81,7 +87,68 @@ app.post("/api/claude", async (req, res) => {
         "anthropic-version": "2023-06-01",
         "anthropic-beta": "prompt-caching-2024-07-31",
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify(anthropicBody),
+      signal: controller.signal,
+    });
+
+    const data = await upstream.json();
+    res.status(upstream.status).json(data);
+  } catch (err) {
+    if (err.name === "AbortError") {
+      res.status(499).json({ error: { message: "요청이 취소되었습니다." } });
+    } else {
+      console.error("[proxy error]", err.message);
+      res.status(500).json({ error: { message: err.message } });
+    }
+  }
+});
+
+// 학생용 로그라인 진단기 전용 프록시 — 로그인 없이 공용 암호(STUDENT_TOOL_PASSCODE)로만 접근.
+// 프로덕션의 api/student-claude.js와 동일한 검증(암호·모델·토큰 상한)을 로컬에서도 재현한다.
+const STUDENT_ALLOWED_MODELS = new Set(["claude-sonnet-5", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"]);
+const STUDENT_MAX_OUTPUT_TOKENS = 6000;
+
+app.post("/api/student-claude", async (req, res) => {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return res.status(401).json({ error: { message: "API 키가 설정되지 않았습니다." } });
+  }
+
+  // 403을 쓰는 이유: 클라이언트의 공용 401 처리기가 "API 키가 올바르지 않습니다"로
+  // 뭉개버려서, 여기서 보낸 실제 메시지가 학생에게 보이지 않는다.
+  const passcode = req.headers["x-student-passcode"];
+  if (!process.env.STUDENT_TOOL_PASSCODE) {
+    return res.status(403).json({ error: { message: ".env에 STUDENT_TOOL_PASSCODE가 설정되지 않았습니다." } });
+  }
+  if (!passcode || passcode !== process.env.STUDENT_TOOL_PASSCODE) {
+    return res.status(403).json({ error: { message: "암호가 올바르지 않습니다." } });
+  }
+
+  if (!STUDENT_ALLOWED_MODELS.has(req.body.model)) {
+    return res.status(400).json({ error: { message: "지원하지 않는 모델입니다." } });
+  }
+  const maxTokens = Number(req.body.max_tokens);
+  if (!Number.isInteger(maxTokens) || maxTokens < 1 || maxTokens > STUDENT_MAX_OUTPUT_TOKENS) {
+    return res.status(400).json({ error: { message: `max_tokens는 1~${STUDENT_MAX_OUTPUT_TOKENS} 사이여야 합니다.` } });
+  }
+
+  const controller = new AbortController();
+  req.socket.on("close", () => { if (!res.headersSent) controller.abort(); });
+
+  const anthropicBody = Object.fromEntries(
+    Object.entries(req.body).filter(([k]) => !k.startsWith("_"))
+  );
+
+  try {
+    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "prompt-caching-2024-07-31",
+      },
+      body: JSON.stringify(anthropicBody),
       signal: controller.signal,
     });
 

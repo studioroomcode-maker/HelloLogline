@@ -43,7 +43,7 @@ function makeRes() {
 /** 정상 형태의 요청 본문 (필요한 필드만 덮어쓴다) */
 function validBody(overrides = {}) {
   return {
-    model: "claude-sonnet-4-6",
+    model: "claude-sonnet-5",
     max_tokens: 4500,
     messages: [{ role: "user", content: "안녕" }],
     _feature: "logline",

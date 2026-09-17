@@ -115,7 +115,7 @@ export function useStage4({
       : "";
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${label}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}\n\n위 로그라인의 3막 구조 핵심 플롯 포인트와 감정 아크를 설계하세요. 시놉시스가 있다면 반드시 그 방향의 등장인물과 이야기를 따르세요.`;
     try {
-      const data = await callClaude(apiKey, STRUCTURE_ANALYSIS_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, StructureAnalysisSchema, "structure");
+      const data = await callClaude(apiKey, STRUCTURE_ANALYSIS_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-5", ctrl.signal, StructureAnalysisSchema, "structure");
       setStructureResult(data);
       await autoSave();
     } catch (err) {
@@ -273,7 +273,7 @@ export function useStage4({
 
     const ctrl = makeController("synopsis");
     try {
-      const data = await callClaude(apiKey, SYNOPSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, SynopsisSchema, "synopsis");
+      const data = await callClaude(apiKey, SYNOPSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-5", ctrl.signal, SynopsisSchema, "synopsis");
       setSynopsisResults(data);
       await autoSave();
     } catch (err) {

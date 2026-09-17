@@ -68,7 +68,7 @@ export function useStage2({
     setAcademicLoading(true); setAcademicError(""); setAcademicResult(null);
     const msg = `다음 로그라인을 제시된 학술 이론 체계 전체에 걸쳐 엄밀하게 분석하세요.\n\n로그라인: "${logline.trim()}"\n장르: ${genreLabel()}\n글자 수: ${logline.length}자\n\n아리스토텔레스 시학, 프롭 민담 형태론, 캠벨 영웅 여정, 토도로프 서사 이론, 바르트 서사 코드, 프라이탁 피라미드, 질만 흥분 전이 이론, 머레이 스미스 관객 참여 이론, 한국 서사 미학을 각각 적용하여 분석하세요.`;
     try {
-      const data = await callClaude(apiKey, ACADEMIC_ANALYSIS_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, AcademicAnalysisSchema, "academic");
+      const data = await callClaude(apiKey, ACADEMIC_ANALYSIS_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-5", ctrl.signal, AcademicAnalysisSchema, "academic");
       setAcademicResult(data);
       await autoSave();
     } catch (err) {

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>로그라인 진단기 — 학생용</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ── Theme tokens (index.html과 동일 — panels.jsx 공용 컴포넌트가 참조) ── */
+      :root {
+        --tw: 255,255,255;
+        --bg-page: #0c0c1c;
+        --text-main: #eeeef8;
+        --bg-tooltip: rgba(8,8,20,0.98);
+        --text-tooltip: rgba(255,255,255,0.90);
+        --scrollbar-thumb: rgba(255,255,255,0.18);
+        --c-card-1: rgba(255,255,255,0.07);
+        --c-card-2: rgba(255,255,255,0.10);
+        --c-bd-1: rgba(255,255,255,0.15);
+        --c-bd-2: rgba(255,255,255,0.19);
+        --c-bd-3: rgba(255,255,255,0.23);
+        --c-tx-20: rgba(255,255,255,0.30);
+        --c-tx-25: rgba(255,255,255,0.36);
+        --c-tx-28: rgba(255,255,255,0.40);
+        --c-tx-30: rgba(255,255,255,0.44);
+        --c-tx-35: rgba(255,255,255,0.50);
+        --c-tx-40: rgba(255,255,255,0.57);
+        --c-tx-45: rgba(255,255,255,0.63);
+        --c-tx-50: rgba(255,255,255,0.69);
+        --c-tx-55: rgba(255,255,255,0.75);
+        --c-tx-60: rgba(255,255,255,0.80);
+        --c-tx-65: rgba(255,255,255,0.85);
+      }
+      [data-theme="light"] {
+        --tw: 0,0,0;
+        --bg-page: #f2f4f8;
+        --text-main: #090920;
+        --bg-tooltip: rgba(20,22,44,0.97);
+        --text-tooltip: rgba(255,255,255,0.90);
+        --scrollbar-thumb: rgba(0,0,0,0.22);
+        --c-card-1: #ffffff;
+        --c-card-2: #f7f9ff;
+        --c-bd-1: rgba(0,0,0,0.22);
+        --c-bd-2: rgba(0,0,0,0.27);
+        --c-bd-3: rgba(0,0,0,0.32);
+        --c-tx-20: rgba(0,0,0,0.44);
+        --c-tx-25: rgba(0,0,0,0.52);
+        --c-tx-28: rgba(0,0,0,0.57);
+        --c-tx-30: rgba(0,0,0,0.61);
+        --c-tx-35: rgba(0,0,0,0.67);
+        --c-tx-40: rgba(0,0,0,0.73);
+        --c-tx-45: rgba(0,0,0,0.78);
+        --c-tx-50: rgba(0,0,0,0.82);
+        --c-tx-55: rgba(0,0,0,0.85);
+        --c-tx-60: rgba(0,0,0,0.88);
+        --c-tx-65: rgba(0,0,0,0.90);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { background: var(--bg-page); overflow-x: hidden; }
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 2px; }
+      textarea, select { outline: none; }
+      textarea:focus, select:focus { border-color: rgba(200,168,75,0.4) !important; }
+      button { font-family: 'Noto Sans KR', sans-serif; }
+    </style>
+    <script>
+      (function() {
+        var t = localStorage.getItem('theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/student-main.jsx"></script>
+  </body>
+</html>

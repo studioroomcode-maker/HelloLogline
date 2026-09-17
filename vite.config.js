@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -28,7 +29,7 @@ export default defineConfig({
           },
         ],
         navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//, /^\/auth\//, /^\/landing\//, /^\/legal\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/auth\//, /^\/landing\//, /^\/legal\//, /^\/student\.html$/],
       },
     }),
   ],
@@ -64,6 +65,10 @@ export default defineConfig({
     //   sourcemaps.filesToDeleteAfterUpload 로 dist 에서 지운다.
     sourcemap: false,
     rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('./index.html', import.meta.url)),
+        student: fileURLToPath(new URL('./student.html', import.meta.url)),
+      },
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],

@@ -158,7 +158,7 @@ export function useStage5({
     const genreHint = GENRE_BEAT_HINTS[genre] || "";
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${label}\n서사 구조: ${structureLabel}\n\n등장인물 정보:\n${charBlock}${getStoryBible()}${structurePlotPoints}${genreHint ? `\n\n${genreHint}` : ""}\n\n위 정보를 바탕으로 완성도 높은 트리트먼트를 한국어로 작성해주세요. 시놉시스와 플롯 포인트가 있다면 반드시 그 방향을 따르세요.`;
     try {
-      const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal, "treatment");
+      const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-5", ctrl.signal, "treatment");
       setTreatmentResult(text);
       setTreatmentStale(false);
       setTreatmentCtx({
@@ -185,7 +185,7 @@ export function useStage5({
     const effective = getEffective ? getEffective("treatment", treatmentResult) : treatmentResult;
     const msg = `원본 로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n── 현재 트리트먼트 ──\n${effective.slice(0, 4000)}\n\n── 작가 피드백 ──\n${treatmentFeedback.trim()}\n\n위 피드백을 반영하여 트리트먼트를 수정하세요.`;
     try {
-      const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal, "treatment");
+      const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-5", ctrl.signal, "treatment");
       pushHistory(setTreatmentHistory, treatmentResult, "treatment");
       setTreatmentResult(text);
       setTreatmentStale(false);
@@ -223,7 +223,7 @@ export function useStage5({
     const genreHint = GENRE_BEAT_HINTS[genre] || "";
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${label}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}${structureBlock}${contextBlock}${genreHint ? `\n\n${genreHint}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요.`;
     try {
-      const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, BeatSheetSchema, "beatsheet");
+      const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-5", ctrl.signal, BeatSheetSchema, "beatsheet");
       setBeatSheetResult(data);
       setBeatSheetStale(false);
       setBeatSheetCtx({
@@ -253,7 +253,7 @@ export function useStage5({
       .join("\n\n");
     const msg = `로그라인: "${logline.trim()}"\n${charSummary}\n\n[생성할 비트]\n비트 번호: ${beat.id} / ${beat.name_kr} (${beat.name_en})\n막: ${beat.act} — ${beat.act_phase}\n페이지 범위: p.${beat.page_start}~p.${beat.page_end} (약 ${beat.page_end - beat.page_start + 1}페이지)\n장소: ${beat.location_hint || "미정"}\n등장 인물: ${(beat.characters_present || []).join(", ")}\n이 씬의 기능: ${beat.dramatic_function}\n이 씬에서 일어나는 일: ${beat.summary}\n가치 변화: ${beat.value_start} → ${beat.value_end}\n톤: ${beat.tone}\n반드시 포함: ${(beat.key_elements || []).join(", ")}${prevScenes ? `\n\n이전 씬 요약:\n${prevScenes}` : ""}\n\n위 정보로 시나리오 씬을 한국어로 작성하세요.`;
     try {
-      const sceneText = await callClaudeText(apiKey, SCENE_GEN_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-4-6", ctrl.signal, "scenario");
+      const sceneText = await callClaudeText(apiKey, SCENE_GEN_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-5", ctrl.signal, "scenario");
       setBeatScenes((prev) => ({ ...prev, [beat.id]: sceneText }));
       setExpandedBeats((prev) => ({ ...prev, [beat.id]: true }));
       await autoSave();
@@ -286,7 +286,7 @@ export function useStage5({
           .join("\n\n");
         const msg = `로그라인: "${logline.trim()}"\n${charSummary}\n\n[생성할 비트]\n비트 번호: ${beat.id} / ${beat.name_kr}\n막: ${beat.act}\n페이지: p.${beat.page_start}~p.${beat.page_end}\n이 씬에서 일어나는 일: ${beat.summary}\n가치 변화: ${beat.value_start} → ${beat.value_end}\n톤: ${beat.tone}${prevScenes ? `\n\n이전 씬 흐름:\n${prevScenes}` : ""}\n\n위 정보로 시나리오 씬을 한국어로 작성하세요.`;
         try {
-          const sceneText = await callClaudeText(apiKey, SCENE_GEN_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-4-6", ctrl.signal, "scenario");
+          const sceneText = await callClaudeText(apiKey, SCENE_GEN_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-5", ctrl.signal, "scenario");
           localScenes[beat.id] = sceneText;
           setBeatScenes((prev) => ({ ...prev, [beat.id]: sceneText }));
           setExpandedBeats((prev) => ({ ...prev, [beat.id]: true }));
@@ -317,7 +317,7 @@ export function useStage5({
       : "";
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${label}${charBlock ? `\n${charBlock}` : ""}${getStoryBible()}${structureBlock ? `\n\n${structureBlock}` : ""}${treatmentBlock ? `\n\n${treatmentBlock}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 씬 리스트(스텝 아웃라인)를 작성하세요.`;
     try {
-      const text = await callClaudeText(apiKey, SCENE_LIST_SYSTEM_PROMPT, msg, 7000, "claude-sonnet-4-6", ctrl.signal, "scenelist");
+      const text = await callClaudeText(apiKey, SCENE_LIST_SYSTEM_PROMPT, msg, 7000, "claude-sonnet-5", ctrl.signal, "scenelist");
       setSceneListResult(text);
       await autoSave();
     } catch (err) {

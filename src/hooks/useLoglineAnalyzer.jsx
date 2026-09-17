@@ -444,7 +444,7 @@ export function useLoglineAnalyzer() {
     const ctrl = makeController(`voiceCard_${characterName}`);
     try {
       const userMsg = `[캐릭터 이름]\n${characterName}\n\n[작가가 직접 쓴 대사 샘플]\n${sampleDialogue.trim().slice(0, 4000)}\n\n위 샘플에서 이 캐릭터의 고유한 말투를 객관적으로 추출하세요.`;
-      const data = await callClaude(apiKey, VOICE_CARD_EXTRACT_SYSTEM_PROMPT, userMsg, 1500, "claude-sonnet-4-6", ctrl.signal, null, "voiceCard");
+      const data = await callClaude(apiKey, VOICE_CARD_EXTRACT_SYSTEM_PROMPT, userMsg, 1500, "claude-sonnet-5", ctrl.signal, null, "voiceCard");
       setCharacterVoiceCards(prev => ({
         ...prev,
         [characterName]: { ...data, character_name: characterName, createdAt: Date.now(), updatedAt: Date.now() },
@@ -2968,7 +2968,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
         sysPrompt,
         `다음 시나리오/시놉시스에서 로그라인을 추출해주세요:\n\n${referenceScenario.trim().slice(0, 50000)}`,
         300,
-        "claude-sonnet-4-6"
+        "claude-sonnet-5"
       );
       if (extracted?.trim()) {
         setLogline(extracted.trim());
@@ -3075,7 +3075,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   "strongest_element": "현재 가장 잘 되어 있는 요소 (10-25자)"
 }`;
 
-      const parsed = await callClaude(apiKey, sysPrompt, lines.join("\n"), 3000, "claude-sonnet-4-6", undefined, InsightSchema, "insight");
+      const parsed = await callClaude(apiKey, sysPrompt, lines.join("\n"), 3000, "claude-sonnet-5", undefined, InsightSchema, "insight");
       setInsightResult(parsed);
     } catch (e) {
       setInsightError(e.message || "인사이트 생성 실패");
@@ -3100,7 +3100,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setInsightResult(null);
     setInsightError("");
     try {
-      const parsed = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(target, genre), 4500, "claude-sonnet-4-6", ctrl.signal, LoglineAnalysisSchema, "logline");
+      const parsed = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(target, genre), 4500, "claude-sonnet-5", ctrl.signal, LoglineAnalysisSchema, "logline");
       const sT = calcSectionTotal(parsed, "structure");
       const eT = calcSectionTotal(parsed, "expression");
       const tT = calcSectionTotal(parsed, "technical");
@@ -3112,7 +3112,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       if (compareMode && logline2.trim()) {
         setLoading2(true);
         try {
-          const parsed2 = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(logline2, genre), 4500, "claude-sonnet-4-6", ctrl.signal, LoglineAnalysisSchema, "logline");
+          const parsed2 = await callClaude(apiKey, SYSTEM_PROMPT, buildUserMsg(logline2, genre), 4500, "claude-sonnet-5", ctrl.signal, LoglineAnalysisSchema, "logline");
           const s2 = calcSectionTotal(parsed2, "structure");
           const e2 = calcSectionTotal(parsed2, "expression");
           const t2 = calcSectionTotal(parsed2, "technical");
@@ -3259,7 +3259,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
     const ctrl = makeController("synopsis");
     try {
-      const data = await callClaude(apiKey, SYNOPSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, SynopsisSchema, "synopsis");
+      const data = await callClaude(apiKey, SYNOPSIS_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-5", ctrl.signal, SynopsisSchema, "synopsis");
       setSynopsisResults(data);
       trackCreditUsage("시놉시스 생성", 1);
       await autoSave();
@@ -3313,7 +3313,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setAcademicLoading(true); setAcademicError(""); setAcademicResult(null);
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `다음 로그라인을 제시된 학술 이론 체계 전체에 걸쳐 엄밀하게 분석하세요.\n\n로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n글자 수: ${logline.length}자\n\n아리스토텔레스 시학, 프롭 민담 형태론, 캠벨 영웅 여정, 토도로프 서사 이론, 바르트 서사 코드, 프라이탁 피라미드, 질만 흥분 전이 이론, 머레이 스미스 관객 참여 이론, 한국 서사 미학을 각각 적용하여 분석하세요.`;
-    try { const data = await callClaude(apiKey, ACADEMIC_ANALYSIS_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, AcademicAnalysisSchema, "academic"); setAcademicResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, ACADEMIC_ANALYSIS_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-5", ctrl.signal, AcademicAnalysisSchema, "academic"); setAcademicResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setAcademicError(err.message || "학술 분석 중 오류가 발생했습니다."); }
     finally { setAcademicLoading(false); clearController("academic"); }
   };
@@ -3327,7 +3327,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const msg = `분석할 로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n글자수: ${logline.trim().length}자\n\n위 로그라인을 7명의 전문가 패널이 학술 이론을 바탕으로 토론하세요.`;
     try {
       const rawText = await fetchClaudeStream(
-        apiKey, EXPERT_PANEL_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6",
+        apiKey, EXPERT_PANEL_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-5",
         ctrl.signal, "expertpanel",
         (_chunk, total) => setExpertPanelProgress(total.length)
       );
@@ -3421,7 +3421,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       : "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${coverageCtxBlock}\n\n위 로그라인(및 이전 단계 분석 결과)에 대한 할리우드 + 한국 방송사 스타일 Script Coverage를 작성하세요. 이전 단계에서 구축된 캐릭터·테마·시놉시스 정보가 있다면 그것을 기준으로 평가하세요.`;
     try {
-      const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, ScriptCoverageSchema, "coverage");
+      const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-5", ctrl.signal, ScriptCoverageSchema, "coverage");
       setScriptCoverageResult(data);
       addDevelopmentNotes(notesFromCoverage(data));
       trackCreditUsage("Script Coverage", 2);
@@ -3489,7 +3489,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     if (rewriteDiagResult) parts.push(`[Stage 8] 고쳐쓰기 진단 완료`);
     const msg = parts.join("\n");
     try {
-      const data = await callClaude(apiKey, MASTER_REPORT_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-4-6", null, MasterReportSchema, "master_report");
+      const data = await callClaude(apiKey, MASTER_REPORT_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-5", null, MasterReportSchema, "master_report");
       setMasterReportResult(data);
       trackCreditUsage("통합 마스터 리포트", 1);
       await autoSave();
@@ -3514,7 +3514,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       : "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}\n에피소드 수: ${episodeCount}부작${synopsisCtx}${charCtx}\n\n위 로그라인을 기반으로 ${episodeCount}부작 시리즈 구조를 설계하세요. 각 에피소드의 개별 갈등과 클리프행어, 시즌 전체 아크를 포함하세요.`;
     try {
-      const data = await callClaude(apiKey, EPISODE_SERIES_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, EpisodeSeriesSchema, "episode");
+      const data = await callClaude(apiKey, EPISODE_SERIES_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-5", ctrl.signal, EpisodeSeriesSchema, "episode");
       setEpisodeDesignResult(data);
       trackCreditUsage("에피소드 시리즈 설계", 2);
       await autoSave();
@@ -3605,7 +3605,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || ""} — 결함: ${charDevResult.protagonist.flaw || ""} / 원하는 것: ${charDevResult.protagonist.want || ""}` : "";
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}\n\n위 로그라인의 3막 구조 핵심 플롯 포인트와 감정 아크를 설계하세요. 시놉시스가 있다면 반드시 그 방향의 등장인물과 이야기를 따르세요.`;
-    try { const data = await callClaude(apiKey, STRUCTURE_ANALYSIS_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, StructureAnalysisSchema, "structure"); setStructureResult(data); await autoSave(); }
+    try { const data = await callClaude(apiKey, STRUCTURE_ANALYSIS_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-5", ctrl.signal, StructureAnalysisSchema, "structure"); setStructureResult(data); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setStructureError(err.message || "구조 분석 중 오류가 발생했습니다."); }
     finally { setStructureLoading(false); clearController("structure"); }
   };
@@ -3634,7 +3634,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const charBlock = charDevResult?.protagonist ? `주인공: ${charDevResult.protagonist.name_suggestion || "주인공"} — ${charDevResult.protagonist.want || ""}` : "";
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n${charBlock}` : ""}${getStoryBible()}${structureBlock ? `\n\n${structureBlock}` : ""}${treatmentBlock ? `\n\n${treatmentBlock}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 씬 리스트(스텝 아웃라인)를 작성하세요. 시놉시스·트리트먼트가 있다면 반드시 그 방향의 이야기와 인물을 따르세요.`;
     try {
-      const text = await callClaudeText(apiKey, SCENE_LIST_SYSTEM_PROMPT, msg, 7000, "claude-sonnet-4-6", ctrl.signal, "scenelist");
+      const text = await callClaudeText(apiKey, SCENE_LIST_SYSTEM_PROMPT, msg, 7000, "claude-sonnet-5", ctrl.signal, "scenelist");
       setSceneListResult(text); await autoSave();
     }
     catch (err) { if (err.name !== "AbortError") setSceneListError(err.message || "씬 리스트 생성 중 오류가 발생했습니다."); }
@@ -3704,7 +3704,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
 
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock}${getStoryBible()}${structureBlock}${dialogueBlock}${treatmentBlock}${beatBlock}\n\n위 모든 정보를 반드시 반영해서 시나리오 초고를 작성하세요.\n- 등장인물 이름·성격·관계를 그대로 유지하세요\n- 비트 시트가 있다면 그 순서와 구조를 따르세요\n- 대사 목소리 프로필이 있다면 각 인물의 말투를 그에 맞게 쓰세요\n- 트리트먼트가 있다면 그 방향의 이야기를 따르세요`;
     try {
-      const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal, "scenario");
+      const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-5", ctrl.signal, "scenario");
       setScenarioDraftResult(decodeHtmlEntities(text));
       trackCreditUsage("시나리오 초고", 5);
       setScenarioDraftStale(false);
@@ -3794,7 +3794,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${charBlock ? `\n\n캐릭터 정보:\n${charBlock}` : ""}${getStoryBible()}${structureBlock}${contextBlock}${genreHint ? `\n\n${genreHint}` : ""}\n\n위 정보를 바탕으로 포맷에 맞는 비트 시트를 생성하세요. 시놉시스·트리트먼트·플롯포인트가 있다면 반드시 그 방향의 이야기와 인물을 따르세요.`;
     try {
       trackCreditUsage("비트시트 생성", 2);
-      const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, BeatSheetSchema, "beatsheet");
+      const data = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-5", ctrl.signal, BeatSheetSchema, "beatsheet");
       setBeatSheetResult(data);
       setBeatSheetStale(false);
       if (scenarioDraftResult) setScenarioDraftStale(true);
@@ -3820,7 +3820,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const prevScenes = Object.entries(beatScenes).filter(([id]) => Number(id) < beat.id).slice(-3).map(([id, text]) => { const b = beatSheetResult?.beats?.find((b) => b.id === Number(id)); return `[${b?.name_kr || `비트 ${id}`}] ${text.slice(0, 200)}...`; }).join("\n\n");
     const msg = `로그라인: "${logline.trim()}"\n${charSummary}\n\n[생성할 비트]\n비트 번호: ${beat.id} / ${beat.name_kr} (${beat.name_en})\n막: ${beat.act} — ${beat.act_phase}\n페이지 범위: p.${beat.page_start}~p.${beat.page_end} (약 ${beat.page_end - beat.page_start + 1}페이지)\n장소: ${beat.location_hint || "미정"}\n등장 인물: ${(beat.characters_present || []).join(", ")}\n이 씬의 기능: ${beat.dramatic_function}\n이 씬에서 일어나는 일: ${beat.summary}\n가치 변화: ${beat.value_start} → ${beat.value_end}\n톤: ${beat.tone}\n반드시 포함: ${(beat.key_elements || []).join(", ")}${prevScenes ? `\n\n이전 씬 요약:\n${prevScenes}` : ""}\n\n위 정보로 시나리오 씬을 한국어로 작성하세요.`;
     try {
-      const sceneText = await callClaudeText(apiKey, SCENE_GEN_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-4-6", ctrl.signal, "scenario");
+      const sceneText = await callClaudeText(apiKey, SCENE_GEN_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-5", ctrl.signal, "scenario");
       setBeatScenes((prev) => ({ ...prev, [beat.id]: sceneText }));
       setExpandedBeats((prev) => ({ ...prev, [beat.id]: true }));
       addActivity("scene_gen", currentWorkingMember?.name || user?.name || "나", currentWorkingMember?.color || "#C8A84B", `씬 #${beat.id} (${beat.name_kr}) 생성`, "5");
@@ -3858,7 +3858,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
         const msg = `로그라인: "${logline.trim()}"\n${charSummary}\n\n[생성할 비트]\n비트 번호: ${beat.id} / ${beat.name_kr} (${beat.name_en})\n막: ${beat.act} — ${beat.act_phase}\n페이지 범위: p.${beat.page_start}~p.${beat.page_end}\n장소: ${beat.location_hint || "미정"}\n등장 인물: ${(beat.characters_present || []).join(", ")}\n이 씬의 기능: ${beat.dramatic_function}\n이 씬에서 일어나는 일: ${beat.summary}\n가치 변화: ${beat.value_start} → ${beat.value_end}\n톤: ${beat.tone}\n반드시 포함: ${(beat.key_elements || []).join(", ")}${prevScenes ? `\n\n이전 씬 흐름:\n${prevScenes}` : ""}\n\n위 정보로 시나리오 씬을 한국어로 작성하세요.`;
 
         try {
-          const sceneText = await callClaudeText(apiKey, SCENE_GEN_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-4-6", ctrl.signal, "scenario");
+          const sceneText = await callClaudeText(apiKey, SCENE_GEN_SYSTEM_PROMPT, msg, 3000, "claude-sonnet-5", ctrl.signal, "scenario");
           localScenes[beat.id] = sceneText;
           setBeatScenes((prev) => ({ ...prev, [beat.id]: sceneText }));
           setExpandedBeats((prev) => ({ ...prev, [beat.id]: true }));
@@ -4360,7 +4360,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
   ]
 }`;
       const userMsg = `[비교할 ${label}]\n${content.slice(0, 3000)}\n\n[작품 컨텍스트]\n로그라인: "${logline.trim() || "(아직 없음)"}"${getStoryBible()}\n\n위 ${label}과 기능적으로 유사한 실재 작품 3건을 매칭하세요. 한국 1~2 + 해외 1~2 균형. 가짜 작품 금지.`;
-      const data = await callClaude(apiKey, sysPrompt, userMsg, 2000, "claude-sonnet-4-6", ctrl.signal, null, "comparables");
+      const data = await callClaude(apiKey, sysPrompt, userMsg, 2000, "claude-sonnet-5", ctrl.signal, null, "comparables");
       setComparablesResult(data);
       trackCreditUsage("비교 작품 매칭", 1);
     } catch (err) {
@@ -4392,7 +4392,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
       const existing = (card.fountainText || "").trim();
       const sysPrompt = `당신은 한국 시나리오 작가입니다. Fountain 포맷으로 단일 씬을 작성합니다.\n\n[규칙]\n- 슬러그라인(INT./EXT.)으로 시작\n- 행동 묘사는 현재형, 시각적 표현 우선\n- 대사는 캐릭터 이름을 대문자/한글 + 줄바꿈 후 들여쓰기 없이 작성\n- 씬 기능과 가치 변화를 본문에 시각적으로 구현\n- 카드의 메타가 명시한 갈등/폭로를 반드시 본문에 녹여낼 것\n- 씬 1개 분량 (대략 0.5~2페이지)\n- 마크다운 코드블록 없이 Fountain 본문만 출력`;
       const userMsg = `로그라인: "${logline.trim()}"\n장르: ${genre === "auto" ? "자동" : (GENRES.find(g => g.id === genre)?.label || "")}${getStoryBible()}\n\n[이 씬 카드 메타]\n${meta}\n\n${existing ? `[기존 본문 — 이 방향을 참고하되 메타에 맞게 다시 쓰세요]\n${existing.slice(0, 2000)}` : "[기존 본문 없음 — 처음부터 작성]"}\n\n위 메타와 핵심 설계 5축에 부합하도록 이 씬을 Fountain 포맷으로 작성하세요.`;
-      const text = await callClaudeText(apiKey, sysPrompt, userMsg, 2500, "claude-sonnet-4-6", ctrl.signal, "rewriteScene");
+      const text = await callClaudeText(apiKey, sysPrompt, userMsg, 2500, "claude-sonnet-5", ctrl.signal, "rewriteScene");
       setSceneCards(prev => prev.map(c =>
         c.id === card.id
           ? { ...c, fountainText: text.trim(), status: "drafted", updatedAt: Date.now() }
@@ -4421,7 +4421,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     try {
       const ctx = getStoryBible();
       const userMsg = `[작가가 막힌 상황]\n${situationText.trim()}\n\n[작품 컨텍스트]\n로그라인: "${logline.trim() || "(아직 없음)"}"${ctx}\n\n위 막힘을 풀기 위한 5개의 좁은 질문을 던지세요. 답은 절대 주지 마세요.`;
-      const data = await callClaude(apiKey, WRITERS_BLOCK_QUESTIONS_SYSTEM_PROMPT, userMsg, 2000, "claude-sonnet-4-6", ctrl.signal, null, "writersBlock");
+      const data = await callClaude(apiKey, WRITERS_BLOCK_QUESTIONS_SYSTEM_PROMPT, userMsg, 2000, "claude-sonnet-5", ctrl.signal, null, "writersBlock");
       setWritersBlockSession({
         situationText: situationText.trim(),
         questionsResult: data,
@@ -4561,7 +4561,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setCoreDesignResult(null);
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${stage1Hint}\n\n위 로그라인의 "이야기 엔진"을 확정하세요. Want/Need/적대자/스테이크/테마 5축을 모두 단정적으로 결정하고, JSON 스키마대로만 응답하세요.`;
     try {
-      const data = await callClaude(apiKey, CORE_DESIGN_SYSTEM_PROMPT, msg, 3500, "claude-sonnet-4-6", ctrl.signal, CoreDesignSchema, "coreDesign");
+      const data = await callClaude(apiKey, CORE_DESIGN_SYSTEM_PROMPT, msg, 3500, "claude-sonnet-5", ctrl.signal, CoreDesignSchema, "coreDesign");
       setCoreDesignResult(data);
       addDevelopmentNotes(notesFromCoreDesign(data));
       trackCreditUsage("핵심 설계", 1);
@@ -4580,7 +4580,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     pushHistory(setCoreDesignHistory, coreDesignResult, "coreDesign");
     const msg = `로그라인: "${logline.trim()}"\n\n현재 핵심 설계 (JSON):\n${JSON.stringify(coreDesignResult, null, 2)}\n\n작가 피드백:\n${coreDesignFeedback.trim()}\n\n피드백을 반영해 핵심 설계 JSON을 다시 작성하세요. 변경하지 않은 필드는 원본 값을 유지하세요.`;
     try {
-      const data = await callClaude(apiKey, CORE_DESIGN_REFINE_SYSTEM_PROMPT, msg, 3500, "claude-sonnet-4-6", ctrl.signal, CoreDesignSchema, "coreDesignRefine");
+      const data = await callClaude(apiKey, CORE_DESIGN_REFINE_SYSTEM_PROMPT, msg, 3500, "claude-sonnet-5", ctrl.signal, CoreDesignSchema, "coreDesignRefine");
       setCoreDesignResult(data);
       addDevelopmentNotes(notesFromCoreDesign(data));
       setCoreDesignFeedback("");
@@ -4603,7 +4603,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const charHint = treatmentChars.protagonist.name ? `\n\n[작가 설정 — 이 정보를 우선하여 캐릭터를 분석하세요]\n주인공: ${treatmentChars.protagonist.name}${treatmentChars.protagonist.role ? ` (${treatmentChars.protagonist.role})` : ""}${treatmentChars.protagonist.want ? `\n외적 목표: ${treatmentChars.protagonist.want}` : ""}${treatmentChars.protagonist.need ? `\n내적 욕구: ${treatmentChars.protagonist.need}` : ""}${treatmentChars.protagonist.flaw ? `\n핵심 결함: ${treatmentChars.protagonist.flaw}` : ""}${treatmentChars.supporting.filter(s => s.name).map(s => `\n조연: ${s.name}${s.role ? ` (${s.role})` : ""}${s.relation ? ` — ${s.relation}` : ""}${s.mbti ? ` [MBTI: ${s.mbti}]` : ""}${s.description ? `\n  설명: ${s.description}` : ""}`).join("")}` : "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}${charHint}\n\n위 로그라인의 인물들을 Egri-Hauge-Truby-Vogler-Jung-Maslow-Stanislavski 이론으로 깊이 발굴하고 구조화하세요. 시놉시스가 있다면 그 방향의 인물 이름·설정을 따르세요.`;
-    try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema, "character"); setCharDevResult(data); if (treatmentResult) setTreatmentStale(true); if (beatSheetResult) setBeatSheetStale(true); if (scenarioDraftResult) setScenarioDraftStale(true); await autoSave(); }
+    try { const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-5", ctrl.signal, CharacterDevSchema, "character"); setCharDevResult(data); if (treatmentResult) setTreatmentStale(true); if (beatSheetResult) setBeatSheetStale(true); if (scenarioDraftResult) setScenarioDraftStale(true); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") setCharDevError(err.message || "캐릭터 분석 중 오류가 발생했습니다."); }
     finally { setCharDevLoading(false); clearController("charDev"); }
   };
@@ -4664,7 +4664,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     })() : "";
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${genreLabel}${genreContext}\n서사 구조: ${structureLabel}\n\n등장인물 정보:\n${charBlock}${storyBible}${expertCtx}${themeCtx}${structurePlotPoints}${genreHint ? `\n\n${genreHint}` : ""}\n\n위 정보를 바탕으로 완성도 높은 트리트먼트를 한국어로 작성해주세요. 시놉시스와 플롯 포인트가 있다면 반드시 그 방향을 따르세요. 등장인물 이름·배경·핵심 장면을 시놉시스와 일치시키세요.`;
     try {
-      const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal, "treatment");
+      const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-5", ctrl.signal, "treatment");
       setTreatmentResult(text);
       trackCreditUsage("트리트먼트", 2);
       setTreatmentStale(false);
@@ -4724,7 +4724,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find(g => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n\n아래는 생성된 트리트먼트입니다. 장르 평균에 수렴한 선택들을 찾아 파괴하세요.\n──────────\n${effectiveTreatment.slice(0, 6000)}\n──────────`;
     try {
-      const data = await callClaude(apiKey, DECLICHE_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, null, "decliche");
+      const data = await callClaude(apiKey, DECLICHE_PROMPT, msg, 4000, "claude-sonnet-5", ctrl.signal, null, "decliche");
       setDeclicheResult(data);
       trackCreditUsage("탈클리셰 분석", 1);
       await autoSave();
@@ -4767,7 +4767,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find(g => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n이 소재로 평범한 작가 100명이 쓸 때 가장 많이 나올 뻔한 선택들을 지도로 그리세요. 아직 쓰이지 않은 이야기에 대한 사전 경고입니다.`;
     try {
-      const data = await callClaude(apiKey, CLICHE_MAP_PROMPT, msg, 2500, "claude-sonnet-4-6", ctrl.signal, null, "clichemap");
+      const data = await callClaude(apiKey, CLICHE_MAP_PROMPT, msg, 2500, "claude-sonnet-5", ctrl.signal, null, "clichemap");
       setClicheMapResult(data);
       trackCreditUsage("클리셰 지도", 1);
       await autoSave();
@@ -4782,7 +4782,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const ctrl = makeController("pipelineRefine");
     setPipelineRefineLoading(true);
     const msg = `원본 로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n\n── 현재 시놉시스 ──\n제목: ${pipelineResult.direction_title}\n장르/톤: ${pipelineResult.genre_tone}\n훅: ${pipelineResult.hook}\n시놉시스:\n${pipelineResult.synopsis}\n핵심 장면: ${(pipelineResult.key_scenes || []).join(" / ")}\n주제: ${pipelineResult.theme}\n결말: ${pipelineResult.ending_type}\n\n── 사용자 피드백 ──\n${pipelineFeedback.trim()}\n\n위 피드백을 반영하여 시놉시스를 수정하세요.`;
-    try { const data = await callClaude(apiKey, PIPELINE_REFINE_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, null, "pipeline"); pushHistory(setPipelineHistory, pipelineResult, "synopsis"); setPipelineResult(data); if (treatmentResult) setTreatmentStale(true); if (beatSheetResult) setBeatSheetStale(true); if (scenarioDraftResult) setScenarioDraftStale(true); setPipelineFeedback(""); await autoSave(); }
+    try { const data = await callClaude(apiKey, PIPELINE_REFINE_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-5", ctrl.signal, null, "pipeline"); pushHistory(setPipelineHistory, pipelineResult, "synopsis"); setPipelineResult(data); if (treatmentResult) setTreatmentStale(true); if (beatSheetResult) setBeatSheetStale(true); if (scenarioDraftResult) setScenarioDraftStale(true); setPipelineFeedback(""); await autoSave(); }
     catch (err) { if (err.name !== "AbortError") alert("다듬기 중 오류: " + (err.message || "다시 시도해주세요.")); }
     finally { setPipelineRefineLoading(false); clearController("pipelineRefine"); }
   };
@@ -4798,7 +4798,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const effective = getEffective("treatment", treatmentResult);
     const msg = `원본 로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n── 현재 트리트먼트 ──\n${effective.slice(0, 4000)}\n\n── 작가 피드백 ──\n${treatmentFeedback.trim()}\n\n위 피드백을 반영하여 트리트먼트를 수정하세요. 피드백이 언급하지 않은 부분은 그대로 유지하세요.`;
     try {
-      const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal, "treatment");
+      const text = await callClaudeText(apiKey, TREATMENT_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-5", ctrl.signal, "treatment");
       pushHistory(setTreatmentHistory, treatmentResult, "treatment");
       setTreatmentResult(text);
       setTreatmentStale(false);
@@ -4823,7 +4823,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     ).join("\n");
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n── 현재 비트 시트 ──\n${beatsText.slice(0, 3000)}\n\n── 작가 피드백 ──\n${beatSheetFeedback.trim()}\n\n위 피드백을 반영하여 비트 시트를 수정하세요. 15개 비트 구조를 유지하면서 피드백이 요청한 내용만 수정하세요.`;
     try {
-      const result = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-4-6", ctrl.signal, "beat_sheet");
+      const result = await callClaude(apiKey, BEAT_SHEET_SYSTEM_PROMPT, msg, 6000, "claude-sonnet-5", ctrl.signal, "beat_sheet");
       pushHistory(setBeatSheetHistory, beatSheetResult, null);
       setBeatSheetResult(result);
       setBeatSheetFeedback("");
@@ -4842,7 +4842,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setShowScenarioDraftBefore(false);
     const msg = `원본 로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n\n── 현재 시나리오 초고 (일부) ──\n${scenarioDraftResult.slice(0, 5000)}\n\n── 작가 피드백 ──\n${scenarioDraftFeedback.trim()}\n\n위 피드백을 반영하여 시나리오를 수정하세요. 표준 시나리오 포맷(씬 헤더·액션라인·대사)을 유지하고, 피드백이 언급하지 않은 부분은 최대한 그대로 유지하세요.`;
     try {
-      const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal, "scenario");
+      const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-5", ctrl.signal, "scenario");
       pushHistory(setScenarioDraftHistory, scenarioDraftResult, null);
       setScenarioDraftResult(decodeHtmlEntities(text));
       setScenarioDraftFeedback("");
@@ -4892,7 +4892,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const genreLabel = genre === "auto" ? "자동 감지" : GENRES.find((g) => g.id === genre)?.label || "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}${buildCoverageBlock()}\n\n── 시나리오 초고 ──\n${buildDraftInput()}\n\n위 초고를 분석하고 고쳐쓰기 우선순위를 제시하세요.${scriptCoverageResult ? " 커버리지에서 지적된 약점을 우선 반영하세요." : ""}`;
     try {
-      const data = await callClaude(apiKey, REWRITE_DIAG_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, null, "rewrite_diag");
+      const data = await callClaude(apiKey, REWRITE_DIAG_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-5", ctrl.signal, null, "rewrite_diag");
       setRewriteDiagResult(data);
       addDevelopmentNotes(notesFromRewriteDiag(data));
       await autoSave();
@@ -4909,7 +4909,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     setPartialRewriteError("");
     const msg = `로그라인: "${logline.trim()}"${buildCoverageBlock()}${buildDiagBlock()}\n\n── 시나리오 초고 ──\n${buildDraftInput()}\n\n── 재작성 지시 ──\n${partialRewriteInstruction.trim()}\n\n위 지시에 따라 해당 부분을 재작성하세요. 위에 커버리지·진단이 있다면 그 지적과 모순되지 않게 고치세요.`;
     try {
-      const text = await callClaudeText(apiKey, PARTIAL_REWRITE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, "partial_rewrite");
+      const text = await callClaudeText(apiKey, PARTIAL_REWRITE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-5", ctrl.signal, "partial_rewrite");
       setPartialRewriteResult(text);
       trackCreditUsage("부분 개고", 2);
       await autoSave();
@@ -4928,7 +4928,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const notes = fullRewriteNotes.trim() ? `\n\n── 작가 메모 ──\n${fullRewriteNotes.trim()}` : "";
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}${buildCoverageBlock()}${buildDiagBlock()}${notes}\n\n── 개고할 초고 ──\n${buildDraftInput()}\n\n위 초고를 전체적으로 개고하세요. 커버리지·진단에서 지적된 약점을 실제로 해결하세요.`;
     try {
-      const text = await callClaudeText(apiKey, FULL_REWRITE_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-4-6", ctrl.signal, "full_rewrite");
+      const text = await callClaudeText(apiKey, FULL_REWRITE_SYSTEM_PROMPT, msg, 10000, "claude-sonnet-5", ctrl.signal, "full_rewrite");
       setFullRewriteResult(text);
       trackCreditUsage("전체 개고", 3);
       await autoSave();
@@ -4947,7 +4947,7 @@ ${storyText}${scenes ? `\n\n핵심 장면:\n${scenes}` : ""}${s.theme ? `\n\n주
     const currentProfile = `주인공: ${p.name_suggestion || ""}, Want: ${p.want || ""}, Need: ${p.need || ""}, Ghost: ${p.ghost || ""}, Lie: ${p.lie_they_believe || ""}, Flaw: ${p.flaw || ""}, Arc: ${p.arc_type || ""}`;
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel}\n포맷: ${getDurText()}${getCustomContext()}${getStoryBible()}\n\n── 현재 캐릭터 프로필 ──\n${currentProfile}\n\n── 작가 피드백 ──\n${charDevFeedback.trim()}\n\n위 피드백을 반영하여 캐릭터 분석을 수정하세요. 피드백이 언급하지 않은 부분은 그대로 유지하세요.`;
     try {
-      const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-4-6", ctrl.signal, CharacterDevSchema, "character");
+      const data = await callClaude(apiKey, CHARACTER_DEV_SYSTEM_PROMPT, msg, 5000, "claude-sonnet-5", ctrl.signal, CharacterDevSchema, "character");
       pushHistory(setCharDevHistory, charDevResult, "character");
       setCharDevResult(data);
       if (treatmentResult) setTreatmentStale(true);

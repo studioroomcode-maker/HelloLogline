@@ -91,7 +91,7 @@ export function useStage7({
     setScriptCoverageLoading(true); setScriptCoverageError(""); setScriptCoverageResult(null);
     const msg = `로그라인: "${logline.trim()}"\n장르: ${genreLabel()}\n포맷: ${getDurText()}${getCustomContext()}\n\n위 로그라인에 대한 할리우드 + 한국 방송사 스타일 Script Coverage를 작성하세요.`;
     try {
-      const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-4-6", ctrl.signal, ScriptCoverageSchema, "coverage");
+      const data = await callClaude(apiKey, SCRIPT_COVERAGE_SYSTEM_PROMPT, msg, 4000, "claude-sonnet-5", ctrl.signal, ScriptCoverageSchema, "coverage");
       setScriptCoverageResult(data);
       await autoSave();
     } catch (err) {

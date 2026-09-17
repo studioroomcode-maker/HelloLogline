@@ -120,7 +120,7 @@ export function useStage6({
 
     const msg = `로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n장르: ${label}${charBlock}${structureBlock}${dialogueBlock}${treatmentBlock}${beatBlock}\n\n위 모든 정보를 반드시 반영해서 시나리오 초고를 작성하세요.\n- 등장인물 이름·성격·관계를 그대로 유지하세요\n- 비트 시트가 있다면 그 순서와 구조를 따르세요\n- 대사 목소리 프로필이 있다면 각 인물의 말투를 그에 맞게 쓰세요\n- 트리트먼트가 있다면 그 방향의 이야기를 따르세요`;
     try {
-      const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal, "scenario");
+      const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-5", ctrl.signal, "scenario");
       setScenarioDraftResult(text);
       setScenarioDraftStale(false);
       setScenarioDraftCtx({
@@ -145,7 +145,7 @@ export function useStage6({
     setShowScenarioDraftBefore(false);
     const msg = `원본 로그라인: "${logline.trim()}"\n포맷: ${getDurText()}${getCustomContext()}\n\n── 현재 시나리오 초고 (일부) ──\n${scenarioDraftResult.slice(0, 5000)}\n\n── 작가 피드백 ──\n${scenarioDraftFeedback.trim()}\n\n위 피드백을 반영하여 시나리오를 수정하세요. 표준 시나리오 포맷(씬 헤더·액션라인·대사)을 유지하고, 피드백이 언급하지 않은 부분은 최대한 그대로 유지하세요.`;
     try {
-      const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-4-6", ctrl.signal, "scenario");
+      const text = await callClaudeText(apiKey, SCENARIO_DRAFT_SYSTEM_PROMPT, msg, 8000, "claude-sonnet-5", ctrl.signal, "scenario");
       pushHistory(setScenarioDraftHistory, scenarioDraftResult, null);
       setScenarioDraftResult(text);
       setScenarioDraftFeedback("");
